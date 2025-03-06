@@ -1,9 +1,10 @@
 import React from "react";
+import Image from "next/image";
 
 const DownloadAppSection = () => {
   return (
     <section
-      className="py-12 text-center text-white flex flex-col md:flex-row items-center justify-center px-6"
+      className="py-12 flex flex-col md:flex-row items-center justify-center px-6 "
       style={{
         backgroundImage: "url('/orange.png')",
         backgroundSize: "cover",
@@ -11,63 +12,57 @@ const DownloadAppSection = () => {
       }}
     >
       {/* Image Section */}
-      <div className="md:w-1/2 flex justify-center mb-6 md:mb-0">
-        <img
+      <div className="md:w-1/2 flex justify-center ">
+        <Image
           src="/meditation (1).png"
           alt="Meditation"
-          className="w-60 sm:w-72 md:w-80 lg:w-96 rounded-lg"
+          width={400}
+          height={450}
+          className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg"
         />
       </div>
 
       {/* Text & Download Section */}
-      <div className="md:w-1/2 text-center md:text-left">
-        <h2
-          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight"
-          style={{
-            fontFamily: "EB Garamond",
-            letterSpacing: "0.5px",
-          }}
-        >
+      <div className="md:w-1/2">
+      <div className="w-[650px] -ml-20">
+        {/* Title */}
+        <h2 className="text-[#fff] text-[50px] font-bold font-ebgaramond leading-tight">
           Download Our Mobile App
         </h2>
 
-        <p
-          className="mt-4 text-sm sm:text-base md:text-lg leading-relaxed px-4 md:px-0"
-          style={{
-            fontFamily: "Poppins",
-            fontWeight: "100",
-            fontSize: '15px',
-
-          }}
-        >
-          Get daily horoscope updates, personalized astrological insights, and
-          expert guidance anytime, anywhere. Explore zodiac predictions,
-          remedies, and live consultations—all at your fingertips! Download now
-          and unlock the wisdom of the stars.
+        {/* Description */}
+        <p className="mt-4 text-white text-center w-[600px] text-[15px] font-poppins font-medium leading-[23px] tracking-[0]">
+          Get daily horoscope updates, personalized astrological insights, and expert guidance anytime, anywhere. 
+          Explore zodiac predictions, remedies, and live consultations—all at your fingertips in a click! Download now and unlock the wisdom of the stars.
         </p>
 
         {/* App Store Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4 mt-6">
+        <div className="flex items-center justify-center gap-10 mt-4 -">
           <a href="#">
-            <img
+            <Image
               src="/appstore.png"
               alt="App Store"
-              className="w-40 sm:w-44 md:w-48 cursor-pointer"
+              width={140}
+              height={50}
+              className="cursor-pointer"
             />
           </a>
           <a href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en">
-            <img
+            <Image
               src="/playstore.png"
               alt="Google Play"
-              className="w-40 sm:w-44 md:w-48 cursor-pointer"
+              width={140}
+              height={50}
+              className="cursor-pointer"
             />
           </a>
         </div>
 
         {/* Tagline */}
-        <p className="mt-4 italic text-center md:text-left text-sm sm:text-base md:text-lg" style={{ fontFamily: "Poppins", fontWeight: "300" }}>
+        <p className="mt-4 italic text-white text-sm font-medium font-poppins text-center ">
           Stay Connected with Astrology!
         </p>
+      </div>
       </div>
     </section>
   );

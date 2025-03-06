@@ -40,17 +40,17 @@ const Header: React.FC = () => {
   return (
     <>
       {/* Desktop Header - Only visible on large screens */}
-      <div className="hidden lg:flex flex-col w-full">
-        <div className="flex justify-between">
+      <div className="hidden lg:flex flex-col w-full justify-center">
+        <div className="flex justify-center">
           <div className="w-[415px] border-r border-gray-200 flex items-center justify-center py-2">
             <Link href="/" className="flex items-center">
               <Image
                 src="/monk logo (1).png"
                 alt="Sobhagya"
                 width={65}
-                height={70}
+                height={65}
                 priority
-                className="w-[65px] h-auto" 
+                className="w-[90px] h-[90px]" 
               />
               <div className="ml-3 overflow-hidden w-[170px] h-[10px] flex items-center">
                 <AnimatePresence mode="wait">

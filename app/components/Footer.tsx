@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
       className={`bg-[#373737] text-white py-12 relative overflow-hidden ${poppins.className}`}
     >
       {/* Top Left Zodiac Background Image */}
-      <div className="absolute top-[-50px] left-[-150px] w-[400px] h-[300px] opacity-20">
+      <div className="absolute top-[-50px] left-[-150px] w-[400px] h-[300px] opacity-10">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
@@ -26,7 +26,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Bottom Right Zodiac Background Image */}
-      <div className="absolute bottom-[-100px] right-[20px] w-[400px] h-[300px] opacity-20">
+      <div className="absolute bottom-[-100px] right-[20px] w-[400px] h-[300px] opacity-10">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
@@ -41,10 +41,12 @@ const Footer: React.FC = () => {
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 md:gap-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-32 md:gap-x-16">
+
+      
           {/* Logo and Social Media */}
-          <div className="flex flex-col items-center  md:pr-10">
-            <div className="relative w-[300px] h-[300px] -mb-8">
+          <div className="flex flex-col items-center justify-end gap-x-24 md:pr-1 -mt-20 mb-5">
+            <div className="relative w-[400px] h-[400px] -mt-25">
               <Image
                 src="/monk logo.png"
                 alt="Sobhagya"
@@ -53,11 +55,11 @@ const Footer: React.FC = () => {
               />
             </div>
             <p
-              className={`${eagleLake.className} text-orange-400 text-3xl mb-6`}
+              className={`${eagleLake.className} text-orange-400 text-3xl mb-1 -mt-20`}
             >
               Sobhagya
             </p>
-            <div className="flex space-x-3">
+            {/* <div className="flex space-x-3">
               <Link
                 href="#"
                 className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center"
@@ -102,11 +104,11 @@ const Footer: React.FC = () => {
                   height={20}
                 />
               </Link>
-            </div>
+            </div> */}
           </div>
 
           {/* Navigation Links - Two columns */}
-          <div className="">
+          <div className="ml-20">
             <div className="space-y-2">
               <Link
                 href="/"
@@ -120,68 +122,82 @@ const Footer: React.FC = () => {
               >
                 <span className="text-orange-400 mr-2 text-lg">›</span> About us
               </Link>
-            </div>
-            <div className="space-y-2 mt-4 flex flex-col ">
+            
+            <div className="space-y-2 flex flex-col ">
               <Link
-                href="/privacy-policy"
+                href="/services"
                 className="flex items-center text-white hover:text-orange-400"
               >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Privacy
-                Policy
+                <span className="text-orange-400 mr-2 text-lg">›</span> Services
               </Link>
               <Link
-                href="/terms"
+                href="/call-with-astrologer"
                 className="flex items-center text-white hover:text-orange-400"
               >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Terms of
-                Services
+                <span className="text-orange-400 mr-2 text-lg">›</span> Call With Astrologer
               </Link>
               <Link
-                href="/refund-policy"
+                href="/live-session"
                 className="flex items-center text-white hover:text-orange-400 whitespace-nowrap"
               >
-                <span className="text-orange-400 mr-2 text-lg whitespace-normal">›</span> Return
-                and Refund Policy
+                <span className="text-orange-400 mr-2 text-lg whitespace-normal">›</span> Live Session
               </Link>
-              <Link
-                href="/shipping-policy"
-                className="flex items-center text-white hover:text-orange-400"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Shipping
-                Policy
-              </Link>
+              
               <Link
                 href="https://store.sobhagya.in"
                 className="flex items-center text-white hover:text-orange-400"
                 target="_blank"
               >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Sobhagya
-                Store
+                <span className="text-orange-400 mr-2 text-lg">›</span> Shop
               </Link>
+              <Link
+                href="/blog"
+                className="flex items-center text-white hover:text-orange-400"
+                target="_blank"
+              >
+                <span className="text-orange-400 mr-2 text-lg">›</span> Blog
+              </Link>
+              <Link
+                href="/contact"
+                className="flex items-center text-white hover:text-orange-400"
+                target="_blank"
+              >
+                <span className="text-orange-400 mr-2 text-lg">›</span> Contact Us
+      
+              </Link>
+              <Link
+                href="/contact"
+                className="flex items-center text-white hover:text-orange-400"
+                target="_blank"
+              >
+                <span className="text-orange-400 mr-2 text-lg">›</span> Sign In
+      
+              </Link>
+              </div>
             </div>
           </div>
 
           {/* Contact Info */}
-          <div className="space-y-4 ">
-            <div className="flex items-center gap-x-2 ">
+          <div className="space-y-5 mt-10 -ml-10">
+            <div className="flex items-center gap-x-8 ">
               <img src="/Vector (1).png" alt="Website" className="w-5 h-5  " />
               <a
                 href="https://www.sobhagya.in"
                 className="text-white hover:text-orange-400  "
               >
-                www.sobhagya.in
+                www.sobhagyaApp.com
               </a>
             </div>
-            <div className="flex items-center gap-x-2">
+            <div className="flex items-center gap-x-8">
               <img src="/Vector (2).png" alt="Email" className="w-5 h-5" />
               <a
                 href="mailto:support@sobhagya.in"
                 className="text-white hover:text-orange-400"
               >
-                support@sobhagya.in
+                SobhagyaApp@gmail.com
               </a>
             </div>
-            <div className="flex items-center gap-x-2">
+            <div className="flex items-center gap-x-8">
               <img src="/Vector (3).png" alt="Phone" className="w-5 h-5" />
               <span>
                 <a
@@ -199,7 +215,7 @@ const Footer: React.FC = () => {
                 </a>
               </span>
             </div>
-            <div className="flex items-start gap-x-2">
+            {/* <div className="flex items-start gap-x-2">
               <img
                 src="/Vector (4).png"
                 alt="Location"
@@ -208,13 +224,13 @@ const Footer: React.FC = () => {
               <p className="text-sm">
               F-Block 10/9 Krishna Nagar Temple, Delhi, India, 110051
               </p>
-            </div>
-            <div className="flex items-center gap-x-2">
+            </div> */}
+            {/* <div className="flex items-center gap-x-2">
               <img src="/Vector (5).png" alt="Company" className="w-5 h-5" />
               <p>ELYSION SOFTWARES PRIVATE LIMITED</p>
-            </div>
+            </div> */}
 
-            <div className="flex space-x-4 mt-6 cursor-pointer">
+            <div className="flex items-center justify-start gap-x-8 ml-4  mt-6 cursor-pointer">
               <Link
                 href="https://apps.apple.com"
                 target="_blank"
@@ -242,16 +258,16 @@ const Footer: React.FC = () => {
               </Link>
             </div>
 
-            <p className="text-center text-sm italic mt-4">
+            <p className="mr-20 text-center text-sm italic mt-2">
               Stay Connected with Astrology!
             </p>
           </div>
         </div>
 
         {/* Footer Bottom */}
-        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
+        {/* <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
           <p>(© ELYSION SOFTWARES PRIVATE LIMITED. All Rights Reserved)</p>
-        </div>
+        </div> */}
       </div>
     </footer>
   );

@@ -31,26 +31,27 @@ const HeroSection: React.FC = () => {
 
           <p
             className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mb-6 sm:mb-6"
-            style={{ fontFamily: "Poppins", fontWeight: "700" }}
+            style={{ fontFamily: "Poppins", fontWeight: "700",maxWidth: '320px' }}
           >
             Your's might be waiting
           </p>
           <Link href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en" target="_blank">
             <button
-              className="bg-white text-[#F7971D] px-8 sm:px-8 py-3 font-semibold hover:bg-orange-100 transition-colors mb-12 sm:mb-6 md:mb-0"
+              className="bg-white text-[#F7971D] px-12 sm:px-8 py-4 font-semibold hover:bg-orange-100 transition-colors mb-10 sm:mb-6 md:mb-0 flex items-center justify-center"
               style={{
                 width: "100%",
-                maxWidth: "280px",
+                maxWidth: "320px",
                 height: "66px",
                 borderRadius: "6px",
                 fontFamily: "Poppins",
                 fontWeight: "500",
-                fontSize: "18px",
+                fontSize: "24px",
                 lineHeight: "34px",
                 letterSpacing: "0%",
               }}
             >
-              Download now
+              <img src="./Group 13380.png" alt="account" className="w-8 h-8  mr-8" />
+              Get a call now
             </button>
           </Link>
         </div>

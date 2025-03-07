@@ -7,6 +7,7 @@ import BlogSection from '@/app/components/BlogSection';
 import AppDownload from '@/app/components/AppDownload';
 import WhyConsult from '@/app/components/WhyConsult';
 import AstrologerCarousel from '@/app/components/ConsultAstrologer';
+import HoroscopeInsights from '@/app/components/HoroscopeInsights'
 
 
 export default function Home() {
@@ -18,6 +19,7 @@ export default function Home() {
       <StatsBar />
       <BlogSection />
       <RashiSection />
+      <HoroscopeInsights />
       <AppDownload />
       <WhyConsult />
      

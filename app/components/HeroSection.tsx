@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 const HeroSection: React.FC = () => {
   // State for active navigation
   const [activeNav, setActiveNav] = useState("chat");
-  
+
   // Handle navigation click
   const handleNavClick = (nav: string) => {
     setActiveNav(nav);
@@ -14,8 +14,7 @@ const HeroSection: React.FC = () => {
   return (
     <div className="flex flex-col w-full">
       {/* NEW: Navigation Section - Positioned Above Hero Section */}
-      
-      
+
       {/* Original Hero Section - Keeping Exactly As Is */}
       <section
         className="text-white relative w-full flex items-center px-4 sm:px-8 md:px-12"
@@ -25,38 +24,87 @@ const HeroSection: React.FC = () => {
           backgroundPosition: "center",
         }}
       >
-        
-      <div className="absolute bottom-0 left-0 right-0 z-20 transform translate-y-1/2 mx-auto">
-        <div className="mx-auto px-40">
-          <div className="flex justify-evenly">
-            <div className={"bg-white shadow-lg rounded-[12px] p-4  text-center  sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all "} 
-                 onClick={() => handleNavClick('chat')}>
-              <div className="flex justify-center mt-2 mb-2">
-                <img src="/Group 13364.png" alt="Chat" width={52} height={127} className="shadow-black" />
+        {/* Navigation Cards */}
+
+        <div className="absolute bottom-0 left-0 right-0 z-20 transform translate-y-1/2 mx-auto">
+          <div className="mx-auto px-40">
+            <div className="flex justify-evenly">
+              <div
+                className={
+                  "bg-white shadow-lg rounded-[12px] p-4  text-center  sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all "
+                }
+                onClick={() => handleNavClick("chat")}
+              >
+                <div className="flex justify-center mt-2 mb-2">
+                  <img
+                    src="/Group 13364.png"
+                    alt="Chat"
+                    width={52}
+                    height={127}
+                    className="shadow-black"
+                  />
+                </div>
+                <p
+                  className="text-[#373737] "
+                  style={{
+                    fontFamily: "Poppins",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                  }}
+                >
+                  Chat with Astrologer
+                </p>
               </div>
-              <p className="text-[#373737] " style={{ fontFamily: "Poppins", fontSize: "14px",fontWeight:'400' }}>Chat with Astrologer</p>
-            </div>
-            
-            <div className={`bg-white shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${activeNav === 'talk' ? 'border-b-2 border-orange-500' : ''}`}
-                 onClick={() => handleNavClick('talk')}>
-              <div className="flex justify-center mb-2">
-                <img src="/Group 13365.png" alt="Talk" width={52} height={127} className="shadow-black" />
+
+              <div
+                className={`bg-white shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${
+                  activeNav === "talk" ? "border-b-2 border-orange-500" : ""
+                }`}
+                onClick={() => handleNavClick("talk")}
+              >
+                <div className="flex justify-center mb-2">
+                  <img
+                    src="/Group 13365.png"
+                    alt="Talk"
+                    width={52}
+                    height={127}
+                    className="shadow-black"
+                  />
+                </div>
+                <p
+                  className="text-[#373737] font-small"
+                  style={{ fontFamily: "Poppins", fontSize: "14px" }}
+                >
+                  Talk to Astrologer
+                </p>
               </div>
-              <p className="text-[#373737] font-small" style={{ fontFamily: "Poppins", fontSize: "14px" }}>Talk to Astrologer</p>
-            </div>
-            
-            <div className={`bg-[#F7971D] shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${activeNav === 'shop' ? 'border-b-2 border-white' : ''}`}
-                 onClick={() => handleNavClick('shop')}>
-              <div className="flex justify-center mb-2">
-                <img src="/Group 13366.png" alt="Shop" width={52} height={127} />
+
+              <div
+                className={`bg-[#F7971D] shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${
+                  activeNav === "shop" ? "border-b-2 border-white" : ""
+                }`}
+                onClick={() => handleNavClick("shop")}
+              >
+                <div className="flex justify-center mb-2">
+                  <img
+                    src="/Group 13366.png"
+                    alt="Shop"
+                    width={52}
+                    height={127}
+                  />
+                </div>
+                <p
+                  className="text-white "
+                  style={{ fontFamily: "Poppins", fontSize: "14px" }}
+                >
+                  Astromall Shop
+                </p>
               </div>
-              <p className="text-white " style={{ fontFamily: "Poppins", fontSize: "14px" }}>Astromall Shop</p>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Responsive Layout */}
+
+        {/* Responsive Layout */}
         <div className="container mx-auto flex flex-col-reverse sm:flex-col md:flex-row items-center justify-between w-full">
           {/* Left Side - Text Section */}
           <div className="text-center md:text-left md:w-1/2 max-w-full px-4 mt-6 md:mt-0">
@@ -67,7 +115,7 @@ const HeroSection: React.FC = () => {
                 fontWeight: "700",
                 lineHeight: "1.2",
                 letterSpacing: "0%",
-                fontSize: 'clamp(1.5rem, 4vw, 3rem)'
+                fontSize: "clamp(1.5rem, 4vw, 3rem)",
               }}
             >
               10023 Consultations Done
@@ -75,11 +123,18 @@ const HeroSection: React.FC = () => {
 
             <p
               className="text-sm sm:text-base md:text-lg lg:text-xl font-semibold mb-6 sm:mb-6"
-              style={{ fontFamily: "Poppins", fontWeight: "700", maxWidth: '320px' }}
+              style={{
+                fontFamily: "Poppins",
+                fontWeight: "700",
+                maxWidth: "320px",
+              }}
             >
               Your's might be waiting
             </p>
-            <Link href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en" target="_blank">
+            <Link
+              href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en"
+              target="_blank"
+            >
               <button
                 className="bg-white text-[#F7971D] px-12 sm:px-8 py-4 font-semibold hover:bg-orange-100 transition-colors mb-10 sm:mb-6 md:mb-0 flex items-center justify-center"
                 style={{
@@ -94,7 +149,11 @@ const HeroSection: React.FC = () => {
                   letterSpacing: "0%",
                 }}
               >
-                <img src="./Group 13380.png" alt="account" className="w-8 h-8 mr-8" />
+                <img
+                  src="./Group 13380.png"
+                  alt="account"
+                  className="w-8 h-8 mr-8"
+                />
                 Get a call now
               </button>
             </Link>
@@ -132,7 +191,6 @@ const HeroSection: React.FC = () => {
               priority
             />
 
-           
             <Image
               src="/Group (1) 4.png"
               alt="Right Zodiac Sign"
@@ -144,7 +202,6 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        
         <style jsx>{`
           @keyframes rotateInPlace {
             from {
@@ -159,20 +216,25 @@ const HeroSection: React.FC = () => {
           }
         `}</style>
       </section>
-      
 
-      
-     {/* NEW: Live Session Section */}
+      {/* NEW: Live Session Section */}
 
       <section className="bg-white py-32">
         <div className="container mx-auto px-6">
-          <h2 className="text-5xl text-center font-bold text-[#745802] mb-2" style={{ fontFamily: "EB Garamond" }}>
+          <h2
+            className="text-5xl text-center font-bold text-[#745802] mb-2"
+            style={{ fontFamily: "EB Garamond" }}
+          >
             Live Session
           </h2>
-          <p className="text-center text-[#745802] mb-8" style={{ fontFamily: "Poppins", fontSize: "15px" }}>
-            Live astrology session for real-time insights and guidance on your life's path!
+          <p
+            className="text-center text-[#745802] mb-8"
+            style={{ fontFamily: "Poppins", fontSize: "15px" }}
+          >
+            Live astrology session for real-time insights and guidance on your
+            life's path!
           </p>
-          
+
           <div className="flex flex-wrap justify-center gap-20">
             {/* First Astrologer Card - Pt. Shashtri Ji */}
             <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
@@ -180,48 +242,78 @@ const HeroSection: React.FC = () => {
                 <span className="h-2 w-2 bg-white rounded-lg mr-1 animate-pulse"></span>
                 Live
               </div>
-              <img 
-                src="/image (11).png" 
-                alt="Pt. Shashtri Ji" 
+              <img
+                src="/image (11).png"
+                alt="Pt. Shashtri Ji"
                 className="w-full h-45 object-contain"
               />
               <div className="p-3 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
-                <h3 className="text-white font-semibold" style={{ fontFamily: "Poppins" }}>Pt. Shashtri Ji</h3>
-                <p className="text-white font-light" style={{ fontFamily: "Poppins" }}>Marriage problems expert</p>
+                <h3
+                  className="text-white font-semibold"
+                  style={{ fontFamily: "Poppins" }}
+                >
+                  Pt. Shashtri Ji
+                </h3>
+                <p
+                  className="text-white font-light"
+                  style={{ fontFamily: "Poppins" }}
+                >
+                  Marriage problems expert
+                </p>
               </div>
             </div>
-            
+
             {/* Zodiac Card - Live Astrological Insights */}
             <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
               <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs flex items-center">
                 <span className="h-2 w-2 bg-white rounded-full mr-1 animate-pulse"></span>
                 Live
               </div>
-              <img 
-                src="/image (12).png" 
-                alt="Live Astrological Insights" 
-                className="w-full h-full object-cover" 
+              <img
+                src="/image (12).png"
+                alt="Live Astrological Insights"
+                className="w-full h-full object-cover"
               />
               <div className="p-3 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
-                <h3 className="text-white font-semibold" style={{ fontFamily: "Poppins" }}>Live Astrological Insights:</h3>
-                <p className="text-white text-sm" style={{ fontFamily: "Poppins" }}>Get clarity on love, career & more</p>
+                <h3
+                  className="text-white font-semibold"
+                  style={{ fontFamily: "Poppins" }}
+                >
+                  Live Astrological Insights:
+                </h3>
+                <p
+                  className="text-white text-sm"
+                  style={{ fontFamily: "Poppins" }}
+                >
+                  Get clarity on love, career & more
+                </p>
               </div>
             </div>
-            
+
             {/* Third Card - Pt. Rama Krishna */}
             <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
               <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs flex items-center">
                 <span className="h-2 w-2 bg-white rounded-full mr-1 animate-pulse"></span>
                 Live
               </div>
-              <img 
-                src="/image (13).png" 
-                alt="Pt. Rama Krishna" 
-                className="w-full h-full object-cover" 
+              <img
+                src="/image (13).png"
+                alt="Pt. Rama Krishna"
+                className="w-full h-full object-cover"
               />
               <div className="p-3 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
-                <h3 className="text-white font-semibold" style={{ fontFamily: "Poppins" }}>Pt. Rama Krishna</h3>
-                <p className="text-white text-sm" style={{ fontFamily: "Poppins" }}>Today horoscope</p>
+                <h3
+                  className="text-white font-semibold"
+                  style={{ fontFamily: "Poppins" }}
+                >
+                  Pt. Rama Krishna
+                </h3>
+                <p
+                  className="text-white text-sm"
+                  style={{ fontFamily: "Poppins" }}
+                >
+                  Today horoscope
+                </p>
               </div>
             </div>
           </div>

@@ -76,7 +76,7 @@ const AstrologerCarousel = () => {
 
   return (
     <div className="w-full py-12 relative" style={{
-      backgroundImage: "url('./image (14).png')",
+      backgroundImage: "url('./image.png')",
     }}>
         <div className="absolute top-0 left-0 w-40 h-40 opacity-20">
         <img 

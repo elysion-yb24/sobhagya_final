@@ -90,7 +90,7 @@ const Header: React.FC = () => {
               <Link href="/services" className="hover:text-orange-500">Services</Link>
               <Link href="/live-sessions" className="hover:text-orange-500">Live Sessions</Link>
               <Link href="/call-with-astrologer" className="hover:text-orange-500">Call with Astrologer</Link>
-              <Link href="/shop" className="hover:text-orange-500">Shop</Link>
+              <Link href="https://store.sobhagya.in" target="_blank" className="hover:text-orange-500">Shop</Link>
               <Link href="/blog" className="hover:text-orange-500">Blog</Link>
               <Link href="/contact" className="hover:text-orange-500">Contact Us</Link>
               <div className="flex items-center">
@@ -172,7 +172,7 @@ const Header: React.FC = () => {
         <Link href="/services" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Services</Link>
         <Link href="/live-sessions" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Live Sessions</Link>
         <Link href="/call-with-astrologer" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Call with Astrologer</Link>
-        <Link href="/shop" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Shop</Link>
+        <Link href="https://store.sobhagya.in" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Shop</Link>
         <Link href="/blog" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Blog</Link>
         <Link href="/contact" className="hover:text-orange-500 text-[#373737] py-2" onClick={() => setIsOpen(false)}>Contact Us</Link>
         <div className="hover:text-orange-500 py-2">EN ▼</div>

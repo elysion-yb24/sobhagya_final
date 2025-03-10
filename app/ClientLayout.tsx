@@ -13,10 +13,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     setShowWebsite(true);
 
     if (pathname.startsWith("/rashi/")) {
-      // Delay footer rendering on "/rashi/[name]" pages
+      
       const timer = setTimeout(() => {
         setShowFooter(true);
-      }, 1500); // Adjust timing if needed
+      }, 1000); 
       return () => clearTimeout(timer);
     } else {
       setShowFooter(true);

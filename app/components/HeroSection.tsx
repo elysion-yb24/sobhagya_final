@@ -55,8 +55,9 @@ const HeroSection: React.FC = () => {
                   Chat with Astrologer
                 </p>
               </div>
-
+            
               <div
+              
                 className={`bg-white shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${
                   activeNav === "talk" ? "border-b-2 border-orange-500" : ""
                 }`}

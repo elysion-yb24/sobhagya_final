@@ -1,6 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
+
 import React, { useState, useEffect } from 'react';
 
 const astrologers = [
@@ -70,10 +72,11 @@ const AstrologerCard = ({ astrologer }: { astrologer: Astrologer }) => {
       <p className="text-sm text-gray-500">{astrologer.language}</p>
       <p className="text-xs text-gray-600 mt-1">{astrologer.expertise}</p>
       <p className="text-xs text-gray-600 mt-1">Exp: {astrologer.experience}</p>
-
-      <button className="mt-3 bg-[#F7971E] text-black text-xs py-2 px-4 rounded font-poppins w-full">
+     
+      <Link href="/call1" className="mt-3 bg-[#F7971E] text-black text-xs py-2 px-4 rounded font-poppins w-full">
         OFFER: FREE 1st call
-      </button>
+      </Link>
+      
     </div>
   );
 };

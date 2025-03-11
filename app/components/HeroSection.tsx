@@ -35,6 +35,7 @@ const HeroSection: React.FC = () => {
                 }
                 onClick={() => handleNavClick("chat")}
               >
+                <Link href="/call1">
                 <div className="flex justify-center mt-2 mb-2">
                   <img
                     src="/Group 13364.png"
@@ -42,7 +43,7 @@ const HeroSection: React.FC = () => {
                     width={52}
                     height={127}
                     className="shadow-black"
-                  />
+                    />
                 </div>
                 <p
                   className="text-[#373737] "
@@ -51,9 +52,10 @@ const HeroSection: React.FC = () => {
                     fontSize: "14px",
                     fontWeight: "400",
                   }}
-                >
+                  >
                   Chat with Astrologer
                 </p>
+            </Link>
               </div>
             
               <div
@@ -63,7 +65,9 @@ const HeroSection: React.FC = () => {
                 }`}
                 onClick={() => handleNavClick("talk")}
               >
+                <Link href="/call-with-astrologer">
                 <div className="flex justify-center mb-2">
+                  
                   <img
                     src="/Group 13365.png"
                     alt="Talk"
@@ -78,7 +82,10 @@ const HeroSection: React.FC = () => {
                 >
                   Talk to Astrologer
                 </p>
+              </Link>
               </div>
+
+              
 
               <div
                 className={`bg-[#F7971D] shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${
@@ -86,6 +93,7 @@ const HeroSection: React.FC = () => {
                 }`}
                 onClick={() => handleNavClick("shop")}
               >
+                <Link href="https://store.sobhagya.in" target="__blank">
                 <div className="flex justify-center mb-2">
                   <img
                     src="/Group 13366.png"
@@ -100,6 +108,7 @@ const HeroSection: React.FC = () => {
                 >
                   Astromall Shop
                 </p>
+              </Link>
               </div>
             </div>
           </div>
@@ -133,8 +142,8 @@ const HeroSection: React.FC = () => {
               Your's might be waiting
             </p>
             <Link
-              href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en"
-              target="_blank"
+              href="/call-with-astrologer"
+              
             >
               <button
                 className="bg-white text-[#F7971D] px-12 sm:px-8 py-4 font-semibold hover:bg-orange-100 transition-colors mb-10 sm:mb-6 md:mb-0 flex items-center justify-center"

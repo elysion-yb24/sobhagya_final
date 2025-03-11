@@ -15,7 +15,7 @@ export default function Call3() {
 
   return (
     <motion.div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex items-center justify-center px-4 sm:px-8"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
@@ -27,18 +27,17 @@ export default function Call3() {
       </Head>
 
       <motion.div
-        className="w-full max-w-6xl p-24 bg-[#fcf4e9]"
+        className="w-full max-w-6xl p-10 sm:p-16 lg:p-24 bg-[#fcf4e9] rounded-lg"
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
       >
         <motion.h1
-          className="font-medium text-center text-[#373737] mb-8"
+          className="font-medium text-center text-[#373737] mb-6 sm:mb-8 text-2xl sm:text-3xl md:text-4xl"
           style={{
             fontFamily: "Poppins",
             lineHeight: "29px",
             letterSpacing: "1%",
-            fontSize: "35px",
           }}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -49,7 +48,7 @@ export default function Call3() {
 
         {/* Progress Bar */}
         <motion.div
-          className="relative mb-20 flex items-center"
+          className="relative mb-16 sm:mb-20 flex items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
@@ -64,22 +63,21 @@ export default function Call3() {
           </div>
 
           <div className="flex justify-between absolute w-full top-[-6px] -left-1 -right-1">
-            <div className="w-3 h-3 bg-[#F7971E] rounded-full"></div>
-            <div className="w-3 h-3 bg-[#F7971E] rounded-full"></div>
-            <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
-            <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
-            <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
-            <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
-            <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
+            {[...Array(7)].map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full ${
+                  i < 2 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
+                }`}
+              ></div>
+            ))}
           </div>
         </motion.div>
 
         <form>
           <motion.h2
-            className="text-3xl font-normal text-center text-[#373737] mb-16"
-            style={{
-              fontFamily: "Poppins",
-            }}
+            className="text-xl sm:text-2xl md:text-3xl font-normal text-center text-[#373737] mb-10 sm:mb-16"
+            style={{ fontFamily: "Poppins" }}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -87,7 +85,8 @@ export default function Call3() {
             Choose Your Gender
           </motion.h2>
 
-          <div className="flex justify-center space-x-48 mb-20">
+          {/* Gender Selection */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-16 justify-center items-center text-center mb-14">
             {["female", "male", "other"].map((type, index) => (
               <motion.div
                 key={type}
@@ -115,11 +114,12 @@ export default function Call3() {
                         : "/Group 13400.png"
                     }
                     alt={type}
-                    width={type === "other" ? 47.08 : 51}
-                    height={type === "other" ? 28.74 : 51}
+                    width={80}
+                    height={80}
+                    className="max-w-[60px] sm:max-w-[80px] h-auto"
                   />
                 </div>
-                <div className="text-lg font-normal text-center text-[#373737] mb-3 capitalize">
+                <div className="text-lg font-normal text-[#373737] capitalize">
                   {type}
                 </div>
                 <motion.div
@@ -145,7 +145,7 @@ export default function Call3() {
             <Link href={gender ? "/call4" : "#"} passHref>
               <motion.button
                 type="button"
-                className={`px-12 py-3 font-semibold rounded-md focus:outline-none transition-all duration-300 ease-in-out transform ${
+                className={`px-8 sm:px-12 py-2 sm:py-3 font-semibold rounded-md focus:outline-none transition-all duration-300 ease-in-out transform ${
                   gender
                     ? "bg-[#F7971D] text-white hover:bg-[#d99845] hover:scale-105"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"

@@ -18,7 +18,7 @@ export default function Call5() {
     if (knowBirthTime !== null) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/call5");
+        router.push("/calls/call6");
       }, 500);
     }
   };

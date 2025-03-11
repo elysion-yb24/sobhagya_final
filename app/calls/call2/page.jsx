@@ -18,7 +18,7 @@ export default function Call2() {
     if (name.trim()) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/call3");
+        router.push("/calls/call3");
       }, 500);
     }
   };

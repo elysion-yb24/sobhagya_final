@@ -5,26 +5,25 @@ import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
 
-export default function Call4() {
-  const [date, setDate] = useState("");
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("");
+export default function Call6() {
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
+  const [meridiem, setMeridiem] = useState("");
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
 
-  const dateOptions = Array.from({ length: 31 }, (_, i) => i + 1);
-  const monthOptions = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 100 }, (_, i) => currentYear - i);
+  // For a 12-hour clock:
+  const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  // Minutes from 0 to 59:
+  const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
+  // AM/PM options:
+  const meridiemOptions = ["AM", "PM"];
 
   const handleNext = () => {
-    if (date && month && year) {
+    if (hour && minute && meridiem) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/call5");
+        router.push("/calls/call7");  // Adjust route as needed
       }, 500);
     }
   };
@@ -50,17 +49,19 @@ export default function Call4() {
               Enter Your Details
             </h1>
 
+            {/* Progress Bar */}
             <div className="relative mb-10 md:mb-12 flex items-center">
               <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
-                <div className="h-[2px] bg-[#F7971E] rounded-full w-[42.9%]"></div>
+                {/* Updated to 57.1% for 4 completed steps out of 7 */}
+                <div className="h-[2px] bg-[#F7971E] rounded-full w-[57.1%]"></div>
               </div>
-
               <div className="flex justify-between absolute w-full top-[-6px] left-0 right-0">
                 {[...Array(7)].map((_, index) => (
                   <div
                     key={index}
+                    // Fill first 4 dots; remaining 3 stay gray
                     className={`w-3 h-3 rounded-full ${
-                      index < 3 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
+                      index < 4 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
                     }`}
                   ></div>
                 ))}
@@ -69,53 +70,59 @@ export default function Call4() {
 
             <form>
               <h2 className="text-xl md:text-2xl font-normal text-center text-[#373737] mb-10 md:mb-16">
-                Select Your Birth Date
+                Enter Your Time of Birth?
               </h2>
 
               <div className="mb-10 md:mb-16 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4">
-                {/* Date Dropdown */}
+                {/* Hour Dropdown */}
                 <div className="relative w-full md:w-40">
                   <select
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    value={hour}
+                    onChange={(e) => setHour(e.target.value)}
                     className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
                   >
-                    <option value="" disabled>Date</option>
-                    {dateOptions.map((d) => (
-                      <option key={`date-${d}`} value={d}>
-                        {d}
+                    <option value="" disabled>
+                      Hour
+                    </option>
+                    {hourOptions.map((h) => (
+                      <option key={`hour-${h}`} value={h}>
+                        {h}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Month Dropdown */}
+                {/* Minute Dropdown */}
                 <div className="relative w-full md:w-40">
                   <select
-                    value={month}
-                    onChange={(e) => setMonth(e.target.value)}
+                    value={minute}
+                    onChange={(e) => setMinute(e.target.value)}
                     className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
                   >
-                    <option value="" disabled>Month</option>
-                    {monthOptions.map((m, index) => (
-                      <option key={`month-${index}`} value={m}>
-                        {m}
+                    <option value="" disabled>
+                      Minute
+                    </option>
+                    {minuteOptions.map((m) => (
+                      <option key={`minute-${m}`} value={m}>
+                        {m.toString().padStart(2, "0")}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Year Dropdown */}
+                {/* AM/PM Dropdown */}
                 <div className="relative w-full md:w-40">
                   <select
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
+                    value={meridiem}
+                    onChange={(e) => setMeridiem(e.target.value)}
                     className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
                   >
-                    <option value="" disabled>Year</option>
-                    {yearOptions.map((y) => (
-                      <option key={`year-${y}`} value={y}>
-                        {y}
+                    <option value="" disabled>
+                      AM/PM
+                    </option>
+                    {meridiemOptions.map((mer) => (
+                      <option key={mer} value={mer}>
+                        {mer}
                       </option>
                     ))}
                   </select>
@@ -126,9 +133,9 @@ export default function Call4() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  disabled={!date || !month || !year}
+                  disabled={!hour || !minute || !meridiem}
                   className={`px-8 md:px-12 py-3 text-white font-medium rounded-md transition-all ${
-                    date && month && year
+                    hour && minute && meridiem
                       ? "bg-[#F7971E] hover:bg-[#d99845]"
                       : "bg-gray-400 cursor-not-allowed"
                   }`}

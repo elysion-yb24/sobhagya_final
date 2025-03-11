@@ -35,7 +35,7 @@ const HeroSection: React.FC = () => {
                 }
                 onClick={() => handleNavClick("chat")}
               >
-                <Link href="/call1">
+                <Link href="calls/call1">
                 <div className="flex justify-center mt-2 mb-2">
                   <img
                     src="/Group 13364.png"

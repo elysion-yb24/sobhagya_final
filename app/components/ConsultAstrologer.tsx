@@ -142,7 +142,7 @@ const AstrologerCarousel = () => {
                   <h3 className="font-semibold text-lg text-center">{astrologer.name}</h3>
                   <p className="text-center text-sm text-[#373737] mt-1">{astrologer.expertise}</p>
                   <p className="text-center text-sm text-[#373737] mt-1">{astrologer.experience}</p>
-                  <Link href="/call1" type='button' className="mt-3 bg-[#F7971E] text-black rounded px-1 py-1 text-sm font-medium w-[171px] mx-auto flex justify-center">
+                  <Link href="calls/call1" type='button' className="mt-3 bg-[#F7971E] text-black rounded px-1 py-1 text-sm font-medium w-[171px] mx-auto flex justify-center">
                     OFFER: FREE 1st call
                   </Link>
                 </div>

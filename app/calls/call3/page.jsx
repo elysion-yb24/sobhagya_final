@@ -142,7 +142,7 @@ export default function Call3() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <Link href={gender ? "/call4" : "#"} passHref>
+            <Link href={gender ? "/calls/call4" : "#"} passHref>
               <motion.button
                 type="button"
                 className={`px-8 sm:px-12 py-2 sm:py-3 font-semibold rounded-md focus:outline-none transition-all duration-300 ease-in-out transform ${

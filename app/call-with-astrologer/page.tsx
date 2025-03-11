@@ -71,7 +71,7 @@ const AstrologerCard = ({ astrologer }: { astrologer: Astrologer }) => (
     <p className="text-xs text-gray-500 mt-1">{astrologer.expertise}</p>
     <p className="text-xs text-gray-500 mt-1">Exp: {astrologer.experience}</p>
 
-    <Link href="/call1">
+    <Link href="/calls/call1">
       <span className="mt-3 bg-[#F7971E] text-black text-xs py-2 px-4 rounded font-poppins w-full block text-center hover:bg-[#d99845] transition">
         OFFER: FREE 1st call
       </span>

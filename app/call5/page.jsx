@@ -31,7 +31,7 @@ export default function Call5() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "-100%", opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="min-h-screen flex items-center justify-center"
+          className="min-h-screen flex items-center justify-center px-4 sm:px-8"
         >
           <Head>
             <title>Guidance Form</title>
@@ -39,35 +39,36 @@ export default function Call5() {
             <link rel="icon" href="/favicon.ico" />
           </Head>
 
-          <div className="w-full max-w-6xl p-24 bg-[#fcf4e9]">
-            <h1 className="font-medium text-center text-[#373737] mb-8 text-3xl">
+          <div className="w-full max-w-xl sm:max-w-2xl md:max-w-4xl lg:max-w-6xl bg-[#fcf4e9] p-6 sm:p-12 md:p-24 rounded-lg shadow-md">
+            <h1 className="font-medium text-center text-[#373737] mb-6 sm:mb-8 text-2xl sm:text-3xl">
               Enter Your Details
             </h1>
 
-            <div className="relative mb-12 flex items-center">
-              {/* Extended Progress Bar */}
-              <div className="h-[2px] bg-[#b4b4b4] w-[calc(100%+16px)] mx-[-10px] rounded-full">
+            <div className="relative mb-8 sm:mb-12 flex items-center">
+              {/* Progress Bar */}
+              <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
                 <div className="h-[2px] bg-[#F7971E] rounded-full w-[57.1%]"></div>
               </div>
 
               {/* Progress Dots */}
-              <div className="flex justify-between absolute w-full top-[-6px] -left-1 -right-1">
-                <div className="w-3 h-3 bg-[#F7971E] rounded-full"></div>
-                <div className="w-3 h-3 bg-[#F7971E] rounded-full"></div>
-                <div className="w-3 h-3 bg-[#F7971E] rounded-full"></div>
-                <div className="w-3 h-3 bg-[#F7971E] rounded-full"></div>
-                <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
-                <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
-                <div className="w-3 h-3 bg-[#b4b4b4] rounded-full"></div>
+              <div className="flex justify-between absolute w-full top-[-6px]">
+                {[...Array(7)].map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-3 h-3 rounded-full ${
+                      index < 4 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
+                    }`}
+                  ></div>
+                ))}
               </div>
             </div>
 
             <form>
-              <h2 className="text-3xl font-normal text-center text-[#373737] mb-16">
-                Do you know your time of Birth ?
+              <h2 className="text-2xl sm:text-3xl font-normal text-center text-[#373737] mb-10 sm:mb-16">
+                Do you know your time of Birth?
               </h2>
 
-              <div className="flex justify-center space-x-16 mb-10">
+              <div className="flex flex-wrap justify-center gap-6 sm:gap-16 mb-10">
                 {/* Yes Option */}
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -78,14 +79,16 @@ export default function Call5() {
                     checked={knowBirthTime === "yes"}
                     onChange={() => handleOptionChange("yes")}
                   />
-                  <div className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${
-                    knowBirthTime === "yes" ? "border-[#F7971E]" : "border-gray-400"
-                  }`}>
+                  <div
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center ${
+                      knowBirthTime === "yes" ? "border-[#F7971E]" : "border-gray-400"
+                    }`}
+                  >
                     {knowBirthTime === "yes" && (
                       <div className="w-3 h-3 rounded-full bg-[#F7971E]"></div>
                     )}
                   </div>
-                  <span className="text-xl text-[#373737]">Yes</span>
+                  <span className="text-lg sm:text-xl text-[#373737] ml-2 sm:ml-3">Yes</span>
                 </label>
 
                 {/* No Option */}
@@ -98,20 +101,22 @@ export default function Call5() {
                     checked={knowBirthTime === "no"}
                     onChange={() => handleOptionChange("no")}
                   />
-                  <div className={`w-6 h-6 rounded-full border-2 mr-3 flex items-center justify-center ${
-                    knowBirthTime === "no" ? "border-[#F7971E]" : "border-gray-400"
-                  }`}>
+                  <div
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center ${
+                      knowBirthTime === "no" ? "border-[#F7971E]" : "border-gray-400"
+                    }`}
+                  >
                     {knowBirthTime === "no" && (
                       <div className="w-3 h-3 rounded-full bg-[#F7971E]"></div>
                     )}
                   </div>
-                  <span className="text-xl text-[#373737]">No</span>
+                  <span className="text-lg sm:text-xl text-[#373737] ml-2 sm:ml-3">No</span>
                 </label>
               </div>
 
-              <div className="flex justify-center mb-16">
-                <p className="text-center text-gray-500 max-w-2xl">
-                  Note: Accurate predictions are possible even without birth time—astrology can 
+              <div className="flex justify-center mb-10 sm:mb-16">
+                <p className="text-center text-gray-500 max-w-sm sm:max-w-2xl text-sm sm:text-base">
+                  Note: Accurate predictions are possible even without birth time—astrology can
                   reveal up to 80% of your life's key insights and guidance.
                 </p>
               </div>
@@ -121,7 +126,7 @@ export default function Call5() {
                   type="button"
                   onClick={handleNext}
                   disabled={knowBirthTime === null}
-                  className={`px-12 py-3 text-white font-normal rounded-md transition-all ${
+                  className={`px-6 sm:px-12 py-2 sm:py-3 text-white font-normal rounded-md transition-all ${
                     knowBirthTime !== null ? "bg-[#F7971E] hover:bg-[#d99845]" : "bg-gray-400 cursor-not-allowed"
                   }`}
                 >

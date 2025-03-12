@@ -31,7 +31,7 @@ export default function Call2() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "-100%", opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="min-h-screen flex flex-col items-center justify-center px-4"
+          className="min-h-screen flex items-center justify-center px-4"
         >
           <Head>
             <title>Guidance Form</title>
@@ -39,14 +39,17 @@ export default function Call2() {
             <link rel="icon" href="/favicon.ico" />
           </Head>
 
-          <div className="w-full max-w-lg sm:max-w-xl md:max-w-3xl lg:max-w-6xl p-6 sm:p-12 md:p-16 lg:p-24 bg-[#fcf4e9] rounded-lg shadow-md">
-            <h1 className="font-medium text-center text-[#373737] mb-6 text-2xl sm:text-3xl">
+          {/* Fixed Width & Height */}
+          <div className="w-[1140px] h-[600px] px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-16 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 flex flex-col">
+            {/* Increased font size for "Enter Your Details" */}
+            <h1 className="font-medium text-center text-[#373737] mb-10 text-2xl sm:text-3xl md:text-4xl">
               Enter Your Details
             </h1>
 
-            {/* Progress Bar */}
-            <div className="relative mb-8 flex items-center">
+            {/* Progress Bar with more spacing */}
+            <div className="relative mb-10 flex items-center">
               <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
+                {/* 2/7 steps complete */}
                 <div className="h-[2px] bg-[#F7971E] rounded-full w-2/7"></div>
               </div>
               <div className="absolute w-full top-[-6px] flex justify-between">
@@ -61,30 +64,33 @@ export default function Call2() {
               </div>
             </div>
 
-            <form>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-center text-[#373737] mb-2">
+            <form className="flex flex-col flex-grow items-center justify-center">
+              {/* Smaller "Hey there" text */}
+              <h2 className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-2">
                 Hey there,
               </h2>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-center text-[#373737] mb-6">
+              {/* "What is your name?" remains larger */}
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-normal text-center text-[#373737] mb-8">
                 What is your name?
               </h2>
 
-              <div className="mb-8 flex justify-center">
+              <div className="mb-12 flex justify-center">
                 <input
                   type="text"
                   value={name}
                   onChange={handleNameChange}
-                  className="w-full sm:w-[400px] md:w-[500px] lg:w-[713px] h-[50px] sm:h-[60px] md:h-[83px] px-4 py-2 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#F7971E] focus:outline-none"
+                  className="w-full sm:w-[400px] md:w-[500px] lg:w-[713px] h-[40px] sm:h-[50px] md:h-[60px] px-4 py-1 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#F7971E] focus:outline-none"
                   placeholder="Enter your full name"
                 />
               </div>
 
               <div className="flex justify-center">
+                {/* Updated button: wider width & consistent styling */}
                 <button
                   type="button"
                   onClick={handleNext}
                   disabled={!name.trim()}
-                  className={`px-8 sm:px-12 py-3 text-white font-medium rounded-md transition-all ${
+                  className={`w-64 px-12 py-3 text-white font-medium rounded-md transition-all ${
                     name.trim()
                       ? "bg-[#F7971D] hover:bg-[#d99845]"
                       : "bg-gray-400 cursor-not-allowed"

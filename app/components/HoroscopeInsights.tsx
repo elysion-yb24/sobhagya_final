@@ -87,4 +87,4 @@ const HoroscopeInsights: React.FC = () => {
   );
 };
 
-export default HoroscopeInsights;
+export default HoroscopeInsights; 

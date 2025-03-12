@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Eagle_Lake } from "next/font/google";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import PhoneVerificationModal from "../login/page"; 
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 
@@ -16,6 +17,7 @@ const Header: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [textIndex, setTextIndex] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false); 
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -36,6 +38,17 @@ const Header: React.FC = () => {
     window.addEventListener("scroll", updateScrollProgress);
     return () => window.removeEventListener("scroll", updateScrollProgress);
   }, []);
+
+  // Function to open login modal
+  const openLoginModal = (e: { preventDefault: () => void; }) => {
+    e.preventDefault();
+    setIsLoginModalOpen(true);
+  };
+
+  // Function to close login modal
+  const closeLoginModal = () => {
+    setIsLoginModalOpen(false);
+  };
 
   return (
     <>
@@ -86,12 +99,13 @@ const Header: React.FC = () => {
                 +91 98765 43201
               </a>
             </div>
-            <Link
-              href="/login"
-              className="text-[#F7971D] hover:text-orange-600 text-[15px] leading-[30px] font-semibold text-center font-poppins pr-20"
+            <a
+              href="#"
+              onClick={openLoginModal}
+              className="text-[#F7971D] hover:text-orange-600 text-[15px] leading-[30px] font-semibold text-center font-poppins pr-20 cursor-pointer"
             >
               Signup/Login
-            </Link>
+            </a>
           </div>
 
           {/* Bottom Row: Navigation Links */}
@@ -167,6 +181,18 @@ const Header: React.FC = () => {
             <X size={24} />
           </button>
 
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsOpen(false);
+              setIsLoginModalOpen(true);
+            }}
+            className="hover:text-orange-500 py-2"
+          >
+            Signup/Login
+          </a>
+
           {["About Us", "Services", "Live Sessions", "Call with Astrologer", "Shop", "Blog", "Contact Us"].map((item, idx) => (
             <Link key={idx} href={`/${item.toLowerCase().replace(/\s+/g, "-")}`} className="hover:text-orange-500 py-2" onClick={() => setIsOpen(false)}>
               {item}
@@ -176,6 +202,11 @@ const Header: React.FC = () => {
           <div className="hover:text-orange-500 py-2">EN ▼</div>
         </div>
       )}
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal 
+        isOpen={isLoginModalOpen}
+        onClose={closeLoginModal} onAuthenticated={undefined}      />
     </>
   );
 };

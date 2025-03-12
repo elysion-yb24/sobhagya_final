@@ -1,0 +1,254 @@
+"use client";
+import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
+
+const countries = [
+  { code: 'IN', name: 'India', dial_code: '+91', flag: '/flags/in.png' },
+  { code: 'US', name: 'United States', dial_code: '+1', flag: '/flags/us.png' },
+  // Uncomment these for more countries
+  // { code: 'CA', name: 'Canada', dial_code: '+1', flag: '/flags/ca.png' },
+  // { code: 'AU', name: 'Australia', dial_code: '+61', flag: '/flags/au.png' },
+  // { code: 'DE', name: 'Germany', dial_code: '+49', flag: '/flags/de.png' },
+  // { code: 'FR', name: 'France', dial_code: '+33', flag: '/flags/fr.png' },
+  // { code: 'IT', name: 'Italy', dial_code: '+39', flag: '/flags/it.png' },
+  // { code: 'JP', name: 'Japan', dial_code: '+81', flag: '/flags/jp.png' },
+  // { code: 'CN', name: 'China', dial_code: '+86', flag: '/flags/cn.png' },
+  // { code: 'BR', name: 'Brazil', dial_code: '+55', flag: '/flags/br.png' },
+  // { code: 'RU', name: 'Russia', dial_code: '+7', flag: '/flags/ru.png' },
+  // { code: 'SA', name: 'Saudi Arabia', dial_code: '+966', flag: '/flags/sa.png' },
+  // { code: 'ZA', name: 'South Africa', dial_code: '+27', flag: '/flags/za.png' },
+  // { code: 'MX', name: 'Mexico', dial_code: '+52', flag: '/flags/mx.png' },
+  // { code: 'SG', name: 'Singapore', dial_code: '+65', flag: '/flags/sg.png' },
+  // { code: 'NZ', name: 'New Zealand', dial_code: '+64', flag: '/flags/nz.png' },
+  // { code: 'AE', name: 'United Arab Emirates', dial_code: '+971', flag: '/flags/ae.png' },
+  // { code: 'KR', name: 'South Korea', dial_code: '+82', flag: '/flags/kr.png' },
+  // { code: 'ES', name: 'Spain', dial_code: '+34', flag: '/flags/es.png' },
+];
+
+export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated }) {
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(countries.find(c => c.code === 'IN'));
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentScreen, setCurrentScreen] = useState('phone-input'); // 'phone-input' or 'otp-verification'
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const dropdownRef = useRef(null);
+  
+  const filteredCountries = searchTerm 
+    ? countries.filter(country => 
+        country.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        country.dial_code.includes(searchTerm))
+    : countries;
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      
+      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCurrentScreen('otp-verification');
+      } else {
+        setError(data.message || 'Failed to send OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setError('An error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = (userData) => {
+    
+    if (onAuthenticated) {
+      onAuthenticated(userData);
+    }
+    onClose();
+  };
+
+  const selectCountry = (country) => {
+    setSelectedCountry(country);
+    setIsDropdownOpen(false);
+    setSearchTerm('');
+  };
+  
+  if (!isOpen) return null;
+
+  // Render OTP verification screen
+  if (currentScreen === 'otp-verification') {
+    return (
+      <OtpVerificationScreen 
+        phoneNumber={phoneNumber}
+        countryCode={selectedCountry.dial_code}
+        onVerify={handleVerifyOtp}
+        onResend={() => console.log('OTP resent')}
+        onBack={() => setCurrentScreen('phone-input')}
+      />
+    );
+  }
+
+  // Render phone input screen
+  return (
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-2xl overflow-hidden relative">
+        {/* Close button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-700 hover:text-gray-900 z-10"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        
+        {/* Header */}
+        <div className="bg-[#F7971D] py-4 text-center">
+          <h1 className="text-white text-3xl font-medium" style={{
+            fontFamily: 'Poppins',
+            letterSpacing: '1%',
+          }}>Continue With Phone</h1>
+        </div>
+        
+        {/* Form Content */}
+        <div className="px-8 py-10">
+          <p className="text-center text-[#373737] mb-10 font-normal text-xl" style={{
+            fontFamily: 'Poppins',
+          }}>
+            You'll receive a 4-digit code to verify your identity
+          </p>
+          
+          <form onSubmit={handleSubmit}>
+            <label className="block text-center text-[#373737] font-normal mb-5 text-xl" style={{
+                fontFamily: 'Poppins',
+            }}>
+              Enter Your phone Number
+            </label>
+            
+            {error && (
+              <div className="mb-4 text-red-500 text-center">{error}</div>
+            )}
+            
+            <div className="flex justify-center gap-x-2 mb-8">
+              {/* Country Code Selector */}
+              <div className="relative" ref={dropdownRef}>
+                <div 
+                  className="flex items-center justify-between bg-[#F2F2F2] px-3 py-2 rounded-l-md border border-gray-300 h-12 cursor-pointer w-24 focus:outline-orange-600"
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                >
+                  <div className="flex items-center justify-center w-full">
+                    <span className="text-sm mr-1">{selectedCountry.dial_code}</span>
+                    <Image 
+                      src={selectedCountry.flag} 
+                      alt={selectedCountry.name} 
+                      width={18} 
+                      height={13}
+                      className="ml-1"
+                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Dropdown */}
+                {isDropdownOpen && (
+                  <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                    {/* Search input */}
+                    <div className="sticky top-0 bg-white p-2 border-b">
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        placeholder="Search country or code"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    
+                    {filteredCountries.map((country) => (
+                      <div 
+                        key={country.code}
+                        className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => selectCountry(country)}
+                      >
+                        <Image 
+                          src={country.flag} 
+                          alt={country.name} 
+                          width={24} 
+                          height={16}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">{country.name}</span>
+                        <span className="ml-auto text-gray-500 text-sm">{country.dial_code}</span>
+                      </div>
+                    ))}
+                    
+                    {filteredCountries.length === 0 && (
+                      <div className="p-3 text-center text-gray-500">No results found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Phone Number Input */}
+              <input
+                type="tel"
+                placeholder="Enter Your Phone Number"
+                className="w-64 px-4 py-2 border border-gray-300 bg-[#F2F2F2] rounded-r-md h-12 focus:outline-[#F7971D]"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                required
+              />
+            </div>
+            
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || !phoneNumber}
+              className={`w-full max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-3 px-6 rounded-md hover:bg-orange-500 transition-colors font-medium ${
+                (isLoading || !phoneNumber) ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoading ? 'Sending...' : 'Send OTP on this Phone number'}
+            </button>
+          </form>
+          
+          {/* Footer Text */}
+          <p className="text-center text-sm text-gray-600 mt-6">
+            You agree to our 
+            <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1">Privacy Policy</a>
+            <span className="mx-1">&</span>
+            <a href="/terms" className="text-orange-400 hover:underline">Terms of Service</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

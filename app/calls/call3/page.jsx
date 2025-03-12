@@ -27,13 +27,14 @@ export default function Call3() {
       </Head>
 
       <motion.div
-        className="w-full max-w-6xl p-10 sm:p-16 lg:p-24 bg-[#fcf4e9] rounded-lg"
+        className="w-[1140px] h-[600px] px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-14 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 flex flex-col"
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
       >
+        {/* Increased font size for "Enter Your Details" */}
         <motion.h1
-          className="font-medium text-center text-[#373737] mb-6 sm:mb-8 text-2xl sm:text-3xl md:text-4xl"
+          className="font-medium text-center text-[#373737] mb-10 text-2xl sm:text-3xl md:text-4xl"
           style={{
             fontFamily: "Poppins",
             lineHeight: "29px",
@@ -46,23 +47,23 @@ export default function Call3() {
           Enter Your Details
         </motion.h1>
 
-        {/* Progress Bar */}
+        {/* Progress Bar with adjusted spacing */}
         <motion.div
-          className="relative mb-16 sm:mb-20 flex items-center"
+          className="relative mb-10 flex items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
-          <div className="h-[2px] bg-[#b4b4b4] w-full mx-[-8px] rounded-full relative">
+          <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
             <motion.div
               className="h-[2px] bg-[#F7971E] rounded-full"
               initial={{ width: "0%" }}
-              animate={{ width: "14.28%" }}
+              animate={{ width: "28.56%" }} 
               transition={{ duration: 1.2, ease: "easeOut" }}
             />
           </div>
 
-          <div className="flex justify-between absolute w-full top-[-6px] -left-1 -right-1">
+          <div className="flex justify-between absolute w-full top-[-6px]">
             {[...Array(7)].map((_, i) => (
               <div
                 key={i}
@@ -74,9 +75,9 @@ export default function Call3() {
           </div>
         </motion.div>
 
-        <form>
+        <form className="flex flex-col flex-grow items-center justify-center">
           <motion.h2
-            className="text-xl sm:text-2xl md:text-3xl font-normal text-center text-[#373737] mb-10 sm:mb-16"
+            className="text-2xl sm:text-3xl md:text-4xl font-normal text-center text-[#373737] mb-8"
             style={{ fontFamily: "Poppins" }}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -85,8 +86,8 @@ export default function Call3() {
             Choose Your Gender
           </motion.h2>
 
-          {/* Gender Selection */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-16 justify-center items-center text-center mb-14">
+          {/* Gender Selection with increased horizontal gap */}
+          <div className="grid grid-cols-3 gap-20 justify-center items-center text-center mb-10">
             {["female", "male", "other"].map((type, index) => (
               <motion.div
                 key={type}
@@ -96,7 +97,7 @@ export default function Call3() {
                 transition={{ duration: 0.6, delay: index * 0.2 }}
               >
                 <div
-                  className="mb-4 cursor-pointer transition-transform duration-300 hover:scale-110"
+                  className="mb-3 cursor-pointer transition-transform duration-300 hover:scale-105"
                   onClick={() => handleGenderChange(type)}
                 >
                   <Image
@@ -114,16 +115,16 @@ export default function Call3() {
                         : "/Group 13400.png"
                     }
                     alt={type}
-                    width={80}
-                    height={80}
-                    className="max-w-[60px] sm:max-w-[80px] h-auto"
+                    width={50}
+                    height={50}
+                    className="max-w-[50px] sm:max-w-[70px] h-auto"
                   />
                 </div>
                 <div className="text-lg font-normal text-[#373737] capitalize">
                   {type}
                 </div>
                 <motion.div
-                  className={`w-6 h-6 rounded-full border-2 border-[#373737] transition-all duration-300 ease-in-out ${
+                  className={`w-5 h-5 rounded-full border-2 border-[#373737] transition-all duration-300 ease-in-out ${
                     gender === type
                       ? "bg-[#e8a757] border-[#e8a757] scale-110"
                       : ""
@@ -135,7 +136,7 @@ export default function Call3() {
             ))}
           </div>
 
-          {/* Next Button */}
+          {/* Next Button with updated width */}
           <motion.div
             className="flex justify-center"
             initial={{ opacity: 0, y: 10 }}
@@ -145,9 +146,9 @@ export default function Call3() {
             <Link href={gender ? "/calls/call4" : "#"} passHref>
               <motion.button
                 type="button"
-                className={`px-8 sm:px-12 py-2 sm:py-3 font-semibold rounded-md focus:outline-none transition-all duration-300 ease-in-out transform ${
+                className={`w-64 px-12 py-3 text-white font-medium rounded-md focus:outline-none transition-all duration-300 ease-in-out transform ${
                   gender
-                    ? "bg-[#F7971D] text-white hover:bg-[#d99845] hover:scale-105"
+                    ? "bg-[#F7971D] hover:bg-[#d99845] hover:scale-105"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed opacity-50"
                 }`}
                 disabled={!gender}

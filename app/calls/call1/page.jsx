@@ -31,7 +31,7 @@ export default function Call1() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "-100%", opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="min-h-screen flex items-center justify-center px-4 sm:px-8"
+          className="min-h-screen flex items-center justify-center px-4"
         >
           <Head>
             <title>Guidance Form</title>
@@ -39,15 +39,17 @@ export default function Call1() {
             <link rel="icon" href="/favicon.ico" />
           </Head>
 
-          <div className="w-full max-w-3xl md:max-w-5xl lg:max-w-6xl px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-16 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200">
-            <h1 className="font-medium text-center text-[#373737] mb-6 sm:mb-8 text-2xl sm:text-3xl md:text-4xl">
+          {/* Fixed Width & Height (1140px width, 600px height) */}
+          <div className="w-[1140px] h-[600px] px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-16 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 flex flex-col">
+            {/* Title */}
+            <h1 className="font-medium text-center text-[#373737] mb-10 text-2xl sm:text-3xl md:text-4xl">
               Enter Your Details
             </h1>
 
             {/* Progress Bar */}
             <div className="relative mb-10 flex items-center">
               <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
-                <div className="h-[2px] bg-[#F7971E] rounded-full w-1/7"></div>
+                <div className="h-[2px] bg-[#F7971E] rounded-full w-[14.28%]"></div>
               </div>
 
               <div className="flex justify-between absolute w-full top-[-6px]">
@@ -62,47 +64,65 @@ export default function Call1() {
               </div>
             </div>
 
-            <form>
-              <h2 className="text-lg sm:text-xl md:text-2xl font-medium text-center text-[#373737] mb-6">
+            <form className="flex flex-col flex-grow items-center justify-center">
+              <h2 className="text-2xl sm:text-3xl font-normal text-center text-[#373737] mb-14">
                 Who Are You Seeking Guidance For?
               </h2>
 
-              <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-12 mb-8">
-                <label className="flex items-center cursor-pointer text-lg sm:text-xl">
+              {/* Radio Buttons (Styled like Call5) */}
+              <div className="flex flex-wrap justify-center gap-20 mb-14">
+                {/* Myself Option */}
+                <label className="flex items-center cursor-pointer">
                   <input
                     type="radio"
-                    className="h-5 w-5 accent-[#F7971E]"
+                    className="hidden"
                     name="guidance"
                     value="myself"
                     checked={selectedOption === "myself"}
                     onChange={() => handleOptionChange("myself")}
                   />
-                  <span className="ml-2 text-base font-medium text-[#373737]">
-                    Myself
-                  </span>
+                  <div
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                      selectedOption === "myself" ? "border-[#F7971E] scale-110" : "border-gray-400"
+                    }`}
+                  >
+                    {selectedOption === "myself" && (
+                      <div className="w-3.5 h-3.5 rounded-full bg-[#F7971E]"></div>
+                    )}
+                  </div>
+                  <span className="text-lg sm:text-xl text-[#373737] ml-3 sm:ml-4">Myself</span>
                 </label>
 
-                <label className="flex items-center cursor-pointer text-lg sm:text-xl">
+                {/* Someone Else Option */}
+                <label className="flex items-center cursor-pointer">
                   <input
                     type="radio"
-                    className="h-5 w-5 accent-[#F7971E]"
+                    className="hidden"
                     name="guidance"
                     value="someone_else"
                     checked={selectedOption === "someone_else"}
                     onChange={() => handleOptionChange("someone_else")}
                   />
-                  <span className="ml-2 text-base font-medium text-[#373737]">
-                    Someone else
-                  </span>
+                  <div
+                    className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center transition-all ${
+                      selectedOption === "someone_else" ? "border-[#F7971E] scale-110" : "border-gray-400"
+                    }`}
+                  >
+                    {selectedOption === "someone_else" && (
+                      <div className="w-3.5 h-3.5 rounded-full bg-[#F7971E]"></div>
+                    )}
+                  </div>
+                  <span className="text-lg sm:text-xl text-[#373737] ml-3 sm:ml-4">Someone Else</span>
                 </label>
               </div>
 
+              {/* Next Button */}
               <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={handleNext}
                   disabled={!selectedOption}
-                  className={`px-6 sm:px-8 py-2 sm:py-3 text-white font-medium rounded-md transition-all ${
+                  className={`w-64 px-12 py-3 text-white font-medium rounded-md transition-all ${
                     selectedOption
                       ? "bg-[#F7971E] hover:bg-[#e7891a]"
                       : "bg-gray-400 cursor-not-allowed"

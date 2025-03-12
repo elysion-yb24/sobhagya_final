@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
@@ -8,26 +8,56 @@ import { useRouter } from "next/navigation";
 export default function Call7() {
   const [location, setLocation] = useState("");
   const [isExiting, setIsExiting] = useState(false);
+  const [locationOptions, setLocationOptions] = useState([]);
+  const [filteredOptions, setFilteredOptions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
   const router = useRouter();
 
-  // Example location options – you can customize or dynamically fetch them
-  const locationOptions = [
-    "Enter Your City",
-    "Gurugram, Haryana, India",
-    "Delhi, India",
-    "Mumbai, India",
-    "Bangalore, India",
-    "Chennai, India",
-    "Kolkata, India",
-    "Other"
-  ];
+  // Fetching Indian cities dynamically from an API
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await fetch("https://countriesnow.space/api/v0.1/countries/population/cities");
+        const data = await response.json();
+        if (data && data.data) {
+          const indianCities = data.data
+            .filter((city) => city.country === "India")
+            .map((city) => city.city);
+          setLocationOptions(indianCities);
+          setFilteredOptions(indianCities);
+        }
+      } catch (error) {
+        console.error("Error fetching location data:", error);
+      }
+    };
+    fetchLocations();
+  }, []);
+
+  // Filter locations dynamically based on user input
+  const handleSearch = (e) => {
+    const searchQuery = e.target.value.toLowerCase();
+    setLocation(e.target.value);
+    if (searchQuery.length > 0) {
+      setShowDropdown(true);
+      const filtered = locationOptions.filter((city) =>
+        city.toLowerCase().includes(searchQuery)
+      );
+      setFilteredOptions(filtered);
+    } else {
+      setShowDropdown(false);
+    }
+  };
+
+  // Select a city and close the dropdown
+  const handleSelectCity = (city) => {
+    setLocation(city);
+    setShowDropdown(false);
+  };
 
   const handleNext = () => {
-    // If location is selected, proceed
     if (location) {
       setIsExiting(true);
       setTimeout(() => {
-        // Update this route to the next step or final page as required
         router.push("/calls/call8");
       }, 500);
     }
@@ -49,18 +79,20 @@ export default function Call7() {
             <link rel="icon" href="/favicon.ico" />
           </Head>
 
-          <div className="w-full max-w-lg md:max-w-3xl lg:max-w-6xl p-6 md:p-12 lg:p-24 bg-[#fcf4e9] rounded-lg shadow-lg">
-            <h1 className="font-medium text-center text-[#373737] mb-6 md:mb-8 text-2xl md:text-3xl">
+          {/* Fixed Width & Height */}
+          <div className="w-[1140px] h-[600px] px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-14 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 flex flex-col">
+            {/* Title */}
+            <h1 className="font-medium text-center text-[#373737] mb-10 text-2xl sm:text-3xl md:text-4xl">
               Enter Your Details
             </h1>
 
-            {/* Progress Bar */}
-            <div className="relative mb-10 md:mb-12 flex items-center">
+            {/* Progress Bar (5/7 dots filled) */}
+            <div className="relative mb-10 flex items-center">
               <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
-                {/* 5 out of 7 = 71.4% */}
                 <div className="h-[2px] bg-[#F7971E] rounded-full w-[71.4%]"></div>
               </div>
-              <div className="flex justify-between absolute w-full top-[-6px] left-0 right-0">
+
+              <div className="flex justify-between absolute w-full top-[-6px]">
                 {[...Array(7)].map((_, index) => (
                   <div
                     key={index}
@@ -72,34 +104,43 @@ export default function Call7() {
               </div>
             </div>
 
-            <form>
-              <h2 className="text-xl md:text-2xl font-normal text-center text-[#373737] mb-10 md:mb-16">
+            <form className="flex flex-col flex-grow items-center justify-center">
+              <h2 className="text-2xl sm:text-3xl font-normal text-center text-[#373737] mb-8">
                 Where were you Born?
               </h2>
 
-              <div className="mb-10 md:mb-16 flex justify-center">
-                {/* Single Dropdown for location */}
-                <div className="relative w-full md:w-96">
-                  <select
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
-                  >
-                    {locationOptions.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
+              <div className="mb-10 flex justify-center relative w-full md:w-96">
+                {/* Searchable Location Input */}
+                <input
+                  type="text"
+                  value={location}
+                  onChange={handleSearch}
+                  placeholder="Type your city name..."
+                  className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
+                />
+                {/* Dropdown Results (Appears Only When Typing) */}
+                {showDropdown && filteredOptions.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-lg shadow-md mt-1 max-h-52 overflow-y-auto">
+                    {filteredOptions.map((city, index) => (
+                      <div
+                        key={index}
+                        className="px-4 py-2 cursor-pointer hover:bg-[#F7971E] hover:text-white transition-all"
+                        onClick={() => handleSelectCity(city)}
+                      >
+                        {city}
+                      </div>
                     ))}
-                  </select>
-                </div>
+                  </div>
+                )}
               </div>
 
+              {/* Next Button */}
               <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={handleNext}
                   disabled={!location}
-                  className={`px-8 md:px-12 py-3 text-white font-medium rounded-md transition-all ${
+                  className={`w-64 px-12 py-3 text-white font-medium rounded-md transition-all ${
                     location
                       ? "bg-[#F7971E] hover:bg-[#d99845]"
                       : "bg-gray-400 cursor-not-allowed"

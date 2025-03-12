@@ -12,7 +12,7 @@ export default function Call6() {
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
 
-  // For a 12-hour clock:
+  // 12-hour format hours:
   const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
   // Minutes from 0 to 59:
   const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
@@ -23,7 +23,7 @@ export default function Call6() {
     if (hour && minute && meridiem) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/calls/call7");  // Adjust route as needed
+        router.push("/calls/call7");
       }, 500);
     }
   };
@@ -44,22 +44,23 @@ export default function Call6() {
             <link rel="icon" href="/favicon.ico" />
           </Head>
 
-          <div className="w-full max-w-lg md:max-w-3xl lg:max-w-6xl p-6 md:p-12 lg:p-24 bg-[#fcf4e9] rounded-lg shadow-lg">
-            <h1 className="font-medium text-center text-[#373737] mb-6 md:mb-8 text-2xl md:text-3xl">
+          {/* Fixed Width & Height */}
+          <div className="w-[1140px] h-[600px] px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-14 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 flex flex-col">
+            {/* Title */}
+            <h1 className="font-medium text-center text-[#373737] mb-10 text-3xl sm:text-4xl md:text-5xl">
               Enter Your Details
             </h1>
 
-            {/* Progress Bar */}
-            <div className="relative mb-10 md:mb-12 flex items-center">
+            {/* Progress Bar (4/7 dots filled) */}
+            <div className="relative mb-10 flex items-center">
               <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
-                {/* Updated to 57.1% for 4 completed steps out of 7 */}
                 <div className="h-[2px] bg-[#F7971E] rounded-full w-[57.1%]"></div>
               </div>
-              <div className="flex justify-between absolute w-full top-[-6px] left-0 right-0">
+
+              <div className="flex justify-between absolute w-full top-[-6px]">
                 {[...Array(7)].map((_, index) => (
                   <div
                     key={index}
-                    // Fill first 4 dots; remaining 3 stay gray
                     className={`w-3 h-3 rounded-full ${
                       index < 4 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
                     }`}
@@ -68,18 +69,19 @@ export default function Call6() {
               </div>
             </div>
 
-            <form>
-              <h2 className="text-xl md:text-2xl font-normal text-center text-[#373737] mb-10 md:mb-16">
-                Enter Your Time of Birth?
+            <form className="flex flex-col flex-grow items-center justify-center">
+              <h2 className="text-2xl sm:text-3xl font-normal text-center text-[#373737] mb-12">
+                Enter Your Time of Birth
               </h2>
 
-              <div className="mb-10 md:mb-16 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-4">
+              {/* Time Selection (Hour, Minute, AM/PM) */}
+              <div className="mb-14 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-8">
                 {/* Hour Dropdown */}
-                <div className="relative w-full md:w-40">
+                <div className="relative w-full md:w-48">
                   <select
                     value={hour}
                     onChange={(e) => setHour(e.target.value)}
-                    className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
+                    className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
                   >
                     <option value="" disabled>
                       Hour
@@ -93,11 +95,11 @@ export default function Call6() {
                 </div>
 
                 {/* Minute Dropdown */}
-                <div className="relative w-full md:w-40">
+                <div className="relative w-full md:w-48">
                   <select
                     value={minute}
                     onChange={(e) => setMinute(e.target.value)}
-                    className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
+                    className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
                   >
                     <option value="" disabled>
                       Minute
@@ -111,11 +113,11 @@ export default function Call6() {
                 </div>
 
                 {/* AM/PM Dropdown */}
-                <div className="relative w-full md:w-40">
+                <div className="relative w-full md:w-48">
                   <select
                     value={meridiem}
                     onChange={(e) => setMeridiem(e.target.value)}
-                    className="w-full h-12 md:h-14 px-4 py-2 bg-white rounded-lg border cursor-pointer focus:outline-none"
+                    className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
                   >
                     <option value="" disabled>
                       AM/PM
@@ -129,12 +131,13 @@ export default function Call6() {
                 </div>
               </div>
 
+              {/* Next Button */}
               <div className="flex justify-center">
                 <button
                   type="button"
                   onClick={handleNext}
                   disabled={!hour || !minute || !meridiem}
-                  className={`px-8 md:px-12 py-3 text-white font-medium rounded-md transition-all ${
+                  className={`w-64 px-12 py-3 text-white font-medium rounded-md transition-all ${
                     hour && minute && meridiem
                       ? "bg-[#F7971E] hover:bg-[#d99845]"
                       : "bg-gray-400 cursor-not-allowed"

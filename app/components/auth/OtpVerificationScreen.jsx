@@ -1,13 +1,14 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function OtpVerificationScreen({ phoneNumber, countryCode, onVerify, onResend, onBack }) {
+export default function OtpVerificationScreen({ phoneNumber, countryCode, onVerify, onResend, onBack, userData }) {
+  const router = useRouter(); 
   const [otp, setOtp] = useState(['', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(22);
   const [isResending, setIsResending] = useState(false);
-  const [verificationStatus, setVerificationStatus] = useState(null); // 'success', 'error', null
+  const [verificationStatus, setVerificationStatus] = useState(null); 
 
- 
   useEffect(() => {
     if (timeLeft > 0) {
       const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
@@ -15,10 +16,8 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
     }
   }, [timeLeft]);
 
-  
   const handleChange = (index, value) => {
     if (value.length > 1) {
-      
       const digits = value.split('').slice(0, 4);
       const newOtp = [...otp];
       
@@ -30,31 +29,25 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       
       setOtp(newOtp);
       
-      
       const nextIndex = Math.min(index + digits.length, 3);
       document.getElementById(`otp-input-${nextIndex}`).focus();
     } else {
-      
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
       
-     
       if (value && index < 3) {
         document.getElementById(`otp-input-${index + 1}`).focus();
       }
     }
   };
 
-  
   const handleKeyDown = (index, e) => {
-   
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
       document.getElementById(`otp-input-${index - 1}`).focus();
     }
   };
 
- 
   const handleVerify = async () => {
     const otpValue = otp.join('');
     if (otpValue.length !== 4) {
@@ -63,7 +56,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
     }
     
     try {
-      
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/verify-otp', {
         method: 'POST',
         headers: {
@@ -80,10 +72,26 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       
       if (response.ok) {
         setVerificationStatus('success');
-        onVerify(data); 
+        
+        
+        const userDetails = {
+          phoneNumber,
+          countryCode,
+          ...userData, 
+          authToken: data.token, 
+          timestamp: new Date().getTime() 
+        };
+        
+        
+        localStorage.setItem('userDetails', JSON.stringify(userDetails));
+        
+        
+        onVerify(data);
+        
+        
+        router.push('/astrologers');
       } else {
         setVerificationStatus('error');
-        
       }
     } catch (error) {
       console.error('Verification error:', error);
@@ -91,12 +99,10 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
     }
   };
 
-
   const handleResend = async () => {
     setIsResending(true);
     
     try {
-     
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
         method: 'POST',
         headers: {
@@ -108,13 +114,11 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       });
       
       if (response.ok) {
-        
         setOtp(['', '', '', '']);
         setTimeLeft(22);
         setVerificationStatus(null);
         onResend(); 
       } else {
-        
         console.error('Error resending OTP');
       }
     } catch (error) {
@@ -170,7 +174,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
                 id={`otp-input-${index}`}
                 type="text"
                 inputMode="numeric"
-                maxLength="4" // Allow paste of all 4 digits
+                maxLength="4" 
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ''))}
                 onKeyDown={(e) => handleKeyDown(index, e)}

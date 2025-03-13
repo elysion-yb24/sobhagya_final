@@ -12,11 +12,11 @@ export default function Call6() {
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
 
-  // 12-hour format hours:
+  
   const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
-  // Minutes from 0 to 59:
+ 
   const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
-  // AM/PM options:
+ 
   const meridiemOptions = ["AM", "PM"];
 
   const handleNext = () => {

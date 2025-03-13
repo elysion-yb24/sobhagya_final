@@ -10,7 +10,7 @@ export default function Call8() {
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
 
-  // Language options
+
   const languageOptions = [
     "Hindi",
     "English",

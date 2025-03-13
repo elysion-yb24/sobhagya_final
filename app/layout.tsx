@@ -24,7 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={<Loading />}>
           <Header />
           <ClientLayout>
-            <main>{children}</main>
+            <main className="min-h-screen">{children}</main>
           </ClientLayout>
 
          <Footer />

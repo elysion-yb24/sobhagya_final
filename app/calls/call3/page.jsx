@@ -27,14 +27,21 @@ export default function Call3() {
       </Head>
 
       <motion.div
-        className="w-[1140px] h-[600px] px-6 sm:px-8 md:px-16 lg:px-36 py-10 sm:py-14 bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 flex flex-col"
+        className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-6xl 
+                         h-auto md:h-auto lg:h-auto
+                         px-4 sm:px-6 md:px-8 lg:px-16 
+                         py-6 sm:py-8 md:py-10
+                         bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 
+                         flex flex-col"
         initial={{ scale: 0.9 }}
         animate={{ scale: 1 }}
         transition={{ duration: 0.6, ease: "easeInOut" }}
       >
         {/* Increased font size for "Enter Your Details" */}
         <motion.h1
-          className="font-medium text-center text-[#373737] mb-10 text-2xl sm:text-3xl md:text-4xl"
+          className="font-medium text-center text-[#373737] 
+                          mb-6 sm:mb-8 md:mb-10 
+                          text-xl sm:text-2xl md:text-3xl lg:text-4xl"
           style={{
             fontFamily: "Poppins",
             lineHeight: "29px",

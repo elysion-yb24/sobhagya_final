@@ -8,13 +8,11 @@ import { useRouter } from "next/navigation";
 import PhoneVerificationModal from "../../login/page"; 
 
 export default function Call9() {
-  
   const [selectedChallenges, setSelectedChallenges] = useState([]);
   const [isExiting, setIsExiting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
-  
   const challengeOptions = [
     "Love & Marriage",
     "Career & Business",
@@ -24,14 +22,11 @@ export default function Call9() {
     "Health Concerns",
   ];
 
-  
   const handleToggleChallenge = (challenge) => {
     setSelectedChallenges((prevSelected) => {
       if (prevSelected.includes(challenge)) {
-       
         return prevSelected.filter((item) => item !== challenge);
       } else {
-       
         return [...prevSelected, challenge];
       }
     });
@@ -39,7 +34,6 @@ export default function Call9() {
 
   const handleNext = () => {
     if (selectedChallenges.length > 0) {
-      
       setIsModalOpen(true);
     }
   };
@@ -49,7 +43,6 @@ export default function Call9() {
   };
 
   const handleModalSubmit = () => {
-   
     setIsExiting(true);
     setTimeout(() => {
       router.push("calls/call9");
@@ -65,49 +58,62 @@ export default function Call9() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "-100%", opacity: 0 }}
             transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="min-h-screen flex items-center justify-center px-4"
+            className="min-h-screen w-full flex items-center justify-center p-2 sm:p-4"
           >
             <Head>
               <title>Guidance Form</title>
               <meta name="description" content="Guidance request form" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <link rel="icon" href="/favicon.ico" />
             </Head>
 
-            <div className="w-full max-w-lg md:max-w-3xl lg:max-w-6xl p-6 md:p-12 lg:p-24 bg-[#fcf4e9] rounded-lg shadow-lg">
-              <h1 className="font-medium text-center text-[#373737] mb-6 md:mb-8 text-2xl md:text-3xl">
-                Enter Your Details
-              </h1>
+            <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-6xl 
+                         h-auto md:h-auto lg:h-auto
+                         px-4 sm:px-6 md:px-8 lg:px-16 
+                         py-6 sm:py-8 md:py-10
+                         bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 
+                         flex flex-col">
+            {/* Title */}
+            <h1 className="font-medium text-center text-[#373737] 
+                          mb-6 sm:mb-8 md:mb-10 
+                          text-xl sm:text-2xl md:text-3xl lg:text-4xl">
+              Enter Your Details
+            </h1>
 
               {/* Progress Bar */}
-              <div className="relative mb-10 md:mb-12 flex items-center">
-                <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
-                  
-                  <div className="h-[2px] bg-[#F7971E] rounded-full w-full"></div>
-                </div>
-                <div className="flex justify-between absolute w-full top-[-6px] left-0 right-0">
-                  {[...Array(6)].map((_, index) => (
-                    <div
-                      key={index}
-                      // All circles are orange for a 6-step flow
-                      className={`w-3 h-3 rounded-full bg-[#F7971E]`}
-                    ></div>
-                  ))}
-                </div>
+              <div className="relative mb-8 sm:mb-10 flex items-center">
+              {/* Progress bar container */}
+              <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
+                {/* Progress bar fill */}
+                <div className="h-[2px] bg-[#F7971E] rounded-full w-[100%]"></div>
               </div>
 
+              {/* Dots container - perfectly centered vertically with the bar */}
+              <div className="flex justify-between absolute w-full top-[0.5px] transform -translate-y-1/2">
+                {[...Array(7)].map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
+                      index < 7 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
+                    }`}
+                  ></div>
+                ))}
+              </div>
+            </div>
+
               <form>
-                <h2 className="text-xl md:text-2xl font-normal text-center text-[#373737] mb-10 md:mb-16">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-normal text-center text-[#373737] mb-6 sm:mb-8 md:mb-10">
                   What Life Challenge Are You Facing?
                 </h2>
 
-                {/* Challenge Pills */}
-                <div className="flex flex-wrap justify-center gap-4 mb-10 md:mb-16">
+                {/* Challenge Pills - Responsive Grid */}
+                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-8 sm:mb-10 md:mb-12 justify-items-center">
                   {challengeOptions.map((challenge) => (
                     <button
                       key={challenge}
                       type="button"
                       onClick={() => handleToggleChallenge(challenge)}
-                      className={`px-4 py-2 rounded-full border transition-all text-sm md:text-base
+                      className={`px-3 sm:px-4 py-2 rounded-full border transition-all text-xs sm:text-sm md:text-base w-full
                         ${
                           selectedChallenges.includes(challenge)
                             ? "bg-[#F7971E] text-white border-[#F7971E]"
@@ -124,13 +130,13 @@ export default function Call9() {
                     type="button"
                     onClick={handleNext}
                     disabled={selectedChallenges.length === 0}
-                    className={`px-8 md:px-12 py-3 text-white font-medium rounded-md transition-all ${
+                    className={`w-full sm:w-auto px-6 sm:px-8 md:px-12 py-2 sm:py-3 text-white font-medium rounded-md transition-all text-sm sm:text-base ${
                       selectedChallenges.length > 0
                         ? "bg-[#F7971E] hover:bg-[#d99845]"
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    Next
+                   Proceed to Login
                   </button>
                 </div>
               </form>

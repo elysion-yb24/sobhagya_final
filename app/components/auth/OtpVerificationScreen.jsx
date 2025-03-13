@@ -30,21 +30,21 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       setOtp(newOtp);
       
       const nextIndex = Math.min(index + digits.length, 3);
-      document.getElementById(`otp-input-${nextIndex}`).focus();
+      document.getElementById(`otp-input-${nextIndex}`)?.focus();
     } else {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
       
       if (value && index < 3) {
-        document.getElementById(`otp-input-${index + 1}`).focus();
+        document.getElementById(`otp-input-${index + 1}`)?.focus();
       }
     }
   };
 
   const handleKeyDown = (index, e) => {
     if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      document.getElementById(`otp-input-${index - 1}`).focus();
+      document.getElementById(`otp-input-${index - 1}`)?.focus();
     }
   };
 
@@ -73,7 +73,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       if (response.ok) {
         setVerificationStatus('success');
         
-        
         const userDetails = {
           phoneNumber,
           countryCode,
@@ -82,12 +81,9 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           timestamp: new Date().getTime() 
         };
         
-        
         localStorage.setItem('userDetails', JSON.stringify(userDetails));
         
-        
         onVerify(data);
-        
         
         router.push('/astrologers');
       } else {
@@ -129,12 +125,12 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl overflow-hidden relative">
         {/* Header */}
-        <div className="bg-[#F7971D] py-4 text-center">
+        <div className="bg-[#F7971D] py-3 sm:py-4 text-center">
           <h1 
-            className="text-white text-3xl font-medium"
+            className="text-white text-xl sm:text-2xl md:text-3xl font-medium"
             style={{
               fontFamily: 'Poppins',
               letterSpacing: '1%',
@@ -145,9 +141,9 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
         </div>
         
         {/* Form Content */}
-        <div className="px-8 py-10">
+        <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
           <p 
-            className="text-center text-[#373737] mb-10 font-normal text-xl"
+            className="text-center text-[#373737] mb-6 sm:mb-8 md:mb-10 font-normal text-base sm:text-lg md:text-xl"
             style={{
               fontFamily: 'Poppins',
             }}
@@ -155,9 +151,9 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
             You'll receive a 4-digit code to verify your identity
           </p>
           
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             <p 
-              className="text-[#373737] font-medium text-xl"
+              className="text-[#373737] font-medium text-base sm:text-lg md:text-xl"
               style={{
                 fontFamily: 'Poppins',
               }}
@@ -167,7 +163,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           </div>
           
           {/* OTP Input Fields */}
-          <div className="flex justify-center space-x-4 mb-8">
+          <div className="flex justify-center space-x-2 sm:space-x-3 md:space-x-4 mb-6 sm:mb-8">
             {otp.map((digit, index) => (
               <input
                 key={index}
@@ -178,7 +174,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ''))}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-16 h-16 text-center text-2xl bg-[#F2F2F2] border border-gray-300 rounded-md focus:outline-[#F7971D] focus:border-[#F7971D]"
+                className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-lg sm:text-xl md:text-2xl bg-[#F2F2F2] border border-gray-300 rounded-md focus:outline-[#F7971D] focus:border-[#F7971D]"
                 style={{
                   fontFamily: 'Poppins',
                 }}
@@ -187,8 +183,8 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           </div>
           
           {/* Timer and Resend */}
-          <div className="flex justify-between items-center mb-8">
-            <div className="text-gray-600">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 gap-y-3">
+            <div className="text-gray-600 text-sm sm:text-base">
               {timeLeft > 0 ? (
                 <span>Send OTP in {timeLeft}s</span>
               ) : (
@@ -199,7 +195,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
               type="button"
               onClick={handleResend}
               disabled={timeLeft > 0 || isResending}
-              className={`text-[#F7971D] font-medium ${
+              className={`text-[#F7971D] font-medium text-sm sm:text-base ${
                 timeLeft > 0 || isResending ? 'opacity-50 cursor-not-allowed' : 'hover:text-orange-600'
               }`}
             >
@@ -209,7 +205,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           
           {/* Verification Status */}
           {verificationStatus === 'error' && (
-            <div className="text-red-500 text-center mb-4">
+            <div className="text-red-500 text-center mb-4 text-sm sm:text-base">
               Invalid OTP. Please try again.
             </div>
           )}
@@ -217,7 +213,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           {/* Login Button */}
           <button
             onClick={handleVerify}
-            className="w-full flex justify-center mx-auto bg-[#F7971D] text-white py-3 px-6 rounded-md hover:bg-orange-500 transition-colors font-medium"
+            className="w-full flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base"
             disabled={otp.some(digit => !digit)}
           >
             Login
@@ -226,13 +222,13 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           {/* Back Button */}
           <button
             onClick={onBack}
-            className="mt-4 w-full flex justify-center mx-auto bg-transparent text-gray-600 py-2 px-6 rounded-md hover:bg-gray-100 transition-colors"
+            className="mt-3 sm:mt-4 w-full flex justify-center mx-auto bg-transparent text-gray-600 py-2 px-6 rounded-md hover:bg-gray-100 transition-colors text-sm sm:text-base"
           >
             Back
           </button>
           
           {/* Footer Text */}
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6">
             You agree to our 
             <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1">Privacy Policy</a>
             <span className="mx-1">&</span>

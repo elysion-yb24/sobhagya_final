@@ -60,7 +60,6 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     setError(null);
     
     try {
-      
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
         method: 'POST',
         headers: {
@@ -87,7 +86,6 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
   };
 
   const handleVerifyOtp = (userData) => {
-    
     if (onAuthenticated) {
       onAuthenticated(userData);
     }
@@ -117,50 +115,51 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
 
   // Render phone input screen
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
         {/* Close button */}
         <button 
           onClick={onClose}
-          className="absolute top-3 right-3 text-gray-700 hover:text-gray-900 z-10"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-700 hover:text-gray-900 z-10"
+          aria-label="Close"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
         
         {/* Header */}
-        <div className="bg-[#F7971D] py-4 text-center">
-          <h1 className="text-white text-3xl font-medium" style={{
+        <div className="bg-[#F7971D] py-3 sm:py-4 text-center">
+          <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-medium" style={{
             fontFamily: 'Poppins',
             letterSpacing: '1%',
           }}>Continue With Phone</h1>
         </div>
         
         {/* Form Content */}
-        <div className="px-8 py-10">
-          <p className="text-center text-[#373737] mb-10 font-normal text-xl" style={{
+        <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
+          <p className="text-center text-[#373737] mb-6 sm:mb-8 md:mb-10 font-normal text-base sm:text-lg md:text-xl" style={{
             fontFamily: 'Poppins',
           }}>
             You'll receive a 4-digit code to verify your identity
           </p>
           
           <form onSubmit={handleSubmit}>
-            <label className="block text-center text-[#373737] font-normal mb-5 text-xl" style={{
+            <label className="block text-center text-[#373737] font-normal mb-3 sm:mb-4 md:mb-5 text-base sm:text-lg md:text-xl" style={{
                 fontFamily: 'Poppins',
             }}>
               Enter Your phone Number
             </label>
             
             {error && (
-              <div className="mb-4 text-red-500 text-center">{error}</div>
+              <div className="mb-4 text-red-500 text-center text-sm sm:text-base">{error}</div>
             )}
             
-            <div className="flex justify-center gap-x-2 mb-8">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-y-3 sm:gap-y-0 sm:gap-x-2 mb-6 sm:mb-8">
               {/* Country Code Selector */}
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative w-full sm:w-auto" ref={dropdownRef}>
                 <div 
-                  className="flex items-center justify-between bg-[#F2F2F2] px-3 py-2 rounded-l-md border border-gray-300 h-12 cursor-pointer w-24 focus:outline-orange-600"
+                  className="flex items-center justify-between bg-[#F2F2F2] px-3 py-2 rounded-md sm:rounded-l-md sm:rounded-r-none border border-gray-300 h-12 cursor-pointer w-full sm:w-24 focus:outline-orange-600"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   <div className="flex items-center justify-center w-full">
@@ -180,7 +179,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
                 
                 {/* Dropdown */}
                 {isDropdownOpen && (
-                  <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  <div className="absolute left-0 mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                     {/* Search input */}
                     <div className="sticky top-0 bg-white p-2 border-b">
                       <input
@@ -221,7 +220,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
               <input
                 type="tel"
                 placeholder="Enter Your Phone Number"
-                className="w-64 px-4 py-2 border border-gray-300 bg-[#F2F2F2] rounded-r-md h-12 focus:outline-[#F7971D]"
+                className="w-full sm:w-64 px-4 py-2 border border-gray-300 bg-[#F2F2F2] rounded-md sm:rounded-l-none sm:rounded-r-md h-12 focus:outline-[#F7971D]"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 required
@@ -232,7 +231,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
             <button
               type="submit"
               disabled={isLoading || !phoneNumber}
-              className={`w-full max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-3 px-6 rounded-md hover:bg-orange-500 transition-colors font-medium ${
+              className={`w-full max-w-full sm:max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base ${
                 (isLoading || !phoneNumber) ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -241,7 +240,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
           </form>
           
           {/* Footer Text */}
-          <p className="text-center text-sm text-gray-600 mt-6">
+          <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6">
             You agree to our 
             <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1">Privacy Policy</a>
             <span className="mx-1">&</span>

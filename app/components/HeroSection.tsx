@@ -24,91 +24,91 @@ const HeroSection: React.FC = () => {
           backgroundPosition: "center",
         }}
       >
-        {/* Navigation Cards */}
-
+        {/* Navigation Cards - Made Responsive */}
         <div className="absolute bottom-0 left-0 right-0 z-20 transform translate-y-1/2 mx-auto">
-          <div className="mx-auto px-40">
-            <div className="flex justify-evenly">
+          <div className="mx-auto px-6 sm:px-8 md:px-16 lg:px-40">
+            <div className="flex flex-col sm:flex-row justify-evenly gap-3 sm:gap-4 md:gap-4">
               <div
-                className={
-                  "bg-white shadow-lg rounded-[12px] p-4  text-center  sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all "
-                }
+                className="bg-white shadow-lg rounded-[12px] p-3 sm:p-4 w-full max-w-md mx-auto sm:mx-0 sm:w-40 md:w-64 cursor-pointer hover:shadow-lg transition-all"
                 onClick={() => handleNavClick("chat")}
               >
                 <Link href="calls/call1">
-                <div className="flex justify-center mt-2 mb-2">
-                  <img
-                    src="/Group 13364.png"
-                    alt="Chat"
-                    width={52}
-                    height={127}
-                    className="shadow-black"
-                    />
-                </div>
-                <p
-                  className="text-[#373737] "
-                  style={{
-                    fontFamily: "Poppins",
-                    fontSize: "14px",
-                    fontWeight: "400",
-                  }}
-                  >
-                  Chat with Astrologer
-                </p>
-            </Link>
+                  <div className="flex flex-row sm:flex-col items-center justify-center">
+                    <div className="flex-shrink-0 mr-3 sm:mr-0 sm:mb-2">
+                      <img
+                        src="/Group 13364.png"
+                        alt="Chat"
+                        width={36}
+                        height={36}
+                        className="sm:w-12 sm:h-12 w-8 h-8"
+                      />
+                    </div>
+                    <p
+                      className="text-[#373737] text-center sm:mt-1 text-base"
+                      style={{
+                        fontFamily: "Poppins",
+                        fontSize: "14px",
+                        fontWeight: "400",
+                      }}
+                    >
+                      Chat with Astrologer
+                    </p>
+                  </div>
+                </Link>
               </div>
             
               <div
-              
-                className={`bg-white shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${
+                className={`bg-white shadow-md rounded-[12px] p-3 sm:p-4 w-full max-w-md mx-auto sm:mx-0 sm:w-40 md:w-64 cursor-pointer hover:shadow-lg transition-all ${
                   activeNav === "talk" ? "border-b-2 border-orange-500" : ""
                 }`}
                 onClick={() => handleNavClick("talk")}
               >
                 <Link href="/call-with-astrologer">
-                <div className="flex justify-center mb-2">
-                  
-                  <img
-                    src="/Group 13365.png"
-                    alt="Talk"
-                    width={52}
-                    height={127}
-                    className="shadow-black"
-                  />
-                </div>
-                <p
-                  className="text-[#373737] font-small"
-                  style={{ fontFamily: "Poppins", fontSize: "14px" }}
-                >
-                  Talk to Astrologer
-                </p>
-              </Link>
+                  <div className="flex flex-row sm:flex-col items-center justify-center">
+                    <div className="flex-shrink-0 mr-3 sm:mr-0 sm:mb-2">
+                      <img
+                        src="/Group 13365.png"
+                        alt="Talk"
+                        width={36}
+                        height={36}
+                        className="sm:w-12 sm:h-12 w-8 h-8"
+                      />
+                    </div>
+                    <p
+                      className="text-[#373737] font-small text-center sm:mt-1 text-base"
+                      style={{ fontFamily: "Poppins", fontSize: "14px" }}
+                    >
+                      Talk to Astrologer
+                    </p>
+                  </div>
+                </Link>
               </div>
 
-              
-
               <div
-                className={`bg-[#F7971D] shadow-md rounded-[12px] p-4 text-center w-full sm:w-40 md:w-64 h-32 cursor-pointer hover:shadow-lg transition-all ${
+                className={`bg-[#F7971D] shadow-md rounded-[12px] p-3 sm:p-4 w-full max-w-md mx-auto sm:mx-0 sm:w-40 md:w-64 cursor-pointer hover:shadow-lg transition-all ${
                   activeNav === "shop" ? "border-b-2 border-white" : ""
                 }`}
                 onClick={() => handleNavClick("shop")}
               >
                 <Link href="https://store.sobhagya.in" target="__blank">
-                <div className="flex justify-center mb-2">
-                  <img
-                    src="/Group 13366.png"
-                    alt="Shop"
-                    width={52}
-                    height={127}
-                  />
-                </div>
-                <p
-                  className="text-white "
-                  style={{ fontFamily: "Poppins", fontSize: "14px" }}
-                >
-                  Astromall Shop
-                </p>
-              </Link>
+                  <div className="flex flex-row sm:flex-col items-center justify-center">
+                    <div className="flex-shrink-0 mr-3 sm:mr-0 sm:mb-2">
+                      <img
+                        src="/Group 13366.png"
+                        alt="Shop"
+                        width={36}
+                        height={36}
+                        className="sm:w-12 sm:h-12 w-8 h-8"
+                      />
+                    </div>
+                    <p
+                      className="text-white text-center sm:mt-1 text-base"
+                      style={{ fontFamily: "Poppins", fontSize: "14px" }}
+                    >
+                      Astromall Shop
+                    </p>
+                  </div>
+                </Link>
               </div>
             </div>
           </div>
@@ -117,7 +117,7 @@ const HeroSection: React.FC = () => {
         {/* Responsive Layout */}
         <div className="container mx-auto flex flex-col-reverse sm:flex-col md:flex-row items-center justify-between w-full">
           {/* Left Side - Text Section */}
-          <div className="text-center md:text-left md:w-1/2 max-w-full px-4 mt-6 md:mt-0">
+          <div className="text-center md:text-left md:w-1/2 max-w-full px-4 mt-6 md:mt-0 pb-24 sm:pb-20 md:pb-0">
             <h1
               className="text-xl sm:text-2xl md:text-2xl lg:text-4xl font-bold whitespace-nowrap mb-4 sm:mb-4"
               style={{
@@ -137,36 +137,37 @@ const HeroSection: React.FC = () => {
                 fontFamily: "Poppins",
                 fontWeight: "700",
                 maxWidth: "320px",
+                margin: "0 auto",
+                marginBottom: "1.5rem",
               }}
             >
               Your's might be waiting
             </p>
-            <Link
-              href="/call-with-astrologer"
-              
-            >
-              <button
-                className="bg-white text-[#F7971D] px-12 sm:px-8 py-4 font-semibold hover:bg-orange-100 transition-colors mb-10 sm:mb-6 md:mb-0 flex items-center justify-center"
-                style={{
-                  width: "100%",
-                  maxWidth: "320px",
-                  height: "66px",
-                  borderRadius: "6px",
-                  fontFamily: "Poppins",
-                  fontWeight: "500",
-                  fontSize: "24px",
-                  lineHeight: "34px",
-                  letterSpacing: "0%",
-                }}
-              >
-                <img
-                  src="./Group 13380.png"
-                  alt="account"
-                  className="w-8 h-8 mr-8"
-                />
-                Get a call now
-              </button>
-            </Link>
+            <div className="flex justify-center md:justify-start">
+              <Link href="/call-with-astrologer">
+                <button
+                  className="bg-white text-[#F7971D] px-12 sm:px-8 py-4 font-semibold hover:bg-orange-100 transition-colors mb-10 sm:mb-6 md:mb-0 flex items-center justify-center"
+                  style={{
+                    width: "100%",
+                    maxWidth: "320px",
+                    height: "66px",
+                    borderRadius: "6px",
+                    fontFamily: "Poppins",
+                    fontWeight: "500",
+                    fontSize: "24px",
+                    lineHeight: "34px",
+                    letterSpacing: "0%",
+                  }}
+                >
+                  <img
+                    src="./Group 13380.png"
+                    alt="account"
+                    className="w-8 h-8 mr-8"
+                  />
+                  Get a call now
+                </button>
+              </Link>
+            </div>
           </div>
 
           {/* Right Side - Astrologer Image with Zodiac Symbols */}
@@ -227,9 +228,8 @@ const HeroSection: React.FC = () => {
         `}</style>
       </section>
 
-      {/* NEW: Live Session Section */}
-
-      <section className="bg-white py-32">
+      {/* NEW: Live Session Section - Padding adjusted for responsive nav cards */}
+      <section className="bg-white pt-40 sm:pt-40 md:pt-40 pb-20 md:pb-32">
         <div className="container mx-auto px-6">
           <h2
             className="text-5xl text-center font-bold text-[#745802] mb-2"
@@ -245,7 +245,7 @@ const HeroSection: React.FC = () => {
             life's path!
           </p>
 
-          <div className="flex flex-wrap justify-center gap-20">
+          <div className="flex flex-wrap justify-center gap-8 md:gap-20 pt-4">
             {/* First Astrologer Card - Pt. Shashtri Ji */}
             <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
               <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs flex items-center">

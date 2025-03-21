@@ -8,6 +8,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
   const [timeLeft, setTimeLeft] = useState(22);
   const [isResending, setIsResending] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null); 
+  const [isLoading, setIsLoading] = useState(false); // Add loading state
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -55,43 +56,91 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       return;
     }
     
+    setIsLoading(true);
+    setVerificationStatus(null);
+    
     try {
+      console.log('Submitting OTP:', otpValue, 'for phone:', phoneNumber);
+      
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
           phone: phoneNumber,
+          country_code: countryCode,
           otp: otpValue,
           notifyToken: "notifyToken"
         }),
+        credentials: 'include' // Include cookies in the request
       });
       
-      const data = await response.json();
+      // Log the raw response for debugging
+      console.log('OTP verification response status:', response.status);
       
-      if (response.ok) {
+      const data = await response.json();
+      console.log('OTP verification response data:', data);
+      
+      // Check if response is successful by checking either response.ok OR data.success
+      if ((response.ok && data.token) || (data.success === true)) {
         setVerificationStatus('success');
         
+        // Extract the token from the response
+        const token = data.token || (data.data && data.data.id);
+        
+        if (token) {
+          // Save token in multiple locations for reliability
+          // 1. Save token in localStorage
+          localStorage.setItem('authToken', token);
+          
+          // 2. Save in sessionStorage for additional backup
+          sessionStorage.setItem('authToken', token);
+          
+          // 3. Set cookie with secure attributes
+          const cookieOptions = 'path=/; max-age=2592000; SameSite=Strict';
+          document.cookie = `authToken=${token}; ${cookieOptions}`;
+          
+          console.log('Authentication token saved successfully:', token);
+        } else {
+          console.warn('Login successful but no token found in response.');
+        }
+        
+        // 4. Save full user details
         const userDetails = {
           phoneNumber,
           countryCode,
           ...userData, 
-          authToken: data.token, 
+          authToken: token || 'authenticated',  // Use token if available, otherwise a marker
+          userId: data.data && data.data.id,    // Store user ID separately if available
           timestamp: new Date().getTime() 
         };
         
         localStorage.setItem('userDetails', JSON.stringify(userDetails));
         
-        onVerify(data);
+        // 5. Pass token data to parent component via callback
+        onVerify({
+          ...data,
+          userDetails
+        });
         
+        // Navigate to the next page
         router.push('/astrologers');
       } else {
+        console.error('OTP verification failed:', data);
         setVerificationStatus('error');
+        
+        // Show specific error message if available
+        if (data.message && data.success !== true) {
+          alert(`Verification failed: ${data.message}`);
+        }
       }
     } catch (error) {
       console.error('Verification error:', error);
       setVerificationStatus('error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -99,28 +148,77 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
     setIsResending(true);
     
     try {
+      console.log('Resending OTP for phone:', phoneNumber);
+      
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
-          phone: phoneNumber
+          phone: phoneNumber,
+          country_code: countryCode
         }),
+        credentials: 'include'
       });
+      
+      const data = await response.json();
+      console.log('Resend OTP response:', data);
       
       if (response.ok) {
         setOtp(['', '', '', '']);
         setTimeLeft(22);
         setVerificationStatus(null);
+        
+        if (data && data.message) {
+          alert(`OTP sent: ${data.message}`);
+        }
+        
         onResend(); 
       } else {
-        console.error('Error resending OTP');
+        console.error('Error resending OTP:', data);
+        if (data && data.message) {
+          alert(`Failed to resend OTP: ${data.message}`);
+        }
       }
     } catch (error) {
       console.error('Resend error:', error);
+      alert('Network error when trying to resend OTP. Please try again.');
     } finally {
       setIsResending(false);
+    }
+  };
+
+  // Helper function to check if a token exists
+  const checkTokenExists = () => {
+    const localToken = localStorage.getItem('authToken');
+    const cookieToken = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('authToken='))
+      ?.split('=')[1];
+    
+    return !!localToken || !!cookieToken;
+  };
+
+  // Add function to securely store token
+  const storeAuthToken = (token) => {
+    if (!token) return false;
+    
+    try {
+      // Store in localStorage
+      localStorage.setItem('authToken', token);
+      
+      // Store in sessionStorage as backup
+      sessionStorage.setItem('authToken', token);
+      
+      // Store in cookie
+      document.cookie = `authToken=${token}; path=/; max-age=2592000; SameSite=Strict`;
+      
+      return true;
+    } catch (error) {
+      console.error('Error storing auth token:', error);
+      return false;
     }
   };
 
@@ -206,7 +304,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           {/* Verification Status */}
           {verificationStatus === 'error' && (
             <div className="text-red-500 text-center mb-4 text-sm sm:text-base">
-              Invalid OTP. Please try again.
+              Invalid OTP. Please check the code and try again or request a new OTP.
             </div>
           )}
           
@@ -214,9 +312,9 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           <button
             onClick={handleVerify}
             className="w-full flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base"
-            disabled={otp.some(digit => !digit)}
+            disabled={otp.some(digit => !digit) || isLoading}
           >
-            Login
+            {isLoading ? 'Verifying...' : 'Login'}
           </button>
           
           {/* Back Button */}

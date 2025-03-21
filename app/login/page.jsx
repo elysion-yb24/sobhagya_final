@@ -6,24 +6,7 @@ import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
 const countries = [
   { code: 'IN', name: 'India', dial_code: '+91', flag: '/flags/in.png' },
   { code: 'US', name: 'United States', dial_code: '+1', flag: '/flags/us.png' },
-  // Uncomment these for more countries
-  // { code: 'CA', name: 'Canada', dial_code: '+1', flag: '/flags/ca.png' },
-  // { code: 'AU', name: 'Australia', dial_code: '+61', flag: '/flags/au.png' },
-  // { code: 'DE', name: 'Germany', dial_code: '+49', flag: '/flags/de.png' },
-  // { code: 'FR', name: 'France', dial_code: '+33', flag: '/flags/fr.png' },
-  // { code: 'IT', name: 'Italy', dial_code: '+39', flag: '/flags/it.png' },
-  // { code: 'JP', name: 'Japan', dial_code: '+81', flag: '/flags/jp.png' },
-  // { code: 'CN', name: 'China', dial_code: '+86', flag: '/flags/cn.png' },
-  // { code: 'BR', name: 'Brazil', dial_code: '+55', flag: '/flags/br.png' },
-  // { code: 'RU', name: 'Russia', dial_code: '+7', flag: '/flags/ru.png' },
-  // { code: 'SA', name: 'Saudi Arabia', dial_code: '+966', flag: '/flags/sa.png' },
-  // { code: 'ZA', name: 'South Africa', dial_code: '+27', flag: '/flags/za.png' },
-  // { code: 'MX', name: 'Mexico', dial_code: '+52', flag: '/flags/mx.png' },
-  // { code: 'SG', name: 'Singapore', dial_code: '+65', flag: '/flags/sg.png' },
-  // { code: 'NZ', name: 'New Zealand', dial_code: '+64', flag: '/flags/nz.png' },
-  // { code: 'AE', name: 'United Arab Emirates', dial_code: '+971', flag: '/flags/ae.png' },
-  // { code: 'KR', name: 'South Korea', dial_code: '+82', flag: '/flags/kr.png' },
-  // { code: 'ES', name: 'Spain', dial_code: '+34', flag: '/flags/es.png' },
+  // Other countries can be uncommented as needed
 ];
 
 export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated }) {
@@ -34,6 +17,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
   const [currentScreen, setCurrentScreen] = useState('phone-input'); // 'phone-input' or 'otp-verification'
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [sessionId, setSessionId] = useState(null); // Store the session ID from the OTP request
   
   const dropdownRef = useRef(null);
   
@@ -60,19 +44,25 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     setError(null);
     
     try {
+      const fullPhoneNumber = `${selectedCountry.dial_code}${phoneNumber}`;
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone: phoneNumber
+          phone: phoneNumber,
+          country_code: selectedCountry.dial_code // Ensure country code is sent separately
         }),
       });
       
       const data = await response.json();
       
       if (response.ok) {
+        // Store the session ID if it's returned from the API
+        if (data.session_id) {
+          setSessionId(data.session_id);
+        }
         setCurrentScreen('otp-verification');
       } else {
         setError(data.message || 'Failed to send OTP. Please try again.');
@@ -85,11 +75,105 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     }
   };
 
-  const handleVerifyOtp = (userData) => {
-    if (onAuthenticated) {
-      onAuthenticated(userData);
+  const handleVerifyOtp = async (otp) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          country_code: selectedCountry.dial_code,
+          otp: otp,
+          session_id: sessionId, // Include session ID if your API requires it
+          notifyToken: "notifyToken" // Adding this based on OtpVerificationScreen implementation
+        }),
+        credentials: 'include' // Include cookies in the request
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok || (data && data.success === true)) {
+        // Extract token from response
+        const token = data.token || (data.data && data.data.id);
+        
+        if (token) {
+          // 1. Save in localStorage
+          localStorage.setItem('authToken', token);
+          
+          // 2. Set in cookie with secure attributes
+          const cookieOptions = 'path=/; max-age=2592000; SameSite=Strict';
+          document.cookie = `authToken=${token}; ${cookieOptions}`;
+          
+          // 3. Save detailed user information
+          const userDetails = {
+            phoneNumber,
+            countryCode: selectedCountry.dial_code,
+            authToken: token,
+            userId: data.data && data.data.id,
+            timestamp: new Date().getTime()
+          };
+          localStorage.setItem('userDetails', JSON.stringify(userDetails));
+          
+          console.log("Authentication successful - Token saved:", token);
+        } else {
+          console.warn("Authentication successful but no token received");
+        }
+        
+        // Call the onAuthenticated callback with the full data
+        if (onAuthenticated) {
+          onAuthenticated(data);
+        }
+        
+        onClose();
+      } else {
+        setError(data.message || 'Failed to verify OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError('An error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
-    onClose();
+  };
+
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          country_code: selectedCountry.dial_code
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Update session ID if a new one is provided
+        if (data.session_id) {
+          setSessionId(data.session_id);
+        }
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to resend OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      setError('An error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const selectCountry = (country) => {
@@ -107,8 +191,10 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
         phoneNumber={phoneNumber}
         countryCode={selectedCountry.dial_code}
         onVerify={handleVerifyOtp}
-        onResend={() => console.log('OTP resent')}
+        onResend={handleResendOtp}
         onBack={() => setCurrentScreen('phone-input')}
+        isLoading={isLoading}
+        error={error}
       />
     );
   }

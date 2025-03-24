@@ -20,10 +20,12 @@ interface Astrologer {
   // Add any other fields from the API
 }
 
+// Updated PageProps interface to match Next.js App Router requirements
 interface PageProps {
   params: {
     id: string;
   };
+  searchParams?: Record<string, string | string[] | undefined>;
 }
 
 // Function to fetch astrologer data from API
@@ -52,7 +54,7 @@ async function getAstrologer(id: string): Promise<Astrologer> {
   return res.json();
 }
 
-export default async function AstrologerDetailsPage({ params }: PageProps) {
+export default async function AstrologerDetailsPage({ params, searchParams }: PageProps) {
   const { id } = params;
   
   // Fetch data from API

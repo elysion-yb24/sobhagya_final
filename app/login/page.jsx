@@ -89,42 +89,27 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
           phone: phoneNumber,
           country_code: selectedCountry.dial_code,
           otp: otp,
-          session_id: sessionId, // Include session ID if your API requires it
-          notifyToken: "notifyToken" // Adding this based on OtpVerificationScreen implementation
+          session_id: sessionId // Include session ID if your API requires it
         }),
-        credentials: 'include' // Include cookies in the request
       });
       
       const data = await response.json();
       
-      if (response.ok || (data && data.success === true)) {
-        // Extract token from response
-        const token = data.token || (data.data && data.data.id);
-        
-        if (token) {
-          // 1. Save in localStorage
-          localStorage.setItem('authToken', token);
+      if (response.ok) {
+        // Save token to localStorage for persistence
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
           
-          // 2. Set in cookie with secure attributes
-          const cookieOptions = 'path=/; max-age=2592000; SameSite=Strict';
-          document.cookie = `authToken=${token}; ${cookieOptions}`;
+          // Also save in a cookie for additional backup
+          document.cookie = `authToken=${data.token}; path=/; max-age=${60*60*24*7}`; // 7 days
           
-          // 3. Save detailed user information
-          const userDetails = {
-            phoneNumber,
-            countryCode: selectedCountry.dial_code,
-            authToken: token,
-            userId: data.data && data.data.id,
-            timestamp: new Date().getTime()
-          };
-          localStorage.setItem('userDetails', JSON.stringify(userDetails));
-          
-          console.log("Authentication successful - Token saved:", token);
+          console.log("Token saved successfully:", data.token);
         } else {
-          console.warn("Authentication successful but no token received");
+          console.error("No token found in response:", data);
+          setError("Authentication succeeded but no token was received.");
         }
         
-        // Call the onAuthenticated callback with the full data
+        // Pass the full userData to the callback
         if (onAuthenticated) {
           onAuthenticated(data);
         }

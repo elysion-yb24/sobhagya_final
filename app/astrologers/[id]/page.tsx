@@ -1,3 +1,4 @@
+"use client";
 // app/astrologers/[id]/page.tsx
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -166,7 +167,6 @@ export default async function AstrologerDetailsPage({ params }: PageProps) {
 }
 
 // Since buttons with onClick handlers need to be client components
-"use client";
 function StartCallButton({ 
   astrologerId, 
   astrologerName, 

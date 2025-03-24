@@ -1,4 +1,3 @@
-"use client";
 // app/astrologers/[id]/page.tsx
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -20,13 +19,10 @@ interface Astrologer {
   // Add any other fields from the API
 }
 
-// Updated PageProps interface to match Next.js App Router requirements
-interface PageProps {
-  params: {
-    id: string;
-  };
-  searchParams?: Record<string, string | string[] | undefined>;
-}
+// Type for the page params
+type PageParams = {
+  id: string;
+};
 
 // Function to fetch astrologer data from API
 async function getAstrologer(id: string): Promise<Astrologer> {
@@ -54,7 +50,18 @@ async function getAstrologer(id: string): Promise<Astrologer> {
   return res.json();
 }
 
-export default async function AstrologerDetailsPage({ params, searchParams }: PageProps) {
+// Generate the type for the params
+export async function generateStaticParams(): Promise<PageParams[]> {
+  // In a real app, you might fetch the list of astrologers and return their IDs
+  // For now, just return an empty array to satisfy the type system
+  return [];
+}
+
+export default async function AstrologerDetailsPage({
+  params,
+}: {
+  params: PageParams;
+}) {
   const { id } = params;
   
   // Fetch data from API
@@ -161,14 +168,15 @@ export default async function AstrologerDetailsPage({ params, searchParams }: Pa
           </div>
         )}
 
-        {/* CTA - Using a client component wrapper */}
+        {/* CTA Button */}
         <StartCallButton astrologerId={id} astrologerName={name} isOnline={isOnline} />
       </div>
     </div>
   );
 }
 
-// Since buttons with onClick handlers need to be client components
+// Client component for the button
+"use client";
 function StartCallButton({ 
   astrologerId, 
   astrologerName, 

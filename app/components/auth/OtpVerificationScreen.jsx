@@ -8,7 +8,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
   const [timeLeft, setTimeLeft] = useState(22);
   const [isResending, setIsResending] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null); 
-  const [isLoading, setIsLoading] = useState(false); // Add loading state
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -56,9 +55,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       return;
     }
     
-    setIsLoading(true);
-    setVerificationStatus(null);
-    
     try {
       console.log('Submitting OTP:', otpValue, 'for phone:', phoneNumber);
       
@@ -70,7 +66,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
         },
         body: JSON.stringify({
           phone: phoneNumber,
-          country_code: countryCode,
           otp: otpValue,
           notifyToken: "notifyToken"
         }),
@@ -87,27 +82,15 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       if ((response.ok && data.token) || (data.success === true)) {
         setVerificationStatus('success');
         
-        // Extract the token from the response
+        // Extract the token from the response or from data.data for success cases
         const token = data.token || (data.data && data.data.id);
         
-        if (token) {
-          // Save token in multiple locations for reliability
-          // 1. Save token in localStorage
-          localStorage.setItem('authToken', token);
-          
-          // 2. Save in sessionStorage for additional backup
-          sessionStorage.setItem('authToken', token);
-          
-          // 3. Set cookie with secure attributes
-          const cookieOptions = 'path=/; max-age=2592000; SameSite=Strict';
-          document.cookie = `authToken=${token}; ${cookieOptions}`;
-          
-          console.log('Authentication token saved successfully:', token);
-        } else {
-          console.warn('Login successful but no token found in response.');
+        if (!token) {
+          console.warn('Login successful but no token found in response. Using fallback token handling.');
         }
         
-        // 4. Save full user details
+        // Save token in multiple locations for reliability
+        // 1. Save in localStorage
         const userDetails = {
           phoneNumber,
           countryCode,
@@ -119,7 +102,15 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
         
         localStorage.setItem('userDetails', JSON.stringify(userDetails));
         
-        // 5. Pass token data to parent component via callback
+        // 2. Save token separately for easier access
+        if (token) {
+          localStorage.setItem('authToken', token);
+          
+          // 3. Set a session cookie for the token (works only on HTTPS in production)
+          document.cookie = `authToken=${token}; path=/; max-age=2592000; SameSite=Strict`;
+        }
+        
+        // 4. Pass token data to parent component via callback
         onVerify({
           ...data,
           userDetails
@@ -139,8 +130,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
     } catch (error) {
       console.error('Verification error:', error);
       setVerificationStatus('error');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -157,8 +146,7 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          phone: phoneNumber,
-          country_code: countryCode
+          phone: phoneNumber
         }),
         credentials: 'include'
       });
@@ -187,38 +175,6 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
       alert('Network error when trying to resend OTP. Please try again.');
     } finally {
       setIsResending(false);
-    }
-  };
-
-  // Helper function to check if a token exists
-  const checkTokenExists = () => {
-    const localToken = localStorage.getItem('authToken');
-    const cookieToken = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('authToken='))
-      ?.split('=')[1];
-    
-    return !!localToken || !!cookieToken;
-  };
-
-  // Add function to securely store token
-  const storeAuthToken = (token) => {
-    if (!token) return false;
-    
-    try {
-      // Store in localStorage
-      localStorage.setItem('authToken', token);
-      
-      // Store in sessionStorage as backup
-      sessionStorage.setItem('authToken', token);
-      
-      // Store in cookie
-      document.cookie = `authToken=${token}; path=/; max-age=2592000; SameSite=Strict`;
-      
-      return true;
-    } catch (error) {
-      console.error('Error storing auth token:', error);
-      return false;
     }
   };
 
@@ -312,9 +268,9 @@ export default function OtpVerificationScreen({ phoneNumber, countryCode, onVeri
           <button
             onClick={handleVerify}
             className="w-full flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base"
-            disabled={otp.some(digit => !digit) || isLoading}
+            disabled={otp.some(digit => !digit)}
           >
-            {isLoading ? 'Verifying...' : 'Login'}
+            Login
           </button>
           
           {/* Back Button */}

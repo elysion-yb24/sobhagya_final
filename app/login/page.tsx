@@ -18,6 +18,7 @@ interface AuthenticationData {
 
 // Define prop types for the component
 interface AuthenticationFlowProps {
+  children?: React.ReactNode;
   isOpen: boolean;
   onClose: () => void;
   onAuthenticated?: (data: AuthenticationData) => void;
@@ -30,8 +31,8 @@ const countries: Country[] = [
 ];
 
 export default function AuthenticationFlow({ 
-  isOpen, 
-  onClose, 
+  isOpen = false, 
+  onClose = () => {}, 
   onAuthenticated 
 }: AuthenticationFlowProps) {
   const [phoneNumber, setPhoneNumber] = useState<string>('');

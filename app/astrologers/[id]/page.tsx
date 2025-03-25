@@ -1,4 +1,4 @@
-
+"use client";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -176,7 +176,7 @@ export default async function AstrologerDetailsPage({
 }
 
 // Client component for the button
-"use client";
+
 function StartCallButton({ 
   astrologerId, 
   astrologerName, 

@@ -9,7 +9,7 @@ const countries = [
   // Other countries can be uncommented as needed
 ];
 
-export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated }) {
+export default function Page({ isOpen = false, onClose = () => {}, onAuthenticated = () => {} }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [selectedCountry, setSelectedCountry] = useState(countries.find(c => c.code === 'IN'));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

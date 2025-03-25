@@ -3,23 +3,47 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
 
-const countries = [
+// Define types for country and authentication data
+interface Country {
+  code: string;
+  name: string;
+  dial_code: string;
+  flag: string;
+}
+
+interface AuthenticationData {
+  token?: string;
+  [key: string]: any;
+}
+
+// Define prop types for the component
+interface AuthenticationFlowProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onAuthenticated?: (data: AuthenticationData) => void;
+}
+
+const countries: Country[] = [
   { code: 'IN', name: 'India', dial_code: '+91', flag: '/flags/in.png' },
   { code: 'US', name: 'United States', dial_code: '+1', flag: '/flags/us.png' },
   // Other countries can be uncommented as needed
 ];
 
-export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated }) {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState(countries.find(c => c.code === 'IN'));
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentScreen, setCurrentScreen] = useState('phone-input'); // 'phone-input' or 'otp-verification'
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [sessionId, setSessionId] = useState(null); // Store the session ID from the OTP request
+export default function AuthenticationFlow({ 
+  isOpen, 
+  onClose, 
+  onAuthenticated 
+}: AuthenticationFlowProps) {
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<Country>(countries.find(c => c.code === 'IN')!);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentScreen, setCurrentScreen] = useState<'phone-input' | 'otp-verification'>('phone-input');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
   const filteredCountries = searchTerm 
     ? countries.filter(country => 
@@ -28,8 +52,8 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     : countries;
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
@@ -38,13 +62,12 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     
     try {
-      const fullPhoneNumber = `${selectedCountry.dial_code}${phoneNumber}`;
       const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
         method: 'POST',
         headers: {
@@ -52,14 +75,13 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
         },
         body: JSON.stringify({
           phone: phoneNumber,
-          country_code: selectedCountry.dial_code // Ensure country code is sent separately
+          country_code: selectedCountry.dial_code
         }),
       });
       
       const data = await response.json();
       
       if (response.ok) {
-        // Store the session ID if it's returned from the API
         if (data.session_id) {
           setSessionId(data.session_id);
         }
@@ -75,7 +97,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     }
   };
 
-  const handleVerifyOtp = async (otp) => {
+  const handleVerifyOtp = async (otp: string) => {
     setIsLoading(true);
     setError(null);
     
@@ -89,18 +111,16 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
           phone: phoneNumber,
           country_code: selectedCountry.dial_code,
           otp: otp,
-          session_id: sessionId // Include session ID if your API requires it
+          session_id: sessionId
         }),
       });
       
-      const data = await response.json();
+      const data: AuthenticationData = await response.json();
       
       if (response.ok) {
-        // Save token to localStorage for persistence
         if (data.token) {
           localStorage.setItem('authToken', data.token);
           
-          // Also save in a cookie for additional backup
           document.cookie = `authToken=${data.token}; path=/; max-age=${60*60*24*7}`; // 7 days
           
           console.log("Token saved successfully:", data.token);
@@ -109,7 +129,6 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
           setError("Authentication succeeded but no token was received.");
         }
         
-        // Pass the full userData to the callback
         if (onAuthenticated) {
           onAuthenticated(data);
         }
@@ -145,7 +164,6 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
       const data = await response.json();
       
       if (response.ok) {
-        // Update session ID if a new one is provided
         if (data.session_id) {
           setSessionId(data.session_id);
         }
@@ -161,7 +179,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     }
   };
 
-  const selectCountry = (country) => {
+  const selectCountry = (country: Country) => {
     setSelectedCountry(country);
     setIsDropdownOpen(false);
     setSearchTerm('');

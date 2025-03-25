@@ -4,8 +4,9 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation"; // Use this instead of `params`
 
-// Update interface based on the actual API response structure
+// Define the Astrologer type
 interface Astrologer {
   _id: string;
   name: string;
@@ -20,25 +21,21 @@ interface Astrologer {
   isOnline?: boolean;
 }
 
-// Correct type definition for page props
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
+export default function AstrologerDetailsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id") || undefined; // Retrieve `id` from query parameters
 
-export default function AstrologerDetailsPage({
-  params,
-}: PageProps) {
   const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) return; // Avoid making requests before `id` is available
+
     async function fetchAstrologer() {
-      const { id } = params;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://micro.sobhagya.in';
-      const authToken = process.env.NEXT_PUBLIC_API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmM1YjBiNWRmMDczYTEwNjZiNmU0NTQiLCJpYXQiOjE3MjY0NzM1MTMsImV4cCI6MTcyNjQ3NDQxM30.e6R7FyWux3eTDafvBDQmcgVjz1fWiUAxo4_PCT6dLHQ';
-      
+      const authToken = process.env.NEXT_PUBLIC_API_TOKEN || 'your_api_token_here';
+
       try {
         const res = await fetch(`${apiUrl}/user/api/users/${id}`, {
           headers: {
@@ -46,14 +43,14 @@ export default function AstrologerDetailsPage({
             'Content-Type': 'application/json',
           },
         });
-        
+
         if (!res.ok) {
           if (res.status === 404) {
             notFound();
           }
           throw new Error(`Failed to fetch astrologer: ${res.status}`);
         }
-        
+
         const data = await res.json();
         setAstrologer(data);
       } catch (err) {
@@ -62,17 +59,17 @@ export default function AstrologerDetailsPage({
     }
 
     fetchAstrologer();
-  }, [params.id]);
+  }, [id]);
 
   if (error) {
     return <div className="text-red-500">Error: {error}</div>;
   }
 
-  if (!astrologer) {
+  if (!id || !astrologer) {
     return <div className="text-center">Loading...</div>;
   }
 
-  // Destructure properties safely
+  // Destructure safely
   const {
     name,
     languages = [],
@@ -99,15 +96,28 @@ export default function AstrologerDetailsPage({
           </svg>
           Back to Astrologers
         </Link>
-        
-        {/* Rest of the component remains the same as in the previous example */}
-        {/* ... */}
+
+        <div className="text-center">
+          <Image
+            src={profileImage}
+            alt={name}
+            width={100}
+            height={100}
+            className="rounded-full mx-auto"
+          />
+          <h1 className="text-2xl font-bold mt-4">{name}</h1>
+          <p className="text-gray-600">{experience} years experience</p>
+          <p className="text-gray-600">Calls: {callsCount}</p>
+          <p className="text-gray-600">Rating: {rating.toFixed(1)} ⭐</p>
+        </div>
+
+        <StartCallButton astrologerId={id} astrologerName={name} isOnline={isOnline} />
       </div>
     </div>
   );
 }
 
-// StartCallButton component remains the same
+// Start Call Button Component
 function StartCallButton({ 
   astrologerId, 
   astrologerName, 

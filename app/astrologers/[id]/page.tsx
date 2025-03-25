@@ -1,7 +1,9 @@
 "use client";
+
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 // Update interface based on the actual API response structure
 interface Astrologer {
@@ -16,58 +18,56 @@ interface Astrologer {
   profileImage?: string;
   about?: string;
   isOnline?: boolean;
-  // Add any other fields from the API
 }
 
-// Type for the page params
-type PageParams = {
-  id: string;
-};
-
-// Function to fetch astrologer data from API
-async function getAstrologer(id: string): Promise<Astrologer> {
-  const apiUrl = process.env.API_URL || 'https://micro.sobhagya.in';
-  const authToken = process.env.API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmM1YjBiNWRmMDczYTEwNjZiNmU0NTQiLCJpYXQiOjE3MjY0NzM1MTMsImV4cCI6MTcyNjQ3NDQxM30.e6R7FyWux3eTDafvBDQmcgVjz1fWiUAxo4_PCT6dLHQ';
-  
-  // In a production app, you'd use a secure way to manage tokens
-  // For this endpoint, we might need to adjust the URL to get a specific astrologer
-  const res = await fetch(`${apiUrl}/user/api/users/${id}`, {
-    headers: {
-      'Authorization': `Bearer ${authToken}`,
-      'Content-Type': 'application/json',
-    },
-    cache: 'no-store', // Disable caching for now until we understand the API better
-  });
-  
-  if (!res.ok) {
-    if (res.status === 404) {
-      notFound();
-    }
-    // Handle other errors
-    throw new Error(`Failed to fetch astrologer: ${res.status}`);
-  }
-  
-  return res.json();
-}
-
-// Generate the type for the params
-export async function generateStaticParams(): Promise<PageParams[]> {
-  // In a real app, you might fetch the list of astrologers and return their IDs
-  // For now, just return an empty array to satisfy the type system
-  return [];
-}
-
-export default async function AstrologerDetailsPage({
+export default function AstrologerDetailsPage({
   params,
 }: {
-  params: PageParams;
+  params: { id: string };
 }) {
-  const { id } = params;
-  
-  // Fetch data from API
-  const astrologer = await getAstrologer(id);
-  
-  // Extract properties safely with new field names from API
+  const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchAstrologer() {
+      const { id } = params;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://micro.sobhagya.in';
+      const authToken = process.env.NEXT_PUBLIC_API_TOKEN || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NmM1YjBiNWRmMDczYTEwNjZiNmU0NTQiLCJpYXQiOjE3MjY0NzM1MTMsImV4cCI6MTcyNjQ3NDQxM30.e6R7FyWux3eTDafvBDQmcgVjz1fWiUAxo4_PCT6dLHQ';
+      
+      try {
+        const res = await fetch(`${apiUrl}/user/api/users/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!res.ok) {
+          if (res.status === 404) {
+            notFound();
+          }
+          throw new Error(`Failed to fetch astrologer: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        setAstrologer(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      }
+    }
+
+    fetchAstrologer();
+  }, [params.id]);
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
+
+  if (!astrologer) {
+    return <div className="text-center">Loading...</div>;
+  }
+
+  // Destructure properties safely
   const {
     name,
     languages = [],
@@ -169,14 +169,13 @@ export default async function AstrologerDetailsPage({
         )}
 
         {/* CTA Button */}
-        <StartCallButton astrologerId={id} astrologerName={name} isOnline={isOnline} />
+        <StartCallButton astrologerId={astrologer._id} astrologerName={name} isOnline={isOnline} />
       </div>
     </div>
   );
 }
 
 // Client component for the button
-
 function StartCallButton({ 
   astrologerId, 
   astrologerName, 

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Cookies from 'universal-cookie';
 
 /** If you’re using TypeScript, define a props interface: */
 interface OtpVerificationScreenProps {
@@ -31,6 +32,7 @@ export default function OtpVerificationScreen({
   const [timeLeft, setTimeLeft] = useState(22);
   const [isResending, setIsResending] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  const cookies = new Cookies(null, { path: '/' })
 
   useEffect(() => {
     if (timeLeft > 0) {
@@ -94,6 +96,10 @@ export default function OtpVerificationScreen({
         credentials: 'include', // Include cookies in the request
       });
 
+      const authToken = response.headers.get("auth-token");
+      if (authToken) cookies.set('access_token', authToken)
+      console.log('authtoken',authToken);
+    
       // Debug
       console.log('OTP verification response status:', response.status);
 

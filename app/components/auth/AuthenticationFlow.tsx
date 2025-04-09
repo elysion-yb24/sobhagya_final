@@ -1,7 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import Cookies from 'universal-cookie';
 import OtpVerificationScreen from '../../components/auth/OtpVerificationScreen'; 
 // Adjust the path to wherever your OtpVerificationScreen is located
 
@@ -51,7 +50,6 @@ export default function AuthenticationFlow({
   const [isLoading, setIsLoading] = useState<boolean>(false); 
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const cookies = new Cookies(null, { path: '/' })
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter countries for the dropdown search
@@ -146,9 +144,6 @@ export default function AuthenticationFlow({
         }),
       });
 
-      const authToken = response.headers.get("auth-token");
-      if (authToken) cookies.set('access_token', authToken)
-      console.log('authtoken',authToken);
       const data = await response.json();
       
 

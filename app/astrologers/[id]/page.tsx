@@ -1,10 +1,8 @@
 "use client";
 
-import { notFound } from "next/navigation";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation"; // Use this instead of `params`
 
 // Define the Astrologer type
 interface Astrologer {
@@ -15,139 +13,154 @@ interface Astrologer {
   experience?: string;
   callsCount?: number;
   rating?: number;
-  reviews?: Array<{ content: string; userId: string; rating: number }>;
   profileImage?: string;
-  about?: string;
   isOnline?: boolean;
 }
 
-export default function AstrologerDetailsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const id = searchParams.get("id") || undefined; // Retrieve `id` from query parameters
-
-  const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
+export default function AstrologersListPage() {
+  const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(true);
 
   useEffect(() => {
-    if (!id) return; // Avoid making requests before `id` is available
-
-    async function fetchAstrologer() {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://micro.sobhagya.in';
-      const authToken = process.env.NEXT_PUBLIC_API_TOKEN || 'your_api_token_here';
-
+    async function fetchAstrologers() {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://micro.sobhagya.in";
+      const storedToken = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+  
+      if (!storedToken) {
+        setError("Authorization token is missing.");
+        setIsLoading(false);
+        return;
+      }
+  
       try {
-        const res = await fetch(`${apiUrl}/user/api/users/${id}`, {
+        setIsLoading(true);
+        const res = await fetch(`${apiUrl}/user/api/users?skip=${page * 10}&limit=10`, {
           headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${storedToken}`,
+            "Content-Type": "application/json",
           },
         });
-
-        if (!res.ok) {
-          if (res.status === 404) {
-            notFound();
-          }
-          throw new Error(`Failed to fetch astrologer: ${res.status}`);
+  
+        if (res.status === 401) {
+          throw new Error("Unauthorized: Invalid or expired token.");
         }
-
+  
+        if (!res.ok) {
+          throw new Error(`Failed to fetch astrologers: ${res.status} ${res.statusText}`);
+        }
+  
         const data = await res.json();
-        setAstrologer(data);
+        if (data.length === 0) {
+          setHasMore(false);
+        }
+  
+        setAstrologers((prev) => (page === 0 ? data : [...prev, ...data]));
+        setIsLoading(false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+        setIsLoading(false);
       }
     }
+  
+    fetchAstrologers();
+  }, [page]);
+  
 
-    fetchAstrologer();
-  }, [id]);
+  const loadMore = () => {
+    if (hasMore) {
+      setPage((prev) => prev + 1);
+    }
+  };
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    return <div className="text-red-500 text-center p-6">Error: {error}</div>;
   }
 
-  if (!id || !astrologer) {
-    return <div className="text-center">Loading...</div>;
-  }
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-6">Our Astrologers</h1>
 
-  // Destructure safely
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {astrologers.map((astrologer) => (
+            <AstrologerCard key={astrologer._id} astrologer={astrologer} />
+          ))}
+        </div>
+
+        {isLoading && (
+          <div className="text-center mt-6">
+            <p>Loading more astrologers...</p>
+          </div>
+        )}
+
+        {hasMore && !isLoading && (
+          <div className="text-center mt-6">
+            <button
+              onClick={loadMore}
+              className="bg-orange-500 text-white px-6 py-3 rounded-md hover:bg-orange-600 transition"
+            >
+              Load More
+            </button>
+          </div>
+        )}
+
+        {!hasMore && astrologers.length > 0 && (
+          <div className="text-center mt-6 text-gray-500">No more astrologers to load</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Astrologer Card Component
+function AstrologerCard({ astrologer }: { astrologer: Astrologer }) {
   const {
+    _id,
     name,
     languages = [],
     specializations = [],
     experience = "Not specified",
     callsCount = 0,
     rating = 0,
-    reviews = [],
     profileImage = "/default-profile.png",
-    about = "No information available.",
     isOnline = false,
   } = astrologer;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-2xl mx-auto bg-white rounded-md shadow p-6">
-        {/* Back button */}
-        <Link 
-          href="/astrologers"
-          className="mb-4 flex items-center text-orange-500 hover:text-orange-600"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Astrologers
-        </Link>
-
-        <div className="text-center">
-          <Image
-            src={profileImage}
-            alt={name}
-            width={100}
-            height={100}
-            className="rounded-full mx-auto"
-          />
-          <h1 className="text-2xl font-bold mt-4">{name}</h1>
-          <p className="text-gray-600">{experience} years experience</p>
-          <p className="text-gray-600">Calls: {callsCount}</p>
-          <p className="text-gray-600">Rating: {rating.toFixed(1)} ⭐</p>
+    <Link href={`/astrologer?id=${_id}`} className="block">
+      <div className={`bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition ${isOnline ? "border-2 border-green-500" : "border-2 border-gray-200"}`}>
+        <div className="flex items-center mb-4">
+          <Image src={profileImage} alt={name} width={80} height={80} className="rounded-full mr-4" />
+          <div>
+            <h2 className="text-xl font-semibold">{name}</h2>
+            <p className="text-gray-600">{experience} years experience</p>
+          </div>
         </div>
 
-        <StartCallButton astrologerId={id} astrologerName={name} isOnline={isOnline} />
+        <div className="mb-4">
+          <div className="flex items-center mb-2">
+            <span className="mr-2">📞 {callsCount} Calls</span>
+            <span>⭐ {rating.toFixed(1)}</span>
+            {isOnline && (
+              <span className="ml-2 px-2 py-1 bg-green-500 text-white text-xs rounded-full">
+                Online
+              </span>
+            )}
+          </div>
+
+          {specializations && specializations.length > 0 && (
+            <div className="text-sm text-gray-600">
+              Specialties: {specializations.slice(0, 3).join(", ")}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
-
-// Start Call Button Component
-function StartCallButton({ 
-  astrologerId, 
-  astrologerName, 
-  isOnline 
-}: { 
-  astrologerId: string, 
-  astrologerName: string,
-  isOnline: boolean
-}) {
-  const handleStartCall = () => {
-    if (!isOnline) {
-      alert("This astrologer is currently offline. Please try again later.");
-      return;
-    }
-    
-    console.log(`Starting call with ${astrologerName} (ID: ${astrologerId})`);
-  };
-
-  return (
-    <button 
-      onClick={handleStartCall}
-      className={`w-full py-3 rounded-md font-semibold transition ${
-        isOnline 
-          ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-          : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-      }`}
-      aria-label={`Start a call with ${astrologerName}`}
-      disabled={!isOnline}
-    >
-      {isOnline ? "Start Call for FREE" : "Astrologer Offline"}
-    </button>
+    </Link>
   );
 }

@@ -11,10 +11,18 @@ interface OtpVerificationScreenProps {
   onVerify: (data: any) => void;
   onResend: () => void;
   onBack: () => void;
-  sessionId: string | null;
+ 
   isLoading?: boolean;
   error?: string | null;
   userData?: any;
+}
+
+
+function updateAccessToken(res:any) {
+  const authToken = res.headers.get("auth-token");
+  const cookies = new Cookies(null, { path: '/' })
+  if (authToken) cookies.set('access_token', authToken)
+  return
 }
 
 export default function OtpVerificationScreen({
@@ -23,7 +31,7 @@ export default function OtpVerificationScreen({
   onVerify,
   onResend,
   onBack,
-  sessionId,
+  
   userData,
   isLoading: parentIsLoading = false,
   error: parentError = null,
@@ -89,7 +97,8 @@ export default function OtpVerificationScreen({
     setError(null);
 
     try {
-      console.log("Verifying OTP:", otpValue, "for phone:", phoneNumber, "with session ID:", sessionId);
+      console.log("Verifying OTP:", otpValue, "for phone:", phoneNumber, "with session ID:",);
+      console.log("Making request to:", "/api/auth/verify-otp");
 
       let notifyToken = "";
       try {
@@ -99,27 +108,22 @@ export default function OtpVerificationScreen({
         notifyToken = "placeholder_token";
       }
 
-      const response = await fetch(
-        "https://micro.sobhagya.in/auth/api/signup-login/verify-otp",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          body: JSON.stringify({
-            phone: phoneNumber,
-            country_code: countryCode,
-            otp: otpValue,
-            session_id: sessionId,
-            notifyToken: notifyToken
-          }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          otp: otpValue,
+          notifyToken: notifyToken
+        }),
+      });
 
       console.log("OTP verification response status:", response.status);
+      console.log("Response headers auth-token:", response.headers.get('auth-token'));
       
+      updateAccessToken(response)
       let data;
       try {
         data = await response.json();
@@ -139,12 +143,30 @@ export default function OtpVerificationScreen({
       if (response.ok && (data.token || (data.success === true && data.message === "login_successful"))) {
         setVerificationStatus('success');
         
-        if (data.token) {
-          storeAuthToken(data.token);
-        } else if (data.data && data.data._id) {
-          const pseudoToken = `session_${data.data._id}_${new Date().getTime()}`;
-          storeAuthToken(pseudoToken);
+        console.log("OTP verification successful");
+        console.log("Full Response data:", JSON.stringify(data, null, 2));
+        
+        // Store token from response headers if available
+        const authTokenHeader = response.headers.get('auth-token');
+        if (authTokenHeader) {
+          localStorage.setItem('authToken', authTokenHeader);
+          localStorage.setItem('tokenTimestamp', Date.now().toString());
+          document.cookie = `authToken=${authTokenHeader}; path=/; max-age=${60*60*24*7}`;
+          console.log("Stored token from headers");
+        } else if (data.token) {
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('tokenTimestamp', Date.now().toString());
+          document.cookie = `authToken=${data.token}; path=/; max-age=${60*60*24*7}`;
+          console.log("Stored token from response data");
+        } else {
+          console.log("No token found in response");
         }
+        
+        // Log the data structure we're working with
+        console.log("User ID from data.data?._id:", data.data?._id);
+        console.log("User ID from data.user?.id:", data.user?.id);
+        console.log("User ID from data._id:", data._id);
+        console.log("User ID from data.id:", data.id);
         
         const userDetails = {
           id: data.data?._id || data.user?.id || data._id || data.id || "",
@@ -154,8 +176,12 @@ export default function OtpVerificationScreen({
           role: data.data?.role || "user"
         };
         
+        console.log("Storing user details:", userDetails);
         storeUserDetails(userDetails);
-        onVerify(data);
+        
+        // Call onVerify only to notify success, don't pass data that would trigger another verification
+        console.log("Calling onVerify and redirecting...");
+        onVerify({ success: true, verified: true });
         router.push("/astrologers");
       } else {
         setVerificationStatus('error');
@@ -164,7 +190,15 @@ export default function OtpVerificationScreen({
     } catch (error) {
       console.error("Verification error:", error);
       setVerificationStatus('error');
-      setError("Network error. Please try again.");
+      
+      // Check if it's a CORS or network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setError("Network connection error. Please check your internet connection and try again.");
+      } else if (error instanceof Error && error.message.includes('CORS')) {
+        setError("Connection error. Please try again.");
+      } else {
+        setError("Network error. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -186,19 +220,16 @@ export default function OtpVerificationScreen({
       }
 
       const response = await fetch(
-        "https://micro.sobhagya.in/auth/api/signup-login/send-otp",
+        "/api/auth/send-otp",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Accept": "application/json",
           },
           body: JSON.stringify({
             phone: phoneNumber,
-            country_code: countryCode,
             notifyToken: notifyToken 
           }),
-          credentials: "include",
         }
       );
 
@@ -216,7 +247,15 @@ export default function OtpVerificationScreen({
       }
     } catch (error) {
       console.error("Resend error:", error);
-      setError("Network error when trying to resend OTP. Please try again.");
+      
+      // Check if it's a CORS or network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setError("Network connection error when trying to resend OTP. Please check your internet connection and try again.");
+      } else if (error instanceof Error && error.message.includes('CORS')) {
+        setError("Connection error when trying to resend OTP. Please try again.");
+      } else {
+        setError("Network error when trying to resend OTP. Please try again.");
+      }
     } finally {
       setIsResending(false);
     }

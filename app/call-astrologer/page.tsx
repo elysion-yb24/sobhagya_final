@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import astrologersData from "@/app/data/astrologers_data.json";
+
 
 // End call icon
 const EndCallIcon = () => (
@@ -49,11 +49,11 @@ export default function CallAstrologerPage() {
 
   const searchParams = useSearchParams();
   const astrologerId = searchParams.get("id") || "ASTRO_001";
-  const astrologer = astrologersData.find((a) => a.ID === astrologerId);
-  const astrologerName = astrologer ? astrologer.Name : "Unknown";
+  const astrologerName = searchParams.get("astrologer") || "Astrologer";
   
+
   // Generate a random experience value between 5-15 years
-  const experience = astrologer?.Experience || Math.floor(Math.random() * 10) + 5;
+  const experience = Math.floor(Math.random() * 10) + 5;
   
   // Call states
   const [timeLeft, setTimeLeft] = useState(120);
@@ -168,7 +168,7 @@ export default function CallAstrologerPage() {
               ${callStatus === "connecting" ? "border-yellow-400 animate-pulse" : 
                 callStatus === "active" ? "border-green-400" : "border-red-400"}`}>
               <img 
-                src={astrologer?.["Profile Image"] || "/api/placeholder/100/100"} 
+                src={"/api/placeholder/100/100"} 
                 alt={astrologerName}
                 className="w-full h-full object-cover"
                 onError={(e) => {

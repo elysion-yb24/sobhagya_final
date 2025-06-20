@@ -1,4 +1,5 @@
 import React from "react";
+import { Search, Filter } from "lucide-react";
 
 interface Props {
   searchValue: string;
@@ -24,81 +25,74 @@ export default function FilterBar({
   onVideoToggle
 }: Props) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {/* Search input */}
-      <div className="relative flex-1 min-w-[8rem] max-w-sm">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5 absolute left-2 top-2.5 text-gray-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M21 
-            21l-4.35-4.35M16 
-            10a6 
-            6 0 11-12 
-            0 6 
-            6 0 0112 
-            0z"
+    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Search input */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search astrologers..."
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search"
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-indigo-500"
-        />
-      </div>
+        </div>
 
-      {/* Sort */}
-      <div>
-        <select
-          value={sortValue}
-          onChange={(e) => onSortChange(e.target.value)}
-          className="border border-gray-300 rounded-full py-2 px-3 text-sm focus:outline-none focus:border-indigo-500"
-        >
-          <option value="">Sort</option>
-          <option value="experience">Experience</option>
-          <option value="rating">Rating</option>
-          <option value="calls">Calls</option>
-        </select>
-      </div>
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3">
+          {/* Sort */}
+          <div className="relative">
+            <select
+              value={sortValue}
+              onChange={(e) => onSortChange(e.target.value)}
+              className="appearance-none border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+            >
+              <option value="">Sort by</option>
+              <option value="experience">Experience</option>
+              <option value="rating">Rating</option>
+              <option value="calls">Calls</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
 
-      {/* Language Filter */}
-      <div>
-        <select
-          value={languageValue}
-          onChange={(e) => onLanguageChange(e.target.value)}
-          className="border border-gray-300 rounded-full py-2 px-3 text-sm focus:outline-none focus:border-indigo-500"
-        >
-          <option value="All">Language</option>
-          {languages.map((lang) => (
-            <option key={lang} value={lang}>
-              {lang}
-            </option>
-          ))}
-        </select>
-      </div>
+          {/* Language Filter */}
+          <div className="relative">
+            <select
+              value={languageValue}
+              onChange={(e) => onLanguageChange(e.target.value)}
+              className="appearance-none border border-gray-300 rounded-md py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+            >
+              <option value="All">All Languages</option>
+              {languages.map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
 
-      {/* Video Call toggle */}
-      <div>
-        <button
-          onClick={() => onVideoToggle(!videoValue)}
-          className={`px-3 py-2 rounded-full text-sm border
-            ${
+          {/* Video Call toggle */}
+          <button
+            onClick={() => onVideoToggle(!videoValue)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               videoValue
-                ? "bg-indigo-500 text-white border-indigo-500"
-                : "border-gray-300 text-gray-600 bg-white"
-            } focus:outline-none`}
-        >
-          Video Call
-        </button>
+                ? "bg-orange-500 text-white"
+                : "border border-gray-300 text-gray-700 bg-white hover:bg-gray-50"
+            }`}
+          >
+            Video Available
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
+import { getAuthToken, clearAuthData, isAuthenticated } from '../utils/auth-utils';
 
 // Define types for country and authentication data
 interface Country {
@@ -16,25 +18,14 @@ interface AuthenticationData {
   [key: string]: any;
 }
 
-// Define prop types for the component
-interface AuthenticationFlowProps {
-  children?: React.ReactNode;
-  isOpen: boolean;
-  onClose: () => void;
-  onAuthenticated?: (data: AuthenticationData) => void;
-}
-
 const countries: Country[] = [
   { code: 'IN', name: 'India', dial_code: '+91', flag: '/flags/in.png' },
   { code: 'US', name: 'United States', dial_code: '+1', flag: '/flags/us.png' },
   // Other countries can be uncommented as needed
 ];
 
-export default function AuthenticationFlow({ 
-  isOpen = false, 
-  onClose = () => {}, 
-  onAuthenticated 
-}: AuthenticationFlowProps) {
+export default function LoginPage() {
+  const router = useRouter();
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries.find(c => c.code === 'IN')!);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -45,6 +36,13 @@ export default function AuthenticationFlow({
   const [sessionId, setSessionId] = useState<string | null>(null);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Check if user is already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push('/astrologers');
+    }
+  }, [router]);
   
   const filteredCountries = searchTerm 
     ? countries.filter(country => 
@@ -69,7 +67,7 @@ export default function AuthenticationFlow({
     setError(null);
     
     try {
-      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,45 +96,58 @@ export default function AuthenticationFlow({
     }
   };
 
-  const handleVerifyOtp = async (otp: string) => {
+  const handleVerifyOtp = async (data: any) => {
+    // If this is just a success notification from OtpVerificationScreen, don't re-verify
+    if (data && data.verified === true) {
+      console.log("OTP verification completed successfully by child component");
+      setError(null);
+      // Redirect to astrologers page after successful authentication
+      router.push('/astrologers');
+      return;
+    }
+
+    // Legacy OTP verification (if needed for backwards compatibility)
+    const otp = typeof data === 'string' ? data : null;
+    if (!otp) {
+      console.error("Invalid OTP data received:", data);
+      setError("Invalid OTP format");
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/verify-otp', {
+      const response = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           phone: phoneNumber,
-          country_code: selectedCountry.dial_code,
           otp: otp,
           session_id: sessionId
         }),
       });
       
-      const data: AuthenticationData = await response.json();
+      const responseData: AuthenticationData = await response.json();
       
       if (response.ok) {
-        if (data.token) {
-          localStorage.setItem('authToken', data.token);
+        if (responseData.token) {
+          localStorage.setItem('authToken', responseData.token);
           
-          document.cookie = `authToken=${data.token}; path=/; max-age=${60*60*24*7}`; // 7 days
+          document.cookie = `authToken=${responseData.token}; path=/; max-age=${60*60*24*7}`; // 7 days
           
-          console.log("Token saved successfully:", data.token);
+          console.log("Token saved successfully:", responseData.token);
         } else {
-          console.error("No token found in response:", data);
+          console.error("No token found in response:", responseData);
           setError("Authentication succeeded but no token was received.");
         }
         
-        if (onAuthenticated) {
-          onAuthenticated(data);
-        }
-        
-        onClose();
+        // Redirect to astrologers page after successful authentication
+        router.push('/astrologers');
       } else {
-        setError(data.message || 'Failed to verify OTP. Please try again.');
+        setError(responseData.message || 'Failed to verify OTP. Please try again.');
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
@@ -151,7 +162,7 @@ export default function AuthenticationFlow({
     setError(null);
     
     try {
-      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -185,8 +196,10 @@ export default function AuthenticationFlow({
     setIsDropdownOpen(false);
     setSearchTerm('');
   };
-  
-  if (!isOpen) return null;
+
+  const handleBackToHome = () => {
+    router.push('/');
+  };
 
   // Render OTP verification screen
   if (currentScreen === 'otp-verification') {
@@ -205,16 +218,16 @@ export default function AuthenticationFlow({
 
   // Render phone input screen
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
-        {/* Close button */}
+        {/* Back to home button */}
         <button 
-          onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-700 hover:text-gray-900 z-10"
-          aria-label="Close"
+          onClick={handleBackToHome}
+          className="absolute top-2 left-2 sm:top-3 sm:left-3 text-gray-700 hover:text-gray-900 z-10"
+          aria-label="Back to home"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
         

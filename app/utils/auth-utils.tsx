@@ -1,26 +1,45 @@
 // auth-utils.ts
+import Cookies from "universal-cookie";
+
+// Use environment variable for API URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 /**
  * Gets the authentication token from localStorage
  */
 export function getAuthToken(): string | null {
   try {
-    // Try localStorage first
-    const token = localStorage.getItem('authToken');
-    if (token) return token;
-
-    // Try cookies as fallback
-    const tokenCookie = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('authToken='));
+    // Try localStorage first - check both authToken and token keys
+    // const authToken = localStorage.getItem('authToken');
+    // if (authToken) return authToken;
     
-    if (tokenCookie) {
-      return tokenCookie.split('=')[1];
-    }
+    // const token = localStorage.getItem('token');
+    // if (token) return token;
 
-    return null;
+    // // Try cookies as fallback - check both keys
+    // const authTokenCookie = document.cookie
+    //   .split('; ')
+    //   .find(row => row.startsWith('authToken='));
+    
+    // if (authTokenCookie) {
+    //   return authTokenCookie.split('=')[1];
+    // }
+    
+    // const tokenCookie = document.cookie
+    //   .split('; ')
+    //   .find(row => row.startsWith('token='));
+    
+    // if (tokenCookie) {
+    //   return tokenCookie.split('=')[1];
+    // }
+
+    // return null;
+    const cookies = new Cookies(null, { path: '/' })
+    const access_token = cookies.get('access_token')
+    return access_token || null
+
   } catch (e) {
-    console.error("Error accessing localStorage:", e);
+    console.error("Error in getAuthToken:", e);
     return null;
   }
 }
@@ -73,19 +92,188 @@ export function getUserDetails(): any {
 }
 
 /**
- * Clears authentication data from localStorage and cookies
+ * Gets user profile with enhanced display name logic
+ */
+export async function fetchUserProfile(): Promise<any> {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      console.log('No authentication token found, using cached data');
+      return getUserDetails();
+    }
+
+    // Get cached user details
+    const cachedDetails = getUserDetails();
+    
+    // For now, we'll work with the cached data since the backend user profile API isn't available
+    // In the future, when the backend supports user profile API, we can add that call here
+    
+    if (cachedDetails) {
+      // Enhance the cached data with better display logic
+      const enhancedProfile = {
+        ...cachedDetails,
+        displayName: cachedDetails.name || cachedDetails.firstName || cachedDetails.phoneNumber || 'User',
+        timestamp: new Date().getTime(),
+      };
+      
+      // Update the stored details with enhanced info
+      storeUserDetails(enhancedProfile);
+      return enhancedProfile;
+    }
+
+    // If no cached data, return a basic profile
+    return {
+      phoneNumber: 'User',
+      displayName: 'User',
+      timestamp: new Date().getTime(),
+    };
+    
+  } catch (error) {
+    console.error('Error processing user profile:', error);
+    return getUserDetails() || {
+      phoneNumber: 'User',
+      displayName: 'User',
+      timestamp: new Date().getTime(),
+    };
+  }
+}
+
+/**
+ * Clears all authentication data from localStorage and cookies
  */
 export function clearAuthData(): void {
   try {
-    // Clear localStorage
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('tokenTimestamp');
-    localStorage.removeItem('userDetails');
+    console.log('🧹 Starting complete logout cleanup...');
     
-    // Clear cookies
-    document.cookie = 'authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Clear all localStorage items related to authentication
+    const itemsToRemove = [
+      'authToken',
+      'token', 
+      'access_token',
+      'refresh_token',
+      'tokenTimestamp',
+      'userDetails',
+      'fcmToken',
+      'sessionId',
+      'user',
+      'userData'
+    ];
+    
+    itemsToRemove.forEach(item => {
+      if (localStorage.getItem(item)) {
+        localStorage.removeItem(item);
+        console.log(`✅ Removed localStorage item: ${item}`);
+      }
+    });
+    
+    // Clear all authentication-related cookies
+    const cookiesToClear = [
+      'authToken',
+      'token',
+      'access_token', 
+      'refresh_token',
+      'sessionId',
+      'user',
+      'auth-token'
+    ];
+    
+    cookiesToClear.forEach(cookieName => {
+      // Clear for current domain
+      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}`;
+      // Clear for parent domain (in case of subdomain)
+      const parentDomain = window.location.hostname.split('.').slice(-2).join('.');
+      if (parentDomain !== window.location.hostname) {
+        document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=.${parentDomain}`;
+      }
+      // Clear without domain specification
+      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      console.log(`✅ Cleared cookie: ${cookieName}`);
+    });
+    
+    // Clear using universal-cookie library as well
+    try {
+      const cookies = new Cookies(null, { path: '/' });
+      cookiesToClear.forEach(cookieName => {
+        cookies.remove(cookieName, { path: '/' });
+        cookies.remove(cookieName, { path: '/', domain: window.location.hostname });
+        const parentDomain = window.location.hostname.split('.').slice(-2).join('.');
+        if (parentDomain !== window.location.hostname) {
+          cookies.remove(cookieName, { path: '/', domain: `.${parentDomain}` });
+        }
+      });
+    } catch (cookieError) {
+      console.warn('Error clearing cookies with universal-cookie:', cookieError);
+    }
+    
+    // Clear session storage as well
+    try {
+      sessionStorage.clear();
+      console.log('✅ Cleared sessionStorage');
+    } catch (sessionError) {
+      console.warn('Error clearing sessionStorage:', sessionError);
+    }
+    
+    // Clear any cached data in memory (if any global variables exist)
+    try {
+      // Reset any global auth state if it exists
+      if (typeof window !== 'undefined') {
+        (window as any).authState = null;
+        (window as any).userProfile = null;
+      }
+    } catch (globalError) {
+      console.warn('Error clearing global state:', globalError);
+    }
+    
+    console.log('🎉 Logout cleanup completed successfully');
+    
   } catch (e) {
-    console.error("Error clearing auth data:", e);
+    console.error("❌ Error during logout cleanup:", e);
+  }
+}
+
+/**
+ * Performs complete logout including backend API call and local cleanup
+ */
+export async function performLogout(): Promise<boolean> {
+  try {
+    console.log('🚪 Starting logout process...');
+    
+    const token = getAuthToken();
+    
+    // Try to call backend logout API if token exists
+    if (token) {
+      try {
+        console.log('📡 Calling backend logout API...');
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          console.log('✅ Backend logout successful');
+        } else {
+          console.warn('⚠️ Backend logout failed, but continuing with local cleanup');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ Backend logout API call failed, continuing with local cleanup:', apiError);
+      }
+    }
+    
+    // Always perform local cleanup regardless of API call result
+    clearAuthData();
+    
+    console.log('🎉 Logout process completed successfully');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Error during logout process:', error);
+    // Even if there's an error, try to clear local data
+    clearAuthData();
+    return false;
   }
 }
 
@@ -125,7 +313,7 @@ export function isTokenValid(token: string | null): boolean {
  */
 export function isAuthenticated(): boolean {
   const token = getAuthToken();
-  return isTokenValid(token);
+  return token ? true : false
 }
 
 /**
@@ -162,4 +350,52 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
     clearAuthData();
     return false;
   }
+}
+
+// export async function get(endpoint:any,access_token:any,refresh_token:any,options:any){
+//   const isBlob = options ? options.blob === true : false;
+//   try {
+//       const apiResponse = await fetch(`${API_URL}${endpoint}`, {
+//           credentials: 'include',
+//           headers: {
+//               'Content-Type': 'application/json',
+//               'cookies': refresh_token || '',
+//               'Authorization': 'Bearer ' + access_token,
+//           },
+//       })
+      
+//       return isBlob ? await apiResponse.blob() : await apiResponse.json();
+//   } catch (err) {
+//       console.error('Err in ' + endpoint, err)
+//       return isBlob ? null : { data: null, success: false, message: 'Internal Server Error' };
+//   }
+// }
+
+
+export const post=async(endpoint:any,access_token:any,body:any,options:any)=>{
+ 
+  try {
+      const apiResponse = await fetch(`${API_URL}${endpoint}`, {
+          method:'POST',
+          credentials: 'include',
+          body: JSON.stringify(body),
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + access_token,
+          },
+      })
+      updateAccessToken(apiResponse)
+      return  await apiResponse.json();
+  } catch (err) {
+      console.error('Err in '+ endpoint, err)
+      return { data: null, success: false, message: 'Internal Server Error' };
+  }
+}
+
+
+function updateAccessToken(res:any) {
+  const authToken = res.headers.get("auth-token");
+  const cookies = new Cookies(null, { path: '/' })
+  if (authToken) cookies.set('access_token', authToken)
+  return
 }

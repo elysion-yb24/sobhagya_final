@@ -49,7 +49,7 @@ export default function AuthenticationFlow({
 
   const [isLoading, setIsLoading] = useState<boolean>(false); 
   const [error, setError] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter countries for the dropdown search
@@ -77,7 +77,7 @@ export default function AuthenticationFlow({
     setError(null);
 
     try {
-      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,9 +88,7 @@ export default function AuthenticationFlow({
 
       const data = await response.json();
       if (response.ok) {
-        if (data.session_id) {
-          setSessionId(data.session_id);
-        }
+        
         setCurrentScreen('otp-verification');
       } else {
         setError(data.message || 'Failed to send OTP. Please try again.');
@@ -104,29 +102,29 @@ export default function AuthenticationFlow({
   };
 
   /** Handle final OTP verification from OtpVerificationScreen */
-  const handleVerifyOtp = async (otpData: any) => {
-    // We receive OTP data from the child; 
-    // but if you prefer verifying here, you can do so instead.
-    // In your code, you actually do the verification in the child,
-    // which is also fine. 
-    //
-    // If you want the child to do all the verifying, you can remove
-    // or simplify this. 
-    // For example, just set isLoading, etc., or store token from child:
-
-    setIsLoading(false);
-
-    // If the child returned an error, handle it:
-    if (otpData?.error) {
-      setError(otpData.error);
+  const handleVerifyOtp = async (data: any) => {
+    // If this is just a success notification from OtpVerificationScreen, don't re-verify
+    if (data && data.verified === true) {
+      console.log("OTP verification completed successfully by child component");
+      setIsLoading(false);
+      setError(null);
+      if (onAuthenticated) {
+        onAuthenticated(data);
+      }
+      onClose();
       return;
     }
 
-    // If success, call onAuthenticated:
-    if (onAuthenticated) {
-      onAuthenticated(otpData);
+    // Handle any errors from child component
+    if (data?.error) {
+      setError(data.error);
+      setIsLoading(false);
+      return;
     }
-    onClose();
+
+    // If we get here, it's likely a legacy call or unexpected data
+    console.log("Received unexpected data in handleVerifyOtp:", data);
+    setIsLoading(false);
   };
 
   /** Handle resend from OtpVerificationScreen */
@@ -135,12 +133,11 @@ export default function AuthenticationFlow({
     setError(null);
 
     try {
-      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+      const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: phoneNumber,
-          country_code: selectedCountry.dial_code,
         }),
       });
 
@@ -148,9 +145,7 @@ export default function AuthenticationFlow({
       
 
       if (response.ok) {
-        if (data.session_id) {
-          setSessionId(data.session_id);
-        }
+        
         setError(null);
       } else {
         setError(data.message || 'Failed to resend OTP. Please try again.');
@@ -181,6 +176,7 @@ export default function AuthenticationFlow({
         onVerify={handleVerifyOtp}      // Called when OTP is verified
         onResend={handleResendOtp}      // Called when user clicks "Resend OTP"
         onBack={() => setCurrentScreen('phone-input')}
+        
         isLoading={isLoading}           // We pass this down
         error={error}                   // Pass down any error message
       />

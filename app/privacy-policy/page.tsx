@@ -7,9 +7,9 @@ const PrivacyPolicy = () => {
         
         {/* Blurred Monk Logo in Center */}
         <div
-          className="absolute inset-0 flex justify-center items-center opacity-10 sm:opacity-20"
+          className="absolute inset-0 z-0"
           style={{
-            backgroundImage: "url('/monk logo.png')",
+            backgroundImage: "url('/sobhagya-logo.png')",
             backgroundSize: "contain",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -27,7 +27,7 @@ const PrivacyPolicy = () => {
 
         {/* Sections */}
         {[
-          { title: "User’s Consent", content: "By accessing and using this website, you indicate that you understand and consent to the terms of this Privacy Policy. If you do not agree, please do not use this website." },
+          { title: "User's Consent", content: "By accessing and using this website, you indicate that you understand and consent to the terms of this Privacy Policy. If you do not agree, please do not use this website." },
           { title: "Collection of Personal Information", content: "Creating a user profile with Sobhagya requires providing your phone number for OTP verification. Your first name, last name, and date of birth (DOB) are optional." },
           { title: "Purpose and Use of Data", content: "We collect this information to personalize user profiles and cater to specific needs. Users can still access services without providing DOB." },
           { title: "Data Deletion", content: "To delete your profile, navigate to the settings menu, click 'Delete your account,' and follow the instructions." },

@@ -43,19 +43,20 @@ const Footer: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-x-32 md:gap-x-16">
 
-      
+
           {/* Logo and Social Media */}
-          <div className="flex flex-col items-center justify-end gap-x-24 md:pr-1 -mt-20 mb-5">
-            <div className="relative w-[400px] h-[400px] -mt-25">
+          <div className="flex flex-col items-center justify-center gap-4 mb-24">
+            <div className="relative w-[150px] h-[150px]">
               <Image
-                src="/monk logo.png"
+                src="/sobhagya-logo.png"
                 alt="Sobhagya"
                 layout="fill"
                 objectFit="contain"
+                priority
               />
             </div>
             <p
-              className={`${eagleLake.className} text-orange-400 text-3xl mb-1 -mt-20`}
+              className={`${eagleLake.className} text-orange-400 text-4xl font-semibold`}
             >
               Sobhagya
             </p>
@@ -122,57 +123,57 @@ const Footer: React.FC = () => {
               >
                 <span className="text-orange-400 mr-2 text-lg">›</span> About us
               </Link>
-            
-            <div className="space-y-2 flex flex-col ">
-              <Link
-                href="/services"
-                className="flex items-center text-white hover:text-orange-400"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Services
-              </Link>
-              <Link
-                href="/call-with-astrologer"
-                className="flex items-center text-white hover:text-orange-400"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Call With Astrologer
-              </Link>
-              <Link
-                href="/live-session"
-                className="flex items-center text-white hover:text-orange-400 whitespace-nowrap"
-              >
-                <span className="text-orange-400 mr-2 text-lg whitespace-normal">›</span> Live Session
-              </Link>
-              
-              <Link
-                href="https://store.sobhagya.in"
-                className="flex items-center text-white hover:text-orange-400"
-                target="_blank"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Shop
-              </Link>
-              <Link
-                href="/blog"
-                className="flex items-center text-white hover:text-orange-400"
-                target="_blank"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Blog
-              </Link>
-              <Link
-                href="/contact"
-                className="flex items-center text-white hover:text-orange-400"
-                target="_blank"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Contact Us
-      
-              </Link>
-              <Link
-                href="/contact"
-                className="flex items-center text-white hover:text-orange-400"
-                target="_blank"
-              >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Sign In
-      
-              </Link>
+
+              <div className="space-y-2 flex flex-col ">
+                <Link
+                  href="/services"
+                  className="flex items-center text-white hover:text-orange-400"
+                >
+                  <span className="text-orange-400 mr-2 text-lg">›</span> Services
+                </Link>
+                <Link
+                  href="/call-with-astrologer"
+                  className="flex items-center text-white hover:text-orange-400"
+                >
+                  <span className="text-orange-400 mr-2 text-lg">›</span> Call With Astrologer
+                </Link>
+                <Link
+                  href="/live-session"
+                  className="flex items-center text-white hover:text-orange-400 whitespace-nowrap"
+                >
+                  <span className="text-orange-400 mr-2 text-lg whitespace-normal">›</span> Live Session
+                </Link>
+
+                <Link
+                  href="https://store.sobhagya.in"
+                  className="flex items-center text-white hover:text-orange-400"
+                  target="_blank"
+                >
+                  <span className="text-orange-400 mr-2 text-lg">›</span> Shop
+                </Link>
+                <Link
+                  href="/blog"
+                  className="flex items-center text-white hover:text-orange-400"
+                  target="_blank"
+                >
+                  <span className="text-orange-400 mr-2 text-lg">›</span> Blog
+                </Link>
+                <Link
+                  href="/contact"
+                  className="flex items-center text-white hover:text-orange-400"
+                  target="_blank"
+                >
+                  <span className="text-orange-400 mr-2 text-lg">›</span> Contact Us
+
+                </Link>
+                <Link
+                  href="/contact"
+                  className="flex items-center text-white hover:text-orange-400"
+                  target="_blank"
+                >
+                  <span className="text-orange-400 mr-2 text-lg">›</span> Sign In
+
+                </Link>
               </div>
             </div>
           </div>

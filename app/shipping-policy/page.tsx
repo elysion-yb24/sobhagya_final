@@ -4,12 +4,11 @@ export default function ShippingPolicy() {
         <div className="relative bg-white shadow-lg rounded-lg p-6 sm:p-8 max-w-4xl w-full overflow-hidden">
           {/* Background Image */}
           <div
-            className="absolute inset-0 bg-center bg-cover opacity-20"
+            className="absolute inset-0 bg-contain bg-center bg-no-repeat"
             style={{
-              backgroundImage: "url('/monk logo.png')",
-              backgroundSize: "contain",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
+              backgroundImage: "url('/sobhagya-logo.png')",
+              opacity: 0.05,
+              zIndex: -1,
             }}
           ></div>
   

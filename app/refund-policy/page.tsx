@@ -6,9 +6,9 @@ const RefundPolicy = () => {
       <div className="max-w-4xl w-full bg-white shadow-lg rounded-2xl p-6 sm:p-8 md:p-10 text-gray-800 mt-5 mb-5 relative">
         {/* Blurred Monk Logo in Center */}
         <div
-          className="absolute inset-0 flex justify-center items-center opacity-10 sm:opacity-20"
+          className="absolute inset-0 z-0"
           style={{
-            backgroundImage: "url('/monk logo.png')",
+            backgroundImage: "url('/sobhagya-logo.png')",
             backgroundSize: "contain",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
@@ -105,7 +105,7 @@ const RefundPolicy = () => {
             Late or Missing Refunds
           </h2>
           <p className="text-sm sm:text-base">
-            If you haven’t received your refund, check with your bank or credit
+            If you haven't received your refund, check with your bank or credit
             card provider. For further assistance, contact us at{" "}
             <a href="mailto:support@sobhagya.in" className="text-blue-600">
               support@sobhagya.in

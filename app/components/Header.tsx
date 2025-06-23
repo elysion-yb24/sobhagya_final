@@ -176,10 +176,10 @@ const Header = () => {
           <div className="md:w-1/4 lg:w-1/5 md:border-r border-gray-200 flex items-center justify-center py-3">
             <Link href="/" className="flex items-center">
               <Image
-                src="/monk logo (1).png"
-                alt="Sobhagya"
-                width={65}
-                height={65}
+                src="/sobhagya-logo.png"
+                alt="Sobhagya Logo"
+                width={150}
+                height={40}
                 priority
                 className="md:w-[55px] md:h-[55px] lg:w-[70px] lg:h-[70px]"
               />
@@ -275,10 +275,10 @@ const Header = () => {
       <div className="md:hidden flex w-full justify-between items-center py-3 px-4 border-b border-gray-200">
         <Link href="/" className="flex items-center">
           <Image
-            src="/monk logo (1).png"
-            alt="Sobhagya"
-            width={50}
-            height={50}
+            src="/sobhagya-logo.png"
+            alt="Sobhagya Logo"
+            width={120}
+            height={32}
             priority
             className="w-[50px] h-auto"
           />

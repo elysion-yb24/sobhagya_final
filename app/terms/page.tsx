@@ -6,9 +6,9 @@ const TermsOfService = () => {
       <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 max-w-3xl w-full border border-gray-200 relative">
         {/* Background Logo */}
         <div
-          className="absolute inset-0 flex justify-center items-center opacity-10 sm:opacity-15"
+          className="absolute inset-0 z-0"
           style={{
-            backgroundImage: "url('/monk logo.png')",
+            backgroundImage: "url('/sobhagya-logo.png')",
             backgroundSize: "contain",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",

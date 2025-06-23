@@ -77,10 +77,10 @@ const AboutUs = () => {
           {/* Astrology Image */}
           <div className="w-full md:w-1/3 flex justify-center">
             <Image
-              src="/monk logo.png"
-              alt="Astrology Icon"
-              width={400}
-              height={400}
+              src="/sobhagya-logo.png"
+              alt="About Us"
+              width={200}
+              height={200}
               className="object-contain"
             />
           </div>

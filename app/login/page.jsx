@@ -115,7 +115,7 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
 
   // Render phone input screen
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
+          <div className="fixed inset-0 z-[9999] flex justify-center items-center bg-black bg-opacity-50 p-4">
       <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
         {/* Close button */}
         <button 

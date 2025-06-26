@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
 import { useRouter } from "next/navigation";
 
-import PhoneVerificationModal from "../../login/page"; 
+// Remove the import of the full login page - we'll handle navigation differently 
 
 export default function Call9() {
   const [selectedChallenges, setSelectedChallenges] = useState([]);
   const [isExiting, setIsExiting] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
   const challengeOptions = [
@@ -34,19 +33,15 @@ export default function Call9() {
 
   const handleNext = () => {
     if (selectedChallenges.length > 0) {
-      setIsModalOpen(true);
+      // Store selected challenges in sessionStorage for later use
+      sessionStorage.setItem('selectedChallenges', JSON.stringify(selectedChallenges));
+      
+      // Navigate to the login page instead of opening a modal
+      setIsExiting(true);
+      setTimeout(() => {
+        router.push("/login");
+      }, 500);
     }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleModalSubmit = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      router.push("calls/call9");
-    }, 500);
   };
 
   return (
@@ -145,11 +140,7 @@ export default function Call9() {
         )}
       </AnimatePresence>
 
-      {/* Phone Verification Modal */}
-      <PhoneVerificationModal 
-        isOpen={isModalOpen} 
-        onClose={handleCloseModal} 
-      />
+      {/* Modal removed - navigation happens directly to /login page */}
     </>
   );
 }

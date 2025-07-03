@@ -1,41 +1,57 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
+import { getAuthToken, clearAuthData, isAuthenticated, initializeAuth } from '../utils/auth-utils';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
-const countries = [
+// Define types for country and authentication data
+interface Country {
+  code: string;
+  name: string;
+  dial_code: string;
+  flag: string;
+}
+
+interface AuthenticationData {
+  token?: string;
+  [key: string]: any;
+}
+
+const countries: Country[] = [
   { code: 'IN', name: 'India', dial_code: '+91', flag: '/flags/in.png' },
   { code: 'US', name: 'United States', dial_code: '+1', flag: '/flags/us.png' },
-  // Uncomment these for more countries
-  // { code: 'CA', name: 'Canada', dial_code: '+1', flag: '/flags/ca.png' },
-  // { code: 'AU', name: 'Australia', dial_code: '+61', flag: '/flags/au.png' },
-  // { code: 'DE', name: 'Germany', dial_code: '+49', flag: '/flags/de.png' },
-  // { code: 'FR', name: 'France', dial_code: '+33', flag: '/flags/fr.png' },
-  // { code: 'IT', name: 'Italy', dial_code: '+39', flag: '/flags/it.png' },
-  // { code: 'JP', name: 'Japan', dial_code: '+81', flag: '/flags/jp.png' },
-  // { code: 'CN', name: 'China', dial_code: '+86', flag: '/flags/cn.png' },
-  // { code: 'BR', name: 'Brazil', dial_code: '+55', flag: '/flags/br.png' },
-  // { code: 'RU', name: 'Russia', dial_code: '+7', flag: '/flags/ru.png' },
-  // { code: 'SA', name: 'Saudi Arabia', dial_code: '+966', flag: '/flags/sa.png' },
-  // { code: 'ZA', name: 'South Africa', dial_code: '+27', flag: '/flags/za.png' },
-  // { code: 'MX', name: 'Mexico', dial_code: '+52', flag: '/flags/mx.png' },
-  // { code: 'SG', name: 'Singapore', dial_code: '+65', flag: '/flags/sg.png' },
-  // { code: 'NZ', name: 'New Zealand', dial_code: '+64', flag: '/flags/nz.png' },
-  // { code: 'AE', name: 'United Arab Emirates', dial_code: '+971', flag: '/flags/ae.png' },
-  // { code: 'KR', name: 'South Korea', dial_code: '+82', flag: '/flags/kr.png' },
-  // { code: 'ES', name: 'Spain', dial_code: '+34', flag: '/flags/es.png' },
+  // Other countries can be uncommented as needed
 ];
 
-export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated }) {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [selectedCountry, setSelectedCountry] = useState(countries.find(c => c.code === 'IN'));
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentScreen, setCurrentScreen] = useState('phone-input'); // 'phone-input' or 'otp-verification'
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+export default function LoginPage() {
+  const router = useRouter();
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [selectedCountry, setSelectedCountry] = useState<Country>(countries.find(c => c.code === 'IN')!);
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [currentScreen, setCurrentScreen] = useState<'phone-input' | 'otp-verification'>('phone-input');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Check if user is already authenticated
+  useEffect(() => {
+    // Check if user is already authenticated
+    try {
+      const isAuthValid = initializeAuth();
+      if (isAuthValid) {
+        console.log('✅ User already authenticated, redirecting to astrologers');
+        router.push('/astrologers');
+      }
+    } catch (error) {
+      console.log('❌ Authentication check failed on login page:', error);
+      // Continue to show login page
+    }
+  }, [router]);
   
   const filteredCountries = searchTerm 
     ? countries.filter(country => 
@@ -44,8 +60,8 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     : countries;
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
       }
     }
@@ -54,25 +70,29 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch('https://micro.sobhagya.in/auth/api/signup-login/send-otp', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone: phoneNumber
+          phone: phoneNumber,
+          country_code: selectedCountry.dial_code
         }),
       });
       
       const data = await response.json();
       
       if (response.ok) {
+        if (data.session_id) {
+          setSessionId(data.session_id);
+        }
         setCurrentScreen('otp-verification');
       } else {
         setError(data.message || 'Failed to send OTP. Please try again.');
@@ -85,20 +105,110 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
     }
   };
 
-  const handleVerifyOtp = (userData) => {
-    if (onAuthenticated) {
-      onAuthenticated(userData);
+  const handleVerifyOtp = async (data: any) => {
+    // If this is just a success notification from OtpVerificationScreen, don't re-verify
+    if (data && data.verified === true) {
+      console.log("OTP verification completed successfully by child component");
+      setError(null);
+      // Redirect to astrologers page after successful authentication
+      router.push('/astrologers');
+      return;
     }
-    onClose();
+
+    // Legacy OTP verification (if needed for backwards compatibility)
+    const otp = typeof data === 'string' ? data : null;
+    if (!otp) {
+      console.error("Invalid OTP data received:", data);
+      setError("Invalid OTP format");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          otp: otp,
+          session_id: sessionId
+        }),
+      });
+      
+      const responseData: AuthenticationData = await response.json();
+      
+      if (response.ok) {
+        if (responseData.token) {
+          localStorage.setItem('authToken', responseData.token);
+          
+          document.cookie = `authToken=${responseData.token}; path=/; max-age=${60*60*24*7}`; // 7 days
+          
+          console.log("Token saved successfully:", responseData.token);
+        } else {
+          console.error("No token found in response:", responseData);
+          setError("Authentication succeeded but no token was received.");
+        }
+        
+        // Redirect to astrologers page after successful authentication
+        router.push('/astrologers');
+      } else {
+        setError(responseData.message || 'Failed to verify OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError('An error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const selectCountry = (country) => {
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          country_code: selectedCountry.dial_code
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.session_id) {
+          setSessionId(data.session_id);
+        }
+        setError(null);
+      } else {
+        setError(data.message || 'Failed to resend OTP. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error resending OTP:', error);
+      setError('An error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const selectCountry = (country: Country) => {
     setSelectedCountry(country);
     setIsDropdownOpen(false);
     setSearchTerm('');
   };
-  
-  if (!isOpen) return null;
+
+  const handleBackToHome = () => {
+    router.push('/');
+  };
 
   // Render OTP verification screen
   if (currentScreen === 'otp-verification') {
@@ -107,24 +217,26 @@ export default function AuthenticationFlow({ isOpen, onClose, onAuthenticated })
         phoneNumber={phoneNumber}
         countryCode={selectedCountry.dial_code}
         onVerify={handleVerifyOtp}
-        onResend={() => console.log('OTP resent')}
+        onResend={handleResendOtp}
         onBack={() => setCurrentScreen('phone-input')}
+        isLoading={isLoading}
+        error={error}
       />
     );
   }
 
   // Render phone input screen
   return (
-          <div className="fixed inset-0 z-[9999] flex justify-center items-center bg-black bg-opacity-50 p-4">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
-        {/* Close button */}
+        {/* Back to home button */}
         <button 
-          onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-700 hover:text-gray-900 z-10"
-          aria-label="Close"
+          onClick={handleBackToHome}
+          className="absolute top-2 left-2 sm:top-3 sm:left-3 text-gray-700 hover:text-gray-900 z-10"
+          aria-label="Back to home"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
         

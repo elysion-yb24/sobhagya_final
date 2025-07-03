@@ -38,7 +38,7 @@ export default function CallingApiNotifications({
   const getAstrologerId = useCallback(() => {
     if (astrologerId) return astrologerId;
     const userDetails = getUserDetails();
-    return userDetails?.id;
+    return userDetails?._id;  
   }, [astrologerId]);
 
   // Fetch pending calls from calling API
@@ -151,19 +151,47 @@ export default function CallingApiNotifications({
               // For accepted calls, use proper socket + LiveKit integration
               console.log('📱 Call accepted, setting up LiveKit session...');
               
-              // First try to join via socket for proper integration
+              // Connect astrologer socket with broadcaster role
               try {
-                const { socketManager } = await import('../../utils/socket');
-                await socketManager.connect(call.roomName);
-                console.log('📱 Socket connected for astrologer');
-                
-                // Use a proper socket method instead of direct socket access
-                try {
-                  await socketManager.initiateVideoCall(call.roomName, currentAstrologerId);
-                  console.log('📱 Astrologer joined via socket successfully');
-                } catch (socketJoinError) {
-                  console.warn('📱 Socket join failed, continuing with LiveKit only:', socketJoinError);
-                }
+                const { io } = await import('socket.io-client');
+                const socket = io('https://micro.sobhagya.in', {
+                  path: '/call-socket/socket.io',
+                  query: {
+                    userId: currentAstrologerId,
+                    role: 'broadcaster' // Important: Connect as broadcaster
+                  },
+                  transports: ['websocket']
+                });
+
+                socket.on('connect', () => {
+                  console.log('📱 Astrologer socket connected:', socket.id);
+                  
+                  // Register with the channel
+                  socket.emit('register', {
+                    userId: currentAstrologerId,
+                    channelId: call.roomName
+                  });
+
+                  // Emit broadcaster_joined event
+                  socket.emit('broadcaster_joined', {
+                    channelId: call.roomName,
+                    userId: currentAstrologerId
+                  }, (response: any) => {
+                    console.log('📱 Broadcaster joined response:', response);
+                    if (response && response.error) {
+                      console.error('❌ Failed to join as broadcaster:', response);
+                    } else {
+                      console.log('✅ Astrologer successfully joined as broadcaster');
+                    }
+                  });
+                });
+
+                socket.on('connect_error', (error: any) => {
+                  console.error('❌ Astrologer socket connection error:', error);
+                });
+
+                // Store socket reference for cleanup
+                (window as any).astrologerSocket = socket;
               } catch (socketError) {
                 console.warn('📱 Socket integration failed, using LiveKit directly:', socketError);
               }

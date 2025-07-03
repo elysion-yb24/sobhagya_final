@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import VideoCallRoom from '../components/video/VideoCallRoom';
 import { generateRoomName, generateParticipantIdentity } from '../config/livekit';
@@ -26,85 +26,202 @@ export default function AstrologerVideoCallPage() {
   const userName = searchParams?.get('userName') ?? null;
   const roomName = searchParams?.get('roomName') ?? null;
   const callType = searchParams?.get('callType') ?? 'video';
+  const socketRef = useRef<any>(null);
 
   useEffect(() => {
-    const initializeCall = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    if (!userId || !userName || !roomName || !callType) {
+      setError("Missing video call parameters");
+      return;
+    }
 
-        // Check authentication
-        const token = getAuthToken();
-        const astrologerDetails = getUserDetails();
-
-        if (!token || !astrologerDetails?.id) {
-          throw new Error('Authentication required. Please log in.');
-        }
-
-        if (!userId || !roomName) {
-          throw new Error('Invalid call parameters. User ID and room name are required.');
-        }
-
-        // Generate participant details for astrologer
-        const participantIdentity = generateParticipantIdentity(astrologerDetails.id, 'astrologer');
-        const participantName = astrologerDetails.name || 'Astrologer';
-
-        console.log('Initializing astrologer video call:', {
-          roomName,
-          participantIdentity,
-          participantName,
-          userId,
-          userName,
-        });
-
-        // Get LiveKit token from our API
-        const response = await fetch('/api/livekit/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            roomName,
-            participantName,
-            participantIdentity,
-            metadata: JSON.stringify({
-              role: 'astrologer',
-              astrologerId: astrologerDetails.id,
-              userId: userId,
-              callType,
-            }),
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to get access token');
-        }
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to generate token');
-        }
-
-        setTokenData({
-          token: data.token,
-          wsURL: data.wsURL,
-          roomName: data.roomName,
-          participantIdentity: data.participantIdentity,
-        });
-
-      } catch (err) {
-        console.error('Error initializing astrologer video call:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize video call');
-      } finally {
-        setLoading(false);
-      }
+    if (!tokenData) {
+      initializeCall();
+    } else {
+      // If we have token data, initialize socket and LiveKit
+      initializeSocket();
+      initializeLiveKit();
+    }
+    
+    return () => {
+      cleanup();
     };
+  }, [userId, userName, roomName, callType, tokenData]);
 
-    initializeCall();
-  }, [userId, userName, roomName, callType]);
+  const initializeCall = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Check authentication
+      const token = getAuthToken();
+      const astrologerDetails = getUserDetails();
+
+      if (!token || !astrologerDetails?._id) {
+        throw new Error('Authentication required. Please log in.');
+      }
+
+      if (!userId || !roomName) {
+        throw new Error('Invalid call parameters. User ID and room name are required.');
+      }
+
+      // Generate participant details for astrologer
+      const participantIdentity = generateParticipantIdentity(astrologerDetails._id, 'astrologer');
+      const participantName = astrologerDetails.name || 'Astrologer';
+
+      console.log('Initializing astrologer video call:', {
+        roomName,
+        participantIdentity,
+        participantName,
+        userId,
+        userName,
+      });
+
+      // Get LiveKit token from our API
+      const response = await fetch('/api/livekit/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          roomName,
+          participantName,
+          participantIdentity,
+          metadata: JSON.stringify({
+            role: 'astrologer',
+            astrologerId: astrologerDetails._id,
+            userId: userId,
+            callType,
+          }),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get access token');
+      }
+
+      const data = await response.json();
+
+      console.log('🎫 LiveKit token response:', {
+        success: data.success,
+        hasToken: !!data.token,
+        hasWsURL: !!data.wsURL,
+        roomName: data.roomName,
+        participantIdentity: data.participantIdentity,
+        tokenLength: data.token?.length
+      });
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to generate token');
+      }
+
+      setTokenData({
+        token: data.token,
+        wsURL: data.wsURL,
+        roomName: data.roomName,
+        participantIdentity: data.participantIdentity,
+      });
+
+    } catch (err) {
+      console.error('Error initializing astrologer video call:', err);
+      setError(err instanceof Error ? err.message : 'Failed to initialize video call');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const initializeSocket = async () => {
+    try {
+      console.log('🔌 Initializing astrologer socket connection...');
+      
+      // Get astrologer details from localStorage or URL params
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      const astrologerId = userDetails?.id || userDetails?._id || userId;
+      
+      console.log('🔍 Astrologer details:', {
+        astrologerId,
+        userId,
+        userDetails,
+        roomName,
+        userName
+      });
+
+      if (!astrologerId) {
+        console.error('❌ No astrologer ID found for socket connection');
+        return;
+      }
+
+      // Dynamic import of socket.io-client
+      const { io } = await import('socket.io-client');
+      
+      // Connect to socket server as broadcaster
+      const socket = io('https://micro.sobhagya.in', {
+        path: '/call-socket/socket.io',
+        query: {
+          userId: astrologerId,
+          role: 'broadcaster' // Important: Connect as broadcaster
+        },
+        transports: ['websocket']
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('✅ Astrologer socket connected:', socket.id);
+        
+        // Register with the channel
+        socket.emit('register', {
+          userId: astrologerId,
+          channelId: roomName
+        });
+
+        // Emit broadcaster_joined event to notify backend
+        socket.emit('broadcaster_joined', {
+          channelId: roomName,
+          userId: astrologerId
+        }, (response: any) => {
+          console.log('👥 Broadcaster joined response:', response);
+          if (response && response.error) {
+            console.error('❌ Failed to join as broadcaster:', response);
+            setError(`Failed to join call: ${response.message || response.error}`);
+          } else {
+            console.log('✅ Astrologer successfully joined as broadcaster');
+          }
+        });
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ Astrologer socket disconnected');
+      });
+
+      socket.on('call_end', (data: any) => {
+        console.log('📞 Call ended:', data);
+        cleanup();
+        window.close();
+      });
+
+      socket.on('connect_error', (error: any) => {
+        console.error('❌ Astrologer socket connection error:', error);
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to initialize astrologer socket:', error);
+    }
+  };
+
+  const initializeLiveKit = async () => {
+    // This function is called when the component mounts
+    // The actual LiveKit initialization happens in the VideoCallRoom component
+    console.log('🎥 Initializing LiveKit for astrologer...');
+  };
+
+  const cleanup = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+  };
 
   const handleAcceptCall = () => {
     setCallAccepted(true);

@@ -1,251 +1,374 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { getUserDetails, getAuthToken } from '../utils/auth-utils';
+import InsufficientBalanceModal from '../components/ui/InsufficientBalanceModal';
 import VideoCallRoom from '../components/video/VideoCallRoom';
-import { generateRoomName, generateParticipantIdentity } from '../config/livekit';
-import { getAuthToken, getUserDetails } from '../utils/auth-utils';
-import { Loader2, AlertCircle, Phone } from 'lucide-react';
-import { socketManager } from '../utils/socket';
-
-interface TokenData {
-  token: string;
-  wsURL: string;
-  roomName: string;
-  participantIdentity: string;
-}
 
 export default function VideoCallPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [tokenData, setTokenData] = useState<TokenData | null>(null);
-  const [loading, setLoading] = useState(true);
+  
+  const token = searchParams?.get('token');
+  const roomName = searchParams?.get('room');
+  const astrologerName = searchParams?.get('astrologer');
+  const wsURL = searchParams?.get('wsURL');
+  
   const [error, setError] = useState<string | null>(null);
+  const [broadcasterStatus, setBroadcasterStatus] = useState<'waiting' | 'joined' | 'not_allowed' | 'access_denied' | 'error'>('waiting');
+  
+  const socketRef = useRef<any>(null);
 
-  // Get parameters from URL
-  const astrologerId = searchParams?.get('astrologerId') || null;
-  const astrologerName = searchParams?.get('astrologerName') || null;
-  const callType = searchParams?.get('callType') || 'video';
-  const channelId = searchParams?.get('channelId') || null;
-  const urlToken = searchParams?.get('token') || null;
-  const livekitSocketURL = searchParams?.get('livekitSocketURL') || null;
+  // Wallet balance states
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(true);
+  const [isInitializingCall, setIsInitializingCall] = useState(false);
 
+  // Check wallet balance and initialize call
   useEffect(() => {
-    const initializeCall = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Check authentication
-        const token = getAuthToken();
-        const userDetails = getUserDetails();
-
-        if (!token || !userDetails?.id) {
-          throw new Error('Authentication required. Please log in.');
-        }
-
-        if (!astrologerId) {
-          throw new Error('Astrologer ID is required.');
-        }
-
-        // Check if we have token from URL or sessionStorage
-        let callData = null;
-        
-        if (urlToken && livekitSocketURL && channelId) {
-          // Use data from URL
-          callData = {
-            token: urlToken,
-            livekitSocketURL: livekitSocketURL,
-            channel: channelId,
-          };
-        } else if (typeof window !== 'undefined') {
-          // Try to get data from sessionStorage
-          const storedData = sessionStorage.getItem('videoCallData');
-          if (storedData) {
-            try {
-              callData = JSON.parse(storedData);
-            } catch (parseError) {
-              console.warn('Failed to parse stored call data:', parseError);
-              // Continue without stored data
-            }
-          }
-        }
-
-        if (!callData || !callData.token) {
-          throw new Error('Call data not found. Please initiate the call from the astrologer profile page.');
-        }
-
-        console.log('Using call data:', {
-          hasToken: !!callData.token,
-          channelId: callData.channel || channelId,
-          astrologerId,
-          astrologerName,
-        });
-
-        const roomName = callData.channel || channelId || `channel_${astrologerId}_${userDetails.id}`;
-        
-        // Initialize socket connection for call management (optional)
-        console.log('Setting up LiveKit video call...');
-        
-        try {
-          // Connect to socket for call management (optional, will fallback if fails)
-          await socketManager.connect(roomName);
-          console.log('Socket connected for call management');
-          
-          // Initiate call through socket to trigger notifications (optional)
-          await socketManager.initiateVideoCall(roomName, astrologerId);
-          console.log('Call initiated through socket');
-        } catch (socketError) {
-          console.warn('Socket connection failed, continuing with LiveKit only:', socketError);
-          // Continue without socket - LiveKit will still work
-        }
-        
-        // Validate LiveKit connection URL
-        const wsURL = callData.livekitSocketURL || 'wss://sobhagya-iothxaak.livekit.cloud';
-        
-        setTokenData({
-          token: callData.token,
-          wsURL: wsURL,
-          roomName: roomName,
-          participantIdentity: userDetails.id,
-        });
-
-        console.log('Video call initialized successfully');
-
-      } catch (err) {
-        console.error('Error initializing video call:', err);
-        const errorMessage = err instanceof Error ? err.message : 'Failed to initialize video call';
-        setError(errorMessage);
-        
-        // If it's an authentication error, redirect to login
-        if (errorMessage.includes('Authentication required')) {
-          setTimeout(() => {
-            router.push('/login');
-          }, 2000);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeCall();
-  }, [astrologerId, astrologerName, callType, channelId, urlToken, livekitSocketURL, router]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      // End call and disconnect socket when component unmounts
-      if (channelId && socketManager.isSocketConnected()) {
-        socketManager.endCall(channelId, 'PAGE_CLOSED').catch(console.error);
-        socketManager.disconnect();
-      }
-      
-      // Clean up any stored call data when component unmounts
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('videoCallData');
-      }
-    };
-  }, [channelId]);
-
-  const handleDisconnect = useCallback(() => {
-    console.log('Video call disconnected, navigating back to astrologers page');
-    // Clear any stored call data
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('videoCallData');
+    if (token && roomName) {
+      fetchWalletPageData();
+    } else {
+      setError('Missing video call parameters');
+      setIsCheckingBalance(false);
     }
-    // Navigate to astrologers page
-    router.push('/astrologers');
-  }, [router]);
+  }, [token, roomName]);
 
-  const handleRetry = () => {
-    setError(null);
-    setLoading(true);
-    // Trigger re-initialization
-    window.location.reload();
+  const initializeSocket = async () => {
+    try {
+      console.log('🔌 Initializing socket connection...');
+      
+      // Get user details from localStorage
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      const userId = userDetails?.id || userDetails?._id;
+      
+      if (!userId) {
+        console.error('❌ No user ID found for socket connection');
+        return;
+      }
+
+      // Dynamic import of socket.io-client
+      const { io } = await import('socket.io-client');
+      
+      // Connect to socket server
+      const socket = io('https://micro.sobhagya.in', {
+        path: '/call-socket/socket.io',
+        query: {
+          userId,
+          role: 'user'
+        },
+        transports: ['websocket']
+      });
+
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        console.log('✅ Socket connected:', socket.id);
+        
+        // Register with the channel
+        socket.emit('register', {
+          userId,
+          channelId: roomName
+        });
+
+        // Initiate call
+        socket.emit('initiate_call', {
+          userId,
+          userType: 'user',
+          callType: 'video',
+          channelId: roomName,
+          callThrough: 'livekit'
+        }, (response: any) => {
+          console.log('📞 Initiate call response:', response);
+          
+          if (response && response.error) {
+            console.error('❌ Failed to initiate call:', response);
+            setError(`Failed to initiate call: ${response.message || response.error}`);
+          } else if (response && response.success === false) {
+            console.error('❌ Call initiation unsuccessful:', response);
+            setError(`Call setup failed: ${response.message || 'Unknown error'}`);
+          } else {
+            console.log('✅ Call initiated successfully');
+          }
+        });
+
+        // Join the call
+        socket.emit('user_joined', {
+          channelId: roomName,
+          userType: 'user'
+        }, (response: any) => {
+          console.log('👥 User joined response:', response);
+          
+          if (response && response.error) {
+            console.error('❌ Failed to join call:', response);
+            setError(`Failed to join call: ${response.message || response.error}`);
+          } else if (response && response.success === false) {
+            console.error('❌ User join unsuccessful:', response);
+            setError(`Join failed: ${response.message || 'Unknown error'}`);
+          } else {
+            console.log('✅ User joined successfully');
+          }
+        });
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ Socket disconnected');
+      });
+
+      socket.on('broadcaster_joined', (data: any) => {
+        // Support both {resp: ...} and direct object
+        const resp = data?.resp || data;
+        console.log('👥 Broadcaster joined:', resp);
+        // Handle different response statuses
+        if (resp && resp.status) {
+          switch (resp.status) {
+            case 'NOT_ALLOWED':
+              console.error('❌ Broadcaster NOT_ALLOWED:', {
+                reason: resp.reason || 'Unknown reason',
+                message: resp.message || 'Astrologer is not authorized to join this call',
+                data: resp
+              });
+              setBroadcasterStatus('not_allowed');
+              // Show user-friendly error message based on the reason
+              let errorMessage = 'Astrologer is not available for video calls right now';
+              if (resp.reason === 'INSUFFICIENT_BALANCE') {
+                errorMessage = 'Astrologer has insufficient balance to join the call';
+              } else if (resp.reason === 'ALREADY_IN_CALL') {
+                errorMessage = 'Astrologer is currently in another call';
+              } else if (resp.reason === 'OFFLINE') {
+                errorMessage = 'Astrologer is currently offline';
+              } else if (resp.reason === 'VIDEO_NOT_ALLOWED') {
+                errorMessage = 'Video calls are not enabled for this astrologer';
+              } else if (resp.message) {
+                errorMessage = resp.message;
+              }
+              setError(`Call connection failed: ${errorMessage}`);
+              // End the call after showing error
+              setTimeout(() => {
+                cleanup();
+                window.close();
+              }, 5000);
+              break;
+            case 'SUCCESS':
+            case 'ALLOWED':
+              console.log('✅ Broadcaster successfully joined the call');
+              setBroadcasterStatus('joined');
+              break;
+            default:
+              console.warn('⚠️ Unknown broadcaster status:', resp.status);
+              setBroadcasterStatus('error');
+              break;
+          }
+        } else {
+          // Legacy format - assume success if no status field
+          console.log('✅ Broadcaster joined (legacy format)');
+          setBroadcasterStatus('joined');
+        }
+      });
+
+      socket.on('call_end', (data: any) => {
+        console.log('📞 Call ended:', data);
+        cleanup();
+        window.close();
+      });
+
+      socket.on('connect_error', (error: any) => {
+        console.error('❌ Socket connection error:', error);
+      });
+
+    } catch (error) {
+      console.error('❌ Failed to initialize socket:', error);
+    }
   };
 
-  if (loading) {
+  const cleanup = () => {
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+  };
+
+  const handleDisconnect = () => {
+    // Emit end call event via socket
+    if (socketRef.current && roomName) {
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      const userId = userDetails?.id || userDetails?._id;
+      
+      socketRef.current.emit('end_call', {
+        channelId: roomName,
+        userId,
+        reason: 'USER_ENDED_CALL'
+      });
+    }
+    
+    cleanup();
+    window.close(); // Close the popup window
+  };
+
+  const fetchWalletPageData = async () => {
+    try {
+      setIsCheckingBalance(true);
+      const token = getAuthToken();
+      if (!token) {
+        setError("Authentication required");
+        return 0;
+      }
+
+      const response = await fetch(
+        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const balance = data.data?.balance || 0;
+        setWalletBalance(balance);
+
+        // Check if user has sufficient balance for video call
+        const estimatedCost = getEstimatedCallCost();
+        
+        if (balance < estimatedCost) {
+          setShowInsufficientBalanceModal(true);
+          return balance;
+        }
+
+        // If balance is sufficient, proceed with call initialization
+        initializeCall();
+        return balance;
+      } else {
+        setError("Failed to check wallet balance");
+        return 0;
+      }
+    } catch (error) {
+      console.error('Error checking wallet balance:', error);
+      setError("Failed to check wallet balance");
+      return 0;
+    } finally {
+      setIsCheckingBalance(false);
+    }
+  };
+
+  const getEstimatedCallCost = () => {
+    // Get astrologer details from URL params or localStorage
+    const searchParams = new URLSearchParams(window.location.search);
+    const videoRpm = searchParams.get('videoRpm') || searchParams.get('rpm') || '25'; // Default video RPM
+    
+    // Estimate minimum 2 minutes cost
+    return parseInt(videoRpm) * 2;
+  };
+
+  const getAstrologerName = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('astrologerName') || 'Astrologer';
+  };
+
+  const getApiBaseUrl = () => {
+    return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://micro.sobhagya.in';
+  };
+
+  const initializeCall = async () => {
+    try {
+      setIsInitializingCall(true);
+      
+      // Initialize socket connection
+      await initializeSocket();
+      
+    } catch (error) {
+      console.error('Error initializing call:', error);
+      setError('Failed to initialize call');
+    } finally {
+      setIsInitializingCall(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Call Error</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCheckingBalance) {
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
         <div className="text-center text-white">
           <div className="mb-6">
             <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mb-4">
-              <Phone className="h-10 w-10 text-white animate-pulse" />
+              <div className="w-10 h-10 bg-white rounded-full animate-pulse"></div>
             </div>
           </div>
           
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Loader2 className="w-6 h-6 animate-spin" />
-            <span className="text-xl font-semibold">Connecting to video call...</span>
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+            <span className="text-xl font-semibold">Checking balance...</span>
           </div>
           
           <p className="text-gray-300 text-sm">
-            {astrologerName ? `Preparing call with ${astrologerName}` : 'Setting up your video call'}
+            Verifying wallet balance for video call
           </p>
-          
-          <div className="mt-6">
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            </div>
-          </div>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!token || !roomName) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center text-white max-w-md mx-auto px-6">
-          <div className="mb-6">
-            <div className="mx-auto w-20 h-20 bg-red-500 rounded-full flex items-center justify-center mb-4">
-              <AlertCircle className="h-10 w-10 text-white" />
-            </div>
-          </div>
-          
-          <h2 className="text-2xl font-bold mb-4">Connection Failed</h2>
-          <p className="text-gray-300 mb-6">{error}</p>
-          
-          <div className="flex gap-4 justify-center">
-            <button
-              onClick={handleRetry}
-              className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors"
-            >
-              Try Again
-            </button>
-            
-            <button
-              onClick={() => router.push('/astrologers')}
-              className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition-colors"
-            >
-              Go Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!tokenData) {
-    return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center text-white">
-          <p>Preparing video call...</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Invalid Call</h2>
+          <p className="text-gray-600 mb-6">Missing video call parameters</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Go Back
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <VideoCallRoom
-      token={tokenData.token}
-      wsURL={tokenData.wsURL}
-      roomName={tokenData.roomName}
-      participantName={`User ${tokenData.participantIdentity}`}
-      astrologerName={astrologerName || undefined}
-      onDisconnect={handleDisconnect}
-    />
+    <>
+      <VideoCallRoom
+        token={token}
+        wsURL={wsURL || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://sobhagya-iothxaak.livekit.cloud'}
+        roomName={roomName}
+        participantName={getUserDetails()?.name || 'User'}
+        astrologerName={astrologerName ? decodeURIComponent(astrologerName) : undefined}
+        onDisconnect={handleDisconnect}
+      />
+
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        isOpen={showInsufficientBalanceModal}
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        requiredAmount={getEstimatedCallCost()}
+        currentBalance={walletBalance}
+        serviceType="call"
+        astrologerName={getAstrologerName()}
+      />
+    </>
   );
 } 

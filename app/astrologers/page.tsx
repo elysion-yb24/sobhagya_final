@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect, useCallback } from "react";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import FilterBar from "../components/astrologers/FilterBar";
 import { useRouter } from "next/navigation";
-import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../utils/auth-utils";
+import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails, initializeAuth, isAuthenticatedAsync, updateTokenActivity } from "../utils/auth-utils";
 import TransactionHistory from "../components/history/TransactionHistory";
 import CallHistory from "../components/history/CallHistory";
 import { 
@@ -634,8 +634,8 @@ export default function AstrologersPage() {
   useEffect(() => {
     if (!mounted) return;
 
-    // Check authentication status on mount
-    console.log('🔍 Astrologers page mounted - checking authentication...');
+    // Initialize authentication on mount
+    console.log('🔍 Astrologers page mounted - initializing authentication...');
     
     // Check if returning from video call
     const returningFromVideoCall = typeof window !== 'undefined' && 
@@ -646,36 +646,21 @@ export default function AstrologersPage() {
       sessionStorage.removeItem('returning_from_video_call');
     }
     
-    // More robust authentication check after video call disconnection
-    const token = getAuthToken();
-    console.log('🔑 Current token status:', token ? 'Present' : 'Missing');
-    console.log('🔄 Returning from video call:', returningFromVideoCall);
+    // Initialize auth with token validation and extension
+    const isAuthValid = initializeAuth();
     
-    if (!token || !isAuthenticated()) {
-      console.log('❌ Authentication failed - clearing data and redirecting');
-      // Clear any stale authentication data
+    if (!isAuthValid) {
+      console.log('❌ Authentication initialization failed - redirecting to login');
       clearAuthData();
-      // Use setTimeout to ensure proper navigation after video call cleanup
-      setTimeout(() => {
-        router.push("/");
-      }, 100);
+      router.push("/");
       return;
     }
 
-    console.log('✅ Authenticated, initializing data fetch...');
+    console.log('✅ Authentication validated, initializing data fetch...');
     
     // Add a delay to ensure proper cleanup after video call disconnect
     // This prevents the 401 error when returning from video calls
     const initializeData = setTimeout(() => {
-      // Double-check authentication before making API calls
-      const currentToken = getAuthToken();
-      if (!currentToken || !isAuthenticated()) {
-        console.log('❌ Token expired during initialization, redirecting');
-        clearAuthData();
-        router.push("/");
-        return;
-      }
-      
       console.log('🚀 Starting data fetch...');
       fetchAstrologers(1);
       fetchWalletBalance();
@@ -688,28 +673,40 @@ export default function AstrologersPage() {
           loadAllAstrologers();
         }
       }, 2000); // Wait 2 seconds after initial load to start loading all
-    }, 800); // Increased delay to ensure video call cleanup
+    }, returningFromVideoCall ? 800 : 100); // Longer delay after video call
     
-    // Set up token check interval with better error handling
+    // Set up token check interval with enhanced error handling
     const checkInterval = setInterval(() => {
       const currentToken = getAuthToken();
-      if (!currentToken || !isAuthenticated()) {
+      if (!currentToken) {
+        console.log('❌ No token found during periodic check, redirecting');
+        clearInterval(checkInterval);
+        clearAuthData();
+        router.push("/");
+        return;
+      }
+
+      // Use authentication check with activity-based extension
+      const isAuth = isAuthenticatedAsync();
+      if (!isAuth) {
         console.log('❌ Authentication expired during session, cleaning up');
         clearInterval(checkInterval);
         clearAuthData();
         router.push("/");
       }
-    }, 60000);
+    }, 60000); // Check every minute
 
     // Set up wallet balance refresh interval - reduced frequency
     const walletInterval = setInterval(() => {
-      // Only fetch if still authenticated
-      if (getAuthToken() && isAuthenticated()) {
+      // Only fetch if still authenticated with valid token
+      const isAuth = isAuthenticatedAsync();
+      if (isAuth) {
         fetchWalletBalance();
       }
-    }, 120000);
+    }, 120000); // Check every 2 minutes
     
     return () => {
+      // Clean up intervals and timeouts
       clearTimeout(initializeData);
       clearInterval(checkInterval);
       clearInterval(walletInterval);
@@ -720,6 +717,10 @@ export default function AstrologersPage() {
   const handleRefresh = async () => {
     console.log('🔄 Refresh requested');
     setIsRefreshing(true);
+    
+    // Update token activity on user interaction
+    updateTokenActivity();
+    
     try {
       // Reset to page 1 when refreshing
       if (currentPage !== 1) {

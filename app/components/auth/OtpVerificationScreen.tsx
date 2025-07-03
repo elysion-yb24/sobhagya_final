@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'universal-cookie';
 import { storeAuthToken, storeUserDetails } from "../../utils/auth-utils";
+import { buildApiUrl, API_CONFIG } from '../../config/api';
 
 interface OtpVerificationScreenProps {
   phoneNumber: string;
@@ -108,7 +109,7 @@ export default function OtpVerificationScreen({
         notifyToken = "placeholder_token";
       }
 
-      const response = await fetch("/api/auth/verify-otp", {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -220,7 +221,7 @@ export default function OtpVerificationScreen({
       }
 
       const response = await fetch(
-        "/api/auth/send-otp",
+        buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP),
         {
           method: "POST",
           headers: {
@@ -264,7 +265,7 @@ export default function OtpVerificationScreen({
   const isSubmitDisabled = isLoading || parentIsLoading || isResending || otp.some(digit => !digit);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex justify-center items-center bg-black bg-opacity-50 p-4">
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
       <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
         <div className="bg-[#F7971D] py-3 sm:py-4 text-center">
           <h1

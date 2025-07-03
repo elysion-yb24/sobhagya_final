@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { Phone, Clock, Loader2, RefreshCw } from "lucide-react";
+import { buildApiUrl } from "../../config/api";
 
 interface CallLog {
   _id: string;
@@ -37,7 +38,7 @@ export default function CallHistory() {
       }
 
       const response = await fetch(
-        "http://localhost:8001/calling/api/call/call-log?skip=0&limit=10&role=user",
+        buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user"),
         {
           method: "GET",
           headers: {

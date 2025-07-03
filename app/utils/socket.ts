@@ -2,6 +2,7 @@ import { io, Socket } from 'socket.io-client';
 import { getAuthToken, getUserDetails } from './auth-utils';
 import { getApiBaseUrl } from '../config/api';
 import Cookies from "universal-cookie";
+import { buildApiUrl } from '../config/api';
 
 interface LiveKitCallParams {
   token: string;
@@ -25,15 +26,15 @@ class SocketManager {
   connect(channelId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const userDetails = getUserDetails();
-      if (!userDetails?.id) {
+      const userId = userDetails?.id || userDetails?._id;
+      if (!userId) {
         reject(new Error('User not authenticated'));
         return;
       }
-
-      this.userId = userDetails.id;
+      this.userId = userId;
       this.channelId = channelId;
 
-      // Connect to socket server
+      // Connect to socket server with only userId and role in query
       this.socket = io('https://micro.sobhagya.in', {
         path: '/call-socket/socket.io',
         query: {
@@ -48,11 +49,9 @@ class SocketManager {
         reconnectionAttempts: 5
       });
 
- 
       this.socket.on('connect', () => {
         console.log('Socket connected successfully');
         this.isConnected = true;
-        
         
         if (this.channelId && this.userId) {
           this.socket?.emit('register', {
@@ -77,10 +76,6 @@ class SocketManager {
       // Call-related event listeners
       this.socket.on('user_joined', (callDetails) => {
         console.log('User joined the call:', callDetails);
-      });
-
-      this.socket.on('broadcaster_joined', (data) => {
-        console.log('Broadcaster joined the call:', data);
       });
 
       this.socket.on('call_end', (data) => {
@@ -115,13 +110,13 @@ class SocketManager {
         throw new Error('User not authenticated - no token found');
       }
 
-      console.log('📡 Making LiveKit API call to: http://localhost:8001/calling/api/call/call-token-livekit');
+      console.log('📡 Making LiveKit API call to: ' + buildApiUrl('/calling/api/call/call-token-livekit'));
       console.log('📋 Request payload:', {
         ...params,
         token: params.token ? params.token.substring(0, 20) + '...' : 'null'
       });
 
-      const response = await fetch(`http://localhost:8001/calling/api/call/call-token-livekit?channel=${params.channel}`, {
+      const response = await fetch(buildApiUrl(`/calling/api/call/call-token-livekit?channel=${params.channel}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +157,8 @@ class SocketManager {
       }
 
       const userDetails = getUserDetails();
-      if (!userDetails?.id) {
+      const userId = userDetails?.id || userDetails?._id;
+      if (!userId) {
         reject(new Error('User not authenticated'));
         return;
       }
@@ -176,7 +172,7 @@ class SocketManager {
 
       console.log(
         'initiate_call', {
-        userId: userDetails.id,
+        userId: userId,
         userType: 'user',
         callType: 'video',
         channelId: channelId,
@@ -185,7 +181,7 @@ class SocketManager {
       )
       // Emit initiate_call event
       this.socket.emit('initiate_call', {
-        userId: userDetails.id,
+        userId: userId,
         userType: 'user',
         callType: 'video',
         channelId: channelId,
@@ -225,14 +221,15 @@ class SocketManager {
       }
 
       const userDetails = getUserDetails();
-      if (!userDetails?.id) {
+      const userId = userDetails?.id || userDetails?._id;
+      if (!userId) {
         reject(new Error('User not authenticated'));
         return;
       }
 
       this.socket.emit('end_call', {
         channelId: channelId,
-        userId: userDetails.id,
+        userId: userId,
         reason: reason,
         isCallEndFromNotification: false
       }, (response: any) => {
@@ -241,6 +238,37 @@ class SocketManager {
           resolve();
         } else {
           reject(new Error(response?.message || 'Failed to end call'));
+        }
+      });
+    });
+  }
+
+  // Join as broadcaster (for astrologers)
+  async joinAsBroadcaster(channelId: string, astrologerId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.isConnected) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+
+      console.log('Joining as broadcaster:', { channelId, astrologerId });
+
+      // Set a timeout for the operation
+      const timeout = setTimeout(() => {
+        reject(new Error('Socket operation timed out'));
+      }, 10000); // 10 second timeout
+
+      // Emit broadcaster_joined event
+      this.socket.emit('broadcaster_joined', {
+        channelId: channelId,
+        userId: astrologerId
+      }, (response: any) => {
+        clearTimeout(timeout);
+        if (response && !response.error) {
+          console.log('Successfully joined as broadcaster');
+          resolve(response);
+        } else {
+          reject(new Error(response?.message || 'Failed to join as broadcaster'));
         }
       });
     });
@@ -263,6 +291,90 @@ class SocketManager {
   // Check if connected
   isSocketConnected(): boolean {
     return this.isConnected;
+  }
+
+  
+  sendGift({
+    channelId,
+    giftId,
+    from,
+    fromName,
+    to,
+    giftName,
+    giftIcon,
+    toName,
+    itemSendId
+  }: {
+    channelId: string;
+    giftId: string;
+    from: string;
+    fromName: string;
+    to: string;
+    giftName: string;
+    giftIcon: string;
+    toName: string;
+    itemSendId?: string;
+  }): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.isConnected) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+      this.socket.emit(
+        'send_gift',
+        {
+          channelId,
+          giftId,
+          from,
+          fromName,
+          to,
+          giftName,
+          giftIcon,
+          toName,
+          itemSendId
+        },
+        (response: any) => {
+          if (response && !response.error) {
+            resolve(response);
+          } else {
+            reject(response?.message || 'Failed to send gift');
+          }
+        }
+      );
+    });
+  }
+
+  // Listen for receiving a gift
+  onReceiveGift(callback: (data: any) => void) {
+    if (!this.socket) return;
+    this.socket.on('receive_gift', callback);
+  }
+
+  // Request a gift (optional, for requesting a gift from the other side)
+  requestGift(channelId: string, giftId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.isConnected) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+      this.socket.emit(
+        'request_gift',
+        { channelId, giftId },
+        (response: any) => {
+          if (response && !response.error) {
+            resolve(response);
+          } else {
+            reject(response?.message || 'Failed to request gift');
+          }
+        }
+      );
+    });
+  }
+
+  // Listen for gift requests
+  onGiftRequest(callback: (data: any) => void) {
+    if (!this.socket) return;
+    this.socket.on('gift_request', callback);
   }
 }
 

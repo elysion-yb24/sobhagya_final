@@ -8,6 +8,8 @@ import { getAuthToken, getUserDetails } from "../../utils/auth-utils";
 import { Phone, Video, Star, Users, Award, Loader2, CheckCircle } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
+import { buildApiUrl } from "../../config/api";
+
 interface Astrologer {
   _id: string;
   name: string;
@@ -147,6 +149,38 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer }: Props)
     }
   };
 
+  const fetchWalletPageData = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return 0;
+
+      const response = await fetch(
+        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const balance = data.data.balance || 0;
+          setWalletBalance(balance);
+          return balance;
+        }
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error fetching wallet page data:', error);
+      return 0;
+    }
+  };
+
   const checkCallHistory = async () => {
     try {
       setIsCheckingHistory(true);
@@ -225,9 +259,12 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer }: Props)
 
   const handleAudioCall = async () => {
     try {
+      // Fetch latest wallet balance first
+      const currentBalance = await fetchWalletPageData();
+      
       // Check wallet balance first
       const callCost = (rpm || 15) * 2; // Estimate 2 minutes minimum cost
-      if (walletBalance < callCost) {
+      if (currentBalance < callCost) {
         setInsufficientBalanceData({
           requiredAmount: callCost,
           serviceType: 'call'
@@ -245,7 +282,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer }: Props)
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${getApiBaseUrl()}/calling/api/call/request-tataTelecom-call`, {
+      const response = await fetch(buildApiUrl('/calling/api/call/request-tataTelecom-call'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,23 +344,25 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer }: Props)
       return;
     }
 
-    // Navigate to video call page with astrologer details
-    const videoCallUrl = `/video-call?astrologerId=${encodeURIComponent(_id)}&astrologerName=${encodeURIComponent(name)}&callType=video`;
-    
-    // Open video call in a new window for better experience
-    const videoWindow = window.open(
-      videoCallUrl,
-      'videoCall',
-      'width=1200,height=800,scrollbars=no,resizable=yes,status=no,toolbar=no,menubar=no,location=no'
-    );
+    // Fetch latest wallet balance first
+    const currentBalance = await fetchWalletPageData();
 
-    // Focus on the new window
-    if (videoWindow) {
-      videoWindow.focus();
-    } else {
-      // Fallback to same window if popup is blocked
-      router.push(videoCallUrl);
+    // Check wallet balance first
+    const videoCost = (videoRpm || 25) * 2; // Estimate 2 minutes minimum cost for video
+    if (currentBalance < videoCost) {
+      setInsufficientBalanceData({
+        requiredAmount: videoCost,
+        serviceType: 'call'
+      });
+      setShowInsufficientBalanceModal(true);
+      return;
     }
+
+    // Navigate to video call page with astrologer details
+    const videoCallUrl = `/video-call?astrologerId=${encodeURIComponent(_id)}&astrologerName=${encodeURIComponent(name)}&callType=video&videoRpm=${encodeURIComponent(videoRpm || 25)}`;
+    
+    // Open video call in the same tab
+    router.push(videoCallUrl);
   };
 
   const handleCallConfirm = async () => {
@@ -348,7 +387,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer }: Props)
 
       console.log('Making call request with caller ID:', userDetails.id);
 
-      const response = await fetch('http://localhost:8001/calling/api/call/request-tataTelecom-call', {
+      const response = await fetch(buildApiUrl('/calling/api/call/request-tataTelecom-call'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

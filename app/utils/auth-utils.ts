@@ -5,7 +5,7 @@ import Cookies from "universal-cookie";
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
 
 /**
- * Gets the authentication token from localStorage and cookies
+ * Gets the authentication token from xxlocalStorage and cookies
  */
 export function getAuthToken(): string | null {
   try {

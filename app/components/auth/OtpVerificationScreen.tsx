@@ -125,43 +125,28 @@ export default function OtpVerificationScreen({
       console.log("Response headers auth-token:", response.headers.get('auth-token'));
       
       updateAccessToken(response)
+      let headerToken = response.headers.get('auth-token');
       let data;
       try {
         data = await response.json();
       } catch (e) {
-        console.error("Failed to parse JSON response:", e);
         setVerificationStatus('error');
         setError("Invalid response from server. Please try again.");
         return;
       }
-
-      if (!data) {
-        setVerificationStatus('error');
-        setError("Invalid response from server. Please try again.");
-        return;
-      }
-      
-      if (response.ok && (data.token || (data.success === true && data.message === "login_successful"))) {
+      let finalToken = headerToken || data.token;
+      if (response.ok && finalToken) {
         setVerificationStatus('success');
         
         console.log("OTP verification successful");
         console.log("Full Response data:", JSON.stringify(data, null, 2));
         
-        // Store token from response headers if available
-        const authTokenHeader = response.headers.get('auth-token');
-        if (authTokenHeader) {
-          localStorage.setItem('authToken', authTokenHeader);
-          localStorage.setItem('tokenTimestamp', Date.now().toString());
-          document.cookie = `authToken=${authTokenHeader}; path=/; max-age=${60*60*24*7}`;
-          console.log("Stored token from headers");
-        } else if (data.token) {
-          localStorage.setItem('authToken', data.token);
-          localStorage.setItem('tokenTimestamp', Date.now().toString());
-          document.cookie = `authToken=${data.token}; path=/; max-age=${60*60*24*7}`;
-          console.log("Stored token from response data");
-        } else {
-          console.log("No token found in response");
-        }
+        // Store token in localStorage and cookies for consistency
+        localStorage.setItem('authToken', finalToken);
+        localStorage.setItem('access_token', finalToken);
+        localStorage.setItem('tokenTimestamp', Date.now().toString());
+        document.cookie = `authToken=${finalToken}; path=/; max-age=${60*60*24*7}`;
+        document.cookie = `access_token=${finalToken}; path=/; max-age=${60*60*24*7}`;
         
         // Log the data structure we're working with
         console.log("User ID from data.data?._id:", data.data?._id);
@@ -170,11 +155,13 @@ export default function OtpVerificationScreen({
         console.log("User ID from data.id:", data.id);
         
         const userDetails = {
-          id: data.data?._id || data.user?.id || data._id || data.id || "",
+          id: data.data?._id || data.user?.id || data._id || data.id || data.data?.id || "",
           phoneNumber,
           countryCode,
           timestamp: new Date().getTime(),
-          role: data.data?.role || "user"
+          role: data.data?.role || data.user?.role || data.role || "user",
+          name: data.data?.name || data.user?.name || data.name || "",
+          email: data.data?.email || data.user?.email || data.email || ""
         };
         
         console.log("Storing user details:", userDetails);

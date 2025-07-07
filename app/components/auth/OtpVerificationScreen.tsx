@@ -114,6 +114,7 @@ export default function OtpVerificationScreen({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({
           phone: phoneNumber,
           otp: otpValue,
@@ -124,7 +125,6 @@ export default function OtpVerificationScreen({
       console.log("OTP verification response status:", response.status);
       console.log("Response headers auth-token:", response.headers.get('auth-token'));
       
-      updateAccessToken(response)
       let headerToken = response.headers.get('auth-token');
       let data;
       try {
@@ -141,12 +141,15 @@ export default function OtpVerificationScreen({
         console.log("OTP verification successful");
         console.log("Full Response data:", JSON.stringify(data, null, 2));
         
-        // Store token in localStorage and cookies for consistency
+        // Store token in localStorage for all future API calls
         localStorage.setItem('authToken', finalToken);
         localStorage.setItem('access_token', finalToken);
-        localStorage.setItem('tokenTimestamp', Date.now().toString());
-        document.cookie = `authToken=${finalToken}; path=/; max-age=${60*60*24*7}`;
-        document.cookie = `access_token=${finalToken}; path=/; max-age=${60*60*24*7}`;
+          localStorage.setItem('tokenTimestamp', Date.now().toString());
+        // Also save token in cookies for SSR or server access
+        // document.cookie = `authToken=${finalToken}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
+        // document.cookie = `access_token=${finalToken}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
+        storeAuthToken(finalToken);
+        
         
         // Log the data structure we're working with
         console.log("User ID from data.data?._id:", data.data?._id);
@@ -166,11 +169,18 @@ export default function OtpVerificationScreen({
         
         console.log("Storing user details:", userDetails);
         storeUserDetails(userDetails);
-        
+        // Dispatch event for instant header update
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('user-auth-changed'));
+        }
         // Call onVerify only to notify success, don't pass data that would trigger another verification
         console.log("Calling onVerify and redirecting...");
         onVerify({ success: true, verified: true });
+        
+        // Small delay to ensure header updates before redirect
+        setTimeout(() => {
         router.push("/astrologers");
+        }, 100);
       } else {
         setVerificationStatus('error');
         setError(data.message || "Invalid OTP. Please check the code and try again.");
@@ -252,42 +262,48 @@ export default function OtpVerificationScreen({
   const isSubmitDisabled = isLoading || parentIsLoading || isResending || otp.some(digit => !digit);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
-        <div className="bg-[#F7971D] py-3 sm:py-4 text-center">
-          <h1
-            className="text-white text-xl sm:text-2xl md:text-3xl font-medium"
-            style={{
-              fontFamily: "Poppins",
-              letterSpacing: "1%",
-            }}
-          >
-            Verify Phone
-          </h1>
-        </div>
+    <div className="fixed inset-0 z-50 flex justify-center items-center bg-gradient-to-br from-orange-50 via-white to-orange-50/30 backdrop-blur-sm p-4">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-orange-200/20 to-orange-300/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-orange-100/20 to-orange-200/10 rounded-full blur-3xl"></div>
+      </div>
 
-        <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
-          <p
-            className="text-center text-[#373737] mb-6 sm:mb-8 md:mb-10 font-normal text-base sm:text-lg md:text-xl"
-            style={{
-              fontFamily: "Poppins",
-            }}
-          >
-            Enter the 4-digit code sent to your phone
-          </p>
-
-          <div className="text-center mb-6 sm:mb-8">
-            <p
-              className="text-[#373737] font-medium text-base sm:text-lg md:text-xl"
-              style={{
-                fontFamily: "Poppins",
-              }}
-            >
-              OTP sent to {countryCode} {phoneNumber}
-            </p>
+      {/* Main card */}
+      <div className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-orange-100/50 animate-fade-in">
+        {/* Header section */}
+        <div className="relative px-8 pt-10 pb-6 text-center">
+          {/* Decorative top border */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400"></div>
+          
+          {/* Icon */}
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-500 rounded-2xl shadow-lg mb-6 transform hover:scale-105 transition-transform duration-200">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24" className="text-white">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+            </svg>
           </div>
 
-          <div className="flex justify-center space-x-2 sm:space-x-3 md:space-x-4 mb-6 sm:mb-8">
+          {/* Title */}
+          <h1 className="text-3xl font-bold text-gray-900 mb-2 tracking-tight">
+            Verify Your Phone
+          </h1>
+          
+          {/* Subtitle */}
+          <p className="text-gray-600 text-base mb-4 leading-relaxed">
+            Enter the 4-digit verification code sent to
+          </p>
+          
+          {/* Phone number display */}
+          <div className="inline-flex items-center px-4 py-2 bg-orange-50 rounded-xl border border-orange-200/50">
+            <span className="text-orange-600 font-semibold text-lg">
+              {countryCode} {phoneNumber}
+            </span>
+          </div>
+          </div>
+
+        {/* OTP Input Section */}
+        <div className="px-8 pb-6">
+          <div className="flex justify-center gap-3 mb-6">
             {otp.map((digit, index) => (
               <input
                 key={index}
@@ -296,22 +312,31 @@ export default function OtpVerificationScreen({
                 inputMode="numeric"
                 maxLength={4}
                 value={digit}
-                onChange={(e) =>
-                  handleChange(index, e.target.value.replace(/[^0-9]/g, ""))
-                }
+                onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ""))}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-lg sm:text-xl md:text-2xl bg-[#F2F2F2] border border-gray-300 rounded-md focus:outline-[#F7971D] focus:border-[#F7971D]"
-                style={{
-                  fontFamily: "Poppins",
-                }}
+                className="w-14 h-14 text-center text-2xl bg-white border-2 border-orange-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 font-bold text-gray-900 hover:border-orange-300"
+                style={{fontFamily: 'Poppins', letterSpacing: '0.1em'}}
               />
             ))}
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 sm:mb-8 gap-y-3">
-            <div className="text-gray-600 text-sm sm:text-base">
+          {/* Error message */}
+          {(error || parentError) && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-medium text-center">
+              {error || parentError}
+            </div>
+          )}
+
+          {/* Resend section */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="text-gray-500 text-sm">
               {timeLeft > 0 ? (
-                <span>Resend OTP in {timeLeft}s</span>
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Resend in {timeLeft}s
+                </span>
               ) : (
                 <span>&nbsp;</span>
               )}
@@ -320,49 +345,73 @@ export default function OtpVerificationScreen({
               type="button"
               onClick={handleResend}
               disabled={timeLeft > 0 || isResending}
-              className={`text-[#F7971D] font-medium text-sm sm:text-base ${
+              className={`text-orange-500 font-semibold text-sm transition-all duration-200 flex items-center gap-2 ${
                 timeLeft > 0 || isResending
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:text-orange-600"
+                  ? "opacity-40 cursor-not-allowed" 
+                  : "hover:text-orange-600 hover:scale-105"
               }`}
             >
-              Resend OTP
+              {isResending ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Resend Code
+                </>
+              )}
             </button>
           </div>
 
-          {(error || parentError) && (
-            <div className="text-red-500 text-center mb-4 text-sm sm:text-base">
-              {error || parentError}
-            </div>
-          )}
-
+          {/* Action buttons */}
+          <div className="space-y-3">
           <button
             onClick={handleVerify}
             disabled={isSubmitDisabled}
-            className={`w-full flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base ${
-              isSubmitDisabled ? "opacity-50 cursor-not-allowed" : ""
+              className={`w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-xl shadow-lg font-bold text-lg transition-all duration-200 transform ${
+                isSubmitDisabled 
+                  ? "opacity-50 cursor-not-allowed" 
+                  : "hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
             }`}
           >
-            {isLoading || parentIsLoading ? "Verifying..." : "Login"}
+              {isLoading || parentIsLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Verifying...
+                </span>
+              ) : (
+                "Verify & Continue"
+              )}
           </button>
 
           <button
             onClick={onBack}
-            className="mt-3 sm:mt-4 w-full flex justify-center mx-auto bg-transparent text-gray-600 py-2 px-6 rounded-md hover:bg-gray-100 transition-colors text-sm sm:text-base"
+              className="w-full bg-transparent text-gray-500 py-3 rounded-xl hover:bg-gray-50 transition-all duration-200 text-base font-medium hover:text-gray-700"
           >
-            Back
+              ← Back to Login
           </button>
+          </div>
+        </div>
 
-          <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6">
-            You agree to our
-            <a
-              href="/privacy-policy"
-              className="text-orange-400 hover:underline ml-1"
-            >
+        {/* Footer */}
+        <div className="px-8 pb-6">
+          <p className="text-center text-xs text-gray-400 leading-relaxed">
+            By continuing, you agree to our{' '}
+            <a href="/privacy-policy" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
               Privacy Policy
-            </a>
-            <span className="mx-1">&</span>
-            <a href="/terms" className="text-orange-400 hover:underline">
+            </a>{' '}
+            and{' '}
+            <a href="/terms" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
               Terms of Service
             </a>
           </p>

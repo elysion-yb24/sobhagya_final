@@ -43,6 +43,7 @@ import {
   Loader2
 } from "lucide-react";
 import { getApiBaseUrl } from "../config/api";
+import { useDebounce } from "../hooks/useDebounce";
 
 interface Astrologer {
   _id: string;
@@ -113,8 +114,11 @@ export default function AstrologersPage() {
   const [isLoadingAll, setIsLoadingAll] = useState(false);
   const itemsPerPage = 10;
 
+  // Performance optimization: debounce search
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   // Function to fetch astrologers with pagination
-  const fetchAstrologers = useCallback(async (page: number = 1) => {
+  const fetchAstrologers = useCallback(async (page: number = 1, reset = false) => {
     console.log(`🚀 Starting fetchAstrologers for page ${page}...`);
     const isInitialLoad = page === 1 && astrologersData.length === 0;
     
@@ -328,8 +332,8 @@ export default function AstrologersPage() {
     let filtered = [...allData];
 
     // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(
         (ast) =>
           ast.name.toLowerCase().includes(query) ||
@@ -386,7 +390,7 @@ export default function AstrologersPage() {
       filteredAstrologers: filtered,
       paginatedAstrologers: paginated
     };
-  }, [searchQuery, languageFilter, videoOnly, sortBy, astrologersData, allAstrologersLoaded, allAstrologers, currentPage, itemsPerPage]);
+  }, [debouncedSearchQuery, languageFilter, videoOnly, sortBy, astrologersData, allAstrologersLoaded, allAstrologers, currentPage, itemsPerPage]);
 
   // Update total pages when filters change and all astrologers are loaded
   useEffect(() => {
@@ -396,8 +400,8 @@ export default function AstrologersPage() {
       let filtered = [...allData];
 
       // Apply the same filters as in the main useMemo
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+      if (debouncedSearchQuery) {
+        const query = debouncedSearchQuery.toLowerCase();
         filtered = filtered.filter(
           (ast) =>
             ast.name.toLowerCase().includes(query) ||
@@ -424,18 +428,18 @@ export default function AstrologersPage() {
         setCurrentPage(1);
       }
     }
-  }, [allAstrologersLoaded, allAstrologers, searchQuery, languageFilter, videoOnly, itemsPerPage, currentPage]);
+  }, [allAstrologersLoaded, allAstrologers, debouncedSearchQuery, languageFilter, videoOnly, itemsPerPage, currentPage]);
 
   // Reset to page 1 when filters change (for server-side pagination)
   useEffect(() => {
-    if (!allAstrologersLoaded && (searchQuery || languageFilter !== "All" || videoOnly || sortBy)) {
+    if (!allAstrologersLoaded && (debouncedSearchQuery || languageFilter !== "All" || videoOnly || sortBy)) {
       // If we're using server-side pagination and filters change, reset to page 1
       if (currentPage !== 1) {
         setCurrentPage(1);
         fetchAstrologers(1);
       }
     }
-  }, [searchQuery, languageFilter, videoOnly, sortBy, allAstrologersLoaded, currentPage, fetchAstrologers]);
+  }, [debouncedSearchQuery, languageFilter, videoOnly, sortBy, allAstrologersLoaded, currentPage, fetchAstrologers]);
 
   // Function to fetch wallet balance
   const fetchWalletBalance = useCallback(async () => {
@@ -760,337 +764,78 @@ export default function AstrologersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
-      {/* Mobile-Optimized Header */}
-              <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left side - Logo, Title and Filters */}
-            <div className="flex items-center gap-3 flex-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#F7971E' }}>
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-lg sm:text-xl font-bold" style={{ color: '#F7971E' }}>
-                    Find Your Astrologer
-                  </h1>
-                  <p className="text-xs text-gray-500 hidden lg:block">Connect with expert astrologers</p>
-                </div>
-                <h1 className="sm:hidden text-lg font-bold" style={{ color: '#F7971E' }}>Astrologers</h1>
-              </div>
-              
-              {/* Integrated Search and Filters */}
-              <div className="hidden lg:flex items-center gap-3 ml-6 flex-1 max-w-2xl">
-                {/* Search */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      {/* Responsive, Full-Width Filter/Search Bar (No Scroll) */}
+      <section className="w-full flex justify-center py-6 bg-transparent">
+        <div className="w-full max-w-4xl rounded-2xl shadow-lg border border-orange-100/70 bg-white/90 backdrop-blur-lg px-4 py-3 transition-all duration-300">
+          <div className="flex flex-wrap gap-x-4 gap-y-3 items-center justify-between">
+            {/* Search Tab */}
+            <div className="flex items-center relative min-w-[200px] max-w-xs flex-shrink-0 bg-white border border-orange-100 rounded-xl px-3 py-2 h-12 shadow-sm flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400" />
                   <input
                     type="text"
                     placeholder="Search astrologers..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#F7971E';
-                      e.target.style.boxShadow = '0 0 0 2px rgba(247, 151, 30, 0.2)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#D1D5DB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+                className="w-full pl-10 pr-2 bg-transparent text-base font-medium focus:outline-none placeholder:text-gray-400"
+                aria-label="Search astrologers"
                   />
                 </div>
-
-                {/* Sort */}
-                <div className="relative">
+            {/* Sort Tab */}
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 min-w-[100px]"
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#F7971E';
-                      e.target.style.boxShadow = '0 0 0 2px rgba(247, 151, 30, 0.2)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#D1D5DB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+              className="min-w-[130px] max-w-[160px] border border-orange-100 rounded-xl px-4 py-2 h-12 bg-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all flex-1"
+              aria-label="Sort astrologers"
                   >
                     <option value="">Sort by</option>
                     <option value="experience">Experience</option>
                     <option value="rating">Rating</option>
                     <option value="calls">Calls</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-
-                {/* Language Filter */}
-                <div className="relative">
+            {/* Language Tab */}
                   <select
                     value={languageFilter}
                     onChange={(e) => setLanguageFilter(e.target.value)}
-                    className="appearance-none border border-gray-300 rounded-lg py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:border-transparent bg-gray-50 focus:bg-white transition-all duration-200 min-w-[120px]"
-                    onFocus={(e) => {
-                      e.target.style.borderColor = '#F7971E';
-                      e.target.style.boxShadow = '0 0 0 2px rgba(247, 151, 30, 0.2)';
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = '#D1D5DB';
-                      e.target.style.boxShadow = 'none';
-                    }}
+              className="min-w-[140px] max-w-[180px] border border-orange-100 rounded-xl px-4 py-2 h-12 bg-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all flex-1"
+              aria-label="Filter by language"
                   >
                     <option value="All">All Languages</option>
                     {allLanguages.map((lang) => (
-                      <option key={lang} value={lang}>
-                        {lang}
-                      </option>
+                <option key={lang} value={lang}>{lang}</option>
                     ))}
                   </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-
-                {/* Video Toggle */}
+            {/* Video Tab */}
                 <button
                   onClick={() => setVideoOnly(!videoOnly)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-md hover:scale-105 ${
-                    videoOnly
-                      ? "text-white shadow-md"
-                      : "border border-gray-300 text-gray-700 bg-gray-50 hover:bg-white"
-                  }`}
-                  style={videoOnly ? { backgroundColor: '#F7971E' } : {}}
-                  onMouseEnter={(e) => {
-                    if (videoOnly) {
-                      e.currentTarget.style.backgroundColor = '#E8850B';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (videoOnly) {
-                      e.currentTarget.style.backgroundColor = '#F7971E';
-                    }
-                  }}
-                >
-                  📹 Video
+              className={`min-w-[110px] max-w-[130px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 ${videoOnly ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'} flex-1`}
+              aria-label="Show only video astrologers"
+            >
+              <Video className="w-5 h-5 mr-1" /> Video
                 </button>
-              </div>
-              
-              <button 
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className={`p-2 rounded-lg transition-all ${
-                  isRefreshing 
-                    ? 'cursor-not-allowed' 
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                }`}
-                style={isRefreshing ? { color: '#F7971E', backgroundColor: '#FDF4E6' } : {}}
-                title={isRefreshing ? "Refreshing..." : "Refresh data"}
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-            
-            {/* Right side - Mobile optimized controls */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Mobile Search Button */}
-              <button
-                className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-all"
-                title="Search & Filter"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-              {/* History Buttons - Desktop */}
-              <div className="hidden lg:flex items-center gap-2">
+            {/* Transactions Tab */}
                 <button
                   onClick={() => setShowHistory(showHistory === 'transactions' ? 'none' : 'transactions')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    showHistory === 'transactions' 
-                      ? 'text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  style={showHistory === 'transactions' ? { backgroundColor: '#F7971E' } : {}}
+              className={`min-w-[140px] max-w-[160px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 ${showHistory === 'transactions' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'} flex-1`}
+              aria-label="Transaction History"
                 >
-                  <Receipt className="h-4 w-4" />
-                  <span>Transactions</span>
+              <Receipt className="w-5 h-5" /> Transactions
                 </button>
-                
+            {/* Calls Tab */}
                 <button
                   onClick={() => setShowHistory(showHistory === 'calls' ? 'none' : 'calls')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    showHistory === 'calls' 
-                      ? 'text-white shadow-md' 
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  style={showHistory === 'calls' ? { backgroundColor: '#22C55E' } : {}}
+              className={`min-w-[110px] max-w-[130px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${showHistory === 'calls' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-green-600 border-green-200 hover:bg-green-100'} flex-1`}
+              aria-label="Call History"
                 >
-                  <Phone className="h-4 w-4" />
-                  <span>Calls</span>
+              <Phone className="w-5 h-5" /> Calls
                 </button>
+            {/* Balance Tab */}
+            <div className="min-w-[120px] max-w-[140px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl border border-green-200 bg-white text-green-700 font-bold text-base shadow-sm select-none justify-center flex-1">
+              <Wallet className="w-5 h-5 text-green-500" />
+              <span>₹{walletBalance?.toFixed(2) || '0.00'}</span>
               </div>
-              
-              {/* History Buttons - Mobile */}
-              <div className="lg:hidden flex gap-1">
-                <button
-                  onClick={() => setShowHistory(showHistory === 'transactions' ? 'none' : 'transactions')}
-                  className={`p-2 rounded-lg transition-all ${
-                    showHistory === 'transactions' 
-                      ? 'text-white' 
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  style={showHistory === 'transactions' ? { backgroundColor: '#F7971E' } : {}}
-                  title="Transaction History"
-                >
-                  <Receipt className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setShowHistory(showHistory === 'calls' ? 'none' : 'calls')}
-                  className={`p-2 rounded-lg transition-all ${
-                    showHistory === 'calls' 
-                      ? 'text-white' 
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  style={showHistory === 'calls' ? { backgroundColor: '#22C55E' } : {}}
-                  title="Call History"
-                >
-                  <Phone className="h-4 w-4" />
-                </button>
               </div>
-              
-              {/* Wallet Balance - Mobile Optimized */}
-              <div className="relative">
-                <div className={`flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl px-2 sm:px-4 py-2 shadow-sm transition-all border ${
-                  walletError 
-                    ? 'border-red-200' 
-                    : 'border-green-200 hover:shadow-md'
-                }`}
-                style={{
-                  backgroundColor: walletError ? '#FEF2F2' : '#F0FDF4'
-                }}>
-                  <div className={`p-1 sm:p-2 rounded-md ${walletError ? 'bg-red-100' : 'bg-green-100'}`}>
-                    <Wallet className={`h-3 w-3 sm:h-4 sm:w-4 ${walletError ? 'text-red-600' : 'text-green-600'}`} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={`text-xs font-medium ${walletError ? 'text-red-600' : 'text-green-600'}`}>
-                      <span className="hidden sm:inline">Balance</span>
-                      <span className="sm:hidden">₹</span>
-                    </span>
-                    <span className={`text-xs sm:text-sm font-bold ${walletError ? 'text-red-700' : 'text-green-700'}`}>
-                      {walletError ? 'Error' : `${walletBalance?.toFixed(0) || '0'}`}
-                      <span className="hidden sm:inline">.{(walletBalance % 1).toFixed(2).slice(2)}</span>
-                    </span>
-                  </div>
-                  {walletBalance > 0 && !walletError && (
-                    <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* History Modal/Panel - Mobile Optimized */}
-      {showHistory !== 'none' && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-4xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-                          <div className="flex items-center gap-3">
-              {showHistory === 'transactions' ? (
-                <>
-                  <div className="p-2 rounded-lg" style={{ backgroundColor: '#FDF4E6' }}>
-                    <Receipt className="h-5 w-5" style={{ color: '#F7971E' }} />
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Transaction History</h2>
-                </>
-              ) : (
-                <>
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Phone className="h-5 w-5 text-green-600" />
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Call History</h2>
-                </>
-              )}
-              </div>
-              <button
-                onClick={() => setShowHistory('none')}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-100px)] sm:max-h-[60vh]">
-              {showHistory === 'transactions' ? (
-                <TransactionHistory />
-              ) : (
-                <CallHistory />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile Filter Section */}
-      <section className="lg:hidden bg-white/90 backdrop-blur-sm border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <FilterBar
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            sortValue={sortBy}
-            onSortChange={setSortBy}
-            languageValue={languageFilter}
-            onLanguageChange={setLanguageFilter}
-            languages={allLanguages}
-            videoValue={videoOnly}
-            onVideoToggle={setVideoOnly}
-          />
         </div>
       </section>
-
-      {/* Stats Bar - Mobile Optimized */}
-      {!isLoading && !error && totalAstrologers > 0 && (
-        <div className="bg-gradient-to-r from-orange-50/50 to-gray-50 border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Users className="h-4 w-4" />
-                  <span className="text-sm font-medium">
-                    {totalAstrologers} Astrologers
-                  </span>
-                </div>
-                <div className="hidden sm:flex items-center gap-2 text-gray-500">
-                  <Star className="h-4 w-4" />
-                  <span className="text-sm">
-                    {allAstrologersLoaded 
-                      ? `Showing ${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, filteredAstrologers.length)} of ${filteredAstrologers.length} astrologers`
-                      : `Showing ${((currentPage - 1) * itemsPerPage) + 1}-${Math.min(currentPage * itemsPerPage, astrologersData.length)} of ${totalAstrologers} astrologers`
-                    }
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between sm:justify-end gap-3">
-                <div className="text-xs px-3 py-1 rounded-full border" style={{ color: '#F7971E', backgroundColor: 'white', borderColor: '#F7971E' }}>
-                  Page {currentPage} {totalPages > 0 ? `/ ${totalPages}` : '+'}
-                </div>
-                {isLoadingAll && (
-                  <div className="flex items-center gap-2 px-3 py-1 text-xs rounded-full border" style={{ color: '#F7971E', backgroundColor: '#FDF4E6', borderColor: '#F7971E' }}>
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    <span>Loading All...</span>
-                  </div>
-                )}
-                {allAstrologersLoaded && (
-                  <div className="text-xs px-3 py-1 rounded-full border" style={{ color: '#22C55E', backgroundColor: 'white', borderColor: '#22C55E' }}>
-                    All {totalAstrologers} Loaded
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -1264,6 +1009,165 @@ export default function AstrologersPage() {
           </div>
         )}
       </main>
+
+      {/* Premium History Drawer/Modal */}
+      {(showHistory === 'transactions' || showHistory === 'calls') && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-all duration-500 ease-out"
+            onClick={() => setShowHistory('none')}
+            style={{
+              animation: 'fadeIn 0.3s ease-out'
+            }}
+          />
+          
+          {/* Drawer */}
+          <div 
+            className={`fixed top-0 right-0 h-full w-full sm:w-96 lg:w-[450px] bg-white/95 backdrop-blur-xl shadow-2xl border-l border-orange-100/50 z-50 transform transition-all duration-500 ease-out ${
+              showHistory === 'transactions' || showHistory === 'calls' ? 'translate-x-0' : 'translate-x-full'
+            }`}
+            style={{
+              transform: showHistory === 'transactions' || showHistory === 'calls' ? 'translateX(0)' : 'translateX(100%)',
+              transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: showHistory === 'transactions' || showHistory === 'calls' 
+                ? '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+                : '0 0 0 0 rgba(0, 0, 0, 0)'
+            }}
+          >
+            {/* Header */}
+            <div 
+              className="flex items-center justify-between p-6 border-b border-orange-100/50 bg-gradient-to-r from-orange-50/50 to-white"
+              style={{
+                animation: showHistory === 'transactions' || showHistory === 'calls' 
+                  ? 'slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' 
+                  : 'none'
+              }}
+            >
+              <div className="flex items-center gap-3">
+                {showHistory === 'transactions' ? (
+                  <div 
+                    className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-orange-200"
+                    style={{
+                      animation: 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both'
+                    }}
+                  >
+                    <Receipt className="w-5 h-5 text-orange-600" />
+                  </div>
+                ) : (
+                  <div 
+                    className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-green-200"
+                    style={{
+                      animation: 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both'
+                    }}
+                  >
+                    <Phone className="w-5 h-5 text-green-600" />
+                  </div>
+                )}
+                <div 
+                  style={{
+                    animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both'
+                  }}
+                >
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {showHistory === 'transactions' ? 'Transaction History' : 'Call History'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {showHistory === 'transactions' ? 'Your payment history' : 'Your call records'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowHistory('none')}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-md"
+                style={{
+                  animation: 'fadeIn 0.4s ease-out 0.4s both'
+                }}
+              >
+                <X className="w-4 h-4 text-gray-600" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div 
+              className="h-full overflow-y-auto"
+              style={{
+                animation: showHistory === 'transactions' || showHistory === 'calls' 
+                  ? 'slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both' 
+                  : 'none'
+              }}
+            >
+              <div className="p-6">
+                {showHistory === 'transactions' && <TransactionHistory />}
+                {showHistory === 'calls' && <CallHistory />}
+              </div>
+            </div>
+          </div>
+
+          {/* Custom CSS Animations */}
+          <style jsx>{`
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+            
+            @keyframes slideDown {
+              from {
+                opacity: 0;
+                transform: translateY(-20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            
+            @keyframes slideInUp {
+              from {
+                opacity: 0;
+                transform: translateY(30px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            
+            @keyframes bounceIn {
+              0% {
+                opacity: 0;
+                transform: scale(0.3);
+              }
+              50% {
+                opacity: 1;
+                transform: scale(1.05);
+              }
+              70% {
+                transform: scale(0.9);
+              }
+              100% {
+                opacity: 1;
+                transform: scale(1);
+              }
+            }
+            
+            @keyframes fadeInUp {
+              from {
+                opacity: 0;
+                transform: translateY(20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
+        </>
+      )}
     </div>
   );
 }

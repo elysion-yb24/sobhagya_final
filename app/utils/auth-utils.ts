@@ -9,45 +9,12 @@ const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
  */
 export function getAuthToken(): string | null {
   try {
-    console.log('🔍 Checking for authentication token...');
-    
-    // Try localStorage first - check both authToken and token keys
+    // Only use localStorage
     const authTokenLS = localStorage.getItem('authToken');
-    if (authTokenLS) {
-      console.log('✅ Found token in localStorage (authToken):', authTokenLS.substring(0, 20) + '...');
-      return authTokenLS;
-    }
-    
+    if (authTokenLS) return authTokenLS;
     const tokenLS = localStorage.getItem('token');
-    if (tokenLS) {
-      console.log('✅ Found token in localStorage (token):', tokenLS.substring(0, 20) + '...');
-      return tokenLS;
-    }
-
-    // Try cookies - check multiple possible keys
-    const cookies = new Cookies(null, { path: '/' });
-    
-    const access_token = cookies.get('access_token');
-    if (access_token) {
-      console.log('✅ Found token in cookies (access_token):', access_token.substring(0, 20) + '...');
-      return access_token;
-    }
-    
-    const authTokenCookie = cookies.get('authToken');
-    if (authTokenCookie) {
-      console.log('✅ Found token in cookies (authToken):', authTokenCookie.substring(0, 20) + '...');
-      return authTokenCookie;
-    }
-    
-    const tokenCookie = cookies.get('token');
-    if (tokenCookie) {
-      console.log('✅ Found token in cookies (token):', tokenCookie.substring(0, 20) + '...');
-      return tokenCookie;
-    }
-
-    console.log('❌ No authentication token found in localStorage or cookies');
+    if (tokenLS) return tokenLS;
     return null;
-
   } catch (e) {
     console.error("Error in getAuthToken:", e);
     return null;
@@ -66,7 +33,7 @@ export function storeAuthToken(token: string): boolean {
     localStorage.setItem('tokenTimestamp', Date.now().toString());
     
     // Store in cookies for server-side access
-    document.cookie = `authToken=${token}; path=/; max-age=${60*60*24*7}`;
+    document.cookie = `authToken=${token}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
     
     return true;
   } catch (e) {

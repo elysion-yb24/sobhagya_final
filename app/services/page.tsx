@@ -125,7 +125,7 @@ export default function Services() {
                   service.highlighted ? "bg-[#F7971D] text-white [&_a]:text-white" : "bg-white hover:shadow-lg"
                 }`}
               >
-                <Image src={service.image} alt={service.name} width={61} height={61} />
+                <Image src={service.image || "/default-image.png"} alt={service.name} width={61} height={61} />
                 <h3 className="text-lg font-semibold mt-2">{service.name}</h3>
                 <p className="text-sm mt-1">{service.description}</p>
                 <a href={service.link} className="text-[#F7971D] font-medium mt-2 block">
@@ -139,7 +139,7 @@ export default function Services() {
           <div className="bg-orange-50 py-16 sm:py-20 mt-12 mb-20 text-center px-4 sm:px-6 w-full">
             <div className="max-w-4xl mx-auto">
               <p className="text-[#745802] text-base sm:text-lg font-light">
-                Get expert astrology guidance tailored to your needs! Whether it’s Kundli analysis, love compatibility, career advice, or powerful remedies, our top astrologers are ready to help.
+                Get expert astrology guidance tailored to your needs! Whether it's Kundli analysis, love compatibility, career advice, or powerful remedies, our top astrologers are ready to help.
               </p>
               <p className="text-[#F7971D] font-semibold text-lg mt-3">
                 Book your consultation now via chat, call, or video and take the first step toward clarity and success!

@@ -1,45 +1,59 @@
+'use client'
+
 export default function ShippingPolicy() {
     return (
-      <div className="flex justify-center px-4 sm:px-6 lg:px-8 py-6 bg-gray-100 min-h-screen">
-        <div className="relative bg-white shadow-lg rounded-lg p-6 sm:p-8 max-w-4xl w-full overflow-hidden">
-          {/* Background Image */}
-          <div
-            className="absolute inset-0 bg-center bg-cover opacity-20"
-            style={{
-              backgroundImage: "url('/monk logo.png')",
-              backgroundSize: "contain",
-              backgroundPosition: "center",
-              backgroundRepeat: "no-repeat",
-            }}
-          ></div>
-  
+      <section className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-white/80 py-0">
+        <div className="relative max-w-5xl mx-auto p-6 sm:p-10 bg-white/90 shadow-2xl rounded-3xl border-t-8 border-orange-200 animate-fade-in-up mt-10 mb-10 z-30 backdrop-blur-md">
+          {/* Faded Monk Logo */}
+          <div className="absolute inset-0 flex justify-center items-center opacity-10 z-0 pointer-events-none select-none">
+            <div style={{width: '320px', height: '320px', background: "url('/monk logo.png') center/contain no-repeat"}} />
+          </div>
           {/* Content */}
           <div className="relative z-10">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-[#745802] underline">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-[#745802] text-center mb-6 tracking-tight">
               Shipping Policy
+              <span className="block w-24 h-1 bg-orange-400 mx-auto mt-4 rounded-full"></span>
             </h1>
-            <p className="text-sm sm:text-base mb-4 leading-relaxed">
+            <p className="text-lg md:text-xl mb-6 leading-relaxed font-normal text-gray-700">
               At Sobhagya, your trust in us is paramount, and we're committed to delivering your treasures with the utmost care and reliability. Here's everything you need to know about our shipping process to ensure a smooth and secure experience:
             </p>
-  
             {/* Dynamic Sections */}
             {sections.map(({ title, content }, index) => (
-              <div key={index} className="mb-6">
-                <h2 className="text-lg sm:text-xl font-semibold text-orange-700">{title}</h2>
+              <div key={index} className="mb-10">
+                <h2 className="text-xl md:text-2xl font-semibold text-orange-700 border-l-4 border-orange-400 pl-3 mb-2">{title}</h2>
                 {Array.isArray(content) ? (
-                  <ul className="list-disc pl-5 mt-2 text-sm sm:text-base">
+                  <ul className="mt-3 space-y-3 text-gray-700 text-lg md:text-xl">
                     {content.map((item, idx) => (
-                      <li key={idx}>{item}</li>
+                      <li key={idx} className="flex items-start gap-2 bg-orange-50 rounded-xl px-4 py-2 shadow-sm font-medium text-gray-800">
+                        <span className="text-orange-500 text-lg">•</span>
+                        {item}
+                      </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="mt-2 text-sm sm:text-base">{content}</p>
+                  <p className="mt-1 text-lg md:text-xl font-normal text-gray-700 leading-relaxed">{content}</p>
                 )}
               </div>
             ))}
           </div>
+          {/* Fade-in animation keyframes */}
+          <style jsx>{`
+            .animate-fade-in-up {
+              animation: fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+            }
+            @keyframes fadeInUp {
+              0% {
+                opacity: 0;
+                transform: translateY(40px);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}</style>
         </div>
-      </div>
+      </section>
     );
   }
   

@@ -46,53 +46,51 @@ const Header = () => {
     return () => window.removeEventListener("scroll", updateScrollProgress);
   }, []);
 
-  // Check authentication status and fetch user profile
+  // Listen for custom user-auth-changed event for instant header update
   useEffect(() => {
-    if (!mounted) return;
-
-    const checkAuthStatus = async () => {
+    const handler = () => {
+      console.log('📡 Header received user-auth-changed event');
+      // Re-run auth check
       const authenticated = isAuthenticated();
+      console.log('🔐 Event handler - Is authenticated:', authenticated);
       setIsAuthenticatedUser(authenticated);
-      
       if (authenticated) {
-        // Try to get user details from localStorage first
         let userDetails = getUserDetails();
-        
-        if (userDetails) {
+        console.log('👤 Event handler - User details:', userDetails);
           setUserProfile(userDetails);
-        }
-        
-        // Try to fetch fresh profile data from API (with built-in fallbacks)
-        try {
-          const freshProfile = await fetchUserProfile();
-          if (freshProfile) {
-            setUserProfile(freshProfile);
-          } else if (!userDetails) {
-            // If no cached data and API failed, set a basic profile with phone number
-            const basicProfile = {
-              phoneNumber: 'User',
-              timestamp: new Date().getTime(),
-            };
-            setUserProfile(basicProfile);
-          }
-        } catch (error) {
-          console.log('Could not fetch fresh profile data:', error);
-          // Keep using cached data if API fails
-          if (!userDetails) {
-            // Fallback to basic profile if no cached data
-            const basicProfile = {
-              phoneNumber: 'User',
-              timestamp: new Date().getTime(),
-            };
-            setUserProfile(basicProfile);
-          }
-        }
+        fetchUserProfile().then(freshProfile => {
+          console.log('🔄 Event handler - Fresh profile:', freshProfile);
+          if (freshProfile) setUserProfile(freshProfile);
+        });
       } else {
+        console.log('❌ Event handler - Not authenticated, clearing profile');
         setUserProfile(null);
       }
     };
+    window.addEventListener('user-auth-changed', handler);
+    return () => window.removeEventListener('user-auth-changed', handler);
+  }, []);
 
-    checkAuthStatus();
+  // Always check auth state on mount to ensure correct display after redirects
+  useEffect(() => {
+    if (mounted) {
+      console.log('🔍 Header checking auth state on mount...');
+      const authenticated = isAuthenticated();
+      console.log('🔐 Is authenticated:', authenticated);
+      setIsAuthenticatedUser(authenticated);
+      if (authenticated) {
+        let userDetails = getUserDetails();
+        console.log('👤 User details from localStorage:', userDetails);
+        setUserProfile(userDetails);
+        fetchUserProfile().then(freshProfile => {
+          console.log('🔄 Fresh profile from fetchUserProfile:', freshProfile);
+          if (freshProfile) setUserProfile(freshProfile);
+        });
+      } else {
+        console.log('❌ Not authenticated, clearing user profile');
+        setUserProfile(null);
+      }
+    }
   }, [mounted]);
 
   const handleLogout = async () => {
@@ -121,6 +119,9 @@ const Header = () => {
       setIsAuthenticatedUser(false);
       setUserProfile(null);
       setIsLoggingOut(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-auth-changed'));
+      }
       window.location.href = '/';
     }
   };
@@ -143,242 +144,215 @@ const Header = () => {
     }
     
     if (userProfile.phoneNumber) {
-      return userProfile.phoneNumber;
+      // Format phone number for display
+      const phone = userProfile.phoneNumber.toString();
+      if (phone.length >= 10) {
+        return `+91 ${phone.slice(-10).replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}`;
+      }
+      return phone;
     }
     
     return 'User';
   };
 
   return (
-    <header className="w-full bg-white shadow-sm">
-      {/* DESKTOP and TABLET HEADER */}
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-orange-100/60 shadow-md transition-all duration-300 animate-fadeIn">
+      {/* Progress bar */}
+      <div 
+        className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-300 ease-out rounded-full"
+        style={{ width: `${scrollProgress}%` }}
+      />
+      
+      {/* DESKTOP HEADER */}
       <div className="hidden md:block">
-        {/* Top Row: Contact info (optional - can be uncommented if needed) */}
-        {/* <div className="flex justify-between items-center border-b border-gray-200 py-2 px-4 md:px-6 lg:px-8">
-          <div className="md:hidden lg:block"></div>
-          <div className="flex items-center justify-center md:text-sm lg:text-base">
-            <span className="text-[#F7971D] font-semibold font-poppins">
-              Talk to Our Astrologers NOW:
-            </span>
-            <a
-              href="tel:+919876543201"
-              className="ml-1 text-[#373737] hover:text-orange-500 font-normal font-poppins"
-            >
-              +91 98765 43201
-            </a>
-          </div>
-          <div className="md:pr-4 lg:pr-20"></div>
-        </div> */}
-
-        {/* Desktop and Tablet Layout - Flexible */}
-        <div className="flex flex-col md:flex-row">
-          {/* Logo Section */}
-          <div className="md:w-1/4 lg:w-1/5 md:border-r border-gray-200 flex items-center justify-center py-3">
-            <Link href="/" className="flex items-center">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center h-20">
+            {/* Left: Logo/Brand, fixed width, shifted left */}
+            <div className="flex items-center gap-3 flex-shrink-0 min-w-[170px] -ml-2 justify-start">
               <Image
-                src="/monk logo (1).png"
+                src="/monk logo.png"
                 alt="Sobhagya"
-                width={65}
-                height={65}
-                priority
-                className="md:w-[55px] md:h-[55px] lg:w-[70px] lg:h-[70px]"
-              />
-              <div className="ml-3 md:ml-4 lg:ml-5 overflow-hidden md:w-[150px] lg:w-[170px] h-[40px] flex items-center relative">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={texts[textIndex]}
-                    className={`${eagleLake.className} absolute md:text-2xl lg:text-[28px] leading-none`}
-                    style={{ color: "#F7971D" }}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                  >
-                    {texts[textIndex]}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-            </Link>
-          </div>
-
-          {/* Navigation Section for Desktop and Tablet */}
-          <div className="md:w-3/4 lg:w-4/5">
-            {/* Bottom Row: Navigation Links */}
-            <div className="py-4 border-b border-gray-200 text-[#373737] font-poppins">
-              <nav className="flex flex-wrap items-center justify-center md:space-x-4 lg:space-x-10 text-[13px] lg:text-[14px]">
-                <Link href="/about" className="hover:text-orange-500 py-1 md:py-0">
-                  About Us
-                </Link>
-                <Link href="/services" className="hover:text-orange-500 py-1 md:py-0">
-                  Services
-                </Link>
-                <Link href="/live-sessions" className="hover:text-orange-500 py-1 md:py-0">
-                  Live Sessions
-                </Link>
-                <Link href="/call-with-astrologer" className="hover:text-orange-500 py-1 md:py-0">
-                  Call with Astrologer
-                </Link>
-                <Link href="https://store.sobhagya.in" target="_blank" className="hover:text-orange-500 py-1 md:py-0">
-                  Shop
-                </Link>
-                <Link href="/blog" className="hover:text-orange-500 py-1 md:py-0">
-                  Blog
-                </Link>
-                <Link href="/contact" className="hover:text-orange-500 py-1 md:py-0">
-                  Contact Us
-                </Link>
-                <div className="flex items-center cursor-pointer hover:text-orange-500 py-1 md:py-0">
-                  <span>EN</span>
-                  <span className="ml-1">▼</span>
-                </div>
+                width={54}
+                height={54}
+                className="w-14 h-14 object-contain"
                 
-                {/* Authentication section - aligned with navigation links */}
-                {mounted && isAuthenticatedUser ? (
-                  <div className="flex items-center space-x-2 py-1 md:py-0">
-                    <div className="flex items-center space-x-1">
-                      <User className="h-4 w-4 text-[#F7971D]" />
-                      <span className="text-[#373737] font-medium">
-                        Hello, {getDisplayName()}
-                      </span>
-                    </div>
+              />
+              <div className="flex flex-col justify-center">
+                <span className="text-2xl font-extrabold text-orange-500 tracking-tight" style={{ fontFamily: 'EB Garamond', letterSpacing: '0.01em' }}>
+                  Sobhagya
+                </span>
+                <span className="text-xs text-gray-400 font-medium tracking-wide mt-0.5" style={{ letterSpacing: '0.02em' }}>
+                  Your Trusted Astrology Platform
+                </span>
+              </div>
+          </div>
+            {/* Center: Navigation, flex-1, centered */}
+            <nav className="flex-1 flex items-center justify-center gap-6">
+              {[
+                { href: "/", label: "Home" },
+                { href: "/call-with-astrologer", label: "Call with Astrologers" },
+                { href: "/about", label: "About" },
+                { href: "/services", label: "Services" },
+                { href: "/contact", label: "Contact" },
+                { href: "/live-session", label: "Live Session" },
+                { href: "/Blog", label: "Blog" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="relative text-base font-semibold text-gray-700 px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[170px] truncate text-center"
+                  style={{ lineHeight: '1.2' }}
+                >
+                  <span className="block w-full overflow-hidden text-ellipsis">{item.label}</span>
+                  <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
+                </Link>
+              ))}
+            </nav>
+            {/* Right: User/Login, fixed width, matches left */}
+            <div className="flex items-center gap-2 flex-shrink-0 min-w-[210px] justify-end">
+              {isAuthenticatedUser ? (
+                <div className="flex items-center gap-2 bg-orange-50/70 border border-orange-100 rounded-full px-3 py-1.5 shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center">
+                    <User className="w-5 h-5 text-orange-600" />
+                </div>
+                  <span className="text-gray-700 font-medium text-sm max-w-[100px] truncate">{getDisplayName()}</span>
                     <button
                       onClick={handleLogout}
+                    className="ml-1 p-2 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
                       disabled={isLoggingOut}
-                      className={`flex items-center space-x-1 font-medium transition-colors ${
-                        isLoggingOut 
-                          ? 'text-gray-400 cursor-not-allowed' 
-                          : 'text-gray-500 hover:text-red-600'
-                      }`}
-                      title={isLoggingOut ? "Logging out..." : "Logout"}
+                    title="Logout"
                     >
-                      <LogOut className={`h-4 w-4 ${isLoggingOut ? 'animate-spin' : ''}`} />
-                      <span className="hidden lg:inline">
-                        {isLoggingOut ? 'Logging out...' : 'Logout'}
-                      </span>
+                    <LogOut className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
                   <Link
                     href="/calls/call1"
-                    className="text-[#F7971D] hover:text-orange-600 font-semibold cursor-pointer py-1 md:py-0"
+                  className="px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     Signup/Login
                   </Link>
                 )}
-              </nav>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MOBILE HEADER */}
-      <div className="md:hidden flex w-full justify-between items-center py-3 px-4 border-b border-gray-200">
-        <Link href="/" className="flex items-center">
+      {/* MOBILE HEADER with enhanced animations */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between px-4 py-2">
+          {/* Mobile Logo */}
+          <Link href="/" className="group flex items-center gap-2 transition-all duration-300 hover:scale-105">
           <Image
-            src="/monk logo (1).png"
+              src="/monk logo.png"
             alt="Sobhagya"
-            width={50}
-            height={50}
-            priority
-            className="w-[50px] h-auto"
-          />
-          <div className="ml-3 overflow-hidden w-[120px] h-[30px] flex items-center relative">
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={texts[textIndex]}
-                className={`${eagleLake.className} absolute text-[22px] leading-none`}
-                style={{ color: "#F7971D" }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
-              >
-                {texts[textIndex]}
-              </motion.span>
-            </AnimatePresence>
-          </div>
+              width={40}
+              height={40}
+              className="w-40 h-20 object-contain"
+            />
+            <span className="text-xl font-bold text-orange-500" style={{ fontFamily: 'EB Garamond' }}>
+              Sobhagya
+            </span>
         </Link>
 
-        <div className="flex items-center gap-3">
+          {/* Mobile Action Buttons */}
+          <div className="flex items-center gap-2">
           <a
             href="tel:+919876543201"
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-500"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 transition-all duration-300 hover:scale-110"
           >
-            <Phone size={18} />
+              <Phone size={16} />
           </a>
           
           {mounted && isAuthenticatedUser ? (
             <button
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 hover:scale-110 ${
                 isLoggingOut 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : 'bg-red-100 text-red-500 hover:bg-red-200'
+                    : 'bg-red-100 text-red-600 hover:bg-red-200'
               }`}
               title={isLoggingOut ? "Logging out..." : "Logout"}
             >
-              <LogOut size={18} className={isLoggingOut ? 'animate-spin' : ''} />
+                <LogOut size={16} className={isLoggingOut ? 'animate-spin' : ''} />
             </button>
           ) : (
             <Link
-              href="/calls/call1"
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-500"
+                href="/login"
+                className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 transition-all duration-300 hover:scale-110"
             >
-              <User size={18} />
+                <User size={16} />
             </Link>
           )}
           
           <button 
             onClick={() => setIsOpen(!isOpen)} 
-            className="focus:outline-none"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-orange-500"
             aria-label="Toggle menu"
           >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
 
-      {/* MOBILE MENU - Animated Overlay */}
+        {/* MOBILE MENU with enhanced animations */}
       <AnimatePresence>
         {isOpen && (
           <motion.div 
-            className="fixed top-0 left-0 w-full h-full bg-white z-40 flex flex-col items-center pt-20 text-gray-700 font-medium overflow-y-auto"
+              className="fixed top-0 left-0 w-full h-full bg-white/95 z-40 flex flex-col overflow-y-auto"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+              transition={{ duration: 0.3, ease: "easeInOut" }}
           >
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+                  <Image src="/monk logo.png" alt="Sobhagya" width={36} height={36} />
+                  <span className="text-xl font-bold text-orange-500" style={{ fontFamily: 'EB Garamond' }}>
+                    Sobhagya
+                  </span>
+                </Link>
             <button 
               onClick={() => setIsOpen(false)} 
-              className="absolute top-4 right-4 focus:outline-none"
+                  className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300"
               aria-label="Close menu"
             >
-              <X size={24} />
+                  <X size={18} />
             </button>
+              </div>
 
-            <div className="w-full max-w-sm px-6 space-y-6">
-              {/* Phone number in mobile menu */}
-              <div className="flex items-center justify-center py-2 border-b border-gray-100">
-                <span className="text-[#F7971D] text-sm font-semibold mr-2">
+              {/* Mobile Menu Content */}
+              <div className="flex-1 px-6 py-6 space-y-6">
+                {/* Phone number section */}
+                <div className="flex items-center justify-center py-3 bg-orange-50 rounded-xl border border-orange-200">
+                  <div className="text-center">
+                    <span className="text-orange-600 text-xs font-semibold block mb-1">
                   Talk to Our Astrologers:
                 </span>
                 <a
                   href="tel:+919876543201"
-                  className="text-[#373737] hover:text-orange-500 text-sm font-normal"
+                      className="flex items-center gap-2 text-gray-700 hover:text-orange-600 transition-colors duration-300 justify-center text-sm"
                 >
-                  +91 98765 43201
+                      <Phone className="w-4 h-4" />
+                      <span className="font-medium">+91 98765 43201</span>
                 </a>
+                  </div>
               </div>
               
               {/* User Authentication Section */}
               {mounted && isAuthenticatedUser ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center py-3 bg-orange-50 rounded-md">
-                    <User className="h-5 w-5 text-[#F7971D] mr-2" />
-                    <span className="text-[#373737] font-medium">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center py-3 bg-orange-50 rounded-xl border border-orange-200">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-gray-700 font-medium text-sm max-w-[100px] truncate">
                       Hello, {getDisplayName()}
                     </span>
+                      </div>
                   </div>
                   <button
                     onClick={() => {
@@ -386,56 +360,54 @@ const Header = () => {
                       setIsOpen(false);
                     }}
                     disabled={isLoggingOut}
-                    className={`flex items-center justify-center w-full py-3 border rounded-md transition-colors ${
+                      className={`flex items-center justify-center w-full py-3 rounded-xl font-medium transition-all duration-300 text-base ${
                       isLoggingOut
-                        ? 'text-gray-400 border-gray-300 cursor-not-allowed'
-                        : 'text-red-600 hover:text-red-700 border-red-300'
+                          ? 'text-gray-400 border-gray-300 cursor-not-allowed bg-gray-100'
+                          : 'text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50 border-2'
                     }`}
                   >
-                    <LogOut className={`h-4 w-4 mr-2 ${isLoggingOut ? 'animate-spin' : ''}`} />
+                      <LogOut className={`h-5 w-5 mr-2 transition-transform duration-300 ${isLoggingOut ? 'animate-spin' : ''}`} />
                     {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </button>
                 </div>
               ) : (
                 <Link
-                  href="/calls/call1"
-                  className="block w-full text-center text-[#F7971D] hover:text-orange-600 py-3 border border-orange-300 rounded-md"
+                    href="/login"
+                    className="block w-full text-center btn-primary py-3 rounded-xl text-base font-bold"
                   onClick={() => setIsOpen(false)}
                 >
                   Signup/Login
                 </Link>
               )}
 
-              <nav className="space-y-4">
+                {/* Navigation Links */}
+                <nav className="space-y-2">
                 {[
-                  { name: "About Us", path: "/about" },
-                  { name: "Services", path: "/services" },
-                  { name: "Live Sessions", path: "/live-sessions" },
-                  { name: "Call with Astrologer", path: "/call-with-astrologer" },
-                  { name: "Shop", path: "https://store.sobhagya.in", external: true },
-                  { name: "Blog", path: "/blog" },
-                  { name: "Contact Us", path: "/contact" }
-                ].map((item, idx) => (
+                    { href: "/", label: "Home", icon: "🏠" },
+                    { href: "/astrologers", label: "Astrologers", icon: "🔮" },
+                    { href: "/about", label: "About", icon: "ℹ️" },
+                    { href: "/contact", label: "Contact", icon: "📞" },
+                  ].map((item, index) => (
                   <Link 
-                    key={idx} 
-                    href={item.path}
-                    target={item.external ? "_blank" : undefined}
-                    className="block text-center hover:text-orange-500 py-2 border-b border-gray-100" 
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center gap-3 w-full py-3 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all duration-300 group text-base font-medium"
                     onClick={() => setIsOpen(false)}
-                  >
-                    {item.name}
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <span className="text-lg">{item.icon}</span>
+                      <span>{item.label}</span>
+                      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        →
+                      </div>
                   </Link>
                 ))}
               </nav>
-
-              <div className="flex items-center justify-center py-3 cursor-pointer hover:text-orange-500">
-                <span>English</span>
-                <span className="ml-1">▼</span>
-              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </header>
   );
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
   Home,
@@ -16,6 +17,22 @@ import {
   ChevronUp,
   Plus,
   ListFilter,
+  CreditCard,
+  Smartphone,
+  DollarSign,
+  Gift,
+  Sparkles,
+  TrendingUp,
+  Star,
+  Shield,
+  Zap,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Copy,
+  CheckCircle,
+  XCircle,
+  Info
 } from "lucide-react";
 
 const WalletPage = () => {
@@ -26,13 +43,51 @@ const WalletPage = () => {
   const [notification, setNotification] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState([]);
-  const [activeTab, setActiveTab] = useState("recharge"); // "recharge" or "transactions"
+  const [activeTab, setActiveTab] = useState("recharge");
+  const [mounted, setMounted] = useState(false);
+  const [showBalance, setShowBalance] = useState(true);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("upi");
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Enhanced recharge options with better UI data
   const rechargeOptions = [
-    { amount: "₹59", extra: "20% extra" },
-    { amount: "₹99", extra: "30% extra" },
-    { amount: "₹199", extra: "30% extra" },
+    { 
+      amount: "₹59", 
+      extra: "20% extra", 
+      popular: false,
+      savings: "₹12",
+      color: "from-blue-500 to-blue-600"
+    },
+    { 
+      amount: "₹99", 
+      extra: "30% extra", 
+      popular: true,
+      savings: "₹30",
+      color: "from-green-500 to-green-600"
+    },
+    { 
+      amount: "₹199", 
+      extra: "30% extra", 
+      popular: false,
+      savings: "₹60",
+      color: "from-purple-500 to-purple-600"
+    },
   ];
+
+  const paymentMethods = [
+    { id: "upi", name: "UPI", icon: Smartphone, description: "Instant & Secure" },
+    { id: "card", name: "Cards", icon: CreditCard, description: "Visa, MasterCard" },
+    { id: "wallet", name: "Wallet", icon: WalletIcon, description: "Digital Wallets" },
+  ];
+
+  useEffect(() => {
+    setMounted(true);
+    // Simulate loading wallet data
+    const timer = setTimeout(() => {
+      setBalance("₹247.50");
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Calculate values based on selected amount
   const baseAmount = parseInt(
@@ -47,14 +102,12 @@ const WalletPage = () => {
   // Calculate bonus based on selection
   const getBonusRate = () => {
     if (showCustomInput && customAmount) {
-      // Custom bonus logic based on amount tiers
       const amount = parseInt(customAmount);
       if (amount >= 200) return 30;
       if (amount >= 90) return 30;
       if (amount >= 50) return 20;
       return 10;
     }
-
     const option = rechargeOptions.find((opt) => opt.amount === selectedAmount);
     return option ? parseInt(option.extra.split("%")[0]) : 0;
   };
@@ -65,7 +118,7 @@ const WalletPage = () => {
 
   const showNotification = (message, type = "success") => {
     setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+    setTimeout(() => setNotification(null), 4000);
   };
 
   const handleCustomAmountChange = (e) => {
@@ -75,61 +128,56 @@ const WalletPage = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsRefreshing(false);
+      showNotification("Wallet refreshed successfully!");
+    }, 1500);
+  };
+
   const handleRecharge = () => {
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
 
-      // Create a new transaction record
       const newTransaction = {
         id: `TXN${Math.floor(Math.random() * 1000000)}`,
         type: "credit",
         amount: totalAmount,
         baseAmount: baseAmount,
         bonusAmount: bonusAmount,
-        status: Math.random() > 0.9 ? "failed" : "success", // 10% chance of failure for demo
+        status: Math.random() > 0.9 ? "failed" : "success",
         date: new Date(),
         description: `Wallet Recharge ${
           showCustomInput ? `₹${customAmount}` : selectedAmount
         }`,
-        paymentMethod: "UPI",
+        paymentMethod: selectedPaymentMethod.toUpperCase(),
       };
 
-      // Add the transaction to history
       setTransactions((prevTransactions) => [
         newTransaction,
         ...prevTransactions,
       ]);
 
-      // Only update balance if transaction was successful
       if (newTransaction.status === "success") {
-        showNotification("Recharge successful! Your wallet has been updated.");
-        // Update wallet balance
+        showNotification("🎉 Recharge successful! Your wallet has been updated.");
         const newBalance = (
           parseFloat(balance.replace("₹", "")) + parseFloat(totalAmount)
         ).toFixed(1);
         setBalance(`₹${newBalance}`);
-
-        // Automatically switch to transactions tab after successful recharge
-        setTimeout(() => {
-          setActiveTab("transactions");
-        }, 500);
+        setTimeout(() => setActiveTab("transactions"), 500);
       } else {
-        showNotification("Recharge failed. Please try again.", "error");
-        // Also show transactions tab on failure so user can see the failed transaction
-        setTimeout(() => {
-          setActiveTab("transactions");
-        }, 500);
+        showNotification("❌ Recharge failed. Please try again.", "error");
+        setTimeout(() => setActiveTab("transactions"), 500);
       }
-    }, 1500);
+    }, 2000);
   };
 
-  // Format selected amount for display
   const displayAmount = showCustomInput
     ? `₹${customAmount || "0"}`
     : selectedAmount;
-
 
   const formatDate = (date) => {
     return new Date(date).toLocaleString("en-IN", {
@@ -141,349 +189,515 @@ const WalletPage = () => {
     });
   };
 
+  if (!mounted) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 to-white">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-orange-600 font-medium">Loading your wallet...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col min-h-screen bg-white relative">
-      {/* Notification */}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 relative">
+      {/* Enhanced Notification */}
+      <AnimatePresence>
       {notification && (
-        <div
-          className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center w-11/12 ${
+          <motion.div
+            initial={{ opacity: 0, y: -100, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -100, scale: 0.8 }}
+            className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-2xl shadow-2xl flex items-center max-w-md ${
             notification.type === "success"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
+                ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
+                : "bg-gradient-to-r from-red-500 to-red-600 text-white"
           }`}
         >
+            <div className="flex items-center">
           {notification.type === "success" ? (
-            <Check className="h-5 w-5 mr-2" />
+                <CheckCircle className="h-6 w-6 mr-3" />
           ) : (
-            <AlertCircle className="h-5 w-5 mr-2" />
+                <XCircle className="h-6 w-6 mr-3" />
           )}
-          <span>{notification.message}</span>
-          <button className="ml-auto" onClick={() => setNotification(null)}>
+              <span className="font-medium">{notification.message}</span>
+            </div>
+            <button 
+              className="ml-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+              onClick={() => setNotification(null)}
+            >
             <X className="h-4 w-4" />
           </button>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Wallet header with animated balance */}
-      <div className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-50 to-white">
-        <h1 className="text-2xl font-bold text-black">Wallet</h1>
-        <div className="border border-yellow-400 rounded-md px-4 py-2 text-black bg-yellow-50 transition-all duration-300 hover:shadow-md">
-          {balance}
+      {/* Enhanced Wallet Header */}
+      <motion.div 
+        className="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 text-white"
+        initial={{ opacity: 0, y: -50 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
         </div>
+
+        <div className="relative p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 rounded-full">
+                <WalletIcon className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">My Wallet</h1>
+                <p className="text-white/80 text-sm">Manage your balance & transactions</p>
+        </div>
+            </div>
+            <motion.button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors disabled:opacity-50"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </motion.button>
       </div>
 
-      {/* Main navigation tabs */}
-      <div className="flex border-b">
+          {/* Enhanced Balance Display */}
+          <motion.div 
+            className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-full">
+                  <DollarSign className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-white/80 text-sm">Current Balance</p>
+                  <div className="flex items-center gap-2">
+                    <AnimatePresence mode="wait">
+                      <motion.span
+                        key={balance}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="text-3xl font-bold"
+                      >
+                        {showBalance ? balance : "₹***.**"}
+                      </motion.span>
+                    </AnimatePresence>
         <button
-          className={`flex-1 py-3 font-medium flex justify-center items-center ${
-            activeTab === "recharge"
-              ? "text-green-600 border-b-2 border-green-500"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("recharge")}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Recharge
+                      onClick={() => setShowBalance(!showBalance)}
+                      className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                    >
+                      {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </button>
-        <button
-          className={`flex-1 py-3 font-medium flex justify-center items-center ${
-            activeTab === "transactions"
-              ? "text-green-600 border-b-2 border-green-500"
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="flex items-center gap-2 text-green-300">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-sm">+12.5%</span>
+                </div>
+                <p className="text-white/60 text-xs">This month</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.div>
+
+      {/* Enhanced Navigation Tabs */}
+      <div className="bg-white shadow-sm border-b border-gray-100">
+        <div className="flex">
+          {[
+            { id: "recharge", label: "Recharge", icon: Plus, count: null },
+            { id: "transactions", label: "Transactions", icon: Clock, count: transactions.length }
+          ].map((tab, index) => (
+            <motion.button
+              key={tab.id}
+              className={`flex-1 py-4 font-medium flex justify-center items-center gap-2 relative ${
+                activeTab === tab.id
+                  ? "text-orange-600"
               : "text-gray-500 hover:text-gray-700"
           }`}
-          onClick={() => setActiveTab("transactions")}
+              onClick={() => setActiveTab(tab.id)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
         >
-          <Clock className="h-4 w-4 mr-2" />
-          Transactions
-          {transactions.length > 0 && (
-            <span className="ml-2 bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded-full">
-              {transactions.length}
+              <tab.icon className="h-5 w-5" />
+              <span>{tab.label}</span>
+              {tab.count > 0 && (
+                <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">
+                  {tab.count}
             </span>
           )}
-        </button>
+              {activeTab === tab.id && (
+                <motion.div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500"
+                  layoutId="activeTab"
+                />
+              )}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
-      {/* Recharge Tab Content */}
+      {/* Enhanced Content */}
+      <div className="flex-1 p-4">
+        <AnimatePresence mode="wait">
       {activeTab === "recharge" && (
-        <div className="px-4 pt-6 pb-4">
-          <h2 className="text-xl font-semibold text-center mb-8">
-            Recharge Top-up
-          </h2>
-
-          {/* Recharge options */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+            <motion.div
+              key="recharge"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {/* Enhanced Recharge Options */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-orange-500" />
+                  Quick Recharge Options
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {rechargeOptions.map((option, index) => (
-              <button
-                key={index}
-                className={`h-24 border rounded-lg flex flex-col items-center justify-center transition-all duration-200 ${
-                  !showCustomInput && selectedAmount === option.amount
-                    ? "border-green-500 bg-green-50 shadow-sm transform scale-105"
-                    : "border-gray-200 bg-gray-100 hover:border-green-300 hover:bg-green-50"
+                    <motion.div
+                      key={option.amount}
+                      className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                        selectedAmount === option.amount && !showCustomInput
+                          ? "border-orange-500 bg-orange-50 shadow-lg"
+                          : "border-gray-200 hover:border-orange-300 hover:shadow-md"
                 }`}
                 onClick={() => {
                   setSelectedAmount(option.amount);
                   setShowCustomInput(false);
                 }}
-              >
-                <span className="font-semibold text-lg">{option.amount}</span>
-                <span className="text-green-500 text-sm mt-1">
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      {option.popular && (
+                        <div className="absolute -top-2 -right-2">
+                          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                            <Star className="h-3 w-3" />
+                            Popular
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-gray-900 mb-1">
+                          {option.amount}
+                        </div>
+                        <div className="text-green-600 font-medium text-sm mb-2">
                   {option.extra}
-                </span>
-              </button>
+                        </div>
+                        <div className="text-gray-500 text-xs">
+                          Save {option.savings}
+                        </div>
+                      </div>
+                    </motion.div>
             ))}
+                </div>
           </div>
 
-          {/* Custom amount option */}
-          <div className="mb-10">
-            <button
-              className={`w-full py-3 px-4 border rounded-lg mb-2 text-left flex justify-between items-center ${
-                showCustomInput
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 hover:border-green-300"
-              }`}
-              onClick={() => setShowCustomInput(!showCustomInput)}
-            >
-              <span className="font-medium">Custom Amount</span>
-              <span
-                className={`text-sm ${
-                  showCustomInput ? "text-green-500" : "text-gray-500"
-                }`}
+              {/* Enhanced Custom Amount */}
+              <motion.div 
+                className="space-y-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.4 }}
               >
-                {showCustomInput ? "Selected" : "Tap to enter"}
-              </span>
+                <button
+              onClick={() => setShowCustomInput(!showCustomInput)}
+                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  <Plus className="h-4 w-4" />
+                  Enter Custom Amount
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showCustomInput ? 'rotate-180' : ''}`} />
             </button>
 
+                <AnimatePresence>
             {showCustomInput && (
-              <div className="mt-3 border border-gray-200 rounded-lg p-3 bg-white">
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="bg-gray-50 rounded-2xl p-4"
+                    >
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                    ₹
-                  </span>
                   <input
                     type="text"
                     value={customAmount}
                     onChange={handleCustomAmountChange}
                     placeholder="Enter amount"
-                    className="w-full pl-8 pr-3 py-3 rounded-md border border-gray-300 focus:border-green-500 focus:outline-none"
-                    autoFocus
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg font-medium"
                   />
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                          ₹
+                        </div>
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Minimum ₹20 · Maximum ₹10,000
-                </p>
-                {customAmount && parseInt(customAmount) < 20 && (
-                  <p className="text-sm text-red-500 mt-1">
-                    Please enter an amount of at least ₹20
-                  </p>
-                )}
+                      {customAmount && (
+                        <div className="mt-2 text-sm text-gray-600">
+                          You'll get {bonusRate}% extra = ₹{bonusAmount} bonus
               </div>
             )}
-          </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
 
-          {/* Offer applied card */}
-          <div className="bg-green-50 border border-green-100 rounded-lg p-4 mb-10 transform transition-all duration-300 hover:shadow-md">
-            <p className="text-green-600 mb-2">
-              Offer Applied: {bonusRate}% extra on {displayAmount}
+              {/* Enhanced Offer Display */}
+              {(selectedAmount || customAmount) && (
+                <motion.div 
+                  className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-2xl p-6"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-green-500 rounded-full">
+                      <Gift className="h-5 w-5 text-white" />
+          </div>
+                    <div>
+                      <h4 className="font-semibold text-green-800">
+                        🎉 Special Offer Applied!
+                      </h4>
+                      <p className="text-green-600 text-sm">
+                        {bonusRate}% extra on {displayAmount}
             </p>
-            <p className="text-black font-medium text-lg">
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl p-4">
+                    <p className="text-green-800 font-medium text-lg">
               You will get ₹{bonusAmount} extra in wallet
             </p>
+                    <p className="text-green-600 text-sm mt-1">
+                      Total wallet credit: ₹{totalAmount}
+                    </p>
           </div>
+                </motion.div>
+              )}
 
-          {/* Recharge amount breakdown */}
-          <div className="space-y-3 mb-6 text-lg border-b border-gray-100 pb-4">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Recharge Amount</span>
-              <span className="text-right">{displayAmount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">GST ({gstRate}%)</span>
-              <span className="text-right">₹{gstAmount}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold">Payable Amount</span>
-              <span className="font-semibold text-right">₹{payableAmount}</span>
-            </div>
-          </div>
-
-          {/* Total amount with check */}
-          <div className="bg-green-100 rounded-lg p-4 flex items-center mb-6 transform transition-all duration-300 hover:bg-green-200">
-            <div className="bg-green-500 rounded-full p-1 mr-3 flex items-center justify-center">
-              <Check className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-black text-lg">
-              You'll get ₹{totalAmount} on this recharge.
-            </span>
-          </div>
-
-          {/* Payment methods tabs */}
-          <div className="mb-8">
-            <div className="flex border-b">
-              <button className="py-2 px-4 border-b-2 border-green-500 text-green-600 font-medium">
-                UPI
-              </button>
-              <button className="py-2 px-4 text-gray-500 hover:text-gray-700">
-                Cards
-              </button>
-              <button className="py-2 px-4 text-gray-500 hover:text-gray-700">
-                NetBanking
-              </button>
-            </div>
-          </div>
-
-          {/* Security notice */}
-          <div className="flex justify-center items-center text-gray-700 mb-6">
-            <span className="text-black font-medium">Secured by PhonePe</span>
-            <div className="ml-2 text-green-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                viewBox="0 0 20 20"
-                fill="currentColor"
+              {/* Enhanced Breakdown */}
+              <motion.div 
+                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.6 }}
               >
-                <path
-                  fillRule="evenodd"
-                  d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
+                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <Info className="h-5 w-5 text-blue-500" />
+                  Payment Breakdown
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+              <span className="text-gray-600">Recharge Amount</span>
+                    <span className="font-medium">{displayAmount}</span>
+            </div>
+                  <div className="flex justify-between items-center">
+              <span className="text-gray-600">GST ({gstRate}%)</span>
+                    <span className="font-medium">₹{gstAmount}</span>
+            </div>
+                  <div className="border-t pt-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-lg">Total Payable</span>
+                      <span className="font-bold text-lg text-orange-600">₹{payableAmount}</span>
             </div>
           </div>
+            </div>
+              </motion.div>
 
-          {/* Recharge button */}
-          <button
-            className={`w-1/2 py-4 rounded-lg flex justify-center items-center px-8 mt-8 mb-6 relative overflow-hidden mx-auto ${
-              isLoading
-                ? "bg-orange-300 cursor-wait"
-                : "bg-orange-400 hover:bg-orange-500 active:bg-orange-600 transition-colors duration-200"
-            }`}
+              {/* Enhanced Payment Methods */}
+              <motion.div 
+                className="space-y-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.8 }}
+              >
+                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-purple-500" />
+                  Payment Method
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {paymentMethods.map((method) => (
+                    <motion.button
+                      key={method.id}
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                        selectedPaymentMethod === method.id
+                          ? "border-orange-500 bg-orange-50"
+                          : "border-gray-200 hover:border-orange-300"
+                      }`}
+                      onClick={() => setSelectedPaymentMethod(method.id)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <method.icon className="h-6 w-6 text-gray-700" />
+                        <div className="text-center">
+                          <div className="font-medium text-gray-900">{method.name}</div>
+                          <div className="text-xs text-gray-500">{method.description}</div>
+            </div>
+          </div>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* Enhanced Recharge Button */}
+              <motion.button
             onClick={handleRecharge}
-            disabled={
-              isLoading ||
-              (showCustomInput &&
-                (!customAmount || parseInt(customAmount) < 20))
-            }
+                disabled={isLoading || !baseAmount}
+                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 1 }}
           >
-            <span className="font-semibold text-xl">
-              {isLoading ? "Processing..." : "Recharge"}
-            </span>
-            <ArrowRight className="h-6 w-6" />
+                {isLoading ? (
+                  <>
+                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-5 w-5" />
+                    <span>Recharge Now</span>
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </motion.button>
 
-            {/* Loading animation */}
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-orange-400 bg-opacity-50">
-                <div className="w-6 h-6 border-t-2 border-white rounded-full animate-spin"></div>
-              </div>
-            )}
-          </button>
+              {/* Trust Indicators */}
+              <motion.div 
+                className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 1.2 }}
+              >
+                {[
+                  { icon: Shield, text: "100% Secure", color: "text-green-500" },
+                  { icon: Zap, text: "Instant Credit", color: "text-blue-500" },
+                  { icon: CheckCircle, text: "Verified", color: "text-purple-500" },
+                  { icon: Star, text: "Best Rates", color: "text-orange-500" }
+                ].map((item, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                    <span>{item.text}</span>
         </div>
+                ))}
+              </motion.div>
+            </motion.div>
       )}
 
-      {/* Transactions Tab Content */}
       {activeTab === "transactions" && (
-        <div className="px-4 py-5">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Transaction History</h2>
-            {transactions.length > 0 && (
-              <button className="text-green-600 flex items-center text-sm">
-                <ListFilter className="h-4 w-4 mr-1" />
+            <motion.div
+              key="transactions"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-blue-500" />
+                  Transaction History
+                </h3>
+                <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
+                  <ListFilter className="h-4 w-4" />
                 Filter
               </button>
-            )}
           </div>
 
-          {transactions.length > 0 ? (
-            <div className="space-y-3">
-              {transactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className={`p-4 rounded-lg flex items-start border shadow-sm ${
-                    transaction.status === "success"
-                      ? "bg-white border-green-100"
-                      : "bg-white border-red-100"
-                  }`}
+              {transactions.length === 0 ? (
+                <motion.div 
+                  className="text-center py-12"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <div className="flex-shrink-0 mr-3">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Clock className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">No Transactions Yet</h4>
+                  <p className="text-gray-500 mb-4">Your transaction history will appear here</p>
+                  <button 
+                    onClick={() => setActiveTab("recharge")}
+                    className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Make Your First Recharge
+                  </button>
+                </motion.div>
+              ) : (
+                <div className="space-y-3">
+                  {transactions.map((transaction, index) => (
+                    <motion.div
+                  key={transaction.id}
+                      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${
+                    transaction.status === "success"
+                              ? "bg-green-100 text-green-600" 
+                              : "bg-red-100 text-red-600"
+                          }`}>
                     {transaction.type === "credit" ? (
-                      <ArrowDownCircle
-                        className={`h-10 w-10 ${
-                          transaction.status === "success"
-                            ? "text-green-500"
-                            : "text-red-500"
-                        }`}
-                      />
+                              <ArrowDownCircle className="h-5 w-5" />
                     ) : (
-                      <ArrowUpCircle className="h-10 w-10 text-orange-500" />
+                              <ArrowUpCircle className="h-5 w-5" />
                     )}
                   </div>
-                  <div className="flex-grow">
-                    <div className="flex justify-between">
-                      <p className="font-medium">{transaction.description}</p>
-                      <p
-                        className={`font-semibold ${
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {transaction.description}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {formatDate(transaction.date)} • {transaction.paymentMethod}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-semibold ${
                           transaction.status === "success"
                             ? "text-green-600"
                             : "text-red-600"
-                        }`}
-                      >
-                        {transaction.type === "credit" ? "+" : "-"}₹
-                        {transaction.amount}
-                      </p>
+                          }`}>
+                            {transaction.type === "credit" ? "+" : "-"}₹{transaction.amount}
                     </div>
-                    <div className="flex justify-between mt-2">
-                      <div>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(transaction.date)}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Payment: {transaction.paymentMethod}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          TXN ID: {transaction.id}
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end">
-                        <span
-                          className={`text-xs rounded px-2 py-0.5 inline-block font-medium tracking-wide capitalize
-                          ${
+                          <div className={`text-xs px-2 py-1 rounded-full ${
                             transaction.status === "success"
                               ? "bg-green-100 text-green-800"
                               : "bg-red-100 text-red-800"
-                          }`}
-                        >
+                          }`}>
                           {transaction.status}
-                        </span>
-                        {transaction.status === "success" && (
-                          <div className="text-xs text-gray-600 mt-2">
-                            <p>Base: ₹{transaction.baseAmount}</p>
-                            <p>Bonus: ₹{transaction.bonusAmount}</p>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </motion.div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
-              <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Clock className="h-10 w-10 text-gray-400" />
-              </div>
-              <p className="text-gray-600 font-medium">No transactions yet</p>
-              <p className="text-sm text-gray-500 mt-2 mb-6">
-                Your transaction history will appear here
-              </p>
-              <button
-                className="px-6 py-2 bg-green-100 text-green-700 rounded-lg font-medium"
-                onClick={() => setActiveTab("recharge")}
-              >
-                Make your first recharge
-              </button>
-            </div>
+              )}
+            </motion.div>
           )}
+        </AnimatePresence>
         </div>
-      )}
     </div>
   );
 };

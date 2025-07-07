@@ -484,288 +484,91 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer }: Props)
   };
 
   return (
-    <>
-      <div
-        onClick={handleCardClick}
-        className="bg-white rounded-xl border border-gray-200 p-6 cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.02] group"
-        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#F7971E'}
-        onMouseLeave={(e) => e.currentTarget.style.borderColor = '#E5E7EB'}
-      >
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative">
-            <img
-              src={profileImage || '/default-astrologer.png'}
-              alt={name}
-              className="w-16 h-16 rounded-full object-cover border-3 transition-all duration-300 group-hover:scale-110 shadow-lg"
-              style={{ 
-                borderColor: astrologer.status === 'online' ? '#22C55E' : astrologer.status === 'busy' ? '#F59E0B' : '#EF4444',
-                boxShadow: `0 0 20px ${astrologer.status === 'online' ? 'rgba(34, 197, 94, 0.3)' : astrologer.status === 'busy' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`;
-              }}
-            />
-            <div 
-              className="absolute -bottom-1 -right-1 text-white px-2 py-0.5 rounded-full text-xs font-medium shadow-lg flex items-center gap-1" 
-              style={{ 
-                backgroundColor: astrologer.status === 'online' ? '#22C55E' : astrologer.status === 'busy' ? '#F59E0B' : '#EF4444'
-              }}
-            >
-              <div 
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ backgroundColor: 'white' }}
-              />
-              <span>
-                {astrologer.status === 'online' ? 'Online' : astrologer.status === 'busy' ? 'Busy' : 'Offline'}
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg font-semibold text-gray-900 truncate group-hover:text-gray-700 transition-colors">{name}</h3>
-              {/* Instagram-style verification tick */}
-              <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                <path 
-                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" 
-                  fill="#1DA1F2"
-                />
-              </svg>
-            </div>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {astrologer.talksAbout?.map((spec, index) => (
-                <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#FDF4E6', color: '#F7971E' }}>
-                  {spec}
-                </span>
-              )) || specializations.map((spec, index) => (
-                <span key={index} className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#FDF4E6', color: '#F7971E' }}>
-                  {spec}
-                </span>
-              ))}
-            </div>
-            
-            {/* Small stats below specializations */}
-            <div className="flex items-center gap-3 text-xs text-gray-500 mb-1">
-              <div className="flex items-center gap-1">
-                <Award className="w-3 h-3" style={{ color: '#8B5CF6' }} />
-                <span>{experience} Years</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Users className="w-3 h-3" style={{ color: '#3B82F6' }} />
-                <span>{callsCount} Orders</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-2.5 h-2.5 ${
-                      i < Math.floor(typeof rating === 'number' ? rating : rating.avg) 
-                        ? 'fill-current' 
-                        : ''
-                    }`}
-                    style={{ color: i < Math.floor(typeof rating === 'number' ? rating : rating.avg) ? '#F59E0B' : '#D1D5DB' }}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-gray-600">
-            <div>Audio: <span className="font-semibold" style={{ color: '#F7971E' }}>₹{rpm || 15}/min</span></div>
-            {(astrologer.isVideoCallAllowed || astrologer.hasVideo) && (
-              <div className="mt-0.5">Video: <span className="font-semibold" style={{ color: '#3B82F6' }}>₹{videoRpm || 20}/min</span></div>
-            )}
-          </div>
-
-          {isCheckingHistory ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-              <span className="text-gray-500 text-sm">Loading...</span>
-            </div>
-          ) : isCallRequested ? (
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#F7971E' }} />
-                <span className="font-medium text-sm" style={{ color: '#F7971E' }}>Connecting...</span>
-              </div>
-              <div className="text-xs text-gray-500">
-                Time left: {formatTimeLeft()}
-              </div>
-            </div>
-          ) : !hasCompletedFreeCall ? (
-            <button
-              onClick={handleCallButtonClick}
-              className="text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:shadow-lg hover:scale-105"
-              style={{ backgroundColor: '#F7971E' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
-            >
-              FREE First Call
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={handleAudioCallButtonClick}
-                className="bg-white border-2 text-black px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1 hover:shadow-md hover:scale-105"
-                style={{ 
-                  borderColor: '#4A5568',
-                  color: '#4A5568'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#4A5568';
-                  e.currentTarget.style.color = 'white';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white';
-                  e.currentTarget.style.color = '#4A5568';
-                }}
-              >
-                <Phone className="w-3 h-3" />
-              </button>
-              
-              {(astrologer.isVideoCallAllowed || astrologer.hasVideo) && (
-                <button
-                  onClick={handleVideoCall}
-                  className="bg-white border-2 text-black px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1 hover:shadow-md hover:scale-105"
-                  style={{ 
-                    borderColor: '#4A5568',
-                    color: '#4A5568'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#4A5568';
-                    e.currentTarget.style.color = 'white';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'white';
-                    e.currentTarget.style.color = '#4A5568';
-                  }}
-                >
-                  <Video className="w-3 h-3" />
-                </button>
-              )}
-            </div>
+    <div
+      onClick={handleCardClick}
+      className="group relative bg-white rounded-xl border border-orange-300 p-4 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01] overflow-hidden max-w-[350px] min-w-[320px] mx-auto"
+      style={{ boxShadow: '0 2px 8px 0 rgba(247,151,30,0.07)' }}
+    >
+      <div className="flex gap-4 items-center mb-2">
+        <div className="relative">
+          <img
+            src={profileImage || '/default-astrologer.png'}
+            alt={name}
+            className="w-20 h-20 rounded-full object-cover border-4"
+            style={{ borderColor: astrologer.status === 'online' ? '#22C55E' : '#E5E7EB' }}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`;
+            }}
+          />
+          {/* Online indicator */}
+          {astrologer.status === 'online' && (
+            <span className="absolute bottom-1 right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
+              <span className="w-3 h-3 bg-green-500 rounded-full border-2 border-white block"></span>
+            </span>
           )}
         </div>
-
-        {/* Error message */}
-        {callError && (
-          <div className="mt-3 bg-red-50 text-red-600 text-sm p-3 rounded-md border border-red-200">
-            {callError}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1 mb-1">
+            <span className="text-xl font-bold text-gray-800 truncate">{name}</span>
+            <span className="ml-1 text-orange-400" title="Verified">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </span>
           </div>
+          <div className="text-gray-700 text-sm font-medium leading-tight truncate">
+            {specializations?.join(', ')}
+          </div>
+          <div className="text-gray-400 text-sm truncate">
+            {languages?.join(', ')}
+          </div>
+          <div className="text-gray-500 text-sm mt-1">Exp:- <span className="font-semibold">{experience} years</span></div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-2 mb-1">
+        <span className="text-lg font-bold text-gray-800">₹ {rpm || 15}/<span className="text-base font-medium">min.</span></span>
+      </div>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-green-600 text-xs font-semibold">Online</span>
+        <span className="flex items-center text-orange-400 text-base">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <svg key={i} width="16" height="16" fill={i < (typeof rating === 'number' ? Math.round(rating) : Math.round(rating.avg)) ? '#F7971D' : '#E5E7EB'} viewBox="0 0 20 20"><polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 "/></svg>
+          ))}
+        </span>
+        <span className="text-gray-400 text-xs ml-1">{callsCount} orders</span>
+      </div>
+      <div className="flex gap-2 mt-4">
+        {isVideoCallAllowed ? (
+          <>
+            <button
+              className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white font-semibold rounded-md py-2 transition-all hover:bg-orange-600"
+              style={{ fontSize: '1rem' }}
+              onClick={handleCallButtonClick}
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.13.37 2.23.72 3.28a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c1.05.35 2.15.59 3.28.72A2 2 0 0 1 22 16.92z"/></svg>
+              Call
+            </button>
+            <button
+              className="flex-1 flex items-center justify-center gap-2 bg-orange-100 text-orange-600 font-semibold rounded-md py-2 transition-all hover:bg-orange-200 border border-orange-300"
+              style={{ fontSize: '1rem' }}
+              onClick={handleVideoCall}
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="15" height="10" rx="2"/><polygon points="23 7 16 12 23 17 23 7"/></svg>
+              Video
+            </button>
+          </>
+        ) : (
+          <button
+            className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white font-semibold rounded-md py-2 transition-all hover:bg-orange-600"
+            style={{ fontSize: '1rem' }}
+            onClick={handleCallButtonClick}
+          >
+            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M22 16.92V19a2 2 0 0 1-2.18 2A19.72 19.72 0 0 1 3 5.18 2 2 0 0 1 5 3h2.09a2 2 0 0 1 2 1.72c.13 1.13.37 2.23.72 3.28a2 2 0 0 1-.45 2.11l-.27.27a16 16 0 0 0 6.29 6.29l.27-.27a2 2 0 0 1 2.11-.45c1.05.35 2.15.59 3.28.72A2 2 0 0 1 22 16.92z"/></svg>
+            Call
+          </button>
         )}
       </div>
-
-      {/* Free Call Confirmation Dialog */}
-      {showConfirmDialog && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="text-center mb-6">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mb-4">
-                <Phone className="h-8 w-8 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Start Free Call</h2>
-              <p className="text-gray-600">
-                Do you want to start a free consultation call with {name}? This is a one-time free offer.
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={handleDialogClose}
-                disabled={isConnecting}
-                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCallConfirm}
-                disabled={isConnecting}
-                className="flex-1 px-4 py-2.5 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                style={{ backgroundColor: '#F7971E' }}
-                onMouseEnter={(e) => !isConnecting && (e.currentTarget.style.backgroundColor = '#E8850B')}
-                onMouseLeave={(e) => !isConnecting && (e.currentTarget.style.backgroundColor = '#F7971E')}
-              >
-                {isConnecting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Start Call
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Audio Call Confirmation Dialog */}
-      {showAudioConfirmDialog && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="text-center mb-6">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mb-4">
-                <Phone className="h-8 w-8 text-white" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Start Audio Call</h2>
-              <p className="text-gray-600">
-                Start an audio consultation with {name} at ₹{rpm || 15}/minute? Charges will be deducted from your wallet.
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
-              <button
-                onClick={handleAudioDialogClose}
-                disabled={isConnecting}
-                className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAudioCall}
-                disabled={isConnecting}
-                className="flex-1 px-4 py-2.5 text-white rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                style={{ backgroundColor: '#F7971E' }}
-                onMouseEnter={(e) => !isConnecting && (e.currentTarget.style.backgroundColor = '#E8850B')}
-                onMouseLeave={(e) => !isConnecting && (e.currentTarget.style.backgroundColor = '#F7971E')}
-              >
-                {isConnecting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Start Call
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {/* Insufficient Balance Modal */}
-      <InsufficientBalanceModal
-        isOpen={showInsufficientBalanceModal}
-        onClose={() => setShowInsufficientBalanceModal(false)}
-        currentBalance={walletBalance}
-        requiredAmount={insufficientBalanceData?.requiredAmount || 0}
-        astrologerName={name}
-        serviceType={insufficientBalanceData?.serviceType || 'call'}
-      />
-    </>
+    </div>
   );
 });
 
 export default AstrologerCard;
+

@@ -13,28 +13,28 @@ const AstrologerCarousel = () => {
       name: "Pt. Shashtri Ji",
       expertise: "KP, Vedic, Vastu",
       experience: "Exp: 7 years",
-      image: "./image (11).png"
+      image: "/image (11).png"
     },
     {
       id: 2,
       name: "Sahil Mehta",
       expertise: "Tarot reading, Pranic healing",
       experience: "Exp: 2 years",
-      image: "./Sahil-Mehta.png"
+      image: "/Sahil-Mehta.png"
     },
     {
       id: 3,
       name: "Acharaya Ravi",
       expertise: "Vedic, vastu",
       experience: "Exp: 5 years",
-      image: "./Acharya-Ravi.png"
+      image: "/Acharya-Ravi.png"
     },
     {
       id: 4,
       name: "Naresh",
       expertise: "Tarot reading, Vedic, KP, Psychics",
       experience: "Exp: 2 years",
-      image: "Naresh.png"
+      image: "/Naresh.png"
     },
     
   ];
@@ -77,11 +77,11 @@ const AstrologerCarousel = () => {
 
   return (
     <div className="w-full py-12 relative" style={{
-      backgroundImage: "url('./image.png')",
+      backgroundImage: "url('/image.png')",
     }}>
         <div className="absolute top-0 left-0 w-40 h-40 opacity-20">
         <img 
-          src="./Group 13362.png" 
+          src="/Group 13362.png" 
           alt="" 
           className="w-full h-full object-contain"
           aria-hidden="true"
@@ -91,7 +91,7 @@ const AstrologerCarousel = () => {
       
       <div className="absolute bottom-0 right-0 w-40 h-40 opacity-20">
         <img 
-          src="./Group 13362 (1).png" 
+          src="/Group 13362 (1).png" 
           alt="" 
           className="w-full h-full object-contain"
           aria-hidden="true"

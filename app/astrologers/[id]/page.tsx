@@ -935,9 +935,8 @@ export default function AstrologerProfilePage() {
       await socketManager.connect(channelId);
       console.log('✅ Socket connected successfully');
       
-      // 2. Initiate call - TEMPORARILY SKIPPED
-      console.log('📞 Skipping socket initiate_call for testing...');
-      /*
+      // 2. Initiate call via socket
+      console.log('📞 Initiating call via socket...');
       await new Promise((resolve, reject) => {
         socketManager.getSocket()?.emit('initiate_call', {
           userId,
@@ -954,12 +953,10 @@ export default function AstrologerProfilePage() {
           }
         });
       });
-      */
-      console.log('✅ Call initiated successfully (skipped)');
+      console.log('✅ Call initiated successfully');
       
-      // 3. Join call - TEMPORARILY SKIPPED
-      console.log('👥 Skipping socket user_joined for testing...');
-      /*
+      // 3. Join call via socket
+      console.log('👥 Joining call via socket...');
       await new Promise((resolve, reject) => {
         socketManager.getSocket()?.emit('user_joined', {
           channelId,
@@ -973,15 +970,22 @@ export default function AstrologerProfilePage() {
           }
         });
       });
-      */
-      console.log('✅ Joined call successfully (skipped)');
+      console.log('✅ Joined call successfully');
       
       // 4. Request LiveKit token
       console.log('🎫 Requesting LiveKit token...');
       console.log('🔐 Auth token being sent:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
       
+      // Debug environment variables
+      console.log('🔧 Environment check:', {
+        NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+        API_CONFIG_BASE_URL: API_CONFIG.BASE_URL,
+        getApiBaseUrl: getApiBaseUrl()
+      });
+      
       // Build URL with channel as query parameter (required by backend)
-      const livekitUrl = buildApiUrl(`/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`);
+      // Use the main backend endpoint that has livekitController
+      const livekitUrl = `${getApiBaseUrl()}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
       console.log('🎫 LiveKit API URL:', livekitUrl);
       
       // Request body matches backend livekitController expectations
@@ -1061,10 +1065,15 @@ export default function AstrologerProfilePage() {
       console.log('🎫 LiveKit extracted data:', { 
         hasToken: !!livekitToken, 
         hasWsURL: !!livekitSocketURL, 
-        channel 
+        channel,
+        tokenLength: livekitToken?.length,
+        channelLength: channel?.length,
+        fullData: data.data // Log the full data structure
       });
       
       if (!livekitToken || !channel) {
+        console.error('❌ Missing required data:', { livekitToken: !!livekitToken, channel: !!channel });
+        console.error('❌ Full response data:', data);
         throw new Error('Missing token or channel in response');
       }
       
@@ -1073,6 +1082,16 @@ export default function AstrologerProfilePage() {
       // Open frontend video call page with token and room
       const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(astrologer?.name || '')}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
       console.log('🚀 Opening video call window:', videoCallUrl);
+      console.log('🔍 URL parameters check:', {
+        token: livekitToken ? livekitToken.substring(0, 20) + '...' : 'null',
+        room: channel,
+        astrologer: astrologer?.name,
+        wsURL: livekitSocketURL
+      });
+      
+      // Test: Open in new tab first to debug
+      console.log('🧪 Testing URL in new tab...');
+      window.open(videoCallUrl, '_blank');
       
       // Open video call in the same tab
       router.push(videoCallUrl);

@@ -15,6 +15,17 @@ export default function VideoCallPage() {
   const astrologerName = searchParams?.get('astrologer');
   const wsURL = searchParams?.get('wsURL');
   
+  // Debug logging
+  console.log('🎥 Video call page loaded with parameters:', {
+    hasToken: !!token,
+    hasRoomName: !!roomName,
+    hasAstrologerName: !!astrologerName,
+    hasWsURL: !!wsURL,
+    tokenLength: token?.length,
+    roomNameLength: roomName?.length,
+    fullUrl: typeof window !== 'undefined' ? window.location.href : 'server-side'
+  });
+  
   const [error, setError] = useState<string | null>(null);
   const [broadcasterStatus, setBroadcasterStatus] = useState<'waiting' | 'joined' | 'not_allowed' | 'access_denied' | 'error'>('waiting');
   
@@ -28,9 +39,12 @@ export default function VideoCallPage() {
 
   // Check wallet balance and initialize call
   useEffect(() => {
+    console.log('🎥 Video call page useEffect triggered:', { token, roomName });
     if (token && roomName) {
+      console.log('✅ Parameters found, fetching wallet data...');
       fetchWalletPageData();
     } else {
+      console.error('❌ Missing parameters:', { token: !!token, roomName: !!roomName });
       setError('Missing video call parameters');
       setIsCheckingBalance(false);
     }
@@ -38,7 +52,7 @@ export default function VideoCallPage() {
 
   const initializeSocket = async () => {
     try {
-      console.log('🔌 Initializing socket connection...');
+      console.log('🔌 Initializing socket connection for video call page...');
       
       // Get user details from localStorage
       const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
@@ -65,56 +79,19 @@ export default function VideoCallPage() {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected:', socket.id);
+        console.log('✅ Socket connected for video call page:', socket.id);
         
-        // Register with the channel
+        // Register with the channel (already done in astrologer profile page, but good to ensure)
         socket.emit('register', {
           userId,
           channelId: roomName
         });
 
-        // Initiate call
-        socket.emit('initiate_call', {
-          userId,
-          userType: 'user',
-          callType: 'video',
-          channelId: roomName,
-          callThrough: 'livekit'
-        }, (response: any) => {
-          console.log('📞 Initiate call response:', response);
-          
-          if (response && response.error) {
-            console.error('❌ Failed to initiate call:', response);
-            setError(`Failed to initiate call: ${response.message || response.error}`);
-          } else if (response && response.success === false) {
-            console.error('❌ Call initiation unsuccessful:', response);
-            setError(`Call setup failed: ${response.message || 'Unknown error'}`);
-          } else {
-            console.log('✅ Call initiated successfully');
-          }
-        });
-
-        // Join the call
-        socket.emit('user_joined', {
-          channelId: roomName,
-          userType: 'user'
-        }, (response: any) => {
-          console.log('👥 User joined response:', response);
-          
-          if (response && response.error) {
-            console.error('❌ Failed to join call:', response);
-            setError(`Failed to join call: ${response.message || response.error}`);
-          } else if (response && response.success === false) {
-            console.error('❌ User join unsuccessful:', response);
-            setError(`Join failed: ${response.message || 'Unknown error'}`);
-          } else {
-            console.log('✅ User joined successfully');
-          }
-        });
+        console.log('✅ Registered with channel:', roomName);
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected');
+        console.log('❌ Socket disconnected from video call page');
       });
 
       socket.on('broadcaster_joined', (data: any) => {

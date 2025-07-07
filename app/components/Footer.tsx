@@ -19,9 +19,8 @@ const Footer: React.FC = () => {
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
-          layout="fill"
-          objectFit="contain"
-          className="rotate-[-15deg]"
+          fill
+          className="rotate-[-15deg] object-contain"
         />
       </div>
 
@@ -30,8 +29,8 @@ const Footer: React.FC = () => {
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
-          layout="fill"
-          objectFit="contain"
+          fill
+          className="object-contain"
         />
       </div>
 
@@ -50,8 +49,8 @@ const Footer: React.FC = () => {
               <Image
                 src="/monk logo.png"
                 alt="Sobhagya"
-                layout="fill"
-                objectFit="contain"
+                fill
+                className="object-contain"
               />
             </div>
             <p

@@ -1,10 +1,10 @@
 "use client";
 
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import FilterBar from "../components/astrologers/FilterBar";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails, initializeAuth, isAuthenticatedAsync, updateTokenActivity } from "../utils/auth-utils";
 import TransactionHistory from "../components/history/TransactionHistory";
 import CallHistory from "../components/history/CallHistory";
@@ -40,7 +40,8 @@ import {
   PhoneCall,
   VideoIcon,
   CheckCircle,
-  Loader2
+  Loader2,
+  CreditCard
 } from "lucide-react";
 import { getApiBaseUrl } from "../config/api";
 import { useDebounce } from "../hooks/useDebounce";
@@ -91,10 +92,11 @@ interface Astrologer {
 
 export default function AstrologersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [astrologersData, setAstrologersData] = useState<Astrologer[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("rating");
+  const [sortBy, setSortBy] = useState<'audio' | 'video' | 'language' | ''>("");
   const [languageFilter, setLanguageFilter] = useState<string>("All");
   const [videoOnly, setVideoOnly] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -103,6 +105,8 @@ export default function AstrologersPage() {
   const [walletError, setWalletError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<'none' | 'transactions' | 'calls'>('none');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showBestAstrologerLoader, setShowBestAstrologerLoader] = useState(false);
+  const prevSortByRef = useRef<string | undefined>(sortBy);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -116,6 +120,31 @@ export default function AstrologersPage() {
 
   // Performance optimization: debounce search
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Searching state for sort
+  const [searching, setSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Only show searching loader if user actively changes sort (not on initial load)
+  const hasInteractedRef = useRef(false);
+  useEffect(() => {
+    if (hasInteractedRef.current && (sortBy === 'audio' || sortBy === 'video')) {
+      setSearching(true);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      const timeout = setTimeout(() => setSearching(false), 1500 + Math.random() * 2500); // 1.5s to 4s
+      searchTimeoutRef.current = timeout;
+      return () => clearTimeout(timeout);
+    } else {
+      setSearching(false);
+    }
+  }, [sortBy]);
+
+  // Mark as interacted after first sort change
+  useEffect(() => {
+    if (!hasInteractedRef.current && (sortBy === 'audio' || sortBy === 'video')) {
+      hasInteractedRef.current = true;
+    }
+  }, [sortBy]);
 
   // Function to fetch astrologers with pagination
   const fetchAstrologers = useCallback(async (page: number = 1, reset = false) => {
@@ -325,72 +354,48 @@ export default function AstrologersPage() {
     return uniqueLanguages;
   }, [astrologersData, allAstrologersLoaded, allAstrologers]);
 
-  // Apply filters and pagination to astrologers data
-  const { filteredAstrologers, paginatedAstrologers } = useMemo(() => {
-    // Use all astrologers if loaded, otherwise use current page data
-    let allData = allAstrologersLoaded ? allAstrologers : astrologersData;
-    let filtered = [...allData];
-
-    // Apply search filter
-    if (debouncedSearchQuery) {
-      const query = debouncedSearchQuery.toLowerCase();
+  // Filtering and sorting logic
+  const filteredAstrologers = useMemo(() => {
+    // Use allAstrologers if loaded, otherwise use astrologersData
+    let dataToUse = allAstrologersLoaded && allAstrologers.length > 0 ? allAstrologers : astrologersData;
+    let filtered = [...dataToUse];
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (ast) =>
           ast.name.toLowerCase().includes(query) ||
           ast.specializations.some((s) => s.toLowerCase().includes(query))
       );
     }
-
-    // Apply language filter (case-insensitive)
-    if (languageFilter !== "All") {
+    // Sort/Filter by type
+    if (sortBy === 'video') {
+      filtered = filtered.filter((ast) => ast.hasVideo);
+    } else if (sortBy === 'language' && languageFilter) {
       filtered = filtered.filter((ast) =>
-        ast.languages.some(lang => lang.toLowerCase() === languageFilter.toLowerCase())
+        ast.languages.map(l => l.toLowerCase()).includes(languageFilter.toLowerCase())
       );
     }
-
-    // Apply video filter
-    if (videoOnly) {
-      filtered = filtered.filter((ast) => ast.hasVideo);
-    }
-
-    // Apply sorting
-    if (sortBy) {
-      switch (sortBy) {
-        case "rating":
-          filtered.sort((a, b) => {
-            const ratingA = typeof a.rating === 'number' ? a.rating : a.rating.avg;
-            const ratingB = typeof b.rating === 'number' ? b.rating : b.rating.avg;
-            return ratingB - ratingA;
-          });
-          break;
-        case "experience":
-          filtered.sort((a, b) => {
-            const expA = parseInt(a.experience) || 0;
-            const expB = parseInt(b.experience) || 0;
-            return expB - expA;
-          });
-          break;
-        case "calls":
-          filtered.sort((a, b) => b.callsCount - a.callsCount);
-          break;
-        default:
-          break;
-      }
-    }
-
-    // If all astrologers are loaded, apply pagination to filtered results
-    let paginated = filtered;
+    // Pagination: slice for current page if allAstrologersLoaded
     if (allAstrologersLoaded) {
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      paginated = filtered.slice(startIndex, endIndex);
+      const startIdx = (currentPage - 1) * itemsPerPage;
+      const endIdx = startIdx + itemsPerPage;
+      return filtered.slice(startIdx, endIdx);
     }
+    return filtered;
+  }, [astrologersData, allAstrologersLoaded, allAstrologers, searchQuery, sortBy, languageFilter, currentPage, itemsPerPage]);
 
-    return {
-      filteredAstrologers: filtered,
-      paginatedAstrologers: paginated
-    };
-  }, [debouncedSearchQuery, languageFilter, videoOnly, sortBy, astrologersData, allAstrologersLoaded, allAstrologers, currentPage, itemsPerPage]);
+  // Handler for sort change from FilterBar
+  const handleSortChange = (sort: { type: 'audio' | 'video' | 'language', language?: string }) => {
+    // Show loader only when switching to audio from a different sort
+    if (sort.type === 'audio' && prevSortByRef.current !== 'audio') {
+      setShowBestAstrologerLoader(true);
+      setTimeout(() => setShowBestAstrologerLoader(false), 1800); // 1.8s loader
+    }
+    setSortBy(sort.type);
+    setLanguageFilter(sort.language || '');
+    prevSortByRef.current = sort.type;
+  };
 
   // Update total pages when filters change and all astrologers are loaded
   useEffect(() => {
@@ -415,7 +420,7 @@ export default function AstrologersPage() {
         );
       }
 
-      if (videoOnly) {
+      if (sortBy === 'video') {
         filtered = filtered.filter((ast) => ast.hasVideo);
       }
 
@@ -428,18 +433,18 @@ export default function AstrologersPage() {
         setCurrentPage(1);
       }
     }
-  }, [allAstrologersLoaded, allAstrologers, debouncedSearchQuery, languageFilter, videoOnly, itemsPerPage, currentPage]);
+  }, [allAstrologersLoaded, allAstrologers, debouncedSearchQuery, languageFilter, sortBy, itemsPerPage, currentPage]);
 
   // Reset to page 1 when filters change (for server-side pagination)
   useEffect(() => {
-    if (!allAstrologersLoaded && (debouncedSearchQuery || languageFilter !== "All" || videoOnly || sortBy)) {
+    if (!allAstrologersLoaded && (debouncedSearchQuery || languageFilter !== "All" || sortBy === 'video')) {
       // If we're using server-side pagination and filters change, reset to page 1
       if (currentPage !== 1) {
         setCurrentPage(1);
         fetchAstrologers(1);
       }
     }
-  }, [debouncedSearchQuery, languageFilter, videoOnly, sortBy, allAstrologersLoaded, currentPage, fetchAstrologers]);
+  }, [debouncedSearchQuery, languageFilter, sortBy, allAstrologersLoaded, currentPage, fetchAstrologers]);
 
   // Function to fetch wallet balance
   const fetchWalletBalance = useCallback(async () => {
@@ -628,6 +633,18 @@ export default function AstrologersPage() {
     setMounted(true);
   }, []);
 
+  // Handle URL parameters to open history drawers
+  useEffect(() => {
+    if (mounted && searchParams) {
+      const openHistory = searchParams.get('openHistory');
+      if (openHistory === 'transactions') {
+        setShowHistory('transactions');
+      } else if (openHistory === 'calls') {
+        setShowHistory('calls');
+      }
+    }
+  }, [mounted, searchParams]);
+
   // Ensure proper pagination initialization
   useEffect(() => {
     if (mounted && !isLoading && astrologersData.length > 0) {
@@ -717,6 +734,31 @@ export default function AstrologersPage() {
     };
   }, [router, fetchAstrologers, fetchWalletBalance, mounted, allAstrologersLoaded, loadAllAstrologers]);
 
+  // Prevent background scrolling when drawer is open
+  useEffect(() => {
+    if (showHistory !== 'none') {
+      // Store current scroll position
+      const scrollY = window.scrollY;
+      
+      // Prevent scrolling
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Restore scrolling
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [showHistory]);
+
   // Handle refresh button click
   const handleRefresh = async () => {
     console.log('🔄 Refresh requested');
@@ -764,90 +806,60 @@ export default function AstrologersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
-      {/* Responsive, Full-Width Filter/Search Bar (No Scroll) */}
+      {/* FilterBar and Top Controls */}
       <section className="w-full flex justify-center py-6 bg-transparent">
-        <div className="w-full max-w-4xl rounded-2xl shadow-lg border border-orange-100/70 bg-white/90 backdrop-blur-lg px-4 py-3 transition-all duration-300">
-          <div className="flex flex-wrap gap-x-4 gap-y-3 items-center justify-between">
-            {/* Search Tab */}
-            <div className="flex items-center relative min-w-[200px] max-w-xs flex-shrink-0 bg-white border border-orange-100 rounded-xl px-3 py-2 h-12 shadow-sm flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-orange-400" />
-                  <input
-                    type="text"
-                    placeholder="Search astrologers..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-2 bg-transparent text-base font-medium focus:outline-none placeholder:text-gray-400"
-                aria-label="Search astrologers"
-                  />
-                </div>
-            {/* Sort Tab */}
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-              className="min-w-[130px] max-w-[160px] border border-orange-100 rounded-xl px-4 py-2 h-12 bg-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all flex-1"
-              aria-label="Sort astrologers"
-                  >
-                    <option value="">Sort by</option>
-                    <option value="experience">Experience</option>
-                    <option value="rating">Rating</option>
-                    <option value="calls">Calls</option>
-                  </select>
-            {/* Language Tab */}
-                  <select
-                    value={languageFilter}
-                    onChange={(e) => setLanguageFilter(e.target.value)}
-              className="min-w-[140px] max-w-[180px] border border-orange-100 rounded-xl px-4 py-2 h-12 bg-white text-base font-medium focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition-all flex-1"
-              aria-label="Filter by language"
-                  >
-                    <option value="All">All Languages</option>
-                    {allLanguages.map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
-                    ))}
-                  </select>
-            {/* Video Tab */}
-                <button
-                  onClick={() => setVideoOnly(!videoOnly)}
-              className={`min-w-[110px] max-w-[130px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 ${videoOnly ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'} flex-1`}
-              aria-label="Show only video astrologers"
-            >
-              <Video className="w-5 h-5 mr-1" /> Video
-                </button>
-            {/* Transactions Tab */}
-                <button
-                  onClick={() => setShowHistory(showHistory === 'transactions' ? 'none' : 'transactions')}
-              className={`min-w-[140px] max-w-[160px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 ${showHistory === 'transactions' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'} flex-1`}
+        <div className="w-full max-w-4xl rounded-2xl shadow-lg border border-orange-100/70 bg-white/90 backdrop-blur-lg px-4 py-3 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          {/* FilterBar (search + sort by) */}
+          <div className="flex-1">
+            <FilterBar
+              onSearch={setSearchQuery}
+              onSortChange={handleSortChange}
+              isLoading={isLoading}
+              totalResults={totalAstrologers}
+              searchQuery={searchQuery}
+              selectedSort={sortBy}
+              selectedLanguage={languageFilter}
+            />
+          </div>
+
+
+          {/* Desktop Buttons (hidden on mobile) */}
+          <div className="hidden sm:flex gap-2 items-center md:ml-4">
+            <button
+              onClick={() => setShowHistory(showHistory === 'transactions' ? 'none' : 'transactions')}
+              className={`flex items-center justify-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 ${showHistory === 'transactions' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'}`}
               aria-label="Transaction History"
-                >
-              <Receipt className="w-5 h-5" /> Transactions
-                </button>
-            {/* Calls Tab */}
-                <button
-                  onClick={() => setShowHistory(showHistory === 'calls' ? 'none' : 'calls')}
-              className={`min-w-[110px] max-w-[130px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${showHistory === 'calls' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-green-600 border-green-200 hover:bg-green-100'} flex-1`}
+            >
+              <CreditCard className="w-5 h-5" /> 
+              <span className="whitespace-nowrap">Transactions</span>
+            </button>
+            <button
+              onClick={() => setShowHistory(showHistory === 'calls' ? 'none' : 'calls')}
+              className={`flex items-center justify-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${showHistory === 'calls' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-green-600 border-green-200 hover:bg-green-100'}`}
               aria-label="Call History"
-                >
-              <Phone className="w-5 h-5" /> Calls
-                </button>
-            {/* Balance Tab */}
-            <div className="min-w-[120px] max-w-[140px] flex items-center gap-2 px-4 py-2 h-12 rounded-xl border border-green-200 bg-white text-green-700 font-bold text-base shadow-sm select-none justify-center flex-1">
+            >
+              <Phone className="w-5 h-5" /> 
+              <span className="whitespace-nowrap">Calls</span>
+            </button>
+            <div className="flex items-center justify-center gap-2 px-4 py-2 h-12 rounded-xl border border-green-200 bg-white text-green-700 font-bold text-base shadow-sm select-none">
               <Wallet className="w-5 h-5 text-green-500" />
-              <span>₹{walletBalance?.toFixed(2) || '0.00'}</span>
-              </div>
-              </div>
+              <span className="whitespace-nowrap">₹{walletBalance?.toFixed(2) || '0.00'}</span>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
                 {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="relative">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 rounded-full animate-spin" style={{ borderColor: '#FFB366' }}></div>
-              <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-t-transparent rounded-full animate-spin absolute top-0 left-0" style={{ borderColor: '#F7971E' }}></div>
+          <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
+            <div className="relative mb-6 sm:mb-8">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 border-4 sm:border-6 rounded-full animate-spin" style={{ borderColor: '#FFB366' }}></div>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 border-4 sm:border-6 border-t-transparent rounded-full animate-spin absolute top-0 left-0" style={{ borderColor: '#F7971E' }}></div>
             </div>
-            <div className="mt-6 text-center">
-              <p className="text-gray-600 font-medium text-lg mb-2">Finding the best astrologers for you...</p>
-              <p className="text-gray-500 text-sm">Please wait while we load expert astrologers</p>
+            <div className="text-center max-w-md">
+              <p className="text-gray-600 font-medium text-lg sm:text-xl lg:text-2xl mb-2">Loading Astrologers...</p>
+              <p className="text-gray-500 text-sm sm:text-base">Please wait while we connect you with expert astrologers</p>
             </div>
           </div>
         ) : error ? (
@@ -869,7 +881,33 @@ export default function AstrologersPage() {
               </button>
             </div>
           </div>
-        ) : paginatedAstrologers.length === 0 ? (
+        ) : 
+          // Show loader if searching (searchQuery is non-empty and allAstrologersLoaded is false or isLoadingAll is true)
+          ((searchQuery && (!allAstrologersLoaded || isLoadingAll)) || searching) ? (
+            <div className="flex flex-col items-center justify-center py-12 sm:py-16 lg:py-20 px-4 relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 to-orange-100/60 backdrop-blur-sm z-0 rounded-2xl" />
+              <div className="relative z-10 flex flex-col items-center justify-center max-w-md">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg animate-spin-slow">
+                  <svg className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-orange-500 animate-spin" fill="none" viewBox="0 0 56 56">
+                    <circle className="opacity-25" cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="6"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M8 28a20 20 0 0120-20v20z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-orange-800 mb-2 tracking-wide text-center">Finding the best astrologers...</h3>
+                <p className="text-orange-600 mb-4 text-sm sm:text-base lg:text-lg text-center">Please wait while we update your results</p>
+              </div>
+              <style jsx>{`
+                .animate-spin-slow {
+                  animation: spin 1.2s linear infinite;
+                }
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+            </div>
+          ) :
+        (!searching && filteredAstrologers.length === 0) ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-lg">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -880,8 +918,8 @@ export default function AstrologersPage() {
               <button
                 onClick={() => {
                   setSearchQuery("");
-                  setLanguageFilter("All");
-                  setVideoOnly(false);
+                  setLanguageFilter("");
+                  setSortBy(""); // Reset sort to default (Sort by)
                 }}
                 className="w-full text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 style={{ backgroundColor: '#6B7280' }}
@@ -894,7 +932,25 @@ export default function AstrologersPage() {
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8">
-            <AstrologerList astrologers={paginatedAstrologers} />
+            {/* Render loader above AstrologerList */}
+            {showBestAstrologerLoader ? (
+  <div className="flex justify-center items-center min-h-[400px] w-full">
+    <div className="w-full max-w-3xl mx-auto bg-orange-50/60 rounded-2xl flex flex-col items-center justify-center py-16 shadow-md border border-orange-100">
+      <div className="mb-6">
+        <span className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 shadow-inner">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" stroke="#F7971E" strokeWidth="4" fill="#FFF7ED" />
+            <path d="M24 6a18 18 0 1 1-12.728 5.272" stroke="#F7971E" strokeWidth="4" strokeLinecap="round"/>
+          </svg>
+        </span>
+      </div>
+      <h2 className="text-2xl sm:text-3xl font-bold text-orange-900 mb-2 text-center">Finding the best astrologers…</h2>
+      <p className="text-orange-700 text-base sm:text-lg text-center">Please wait while we update your results</p>
+    </div>
+  </div>
+) : (
+  <AstrologerList astrologers={filteredAstrologers} compactButtons={sortBy === 'audio' || sortBy === 'video'} showVideoButton={sortBy === 'video'} />
+)}
             
             {/* Mobile-Optimized Pagination */}
             {/* Debug: totalPages = {totalPages}, currentPage = {currentPage}, allAstrologersLoaded = {allAstrologersLoaded.toString()} */}
@@ -1010,6 +1066,8 @@ export default function AstrologersPage() {
         )}
       </main>
 
+
+
       {/* Premium History Drawer/Modal */}
       {(showHistory === 'transactions' || showHistory === 'calls') && (
         <>
@@ -1024,7 +1082,7 @@ export default function AstrologersPage() {
           
           {/* Drawer */}
           <div 
-            className={`fixed top-0 right-0 h-full w-full sm:w-96 lg:w-[450px] bg-white/95 backdrop-blur-xl shadow-2xl border-l border-orange-100/50 z-50 transform transition-all duration-500 ease-out ${
+            className={`fixed top-0 right-0 h-full w-full sm:w-96 lg:w-[450px] bg-white/95 backdrop-blur-xl shadow-2xl border-l border-orange-100/50 z-50 transform transition-all duration-500 ease-out flex flex-col ${
               showHistory === 'transactions' || showHistory === 'calls' ? 'translate-x-0' : 'translate-x-full'
             }`}
             style={{
@@ -1037,7 +1095,7 @@ export default function AstrologersPage() {
           >
             {/* Header */}
             <div 
-              className="flex items-center justify-between p-6 border-b border-orange-100/50 bg-gradient-to-r from-orange-50/50 to-white"
+              className="flex items-center justify-between p-4 sm:p-6 border-b border-orange-100/50 bg-gradient-to-r from-orange-50/50 to-white flex-shrink-0"
               style={{
                 animation: showHistory === 'transactions' || showHistory === 'calls' 
                   ? 'slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' 
@@ -1090,14 +1148,14 @@ export default function AstrologersPage() {
             
             {/* Content */}
             <div 
-              className="h-full overflow-y-auto"
+              className="flex-1 overflow-y-auto"
               style={{
                 animation: showHistory === 'transactions' || showHistory === 'calls' 
                   ? 'slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both' 
                   : 'none'
               }}
             >
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {showHistory === 'transactions' && <TransactionHistory />}
                 {showHistory === 'calls' && <CallHistory />}
               </div>

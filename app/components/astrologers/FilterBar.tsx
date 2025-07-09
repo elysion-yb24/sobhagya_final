@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, X, ChevronDown, Star, Clock, MapPin, Languages, Heart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Filter, X, ChevronDown, Star, Clock, MapPin, Languages, Heart, ChevronRight, Check, CreditCard } from 'lucide-react';
 import { FilterBarSkeleton } from '../ui/SkeletonLoader';
 
 interface FilterOptions {
@@ -13,39 +13,69 @@ interface FilterOptions {
 
 interface FilterBarProps {
   onSearch: (query: string) => void;
-  onFilterChange: (filters: any) => void;
+  onSortChange: (sort: { type: 'audio' | 'video' | 'language', language?: string }) => void;
   isLoading?: boolean;
   totalResults?: number;
   searchQuery?: string;
-  activeFilters?: any;
+  selectedSort?: 'audio' | 'video' | 'language' | '';
+  selectedLanguage?: string;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({
   onSearch,
-  onFilterChange,
+  onSortChange,
   isLoading = false,
   totalResults = 0,
   searchQuery = '',
-  activeFilters = {}
+  selectedSort = '',
+  selectedLanguage = '',
 }) => {
   const [searchTerm, setSearchTerm] = useState(searchQuery);
-  const [showFilters, setShowFilters] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  
-  // Filter states
-  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(activeFilters.languages || []);
-  const [selectedSpecializations, setSelectedSpecializations] = useState<string[]>(activeFilters.specializations || []);
-  const [selectedExperience, setSelectedExperience] = useState<string>(activeFilters.experience || '');
-  const [selectedRating, setSelectedRating] = useState<number>(activeFilters.rating || 0);
-  const [selectedStatus, setSelectedStatus] = useState<string>(activeFilters.status || '');
+  const [sortBy, setSortBy] = useState<'audio' | 'video' | 'language' | ''>(selectedSort);
+  const [currentLanguage, setCurrentLanguage] = useState<string>(selectedLanguage);
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdowns on outside click
   useEffect(() => {
-    setMounted(true);
+    function handleClickOutside(event: MouseEvent) {
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
+        setSortDropdownOpen(false);
+        setLanguageMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Handle sort selection
+  const handleSortSelect = (type: 'audio' | 'video' | 'language') => {
+    setSortBy(type);
+    setCurrentLanguage('');
+    setSortDropdownOpen(false);
+    setLanguageMenuOpen(false);
+    onSortChange({ type });
+  };
+
+  // Handle language selection
+  const handleLanguageSelect = (lang: string) => {
+    setSortBy('language');
+    setCurrentLanguage(lang);
+    setSortDropdownOpen(false);
+    setLanguageMenuOpen(false);
+    onSortChange({ type: 'language', language: lang });
+  };
 
   useEffect(() => {
     setSearchTerm(searchQuery);
   }, [searchQuery]);
+
+  // Sync sortBy and currentLanguage with props
+  useEffect(() => {
+    setSortBy(selectedSort);
+    setCurrentLanguage(selectedLanguage || '');
+  }, [selectedSort, selectedLanguage]);
 
   // Filter options
   const filterOptions: FilterOptions = {
@@ -67,265 +97,76 @@ const FilterBar: React.FC<FilterBarProps> = ({
     onSearch(value);
   };
 
-  const handleFilterChange = () => {
-    const filters = {
-      languages: selectedLanguages,
-      specializations: selectedSpecializations,
-      experience: selectedExperience,
-      rating: selectedRating,
-      status: selectedStatus
-    };
-    onFilterChange(filters);
-  };
-
-  const clearAllFilters = () => {
-    setSelectedLanguages([]);
-    setSelectedSpecializations([]);
-    setSelectedExperience('');
-    setSelectedRating(0);
-    setSelectedStatus('');
-    setSearchTerm('');
-    onSearch('');
-    onFilterChange({});
-  };
-
-  const getActiveFilterCount = () => {
-    let count = 0;
-    if (selectedLanguages.length > 0) count++;
-    if (selectedSpecializations.length > 0) count++;
-    if (selectedExperience) count++;
-    if (selectedRating > 0) count++;
-    if (selectedStatus) count++;
-    if (searchTerm.trim()) count++;
-    return count;
-  };
-
-  const toggleLanguage = (language: string) => {
-    const updated = selectedLanguages.includes(language)
-      ? selectedLanguages.filter(l => l !== language)
-      : [...selectedLanguages, language];
-    setSelectedLanguages(updated);
-  };
-
-  const toggleSpecialization = (spec: string) => {
-    const updated = selectedSpecializations.includes(spec)
-      ? selectedSpecializations.filter(s => s !== spec)
-      : [...selectedSpecializations, spec];
-    setSelectedSpecializations(updated);
-  };
-
-  if (!mounted || isLoading) {
+  if (isLoading) {
     return <FilterBarSkeleton />;
   }
 
+  // Determine sort button label - always show "Sort by" unless a language is selected
+  let sortLabel = 'Sort by';
+  if (sortBy === 'language' && currentLanguage) {
+    sortLabel = currentLanguage;
+  }
+  // Keep "Sort by" for audio, video, and empty cases
+
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-6 mb-6 transition-all duration-300">
-      {/* Search and Filter Toggle */}
-      <div className="flex flex-col md:flex-row gap-4 mb-4">
-        {/* Search Bar */}
-        <div className="flex-1 relative group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400 group-focus-within:text-orange-500 transition-colors duration-300" />
-          </div>
+    <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 relative z-[9999] px-2 sm:px-0">
+      <div className="flex-1 w-full">
+        {/* Search Bar - Separate container */}
+        <div className="flex-1 relative bg-white border border-gray-200 rounded-xl shadow-md px-3 sm:px-4 py-2 sm:py-3 transition-all duration-300 focus-within:border-orange-300 focus-within:shadow-lg">
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search astrologers..."
             value={searchTerm}
-            onChange={handleSearchChange}
-            className="input-field pl-10 pr-4"
+            onChange={e => { setSearchTerm(e.target.value); onSearch(e.target.value); }}
+            className="w-full bg-transparent border-none outline-none text-base sm:text-lg font-medium py-1 pl-8 sm:pl-10 pr-4 placeholder-gray-400 focus:outline-none focus:ring-0"
           />
+          <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
           {searchTerm && (
             <button
-              onClick={() => {
-                setSearchTerm('');
-                onSearch('');
-              }}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-300"
+              onClick={() => { setSearchTerm(''); onSearch(''); }}
+              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              <X className="h-4 w-4" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
         </div>
-
-        {/* Filter Toggle Button */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-3 rounded-lg font-medium transition-all duration-300 ${
-              showFilters 
-                ? 'bg-orange-500 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+      </div>
+      <div className="w-full sm:w-auto mb-2 sm:mb-0">
+        {/* Sort select */}
+        <div className="relative">
+          <select
+            value={sortBy === 'language' && currentLanguage ? currentLanguage : sortBy}
+            onChange={e => {
+              const value = e.target.value;
+              if (value === 'audio' || value === 'video') {
+                setSortBy(value);
+                setCurrentLanguage('');
+                onSortChange({ type: value });
+              } else if (value === '') {
+                // Handle "Sort By" default option - don't trigger any change
+                setSortBy('');
+                setCurrentLanguage('');
+                // Don't call onSortChange for empty selection
+              } else {
+                setSortBy('language');
+                setCurrentLanguage(value);
+                onSortChange({ type: 'language', language: value });
+              }
+            }}
+            className="w-full sm:w-auto pl-8 pr-3 sm:pr-4 py-2 sm:py-3 rounded-xl font-medium bg-white text-gray-700 border border-gray-200 shadow-md focus:outline-none focus:ring-0 focus:border-orange-300 transition-all duration-300 text-sm sm:text-base appearance-none"
           >
-            <Filter className="h-4 w-4" />
-            <span>Filters</span>
-            {getActiveFilterCount() > 0 && (
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                showFilters ? 'bg-white text-orange-500' : 'bg-orange-500 text-white'
-              }`}>
-                {getActiveFilterCount()}
-              </span>
-            )}
-            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Results Count */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-2 bg-orange-50 rounded-lg border border-orange-200">
-            <span className="text-sm text-orange-700 font-medium">
-              {totalResults} {totalResults === 1 ? 'astrologer' : 'astrologers'} found
-            </span>
-          </div>
+            <option value="">Sort By</option>
+            <option value="audio">Audio</option>
+            <option value="video">Video</option>
+            <optgroup label="Languages">
+              {filterOptions.languages.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </optgroup>
+          </select>
+          <ChevronDown className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
         </div>
       </div>
-
-      {/* Mobile Results Count */}
-      <div className="md:hidden mb-4">
-        <div className="flex items-center justify-center py-2 bg-orange-50 rounded-lg border border-orange-200">
-          <span className="text-sm text-orange-700 font-medium">
-            {totalResults} {totalResults === 1 ? 'astrologer' : 'astrologers'} found
-          </span>
-        </div>
-      </div>
-
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="border-t border-gray-200 pt-4 space-y-6 animate-fadeInUp">
-          {/* Status Filter */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Availability Status
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {statusOptions.map((status) => (
-                <button
-                  key={status.value}
-                  onClick={() => setSelectedStatus(selectedStatus === status.value ? '' : status.value)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    selectedStatus === status.value
-                      ? `bg-${status.color}-100 text-${status.color}-800 ring-2 ring-${status.color}-300`
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <div className={`w-2 h-2 rounded-full bg-${status.color}-500`} />
-                  {status.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Rating Filter */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Star className="h-4 w-4 text-yellow-500" />
-              Minimum Rating
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {filterOptions.rating.map((rating) => (
-                <button
-                  key={rating}
-                  onClick={() => setSelectedRating(selectedRating === rating ? 0 : rating)}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    selectedRating === rating
-                      ? 'bg-yellow-100 text-yellow-800 ring-2 ring-yellow-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <Star className="h-3 w-3 fill-current" />
-                  {rating}+
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Experience Filter */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Clock className="h-4 w-4 text-blue-500" />
-              Experience
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {filterOptions.experience.map((exp) => (
-                <button
-                  key={exp}
-                  onClick={() => setSelectedExperience(selectedExperience === exp ? '' : exp)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    selectedExperience === exp
-                      ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {exp}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Languages Filter */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Languages className="h-4 w-4 text-purple-500" />
-              Languages ({selectedLanguages.length} selected)
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {filterOptions.languages.map((language) => (
-                <button
-                  key={language}
-                  onClick={() => toggleLanguage(language)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    selectedLanguages.includes(language)
-                      ? 'bg-purple-100 text-purple-800 ring-2 ring-purple-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {language}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Specializations Filter */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Heart className="h-4 w-4 text-pink-500" />
-              Specializations ({selectedSpecializations.length} selected)
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {filterOptions.specializations.map((spec) => (
-                <button
-                  key={spec}
-                  onClick={() => toggleSpecialization(spec)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                    selectedSpecializations.includes(spec)
-                      ? 'bg-pink-100 text-pink-800 ring-2 ring-pink-300'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {spec}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Filter Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-            <button
-              onClick={handleFilterChange}
-              className="btn-primary flex-1"
-            >
-              Apply Filters
-            </button>
-            {getActiveFilterCount() > 0 && (
-              <button
-                onClick={clearAllFilters}
-                className="btn-secondary flex-1"
-              >
-                Clear All ({getActiveFilterCount()})
-              </button>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

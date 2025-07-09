@@ -37,7 +37,7 @@ const HeroSection: React.FC = () => {
     {
       id: "chat",
       title: "Chat with Astrologer",
-      icon: "/Group 13364.png",
+      icon: "/chat2.png",
       iconComponent: MessageCircle,
       href: "/calls/call1",
       description: "Get instant guidance",
@@ -46,7 +46,7 @@ const HeroSection: React.FC = () => {
     {
       id: "talk",
       title: "Talk to Astrologer",
-      icon: "/Group 13365.png",
+      icon: "/contact2.png",
       iconComponent: Phone,
       href: "/call-with-astrologer",
       description: "Voice consultation",
@@ -54,8 +54,8 @@ const HeroSection: React.FC = () => {
     },
     {
       id: "shop",
-      title: "Astromall Shop",
-      icon: "/Group 13366.png",
+      title: "Shop",
+      icon: "/shopping mart.png",
       iconComponent: ShoppingBag,
       href: "https://store.sobhagya.in",
       description: "Spiritual products",
@@ -145,13 +145,13 @@ const HeroSection: React.FC = () => {
                       {/* Icon with enhanced styling */}
                       <div className="flex justify-center mb-3">
                         <div className={`relative p-3 rounded-full ${
-                          card.featured ? 'bg-white/20' : 'bg-orange-100'
+                          card.featured ? 'bg-white/20' : ''
                         } transition-all duration-300 group-hover:scale-110`}>
                           <Image
                             src={card.icon}
                             alt={card.title}
-                            width={32}
-                            height={32}
+                            width={40}
+                            height={40}
                             className="relative z-10"
                           />
                           {/* Hover glow effect */}
@@ -182,14 +182,14 @@ const HeroSection: React.FC = () => {
                         <ArrowRight className="w-4 h-4" />
                       </div>
 
-                      {/* Featured badge */}
+                      {/* Featured badge
                       {card.featured && (
                         <div className="absolute -top-1 -right-1">
                           <div className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full">
                             Popular
                           </div>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </Link>
                 </motion.div>

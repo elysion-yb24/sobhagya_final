@@ -157,15 +157,36 @@ export default function OtpVerificationScreen({
         console.log("User ID from data._id:", data._id);
         console.log("User ID from data.id:", data.id);
         
+        // Check if we have a captured name from call flow
+        const capturedName = sessionStorage.getItem('capturedUserName');
+        let firstName = '';
+        let lastName = '';
+        let fullName = data.data?.name || data.user?.name || data.name || capturedName || "";
+        
+        if (fullName) {
+          const nameParts = fullName.split(' ');
+          firstName = nameParts[0];
+          lastName = nameParts.slice(1).join(' ');
+        }
+
         const userDetails = {
           id: data.data?._id || data.user?.id || data._id || data.id || data.data?.id || "",
           phoneNumber,
           countryCode,
           timestamp: new Date().getTime(),
           role: data.data?.role || data.user?.role || data.role || "user",
-          name: data.data?.name || data.user?.name || data.name || "",
-          email: data.data?.email || data.user?.email || data.email || ""
+          name: fullName,
+          firstName: firstName,
+          lastName: lastName,
+          displayName: fullName,
+          email: data.data?.email || data.user?.email || data.email || "",
+          profileCompleted: !!fullName
         };
+        
+        // Clear the captured name from session storage
+        if (capturedName) {
+          sessionStorage.removeItem('capturedUserName');
+        }
         
         console.log("Storing user details:", userDetails);
         storeUserDetails(userDetails);

@@ -27,7 +27,7 @@ const AboutUs = () => {
       <div className="relative w-full h-[260px] md:h-[320px] flex items-center justify-center overflow-hidden">
         {/* Faded Monk Logo */}
         <div className="absolute inset-0 flex items-center justify-center opacity-10 z-0">
-          <Image src="/monk logo.png" alt="Astrology Logo" width={320} height={320} className="object-contain" />
+          <Image src="/sobhagya_logo.avif" alt="Astrology Logo" width={320} height={320} className="object-contain" />
         </div>
         {/* Orange Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-orange-200/80 to-transparent z-10" />
@@ -75,7 +75,7 @@ const AboutUs = () => {
           {/* Astrology Image */}
           <div className="w-full md:w-1/3 flex justify-center">
             <Image
-              src="/monk logo.png"
+              src="/sobhagya_logo.avif"
               alt="Astrology Icon"
               width={260}
               height={260}

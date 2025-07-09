@@ -163,38 +163,38 @@ export default function TransactionHistory() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
           Transaction History
-          <span className="text-sm font-normal text-gray-500 ml-2">
+          <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2">
             ({transactions.length} {transactions.length === 1 ? 'transaction' : 'transactions'})
           </span>
         </h3>
       </div>
 
       {/* Mobile-optimized transaction list */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {transactions.map((transaction) => (
           <div
             key={transaction._id}
-            className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+            className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow"
           >
             {/* Mobile layout */}
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2 sm:gap-3">
               {/* Transaction type icon */}
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                 transaction.type === "credit" ? "bg-green-100" : "bg-red-100"
               }`}>
                 {transaction.type === "credit" ? (
-                  <ArrowDownLeft className="h-5 w-5 text-green-600" />
+                  <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 ) : (
-                  <ArrowUpRight className="h-5 w-5 text-red-600" />
+                  <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
                 )}
               </div>
 
               {/* Transaction details */}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                <div className="flex flex-col gap-2">
                   {/* Transaction info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 text-sm leading-tight">
@@ -206,8 +206,8 @@ export default function TransactionHistory() {
                   </div>
 
                   {/* Amount and status */}
-                  <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
                       transaction.status === "completed" ? "bg-green-100 text-green-800" :
                       transaction.status === "cancelled" ? "bg-gray-100 text-gray-600" :
                       "bg-red-100 text-red-600"
@@ -216,7 +216,7 @@ export default function TransactionHistory() {
                     </span>
                     
                     <div className="text-right">
-                      <p className={`text-lg font-bold ${
+                      <p className={`text-base sm:text-lg font-bold ${
                         transaction.type === "credit" ? "text-green-600" : "text-red-600"
                       }`}>
                         {transaction.type === "credit" ? "+" : "-"}₹{transaction.amount.toFixed(2)}

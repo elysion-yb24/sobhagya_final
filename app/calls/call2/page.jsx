@@ -1,14 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { captureUserName, getUserDetails, isAuthenticated } from "../../utils/auth-utils";
 
 export default function Call2() {
   const [name, setName] = useState("");
   const [isExiting, setIsExiting] = useState(false);
+  const [isProfileMode, setIsProfileMode] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Check if this is profile completion mode
+  useEffect(() => {
+    const fromProfile = searchParams.get('profile') === 'complete';
+    setIsProfileMode(fromProfile);
+    
+    // If user is authenticated and has a name, pre-fill it
+    if (isAuthenticated()) {
+      const userDetails = getUserDetails();
+      if (userDetails?.name) {
+        setName(userDetails.name);
+      }
+    }
+  }, [searchParams]);
 
   const handleNameChange = (e) => {
     setName(e.target.value);
@@ -16,10 +33,29 @@ export default function Call2() {
 
   const handleNext = () => {
     if (name.trim()) {
+      // Capture the user's name using the utility function
+      captureUserName(name.trim());
+      
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/calls/call3");
+        if (isProfileMode) {
+          // If this is profile completion mode, redirect back to astrologers page
+          router.push("/astrologers");
+        } else {
+          // Normal call flow, continue to next step
+          router.push("/calls/call3");
+        }
       }, 100);
+    }
+  };
+
+  const handleBack = () => {
+    if (isProfileMode) {
+      // If profile completion mode, go back to astrologers
+      router.push("/astrologers");
+    } else {
+      // Normal flow, go to previous call page or home
+      router.push("/calls/call1");
     }
   };
 
@@ -117,11 +153,11 @@ export default function Call2() {
                   className="text-center mb-8"
                 >
                   <h2 className="text-lg sm:text-xl font-medium text-gray-600 mb-2">
-                  Hey there,
-                </h2>
+                    {isProfileMode ? "Let's complete your profile" : "Hey there,"}
+                  </h2>
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-gray-700">
-                  What is your name?
-                </h2>
+                    {isProfileMode ? "What should we call you?" : "What is your name?"}
+                  </h2>
                 </motion.div>
 
                 {/* Enhanced Input Field */}
@@ -143,12 +179,12 @@ export default function Call2() {
                   />
                 </motion.div>
 
-                {/* Enhanced Next Button */}
+                {/* Action Buttons */}
                 <motion.div
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.9 }}
-                  className="flex justify-center w-full"
+                  className="flex flex-col items-center w-full space-y-4"
                 >
                   <button
                     type="button"
@@ -160,8 +196,18 @@ export default function Call2() {
                         : "bg-gray-400 cursor-not-allowed"
                     }`}
                   >
-                    Next
+                    {isProfileMode ? "Save Profile" : "Next"}
                   </button>
+                  
+                  {isProfileMode && (
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="text-gray-500 hover:text-gray-700 transition-colors font-medium"
+                    >
+                      ← Back to Astrologers
+                    </button>
+                  )}
                 </motion.div>
               </form>
             </motion.div>

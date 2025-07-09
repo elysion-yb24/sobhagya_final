@@ -156,24 +156,24 @@ export default function CallHistory() {
   return (
     <div className="space-y-4">
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
           Call History
-          <span className="text-sm font-normal text-gray-500 ml-2">
+          <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2">
             ({callLogs.length} {callLogs.length === 1 ? 'call' : 'calls'})
           </span>
         </h3>
         <button
           onClick={() => fetchCallLogs(true)}
           disabled={isRefreshing}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+          className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
             isRefreshing 
               ? 'text-blue-500 cursor-not-allowed bg-blue-50' 
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
           }`}
           title="Refresh call history"
         >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
         </button>
       </div>

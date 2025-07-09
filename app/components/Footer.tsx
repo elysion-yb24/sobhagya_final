@@ -47,7 +47,7 @@ const Footer: React.FC = () => {
           <div className="flex flex-col items-center justify-end gap-x-24 md:pr-1 -mt-20 mb-5">
             <div className="relative w-[400px] h-[400px] -mt-25">
               <Image
-                src="/monk logo.png"
+                src="/sobhagya_logo.avif"
                 alt="Sobhagya"
                 fill
                 className="object-contain"

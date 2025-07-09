@@ -53,6 +53,8 @@ interface AstrologerListProps {
   isLoadingMore?: boolean;
   hasError?: boolean;
   onRetry?: () => void;
+  compactButtons?: boolean;
+  showVideoButton?: boolean;
 }
 
 const AstrologerList: React.FC<AstrologerListProps> = ({ 
@@ -60,7 +62,9 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   isLoading = false,
   isLoadingMore = false,
   hasError = false,
-  onRetry
+  onRetry,
+  compactButtons = false,
+  showVideoButton = false
 }) => {
   const [mounted, setMounted] = useState(false);
 
@@ -72,7 +76,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   if (isLoading && astrologers.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-4 sm:gap-y-6 stagger-animation px-2 sm:px-0">
           <ListSkeleton count={6} ItemSkeleton={AstrologerCardSkeleton} />
         </div>
       </div>
@@ -132,14 +136,14 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   return (
     <div className="space-y-6">
       {/* Astrologers Grid with stagger animation */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 stagger-animation">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-4 sm:gap-y-6 stagger-animation px-2 sm:px-0">
         {astrologers.map((astrologer, index) => (
           <div
             key={astrologer._id}
-            className="animate-fadeInUp"
+            className="animate-fadeInUp flex justify-center"
             style={{ animationDelay: `${(index % 6) * 0.1}s` }}
           >
-            <AstrologerCard astrologer={astrologer} />
+            <AstrologerCard astrologer={astrologer} compactButtons={compactButtons} showVideoButton={showVideoButton}/>
           </div>
         ))}
       </div>

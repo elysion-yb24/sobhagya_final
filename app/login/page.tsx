@@ -55,10 +55,10 @@ export default function LoginPage() {
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Check if user is already authenticated
+
   useEffect(() => {
     setMounted(true);
-    // Check if user is already authenticated
+    
     try {
       const isAuthValid = initializeAuth();
       if (isAuthValid) {
@@ -67,7 +67,7 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.log('❌ Authentication check failed on login page:', error);
-      // Continue to show login page
+      
     }
   }, [router]);
   
@@ -256,7 +256,7 @@ export default function LoginPage() {
       <div className="w-full max-w-lg mx-auto flex flex-col items-center mt-8 mb-4">
         <div className="flex flex-col items-center">
           <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3">
-            <Image src="/monk logo.png" alt="Astrology Logo" width={80} height={80} className="object-cover" />
+            <Image src="/sobhagya_logo.avif" alt="Astrology Logo" width={80} height={80} className="object-cover" />
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-1 text-center">Sign in to Sobhagya</h1>
           <p className="text-orange-700 text-base sm:text-lg font-medium text-center mb-2">Connect instantly with expert astrologers</p>

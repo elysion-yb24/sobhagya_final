@@ -69,6 +69,47 @@ export function getUserDetails(): any {
 }
 
 /**
+ * Captures user name from various sources and integrates with auth system
+ */
+export function captureUserName(name: string): boolean {
+  try {
+    const currentUserDetails = getUserDetails();
+    if (!currentUserDetails) {
+      // Store in session storage for later use during authentication
+      sessionStorage.setItem('capturedUserName', name.trim());
+      return true;
+    }
+
+    // User is authenticated, update their details
+    const nameParts = name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
+    
+    const updatedUserDetails = {
+      ...currentUserDetails,
+      name: name.trim(),
+      firstName: firstName,
+      lastName: lastName,
+      displayName: name.trim(),
+      profileCompleted: true,
+      updatedAt: new Date().getTime()
+    };
+    
+    storeUserDetails(updatedUserDetails);
+    
+    // Dispatch event for header update
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('user-auth-changed'));
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error capturing user name:', error);
+    return false;
+  }
+}
+
+/**
  * Gets user profile with enhanced display name logic
  */
 export async function fetchUserProfile(): Promise<any> {
@@ -86,16 +127,39 @@ export async function fetchUserProfile(): Promise<any> {
     // In the future, when the backend supports user profile API, we can add that call here
     
     if (cachedDetails) {
+      // Check for captured name from session storage
+      const capturedName = sessionStorage.getItem('capturedUserName');
+      
+      let enhancedProfile = { ...cachedDetails };
+      
+      // If we have a captured name and no existing name, use it
+      if (capturedName && !cachedDetails.name && !cachedDetails.firstName) {
+        const nameParts = capturedName.split(' ');
+        enhancedProfile = {
+          ...enhancedProfile,
+          name: capturedName,
+          firstName: nameParts[0],
+          lastName: nameParts.slice(1).join(' '),
+          profileCompleted: true
+        };
+        
+        // Clear from session storage and update stored details
+        sessionStorage.removeItem('capturedUserName');
+        storeUserDetails(enhancedProfile);
+      }
+      
       // Enhance the cached data with better display logic
-      const enhancedProfile = {
-        ...cachedDetails,
-        displayName: cachedDetails.name || cachedDetails.firstName || cachedDetails.phoneNumber || 'User',
+      const finalProfile = {
+        ...enhancedProfile,
+        displayName: enhancedProfile.name || 
+                    (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
+                    enhancedProfile.phoneNumber || 'User',
         timestamp: new Date().getTime(),
       };
       
       // Update the stored details with enhanced info
-      storeUserDetails(enhancedProfile);
-      return enhancedProfile;
+      storeUserDetails(finalProfile);
+      return finalProfile;
     }
 
     // If no cached data, return a basic profile

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { Phone, Clock, Loader2, RefreshCw } from "lucide-react";
+import { buildApiUrl } from "../../config/api";
 
 interface CallLog {
   _id: string;
@@ -37,7 +38,7 @@ export default function CallHistory() {
       }
 
       const response = await fetch(
-        "http://localhost:8001/calling/api/call/call-log?skip=0&limit=10&role=user",
+        buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user"),
         {
           method: "GET",
           headers: {
@@ -80,7 +81,7 @@ export default function CallHistory() {
   useEffect(() => {
     fetchCallLogs();
     
-    // Set up auto-refresh for pending calls
+    // Set up auto-refresh for pending calls - reduced frequency
     const interval = setInterval(() => {
       // Check if there are any pending calls
       const hasPendingCalls = callLogs.some(call => 
@@ -92,10 +93,10 @@ export default function CallHistory() {
       if (hasPendingCalls) {
         fetchCallLogs(true); // Refresh with loading indicator
       }
-    }, 5000); // Refresh every 5 seconds
+    }, 15000); // Increased from 5000 to 15000 (15 seconds)
     
     return () => clearInterval(interval);
-  }, [callLogs]);
+  }, []); // Removed callLogs dependency to prevent infinite re-renders
 
   const formatDate = (dateString: string) => {
     try {
@@ -155,24 +156,24 @@ export default function CallHistory() {
   return (
     <div className="space-y-4">
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
           Call History
-          <span className="text-sm font-normal text-gray-500 ml-2">
+          <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2">
             ({callLogs.length} {callLogs.length === 1 ? 'call' : 'calls'})
           </span>
         </h3>
         <button
           onClick={() => fetchCallLogs(true)}
           disabled={isRefreshing}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
+          className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
             isRefreshing 
               ? 'text-blue-500 cursor-not-allowed bg-blue-50' 
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
           }`}
           title="Refresh call history"
         >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
         </button>
       </div>

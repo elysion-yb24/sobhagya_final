@@ -9,9 +9,8 @@ const StatsBar: React.FC = () => {
         <Image
           src="/stats-bar.png"
           alt="Stats Background"
-          layout="fill"
-          objectFit="cover"
-          className="w-full h-full"
+          fill
+          className="w-full h-full object-cover"
         />
       </div>
 

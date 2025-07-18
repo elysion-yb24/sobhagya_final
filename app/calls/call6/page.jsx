@@ -12,11 +12,8 @@ export default function Call6() {
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
 
-  
   const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
- 
   const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
- 
   const meridiemOptions = ["AM", "PM"];
 
   const handleNext = () => {
@@ -24,19 +21,30 @@ export default function Call6() {
       setIsExiting(true);
       setTimeout(() => {
         router.push("/calls/call7");
-      }, 500);
+      }, 100);
     }
   };
 
   return (
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Premium Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100/50 to-white"></div>
+      
+      {/* Subtle Astrology Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-10 left-10 w-20 h-20 bg-orange-400 rounded-full blur-xl"></div>
+        <div className="absolute top-1/4 right-20 w-16 h-16 bg-orange-300 rounded-full blur-lg"></div>
+        <div className="absolute bottom-1/3 left-1/4 w-12 h-12 bg-orange-200 rounded-full blur-md"></div>
+      </div>
+
     <AnimatePresence>
       {!isExiting && (
         <motion.div
-          initial={{ x: "100%", opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "-100%", opacity: 0 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="min-h-screen flex items-center justify-center px-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
+            transition={{ duration: 0.6, ease: "easeInOut" }}
+            className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 relative z-10"
         >
           <Head>
             <title>Guidance Form</title>
@@ -44,55 +52,91 @@ export default function Call6() {
             <link rel="icon" href="/favicon.ico" />
           </Head>
 
-          {/* Fixed Width & Height */}
-          <div className="w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-6xl 
-                         h-auto md:h-auto lg:h-auto
-                         px-4 sm:px-6 md:px-8 lg:px-16 
-                         py-6 sm:py-8 md:py-10
-                         bg-[#fcf4e9] rounded-lg shadow-sm border border-gray-200 
-                         flex flex-col">
+            {/* Premium Card Container */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl 
+                         px-6 sm:px-8 md:px-10 lg:px-12 
+                         py-8 sm:py-10 md:py-12
+                         bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-orange-200/50 
+                         flex flex-col relative overflow-hidden"
+            >
+              {/* Card Glow Effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-100/20 to-transparent rounded-2xl"></div>
+              
             {/* Title */}
-            <h1 className="font-medium text-center text-[#373737] 
-                          mb-6 sm:mb-8 md:mb-10 
-                          text-xl sm:text-2xl md:text-3xl lg:text-4xl">
+              <motion.h1
+                initial={{ y: -10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="font-bold text-center text-gray-800 
+                          mb-8 sm:mb-10 
+                          text-2xl sm:text-3xl md:text-4xl
+                          relative z-10"
+              >
               Enter Your Details
-            </h1>
+              </motion.h1>
 
-            {/* Progress Bar (4/7 dots filled) */}
-            <div className="relative mb-10 flex items-center">
-              <div className="h-[2px] bg-[#b4b4b4] w-full rounded-full">
-                <div className="h-[2px] bg-[#F7971E] rounded-full w-[57.1%]"></div>
+              {/* Enhanced Progress Bar */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="relative mb-10 flex items-center"
+              >
+                <div className="h-2 bg-gray-200 w-full rounded-full shadow-inner">
+                  <motion.div 
+                    className="h-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full shadow-sm"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "57.1%" }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                  ></motion.div>
               </div>
-
-              <div className="flex justify-between absolute w-full top-[-6px]">
+                <div className="flex justify-between absolute w-full top-1 transform -translate-y-1/2">
                 {[...Array(7)].map((_, index) => (
-                  <div
+                    <motion.div
                     key={index}
-                    className={`w-3 h-3 rounded-full ${
-                      index < 4 ? "bg-[#F7971E]" : "bg-[#b4b4b4]"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
+                      className={`w-3 h-3 rounded-full shadow-sm ${
+                        index < 4 ? "bg-orange-500" : "bg-gray-300"
                     }`}
-                  ></div>
+                    ></motion.div>
                 ))}
               </div>
-            </div>
+              </motion.div>
 
-            <form className="flex flex-col flex-grow items-center justify-center">
-              <h2 className="text-2xl sm:text-3xl font-normal text-center text-[#373737] mb-12">
+              <form className="flex flex-col flex-grow items-center justify-center relative z-10">
+                <motion.h2 
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.7 }}
+                  className="text-2xl sm:text-3xl font-semibold text-center text-gray-700 mb-12"
+                >
                 Enter Your Time of Birth
-              </h2>
+                </motion.h2>
 
-              {/* Time Selection (Hour, Minute, AM/PM) */}
-              <div className="mb-14 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-8">
+                {/* Enhanced Time Selection */}
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.8 }}
+                  className="mb-14 flex flex-col md:flex-row justify-center space-y-4 md:space-y-0 md:space-x-6 w-full max-w-2xl"
+                >
                 {/* Hour Dropdown */}
-                <div className="relative w-full md:w-48">
+                  <div className="relative w-full md:w-32">
                   <select
                     value={hour}
                     onChange={(e) => setHour(e.target.value)}
-                    className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
+                      className="w-full h-14 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 
+                               cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 
+                               focus:border-orange-400 text-lg font-medium text-gray-700
+                               transition-all duration-300 shadow-sm hover:shadow-md"
                   >
-                    <option value="" disabled>
-                      Hour
-                    </option>
+                      <option value="" disabled>Hour</option>
                     {hourOptions.map((h) => (
                       <option key={`hour-${h}`} value={h}>
                         {h}
@@ -102,15 +146,16 @@ export default function Call6() {
                 </div>
 
                 {/* Minute Dropdown */}
-                <div className="relative w-full md:w-48">
+                  <div className="relative w-full md:w-32">
                   <select
                     value={minute}
                     onChange={(e) => setMinute(e.target.value)}
-                    className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
+                      className="w-full h-14 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 
+                               cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 
+                               focus:border-orange-400 text-lg font-medium text-gray-700
+                               transition-all duration-300 shadow-sm hover:shadow-md"
                   >
-                    <option value="" disabled>
-                      Minute
-                    </option>
+                      <option value="" disabled>Minute</option>
                     {minuteOptions.map((m) => (
                       <option key={`minute-${m}`} value={m}>
                         {m.toString().padStart(2, "0")}
@@ -120,15 +165,16 @@ export default function Call6() {
                 </div>
 
                 {/* AM/PM Dropdown */}
-                <div className="relative w-full md:w-48">
+                  <div className="relative w-full md:w-32">
                   <select
                     value={meridiem}
                     onChange={(e) => setMeridiem(e.target.value)}
-                    className="w-full h-[50px] sm:h-[55px] px-4 py-2 bg-white rounded-lg border border-gray-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#F7971E]"
+                      className="w-full h-14 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 
+                               cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 
+                               focus:border-orange-400 text-lg font-medium text-gray-700
+                               transition-all duration-300 shadow-sm hover:shadow-md"
                   >
-                    <option value="" disabled>
-                      AM/PM
-                    </option>
+                      <option value="" disabled>AM/PM</option>
                     {meridiemOptions.map((mer) => (
                       <option key={mer} value={mer}>
                         {mer}
@@ -136,27 +182,33 @@ export default function Call6() {
                     ))}
                   </select>
                 </div>
-              </div>
+                </motion.div>
 
-              {/* Next Button */}
-              <div className="flex justify-center">
+                {/* Enhanced Next Button */}
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.9 }}
+                  className="flex justify-center w-full"
+                >
                 <button
                   type="button"
                   onClick={handleNext}
                   disabled={!hour || !minute || !meridiem}
-                  className={`w-64 px-12 py-3 text-white font-medium rounded-md transition-all ${
+                    className={`w-full sm:w-72 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg ${
                     hour && minute && meridiem
-                      ? "bg-[#F7971E] hover:bg-[#d99845]"
+                        ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:scale-105 active:scale-95"
                       : "bg-gray-400 cursor-not-allowed"
                   }`}
                 >
                   Next
                 </button>
-              </div>
+                </motion.div>
             </form>
-          </div>
+            </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
+    </div>
   );
 }

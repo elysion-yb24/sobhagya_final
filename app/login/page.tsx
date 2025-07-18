@@ -19,7 +19,7 @@ import {
   Loader2
 } from 'lucide-react';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
-import { getAuthToken, clearAuthData, isAuthenticated, initializeAuth } from '../utils/auth-utils';
+import { getAuthToken, clearAuthData, isAuthenticated } from '../utils/auth-utils';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 
 // Define types for country and authentication data
@@ -60,7 +60,7 @@ export default function LoginPage() {
     setMounted(true);
     
     try {
-      const isAuthValid = initializeAuth();
+      const isAuthValid = isAuthenticated();
       if (isAuthValid) {
         console.log('✅ User already authenticated, redirecting to astrologers');
         router.push('/astrologers');

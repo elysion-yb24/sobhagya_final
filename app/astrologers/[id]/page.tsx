@@ -1205,19 +1205,31 @@ export default function AstrologerProfilePage() {
         </div>
 
         {/* Profile Image positioned in cosmic section - Left Aligned */}
-        <div className="absolute bottom-0 left-72 transform translate-y-1/2">
+        <div className="absolute bottom-0 left-44 transform translate-y-1/2">
           <div className="relative">
             <img
               src={astrologer?.profileImage || astrologer?.avatar || '/default-astrologer.png'}
               alt={astrologer?.name || 'Astrologer'}
-              className="w-36 h-36 rounded-full object-cover border-4 shadow-lg"
+              className="w-32 h-32 md:w-36 md:h-36 rounded-full object-cover shadow-lg"
               style={{ 
                 borderColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
               }}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=96`;
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=144`;
               }}
             />
+            {/* Status indicator positioned on the image */}
+            <div 
+              className="absolute bottom-2 right-2 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
+              }}
+            >
+              <div 
+                className="w-2 h-2 md:w-3 md:h-3 rounded-full animate-pulse"
+                style={{ backgroundColor: 'white' }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -1230,7 +1242,7 @@ export default function AstrologerProfilePage() {
             {/* Left Column - Main Profile Info */}
             <div className="lg:col-span-2 space-y-6">
                              {/* Basic Info */}
-               <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+               <div className="bg-white rounded-xl p-6 shadow-sm">
                  <div className="flex items-center gap-3 mb-3">
                    <h1 className="text-3xl font-bold text-gray-900">{astrologer?.name}</h1>
                    
@@ -1371,7 +1383,7 @@ export default function AstrologerProfilePage() {
               </div>
 
               {/* About Section */}
-              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">About</h3>
                 <p className="text-gray-700 leading-relaxed text-base">
                   {astrologer?.about || `Astrologer ${astrologer?.name} is a renowned expert in ${astrologer?.specializations?.join(', ')}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer?.name} offers personalized consultations to align your life with cosmic energies.`}
@@ -1382,7 +1394,7 @@ export default function AstrologerProfilePage() {
             {/* Right Column - Stats & Quick Info */}
             <div className="space-y-6">
               {/* Call and Message Stats */}
-              <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
@@ -1565,18 +1577,6 @@ export default function AstrologerProfilePage() {
         isLoading={isVideoCallProcessing}
       />
 
-      <ConfirmationDialog
-        isOpen={showGiftConfirm}
-        onClose={() => setShowGiftConfirm(false)}
-        onConfirm={() => handleSendGift(selectedGift)}
-        title="Send Dakshina"
-        message={selectedGift ? `Send ${selectedGift.name} worth ₹${selectedGift.price} to ${astrologer.name}?` : ''}
-        confirmText="Send Gift"
-        icon={<Heart className="h-6 w-6" />}
-        type="success"
-        isLoading={isSendingGift}
-      />
-
       {/* Enhanced Gift Modal */}
       {showGiftModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
@@ -1667,7 +1667,7 @@ export default function AstrologerProfilePage() {
                   
                   {walletBalance >= selectedGift.price ? (
                     <button
-                      onClick={() => setShowGiftConfirm(true)}
+                      onClick={() => handleSendGift(selectedGift)}
                       disabled={isSendingGift}
                       className="w-full text-black py-3 rounded-md font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       style={{ backgroundColor: '#F7971E' }}
@@ -1675,7 +1675,7 @@ export default function AstrologerProfilePage() {
                       onMouseLeave={(e) => !isSendingGift && (e.currentTarget.style.backgroundColor = '#F7971E')}
                     >
                       <Heart className="h-4 w-4" />
-                      Send Dakshina
+                      {isSendingGift ? 'Sending...' : 'Send Dakshina'}
                     </button>
                   ) : (
                     <div className="text-center">
@@ -1709,4 +1709,5 @@ export default function AstrologerProfilePage() {
     </div>
   );
 }
+
 

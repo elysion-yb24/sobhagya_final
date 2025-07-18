@@ -33,7 +33,6 @@ export default function Call4() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Premium Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100/50 to-white"></div>
-      
       {/* Subtle Astrology Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-10 left-10 w-20 h-20 bg-orange-400 rounded-full blur-xl"></div>
@@ -41,20 +40,21 @@ export default function Call4() {
         <div className="absolute bottom-1/3 left-1/4 w-12 h-12 bg-orange-200 rounded-full blur-md"></div>
       </div>
 
-    <AnimatePresence>
-      {!isExiting && (
-        <motion.div
+      <AnimatePresence mode="wait">
+        {!isExiting && (
+          <motion.div
+            key="call4-card"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
             className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 relative z-10"
-        >
-          <Head>
-            <title>Guidance Form</title>
-            <meta name="description" content="Guidance request form" />
-            <link rel="icon" href="/favicon.ico" />
-          </Head>
+          >
+            <Head>
+              <title>Guidance Form</title>
+              <meta name="description" content="Guidance request form" />
+              <link rel="icon" href="/favicon.ico" />
+            </Head>
 
             {/* Premium Card Container */}
             <motion.div
@@ -211,8 +211,8 @@ export default function Call4() {
             </form>
             </motion.div>
         </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

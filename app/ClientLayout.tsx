@@ -7,13 +7,14 @@ import { usePathname } from "next/navigation";
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [showWebsite, setShowWebsite] = useState(false);
   const [showFooter, setShowFooter] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
+    setIsClient(true);
     setShowWebsite(true);
 
     if (pathname && pathname.startsWith("/rashi/")) {
-      
       const timer = setTimeout(() => {
         setShowFooter(true);
       }, 1000); 
@@ -23,13 +24,22 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     }
   }, [pathname]);
 
+  // Prevent hydration mismatch by not rendering motion until client-side
+  if (!isClient) {
+    return (
+      <div className="min-h-screen">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, scale: 1.2 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-        className="shadow-[0px_0px_50px_rgba(255,215,0,0.3)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="min-h-screen"
       >
         {children}
       </motion.div>

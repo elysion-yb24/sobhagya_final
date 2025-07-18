@@ -54,9 +54,11 @@ export default function Call9() {
         <div className="absolute top-1/4 right-20 w-16 h-16 bg-orange-300 rounded-full blur-lg"></div>
         <div className="absolute bottom-1/3 left-1/4 w-12 h-12 bg-orange-200 rounded-full blur-md"></div>
       </div>
-      <AnimatePresence>
+
+      <AnimatePresence mode="wait">
         {!isExiting && (
           <motion.div
+            key="call9-card"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}

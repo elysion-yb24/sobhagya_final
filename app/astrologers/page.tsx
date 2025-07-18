@@ -667,24 +667,19 @@ export default function AstrologersPage() {
       sessionStorage.removeItem('returning_from_video_call');
     }
     
-    // Add a small delay to ensure token is properly stored after OTP verification
-    const checkAuth = () => {
-      const isAuthValid = isAuthenticated();
-      
-      if (!isAuthValid) {
-        console.log('❌ Authentication initialization failed - redirecting to login');
-        clearAuthData();
-        router.push("/");
-        return;
-      }
+    // Check authentication immediately without delay
+    const isAuthValid = isAuthenticated();
+    
+    if (!isAuthValid) {
+      console.log('❌ Authentication initialization failed - redirecting to login');
+      clearAuthData();
+      router.push("/");
+      return;
+    }
 
-      console.log('✅ Authentication validated, initializing data fetch...');
-      fetchAstrologers();
-      fetchWalletBalance();
-    };
-
-    // Small delay to ensure token storage is complete
-    setTimeout(checkAuth, 100);
+    console.log('✅ Authentication validated, initializing data fetch...');
+    fetchAstrologers();
+    fetchWalletBalance();
   }, [mounted, router]);
 
   // Prevent background scrolling when drawer is open

@@ -181,7 +181,7 @@ function ConfirmationDialog({
 export default function AstrologerProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const astrologerId = params.id as string;
+  const astrologerId = params?.id as string;
   
   const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);

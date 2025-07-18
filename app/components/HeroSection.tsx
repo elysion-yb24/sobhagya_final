@@ -10,20 +10,24 @@ const HeroSection: React.FC = () => {
   const [activeNav, setActiveNav] = useState("chat");
   const [mounted, setMounted] = useState(false);
   const [consultationCount, setConsultationCount] = useState(10023);
-  const [isLoading, setIsLoading] = useState(true);
+  const [particlePositions, setParticlePositions] = useState<{left: number, top: number, delay: number, duration: number}[]>([]);
 
   useEffect(() => {
     setMounted(true);
-    // Simulate loading and animate consultation count
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    
     // Animate consultation count
     const interval = setInterval(() => {
       setConsultationCount(prev => prev + Math.floor(Math.random() * 3));
     }, 5000);
-
+    // Generate random positions for floating particles only on client
+    setParticlePositions(
+      Array.from({ length: 20 }).map(() => ({
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        delay: Math.random() * 2,
+        duration: 3 + Math.random() * 2,
+      }))
+    );
     return () => {
-      clearTimeout(timer);
       clearInterval(interval);
     };
   }, []);
@@ -65,17 +69,6 @@ const HeroSection: React.FC = () => {
     }
   ];
 
-  if (!mounted) {
-    return (
-      <div className="w-full h-screen bg-gradient-to-br from-orange-50 to-orange-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-orange-600 font-medium">Loading your cosmic journey...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Enhanced Hero Section */}
@@ -87,30 +80,30 @@ const HeroSection: React.FC = () => {
           backgroundPosition: "center",
         }}
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
+        animate={{ opacity: mounted ? 1 : 0 }}
+        transition={{ duration: 0.6 }}
       >
         {/* Overlay for better text readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent z-0" />
         
         {/* Floating particles animation */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {Array.from({ length: 20 }).map((_, i) => (
+          {particlePositions.map((pos, i) => (
             <motion.div
               key={i}
               className="absolute w-1 h-1 bg-white/30 rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${pos.left}%`,
+                top: `${pos.top}%`,
               }}
               animate={{
                 y: [-20, -100, -20],
                 opacity: [0, 1, 0],
               }}
               transition={{
-                duration: 3 + Math.random() * 2,
+                duration: pos.duration,
                 repeat: Infinity,
-                delay: Math.random() * 2,
+                delay: pos.delay,
               }}
             />
           ))}
@@ -122,8 +115,8 @@ const HeroSection: React.FC = () => {
             <motion.div 
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6"
               initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
+              animate={{ y: 0, opacity: mounted ? 1 : 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
             >
               {navigationCards.map((card, index) => (
                 <motion.div
@@ -137,8 +130,8 @@ const HeroSection: React.FC = () => {
                   whileHover={{ y: -5 }}
                   whileTap={{ scale: 0.98 }}
                   initial={{ y: 50, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.6 + index * 0.1 }}
+                  animate={{ y: 0, opacity: mounted ? 1 : 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
                 >
                   <Link href={card.href} target={card.isExternal ? "_blank" : undefined}>
                     <div className="p-6 text-center h-full flex flex-col justify-between min-h-[140px]">

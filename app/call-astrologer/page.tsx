@@ -48,8 +48,8 @@ export default function CallAstrologerPage() {
   }, []);
 
   const searchParams = useSearchParams();
-  const astrologerId = searchParams.get("id") || "ASTRO_001";
-  const astrologerName = searchParams.get("astrologer") || "Astrologer";
+  const astrologerId = searchParams?.get("id") || "ASTRO_001";
+  const astrologerName = searchParams?.get("astrologer") || "Astrologer";
   
 
   // Generate a random experience value between 5-15 years

@@ -27,7 +27,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
-import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails, initializeAuth } from "../../utils/auth-utils";
+import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../../utils/auth-utils";
 import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
 
@@ -242,7 +242,7 @@ export default function AstrologerProfilePage() {
     console.log('🚀 Page useEffect triggered:', { astrologerId });
     
     // Initialize auth with token validation and extension
-    const isAuthValid = initializeAuth();
+    const isAuthValid = isAuthenticated();
     
     if (!isAuthValid) {
       console.log('❌ User authentication failed, redirecting to home');

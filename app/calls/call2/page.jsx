@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
 import { useRouter, useSearchParams } from "next/navigation";
-import { captureUserName, getUserDetails, isAuthenticated } from "../../utils/auth-utils";
+import { getUserDetails, isAuthenticated, storeUserDetails } from "../../utils/auth-utils";
 
 export default function Call2() {
   const [name, setName] = useState("");
@@ -33,8 +33,16 @@ export default function Call2() {
 
   const handleNext = () => {
     if (name.trim()) {
-      // Capture the user's name using the utility function
-      captureUserName(name.trim());
+      // Capture the user's name by updating user details
+      const currentUserDetails = getUserDetails() || {};
+      const updatedUserDetails = {
+        ...currentUserDetails,
+        name: name.trim(),
+        firstName: name.trim().split(' ')[0],
+        lastName: name.trim().split(' ').slice(1).join(' ') || '',
+        displayName: name.trim()
+      };
+      storeUserDetails(updatedUserDetails);
       
       setIsExiting(true);
       setTimeout(() => {

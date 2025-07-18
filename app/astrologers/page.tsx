@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import AstrologerList from "../components/astrologers/AstrologerList";
 import FilterBar from "../components/astrologers/FilterBar";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails, initializeAuth, isAuthenticatedAsync, updateTokenActivity } from "../utils/auth-utils";
+import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../utils/auth-utils";
 import TransactionHistory from "../components/history/TransactionHistory";
 import CallHistory from "../components/history/CallHistory";
 import { 
@@ -667,72 +667,25 @@ export default function AstrologersPage() {
       sessionStorage.removeItem('returning_from_video_call');
     }
     
-    // Initialize auth with token validation and extension
-    const isAuthValid = initializeAuth();
-    
-    if (!isAuthValid) {
-      console.log('❌ Authentication initialization failed - redirecting to login');
-      clearAuthData();
-      router.push("/");
-      return;
-    }
-
-    console.log('✅ Authentication validated, initializing data fetch...');
-    
-    // Add a delay to ensure proper cleanup after video call disconnect
-    // This prevents the 401 error when returning from video calls
-    const initializeData = setTimeout(() => {
-      console.log('🚀 Starting data fetch...');
-      fetchAstrologers(1);
-      fetchWalletBalance();
+    // Add a small delay to ensure token is properly stored after OTP verification
+    const checkAuth = () => {
+      const isAuthValid = isAuthenticated();
       
-      // Automatically load all astrologers for better performance
-      // This eliminates the need for manual "Load All" button
-      setTimeout(() => {
-        if (!allAstrologersLoaded && !isLoadingAll) {
-          console.log('🔄 Auto-loading all astrologers for better performance...');
-          loadAllAstrologers();
-        }
-      }, 2000); // Wait 2 seconds after initial load to start loading all
-    }, returningFromVideoCall ? 800 : 100); // Longer delay after video call
-    
-    // Set up token check interval with enhanced error handling
-    const checkInterval = setInterval(() => {
-      const currentToken = getAuthToken();
-      if (!currentToken) {
-        console.log('❌ No token found during periodic check, redirecting');
-        clearInterval(checkInterval);
+      if (!isAuthValid) {
+        console.log('❌ Authentication initialization failed - redirecting to login');
         clearAuthData();
         router.push("/");
         return;
       }
 
-      // Use authentication check with activity-based extension
-      const isAuth = isAuthenticatedAsync();
-      if (!isAuth) {
-        console.log('❌ Authentication expired during session, cleaning up');
-        clearInterval(checkInterval);
-        clearAuthData();
-        router.push("/");
-      }
-    }, 60000); // Check every minute
-
-    // Set up wallet balance refresh interval - reduced frequency
-    const walletInterval = setInterval(() => {
-      // Only fetch if still authenticated with valid token
-      const isAuth = isAuthenticatedAsync();
-      if (isAuth) {
-        fetchWalletBalance();
-      }
-    }, 120000); // Check every 2 minutes
-    
-    return () => {
-      // Clean up intervals and timeouts
-      clearTimeout(initializeData);
-      clearInterval(checkInterval);
-      clearInterval(walletInterval);
+      console.log('✅ Authentication validated, initializing data fetch...');
+      fetchAstrologers();
+      fetchWalletBalance();
     };
-  }, [router, fetchAstrologers, fetchWalletBalance, mounted, allAstrologersLoaded, loadAllAstrologers]);
+
+    // Small delay to ensure token storage is complete
+    setTimeout(checkAuth, 100);
+  }, [mounted, router]);
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {
@@ -765,7 +718,7 @@ export default function AstrologersPage() {
     setIsRefreshing(true);
     
     // Update token activity on user interaction
-    updateTokenActivity();
+    // updateTokenActivity(); // This function was removed from imports
     
     try {
       // Reset to page 1 when refreshing

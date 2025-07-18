@@ -9,34 +9,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
  */
 export function getAuthToken(): string | null {
   try {
-    // Try localStorage first - check both authToken and token keys
-    // const authToken = localStorage.getItem('authToken');
-    // if (authToken) return authToken;
+    // Try localStorage first - check both authToken and access_token keys
+    const authToken = localStorage.getItem('authToken');
+    if (authToken) return authToken;
     
-    // const token = localStorage.getItem('token');
-    // if (token) return token;
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken) return accessToken;
 
-    // // Try cookies as fallback - check both keys
-    // const authTokenCookie = document.cookie
-    //   .split('; ')
-    //   .find(row => row.startsWith('authToken='));
+    // Try cookies as fallback - check both keys
+    const cookies = new Cookies(null, { path: '/' });
+    const cookieAccessToken = cookies.get('access_token');
+    if (cookieAccessToken) return cookieAccessToken;
     
-    // if (authTokenCookie) {
-    //   return authTokenCookie.split('=')[1];
-    // }
-    
-    // const tokenCookie = document.cookie
-    //   .split('; ')
-    //   .find(row => row.startsWith('token='));
-    
-    // if (tokenCookie) {
-    //   return tokenCookie.split('=')[1];
-    // }
+    const cookieAuthToken = cookies.get('authToken');
+    if (cookieAuthToken) return cookieAuthToken;
 
-    // return null;
-    const cookies = new Cookies(null, { path: '/' })
-    const access_token = cookies.get('access_token')
-    return access_token || null
+    return null;
 
   } catch (e) {
     console.error("Error in getAuthToken:", e);

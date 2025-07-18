@@ -378,7 +378,7 @@ export default function LoginPage() {
       </motion.div>
 
       {/* Trust/Benefits Section */}
-      <div className="w-full max-w-lg mx-auto mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* <div className="w-full max-w-lg mx-auto mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { icon: Star, title: "Expert Astrologers", desc: "Verified professionals" },
           { icon: Shield, title: "Secure & Private", desc: "Your data is protected" },
@@ -395,7 +395,7 @@ export default function LoginPage() {
             <p className="text-sm text-gray-600">{benefit.desc}</p>
           </div>
         ))}
-      </div>
+      </div> */}
 
       {/* Footer */}
       <footer className="w-full max-w-lg mx-auto mt-8 mb-4 text-center text-xs text-gray-400">

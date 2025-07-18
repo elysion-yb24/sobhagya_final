@@ -12,7 +12,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   useEffect(() => {
     setShowWebsite(true);
 
-    if (pathname.startsWith("/rashi/")) {
+    if (pathname && pathname.startsWith("/rashi/")) {
       
       const timer = setTimeout(() => {
         setShowFooter(true);

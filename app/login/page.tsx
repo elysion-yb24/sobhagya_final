@@ -2,8 +2,25 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Phone, 
+  ChevronDown, 
+  Search, 
+  ArrowLeft, 
+  Sparkles, 
+  Shield, 
+  Zap, 
+  Star,
+  Globe,
+  Lock,
+  CheckCircle,
+  AlertCircle,
+  Loader2
+} from 'lucide-react';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
-import { getAuthToken, clearAuthData, isAuthenticated } from '../utils/auth-utils';
+import { getAuthToken, clearAuthData, isAuthenticated, initializeAuth } from '../utils/auth-utils';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
 // Define types for country and authentication data
 interface Country {
@@ -34,13 +51,23 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState<boolean>(false);
   
   const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Check if user is already authenticated
+
   useEffect(() => {
-    if (isAuthenticated()) {
-      router.push('/astrologers');
+    setMounted(true);
+    
+    try {
+      const isAuthValid = initializeAuth();
+      if (isAuthValid) {
+        console.log('✅ User already authenticated, redirecting to astrologers');
+        router.push('/astrologers');
+      }
+    } catch (error) {
+      console.log('❌ Authentication check failed on login page:', error);
+      
     }
   }, [router]);
   
@@ -67,7 +94,7 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +145,7 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      const response = await fetch('/api/auth/verify-otp', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +189,7 @@ export default function LoginPage() {
     setError(null);
     
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,156 +228,182 @@ export default function LoginPage() {
     router.push('/');
   };
 
-  // Render OTP verification screen
-  if (currentScreen === 'otp-verification') {
+  if (!mounted) {
     return (
-      <OtpVerificationScreen 
-        phoneNumber={phoneNumber}
-        countryCode={selectedCountry.dial_code}
-        onVerify={handleVerifyOtp}
-        onResend={handleResendOtp}
-        onBack={() => setCurrentScreen('phone-input')}
-        isLoading={isLoading}
-        error={error}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
     );
   }
 
-  // Render phone input screen
+  if (currentScreen === 'otp-verification') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
+        <OtpVerificationScreen
+          phoneNumber={phoneNumber}
+          countryCode={selectedCountry.dial_code}
+          onVerify={handleVerifyOtp}
+          onResend={handleResendOtp}
+          onBack={() => setCurrentScreen('phone-input')}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
-        {/* Back to home button */}
-        <button 
-          onClick={handleBackToHome}
-          className="absolute top-2 left-2 sm:top-3 sm:left-3 text-gray-700 hover:text-gray-900 z-10"
-          aria-label="Back to home"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </button>
-        
-        {/* Header */}
-        <div className="bg-[#F7971D] py-3 sm:py-4 text-center">
-          <h1 className="text-white text-xl sm:text-2xl md:text-3xl font-medium" style={{
-            fontFamily: 'Poppins',
-            letterSpacing: '1%',
-          }}>Continue With Phone</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center  px-2">
+      {/* Premium Header */}
+      <div className="w-full max-w-lg mx-auto flex flex-col items-center mt-8 mb-4">
+        <div className="flex flex-col items-center">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3">
+            <Image src="/sobhagya_logo.avif" alt="Astrology Logo" width={80} height={80} className="object-cover" />
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-1 text-center">Sign in to Sobhagya</h1>
+          <p className="text-orange-700 text-base sm:text-lg font-medium text-center mb-2">Connect instantly with expert astrologers</p>
         </div>
-        
-        {/* Form Content */}
-        <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
-          <p className="text-center text-[#373737] mb-6 sm:mb-8 md:mb-10 font-normal text-base sm:text-lg md:text-xl" style={{
-            fontFamily: 'Poppins',
-          }}>
-            You'll receive a 4-digit code to verify your identity
-          </p>
-          
-          <form onSubmit={handleSubmit}>
-            <label className="block text-center text-[#373737] font-normal mb-3 sm:mb-4 md:mb-5 text-base sm:text-lg md:text-xl" style={{
-                fontFamily: 'Poppins',
-            }}>
-              Enter Your phone Number
-            </label>
-            
-            {error && (
-              <div className="mb-4 text-red-500 text-center text-sm sm:text-base">{error}</div>
-            )}
-            
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-y-3 sm:gap-y-0 sm:gap-x-2 mb-6 sm:mb-8">
-              {/* Country Code Selector */}
-              <div className="relative w-full sm:w-auto" ref={dropdownRef}>
-                <div 
-                  className="flex items-center justify-between bg-[#F2F2F2] px-3 py-2 rounded-md sm:rounded-l-md sm:rounded-r-none border border-gray-300 h-12 cursor-pointer w-full sm:w-24 focus:outline-orange-600"
+      </div>
+
+      {/* Glassmorphism Card */}
+      <motion.div 
+        className="w-full max-w-lg mx-auto bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border-l-4 border-orange-400 p-8 sm:p-10 flex flex-col items-center relative z-10"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+      >
+        <form onSubmit={handleSubmit} className="w-full space-y-6">
+          {/* Phone Input Group */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
+            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-orange-400 bg-white">
+              {/* Country Selector */}
+              <div className="relative flex items-center bg-gray-50 px-3 border-r border-gray-200 cursor-pointer select-none" ref={dropdownRef}>
+                <button
+                  type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 focus:outline-none"
                 >
-                  <div className="flex items-center justify-center w-full">
-                    <span className="text-sm mr-1">{selectedCountry.dial_code}</span>
-                    <Image 
-                      src={selectedCountry.flag} 
-                      alt={selectedCountry.name} 
-                      width={18} 
-                      height={13}
-                      className="ml-1"
-                    />
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-                
-                {/* Dropdown */}
-                {isDropdownOpen && (
-                  <div className="absolute left-0 mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
-                    {/* Search input */}
-                    <div className="sticky top-0 bg-white p-2 border-b">
-                      <input
-                        type="text"
-                        className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                        placeholder="Search country or code"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    
-                    {filteredCountries.map((country) => (
-                      <div 
-                        key={country.code}
-                        className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => selectCountry(country)}
-                      >
-                        <Image 
-                          src={country.flag} 
-                          alt={country.name} 
-                          width={24} 
-                          height={16}
-                          className="mr-2"
-                        />
-                        <span className="text-sm">{country.name}</span>
-                        <span className="ml-auto text-gray-500 text-sm">{country.dial_code}</span>
+                  <span className="w-6 h-4 mr-1 flex items-center justify-center">
+                    <Image src={selectedCountry.flag} alt={selectedCountry.code} width={24} height={16} className="object-contain rounded-sm" />
+                  </span>
+                  <span className="text-base font-medium">{selectedCountry.dial_code}</span>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {isDropdownOpen && (
+                    <motion.div
+                      className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-auto"
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search countries..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+                          />
+                        </div>
                       </div>
-                    ))}
-                    
-                    {filteredCountries.length === 0 && (
-                      <div className="p-3 text-center text-gray-500">No results found</div>
-                    )}
-                  </div>
-                )}
+                      <div className="max-h-40 overflow-y-auto">
+                        {filteredCountries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => selectCountry(country)}
+                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-orange-50 transition-colors text-left"
+                          >
+                            <span className="w-6 h-4 flex items-center justify-center">
+                              <Image src={country.flag} alt={country.code} width={24} height={16} className="object-contain rounded-sm" />
+                            </span>
+                            <span className="flex-1 text-sm">{country.name}</span>
+                            <span className="text-sm text-gray-500">{country.dial_code}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              
-              {/* Phone Number Input */}
+              {/* Phone Input */}
               <input
                 type="tel"
-                placeholder="Enter Your Phone Number"
-                className="w-full sm:w-64 px-4 py-2 border border-gray-300 bg-[#F2F2F2] rounded-md sm:rounded-l-none sm:rounded-r-md h-12 focus:outline-[#F7971D]"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder="Enter your phone number"
+                className="flex-1 px-4 py-3 bg-transparent outline-none text-lg font-medium text-gray-700"
                 required
               />
             </div>
-            
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading || !phoneNumber}
-              className={`w-full max-w-full sm:max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base ${
-                (isLoading || !phoneNumber) ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
-            >
-              {isLoading ? 'Sending...' : 'Send OTP on this Phone number'}
-            </button>
-          </form>
-          
-          {/* Footer Text */}
-          <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6">
-            You agree to our 
-            <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1">Privacy Policy</a>
-            <span className="mx-1">&</span>
-            <a href="/terms" className="text-orange-400 hover:underline">Terms of Service</a>
-          </p>
-        </div>
-      </div>
+          </div>
+          {/* Error Message */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 mt-2"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <AlertCircle className="w-5 h-5" />
+                <span className="text-sm">{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* Submit Button */}
+          <motion.button
+            type="submit"
+            disabled={isLoading || !phoneNumber}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Sending OTP...</span>
+              </>
+            ) : (
+              <>
+                <Lock className="w-5 h-5" />
+                <span>Send OTP</span>
+              </>
+            )}
+          </motion.button>
+        </form>
+      </motion.div>
+
+      {/* Trust/Benefits Section */}
+      {/* <div className="w-full max-w-lg mx-auto mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          { icon: Star, title: "Expert Astrologers", desc: "Verified professionals" },
+          { icon: Shield, title: "Secure & Private", desc: "Your data is protected" },
+          { icon: Zap, title: "Instant Connect", desc: "Available 24/7" }
+        ].map((benefit, index) => (
+          <div
+            key={index}
+            className="bg-white/70 backdrop-blur-sm rounded-xl p-4 text-center flex flex-col items-center shadow border border-orange-100"
+          >
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-orange-100 rounded-full mb-2">
+              <benefit.icon className="w-6 h-6 text-orange-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1 text-base">{benefit.title}</h3>
+            <p className="text-sm text-gray-600">{benefit.desc}</p>
+          </div>
+        ))}
+      </div> */}
+
+      {/* Footer */}
+      <footer className="w-full max-w-lg mx-auto mt-8 mb-4 text-center text-xs text-gray-400">
+        <span>By continuing, you agree to our </span>
+        <button className="text-orange-600 hover:underline">Terms of Service</button>
+        <span> and </span>
+        <button className="text-orange-600 hover:underline">Privacy Policy</button>
+      </footer>
     </div>
   );
 }

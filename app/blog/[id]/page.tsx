@@ -180,7 +180,7 @@ export default function BlogPage({ params }: { params: Promise<{ id: string }> }
 
       <div className="relative h-[60vh] md:h-[70vh] lg:h-[80vh] w-full">
         <Image 
-          src={blog.image} 
+          src={blog.image || "/default-image.png"} 
           alt={blog.title} 
           fill 
           className="object-cover brightness-75"
@@ -305,7 +305,7 @@ export default function BlogPage({ params }: { params: Promise<{ id: string }> }
                 >
                   <div className="relative h-[180px]">
                     <Image 
-                      src={relatedBlog.image} 
+                      src={relatedBlog.image || "/default-image.png"} 
                       alt={relatedBlog.title} 
                       fill 
                       className="object-cover" 

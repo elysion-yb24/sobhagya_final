@@ -2,195 +2,324 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { 
-  Phone, 
-  PhoneOff, 
-  Video, 
-  VideoOff, 
-  Mic, 
-  MicOff, 
-  Volume2, 
-  VolumeX,
-  Settings,
-  Users,
-  Clock,
-  ArrowLeft
-} from "lucide-react";
+import { getUserDetails, getAuthToken } from '../utils/auth-utils';
+import InsufficientBalanceModal from '../components/ui/InsufficientBalanceModal';
+import VideoCallRoom from '../components/video/VideoCallRoom';
 
 export default function VideoCallPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  const token = searchParams.get('token');
-  const roomName = searchParams.get('room');
-  const astrologerName = searchParams.get('astrologer');
+  const token = searchParams?.get('token');
+  const roomName = searchParams?.get('room');
+  const astrologerName = searchParams?.get('astrologer');
+  const wsURL = searchParams?.get('wsURL');
   
-  const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(true);
-  const [isCameraOn, setIsCameraOn] = useState(true);
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isSpeakerOn, setIsSpeakerOn] = useState(true);
-  const [callDuration, setCallDuration] = useState(0);
+  // Debug logging
+  console.log('🎥 Video call page loaded with parameters:', {
+    hasToken: !!token,
+    hasRoomName: !!roomName,
+    hasAstrologerName: !!astrologerName,
+    hasWsURL: !!wsURL,
+    tokenLength: token?.length,
+    roomNameLength: roomName?.length,
+    fullUrl: typeof window !== 'undefined' ? window.location.href : 'server-side'
+  });
+  
   const [error, setError] = useState<string | null>(null);
-  const [participants, setParticipants] = useState<string[]>([]);
+  const [broadcasterStatus, setBroadcasterStatus] = useState<'waiting' | 'joined' | 'not_allowed' | 'access_denied' | 'error'>('waiting');
   
-  const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
-  const roomRef = useRef<any>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<any>(null);
 
+  // Wallet balance states
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [isCheckingBalance, setIsCheckingBalance] = useState(true);
+  const [isInitializingCall, setIsInitializingCall] = useState(false);
+
+  // Check wallet balance and initialize call
   useEffect(() => {
-    if (!token || !roomName) {
-      setError("Missing video call parameters");
-      return;
+    console.log('🎥 Video call page useEffect triggered:', { token, roomName });
+    if (token && roomName) {
+      console.log('✅ Parameters found, fetching wallet data...');
+      fetchWalletPageData();
+    } else {
+      console.error('❌ Missing parameters:', { token: !!token, roomName: !!roomName });
+      setError('Missing video call parameters');
+      setIsCheckingBalance(false);
     }
-
-    initializeLiveKit();
-    
-    return () => {
-      cleanup();
-    };
   }, [token, roomName]);
 
-  useEffect(() => {
-    if (isConnected) {
-      // Start call duration timer
-      intervalRef.current = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [isConnected]);
-
-  const initializeLiveKit = async () => {
+  const initializeSocket = async () => {
     try {
-      setIsConnecting(true);
+      console.log('🔌 Initializing socket connection for video call page...');
       
-      // Dynamic import of LiveKit SDK to avoid SSR issues
-      const { Room, RoomEvent, Track, RemoteTrack, LocalTrack } = await import('livekit-client');
+      // Get user details from localStorage
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      const userId = userDetails?.id || userDetails?._id;
       
-      const room = new Room({
-        adaptiveStream: true,
-        dynacast: true,
+      if (!userId) {
+        console.error('❌ No user ID found for socket connection');
+        return;
+      }
+
+      // Dynamic import of socket.io-client
+      const { io } = await import('socket.io-client');
+      
+      // Connect to socket server
+      const socket = io('https://micro.sobhagya.in', {
+        path: '/call-socket/socket.io',
+        query: {
+          userId,
+          role: 'user'
+        },
+        transports: ['websocket']
       });
 
-      roomRef.current = room;
+      socketRef.current = socket;
 
-      // Set up event listeners
-      room.on(RoomEvent.Connected, () => {
-        console.log('Connected to room');
-        setIsConnected(true);
-        setIsConnecting(false);
-        setError(null);
+      socket.on('connect', () => {
+        console.log('✅ Socket connected for video call page:', socket.id);
+        
+        // Register with the channel (already done in astrologer profile page, but good to ensure)
+        socket.emit('register', {
+          userId,
+          channelId: roomName
+        });
+
+        console.log('✅ Registered with channel:', roomName);
       });
 
-      room.on(RoomEvent.Disconnected, () => {
-        console.log('Disconnected from room');
-        setIsConnected(false);
+      socket.on('disconnect', () => {
+        console.log('❌ Socket disconnected from video call page');
+      });
+
+      socket.on('broadcaster_joined', (data: any) => {
+        // Support both {resp: ...} and direct object
+        const resp = data?.resp || data;
+        console.log('👥 Broadcaster joined:', resp);
+        // Handle different response statuses
+        if (resp && resp.status) {
+          switch (resp.status) {
+            case 'NOT_ALLOWED':
+              console.error('❌ Broadcaster NOT_ALLOWED:', {
+                reason: resp.reason || 'Unknown reason',
+                message: resp.message || 'Astrologer is not authorized to join this call',
+                data: resp
+              });
+              setBroadcasterStatus('not_allowed');
+              // Show user-friendly error message based on the reason
+              let errorMessage = 'Astrologer is not available for video calls right now';
+              if (resp.reason === 'INSUFFICIENT_BALANCE') {
+                errorMessage = 'Astrologer has insufficient balance to join the call';
+              } else if (resp.reason === 'ALREADY_IN_CALL') {
+                errorMessage = 'Astrologer is currently in another call';
+              } else if (resp.reason === 'OFFLINE') {
+                errorMessage = 'Astrologer is currently offline';
+              } else if (resp.reason === 'VIDEO_NOT_ALLOWED') {
+                errorMessage = 'Video calls are not enabled for this astrologer';
+              } else if (resp.message) {
+                errorMessage = resp.message;
+              }
+              setError(`Call connection failed: ${errorMessage}`);
+              // End the call after showing error
+              setTimeout(() => {
+                cleanup();
+                window.close();
+              }, 5000);
+              break;
+            case 'SUCCESS':
+            case 'ALLOWED':
+              console.log('✅ Broadcaster successfully joined the call');
+              setBroadcasterStatus('joined');
+              break;
+            default:
+              console.warn('⚠️ Unknown broadcaster status:', resp.status);
+              setBroadcasterStatus('error');
+              break;
+          }
+        } else {
+          // Legacy format - assume success if no status field
+          console.log('✅ Broadcaster joined (legacy format)');
+          setBroadcasterStatus('joined');
+        }
+      });
+
+      socket.on('call_end', (data: any) => {
+        console.log('📞 Call ended:', data);
         cleanup();
+        window.close();
       });
 
-      room.on(RoomEvent.ParticipantConnected, (participant: any) => {
-        console.log('Participant connected:', participant.identity);
-        setParticipants(prev => [...prev, participant.identity]);
+      socket.on('connect_error', (error: any) => {
+        console.error('❌ Socket connection error:', error);
       });
-
-      room.on(RoomEvent.ParticipantDisconnected, (participant: any) => {
-        console.log('Participant disconnected:', participant.identity);
-        setParticipants(prev => prev.filter(p => p !== participant.identity));
-      });
-
-      room.on(RoomEvent.TrackSubscribed, (track: any, publication: any, participant: any) => {
-        if (track.kind === Track.Kind.Video && remoteVideoRef.current) {
-          track.attach(remoteVideoRef.current);
-        }
-      });
-
-      room.on(RoomEvent.LocalTrackPublished, (publication: any, participant: any) => {
-        if (publication.track && publication.track.kind === Track.Kind.Video && localVideoRef.current) {
-          publication.track.attach(localVideoRef.current);
-        }
-      });
-
-      // Connect to room
-      await room.connect(process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://your-livekit-server.com', token!);
-
-      // Enable camera and microphone
-      await room.localParticipant.enableCameraAndMicrophone();
 
     } catch (error) {
-      console.error('Failed to initialize LiveKit:', error);
-      setError('Failed to connect to video call. Please try again.');
-      setIsConnecting(false);
+      console.error('❌ Failed to initialize socket:', error);
     }
   };
 
   const cleanup = () => {
-    if (roomRef.current) {
-      roomRef.current.disconnect();
-      roomRef.current = null;
-    }
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
   };
 
-  const toggleCamera = async () => {
-    if (roomRef.current) {
-      try {
-        if (isCameraOn) {
-          await roomRef.current.localParticipant.setCameraEnabled(false);
-        } else {
-          await roomRef.current.localParticipant.setCameraEnabled(true);
-        }
-        setIsCameraOn(!isCameraOn);
-      } catch (error) {
-        console.error('Failed to toggle camera:', error);
-      }
+  const handleDisconnect = () => {
+    // Emit end call event via socket
+    if (socketRef.current && roomName) {
+      const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
+      const userId = userDetails?.id || userDetails?._id;
+      
+      socketRef.current.emit('end_call', {
+        channelId: roomName,
+        userId,
+        reason: 'USER_ENDED_CALL'
+      });
     }
-  };
-
-  const toggleMicrophone = async () => {
-    if (roomRef.current) {
-      try {
-        if (isMicOn) {
-          await roomRef.current.localParticipant.setMicrophoneEnabled(false);
-        } else {
-          await roomRef.current.localParticipant.setMicrophoneEnabled(true);
-        }
-        setIsMicOn(!isMicOn);
-      } catch (error) {
-        console.error('Failed to toggle microphone:', error);
-      }
-    }
-  };
-
-  const endCall = () => {
+    
     cleanup();
     window.close(); // Close the popup window
   };
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const fetchWalletPageData = async () => {
+    try {
+      setIsCheckingBalance(true);
+      const token = getAuthToken();
+      if (!token) {
+        setError("Authentication required");
+        return 0;
+      }
+
+      const response = await fetch(
+        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const balance = data.data?.balance || 0;
+        setWalletBalance(balance);
+
+        // Check if user has sufficient balance for video call
+        const estimatedCost = getEstimatedCallCost();
+        
+        if (balance < estimatedCost) {
+          setShowInsufficientBalanceModal(true);
+          return balance;
+        }
+
+        // If balance is sufficient, proceed with call initialization
+        initializeCall();
+        return balance;
+      } else {
+        setError("Failed to check wallet balance");
+        return 0;
+      }
+    } catch (error) {
+      console.error('Error checking wallet balance:', error);
+      setError("Failed to check wallet balance");
+      return 0;
+    } finally {
+      setIsCheckingBalance(false);
+    }
+  };
+
+  const getEstimatedCallCost = () => {
+    // Get astrologer details from URL params or localStorage
+    const searchParams = new URLSearchParams(window.location.search);
+    const videoRpm = searchParams.get('videoRpm') || searchParams.get('rpm') || '25'; // Default video RPM
+    
+    // Estimate minimum 2 minutes cost
+    return parseInt(videoRpm) * 2;
+  };
+
+  const getAstrologerName = () => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('astrologerName') || 'Astrologer';
+  };
+
+  const getApiBaseUrl = () => {
+    return process.env.NEXT_PUBLIC_API_BASE_URL || 'https://micro.sobhagya.in';
+  };
+
+  const initializeCall = async () => {
+    try {
+      setIsInitializingCall(true);
+      
+      // Initialize socket connection
+      await initializeSocket();
+      
+    } catch (error) {
+      console.error('Error initializing call:', error);
+      setError('Failed to initialize call');
+    } finally {
+      setIsInitializingCall(false);
+    }
   };
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="text-red-400 text-xl mb-4">{error}</div>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Call Error</h2>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={() => window.close()}
-            className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
+            onClick={() => window.history.back()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
           >
-            Close
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isCheckingBalance) {
+    return (
+      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+        <div className="text-center text-white">
+          <div className="mb-6">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mb-4">
+              <div className="w-10 h-10 bg-white rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+            <span className="text-xl font-semibold">Checking balance...</span>
+          </div>
+          
+          <p className="text-gray-300 text-sm">
+            Verifying wallet balance for video call
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!token || !roomName) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+          <div className="text-red-500 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Invalid Call</h2>
+          <p className="text-gray-600 mb-6">Missing video call parameters</p>
+          <button
+            onClick={() => window.history.back()}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          >
+            Go Back
           </button>
         </div>
       </div>
@@ -198,150 +327,25 @@ export default function VideoCallPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
-      {/* Header */}
-      <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/50 to-transparent p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => window.close()}
-              className="p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-lg font-semibold">Video Call</h1>
-              {astrologerName && (
-                <p className="text-sm text-gray-300">with {decodeURIComponent(astrologerName)}</p>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2 bg-black/30 rounded-full px-3 py-1">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm font-mono">{formatDuration(callDuration)}</span>
-            </div>
-            
-            {participants.length > 0 && (
-              <div className="flex items-center space-x-2 bg-black/30 rounded-full px-3 py-1">
-                <Users className="h-4 w-4" />
-                <span className="text-sm">{participants.length + 1}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+    <>
+      <VideoCallRoom
+        token={token}
+        wsURL={wsURL || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://sobhagya-iothxaak.livekit.cloud'}
+        roomName={roomName}
+        participantName={getUserDetails()?.name || 'User'}
+        astrologerName={astrologerName ? decodeURIComponent(astrologerName) : undefined}
+        onDisconnect={handleDisconnect}
+      />
 
-      {/* Video Container */}
-      <div className="relative w-full h-screen">
-        {/* Remote Video (Main) */}
-        <video
-          ref={remoteVideoRef}
-          className="w-full h-full object-cover"
-          autoPlay
-          playsInline
-          muted={false}
-        />
-        
-        {/* Local Video (Picture-in-Picture) */}
-        <div className="absolute top-20 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-white/20">
-          <video
-            ref={localVideoRef}
-            className="w-full h-full object-cover"
-            autoPlay
-            playsInline
-            muted
-          />
-          {!isCameraOn && (
-            <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-              <VideoOff className="h-8 w-8 text-gray-400" />
-            </div>
-          )}
-        </div>
-
-        {/* Connection Status */}
-        {isConnecting && (
-          <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-lg">Connecting to video call...</p>
-              <p className="text-sm text-gray-400 mt-2">Please wait while we connect you</p>
-            </div>
-          </div>
-        )}
-
-        {/* No Video Placeholder */}
-        {isConnected && !isConnecting && (
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900 to-purple-900 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center mb-4 mx-auto">
-                <Video className="h-16 w-16 text-white/60" />
-              </div>
-              <p className="text-xl font-semibold mb-2">
-                {astrologerName ? decodeURIComponent(astrologerName) : 'Astrologer'}
-              </p>
-              <p className="text-gray-300">Video call in progress</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Control Bar */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-        <div className="flex items-center justify-center space-x-4">
-          {/* Microphone Toggle */}
-          <button
-            onClick={toggleMicrophone}
-            className={`p-4 rounded-full transition-all duration-200 ${
-              isMicOn 
-                ? 'bg-gray-700 hover:bg-gray-600' 
-                : 'bg-red-500 hover:bg-red-600'
-            }`}
-          >
-            {isMicOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
-          </button>
-
-          {/* Camera Toggle */}
-          <button
-            onClick={toggleCamera}
-            className={`p-4 rounded-full transition-all duration-200 ${
-              isCameraOn 
-                ? 'bg-gray-700 hover:bg-gray-600' 
-                : 'bg-red-500 hover:bg-red-600'
-            }`}
-          >
-            {isCameraOn ? <Video className="h-6 w-6" /> : <VideoOff className="h-6 w-6" />}
-          </button>
-
-          {/* End Call */}
-          <button
-            onClick={endCall}
-            className="p-4 rounded-full bg-red-500 hover:bg-red-600 transition-all duration-200 transform hover:scale-110"
-          >
-            <PhoneOff className="h-6 w-6" />
-          </button>
-
-          {/* Speaker Toggle */}
-          <button
-            onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-            className={`p-4 rounded-full transition-all duration-200 ${
-              isSpeakerOn 
-                ? 'bg-gray-700 hover:bg-gray-600' 
-                : 'bg-red-500 hover:bg-red-600'
-            }`}
-          >
-            {isSpeakerOn ? <Volume2 className="h-6 w-6" /> : <VolumeX className="h-6 w-6" />}
-          </button>
-        </div>
-
-        {/* Call Status */}
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-300">
-            {isConnecting ? 'Connecting...' : isConnected ? 'Connected' : 'Disconnected'}
-          </p>
-        </div>
-      </div>
-    </div>
+      {/* Insufficient Balance Modal */}
+      <InsufficientBalanceModal
+        isOpen={showInsufficientBalanceModal}
+        onClose={() => setShowInsufficientBalanceModal(false)}
+        requiredAmount={getEstimatedCallCost()}
+        currentBalance={walletBalance}
+        serviceType="call"
+        astrologerName={getAstrologerName()}
+      />
+    </>
   );
 } 

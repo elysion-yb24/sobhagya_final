@@ -19,9 +19,8 @@ const Footer: React.FC = () => {
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
-          layout="fill"
-          objectFit="contain"
-          className="rotate-[-15deg]"
+          fill
+          className="rotate-[-15deg] object-contain"
         />
       </div>
 
@@ -30,8 +29,8 @@ const Footer: React.FC = () => {
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
-          layout="fill"
-          objectFit="contain"
+          fill
+          className="object-contain"
         />
       </div>
 
@@ -48,11 +47,10 @@ const Footer: React.FC = () => {
           <div className="flex flex-col items-center justify-center gap-4 mb-24">
             <div className="relative w-[150px] h-[150px]">
               <Image
-                src="/sobhagya-logo.png"
+                src="/sobhagya_logo.avif"
                 alt="Sobhagya"
-                layout="fill"
-                objectFit="contain"
-                priority
+                fill
+                className="object-contain"
               />
             </div>
             <p

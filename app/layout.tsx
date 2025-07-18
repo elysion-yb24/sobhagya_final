@@ -10,10 +10,10 @@ import ClientPathname from "./components/ClientPathname"; // Import the client c
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "𝒮𝑜𝒷𝒽𝒶𝑔𝓎𝒶",
+  title: "Sobhagya",
   description: "Your trusted astrology consultation platform",
   icons: {
-    icon: "/image 1.ico",
+    icon: "/sobhagya_logo.avif",
   },
 };
 

@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { getAuthToken, getUserDetails } from "../../utils/auth-utils";
-import CallConfirmationDialog from "../ui/CallConfirmationDialog";
-import { Phone, Video, Star, Users, Award, Loader2, CheckCircle } from "lucide-react";
+import { Phone, Video, Star, Users, Award, Loader2, CheckCircle, MessageCircle } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
+import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
+import CallConfirmationDialog from "../../components/ui/CallConfirmationDialog";
+import { buildApiUrl } from "../../config/api";
 
 interface Astrologer {
   _id: string;
@@ -53,9 +56,11 @@ interface Astrologer {
 
 interface Props {
   astrologer: Astrologer;
+  compactButtons?: boolean;
+  showVideoButton?: boolean;
 }
 
-export default function AstrologerCard({ astrologer }: Props) {
+const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactButtons = false, showVideoButton = false }: Props) {
   const router = useRouter();
   const [isCallRequested, setIsCallRequested] = useState(false);
   const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
@@ -63,10 +68,19 @@ export default function AstrologerCard({ astrologer }: Props) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showAudioConfirmDialog, setShowAudioConfirmDialog] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  
+
+  // Insufficient balance modal state
+  const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [insufficientBalanceData, setInsufficientBalanceData] = useState<{
+    requiredAmount: number;
+    serviceType: 'call' | 'gift' | 'consultation';
+  } | null>(null);
+
   // New states for call history checking
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
   const [isCheckingHistory, setIsCheckingHistory] = useState(true);
+  const [isFetchingWallet, setIsFetchingWallet] = useState(false);
 
   const {
     _id,
@@ -83,21 +97,105 @@ export default function AstrologerCard({ astrologer }: Props) {
   } = astrologer;
 
   useEffect(() => {
-    checkCallHistory();
-  }, [_id]);
+    // Check if we already have cached data to avoid unnecessary API calls
+    const cachedHasCalledBefore = localStorage.getItem('userHasCalledBefore');
+    const lastCheckTime = localStorage.getItem('lastCallHistoryCheck');
+    const now = Date.now();
+
+    // Only check API if we don't have cached data or it's been more than 5 minutes
+    if (cachedHasCalledBefore === 'true') {
+      setHasCompletedFreeCall(true);
+      setIsCheckingHistory(false);
+    } else if (!lastCheckTime || (now - parseInt(lastCheckTime)) > 300000) { // 5 minutes
+      checkCallHistory();
+      localStorage.setItem('lastCallHistoryCheck', now.toString());
+    } else {
+      setIsCheckingHistory(false);
+    }
+
+    fetchWalletBalance();
+  }, []); // Empty dependency array to run only once
+
+  const fetchWalletBalance = async () => {
+    // Prevent multiple simultaneous calls
+    if (isFetchingWallet) return;
+    setIsFetchingWallet(true);
+
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch(
+        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setWalletBalance(data.data.balance || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error);
+    } finally {
+      setIsFetchingWallet(false);
+    }
+  };
+
+  const fetchWalletPageData = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return 0;
+
+      const response = await fetch(
+        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
+        {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          const balance = data.data.balance || 0;
+          setWalletBalance(balance);
+          return balance;
+        }
+      }
+      return 0;
+    } catch (error) {
+      console.error('Error fetching wallet page data:', error);
+      return 0;
+    }
+  };
 
   const checkCallHistory = async () => {
     try {
       setIsCheckingHistory(true);
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      
+
       if (!token || !userDetails?.id) {
         setIsCheckingHistory(false);
         return;
       }
 
-      // Check if user has any call history with this astrologer
+      // Check if user has ANY call history (with any astrologer)
       const response = await fetch(
         `${getApiBaseUrl()}/calling/api/call/call-log?skip=0&limit=10&role=user`,
         {
@@ -112,33 +210,39 @@ export default function AstrologerCard({ astrologer }: Props) {
 
       if (response.ok) {
         const callHistory = await response.json();
-        
-        // Check if user has any previous calls with this specific astrologer
-        const callsWithThisAstrologer = callHistory.data?.list?.filter((call: any) => 
-          call.astrologerId === _id || call.receiverId === _id
-        ) || [];
-        
-        if (callsWithThisAstrologer.length > 0) {
+        console.log('Call history response:', callHistory);
+
+        // Check if user has ANY previous calls (with any astrologer)
+        const totalCalls = callHistory.data?.list?.length || 0;
+        console.log('Total calls found:', totalCalls);
+
+        if (totalCalls > 0) {
+          console.log('User has call history, hiding free call option');
           setHasCompletedFreeCall(true);
+          // Mark globally that user has used free call
+          localStorage.setItem('userHasCalledBefore', 'true');
         } else {
+          console.log('No call history found, checking localStorage');
           // Check localStorage as fallback
-          const freeCallUsed = localStorage.getItem(`freeCallUsed_${_id}`);
-          if (freeCallUsed === 'true') {
+          const hasCalledBefore = localStorage.getItem('userHasCalledBefore');
+          console.log('localStorage userHasCalledBefore:', hasCalledBefore);
+          if (hasCalledBefore === 'true') {
             setHasCompletedFreeCall(true);
           }
         }
       } else {
+        console.log('Call history API failed with status:', response.status);
         // Fallback to localStorage if API fails
-        const freeCallUsed = localStorage.getItem(`freeCallUsed_${_id}`);
-        if (freeCallUsed === 'true') {
+        const hasCalledBefore = localStorage.getItem('userHasCalledBefore');
+        if (hasCalledBefore === 'true') {
           setHasCompletedFreeCall(true);
         }
       }
     } catch (error) {
       console.error('Error checking call history:', error);
       // Fallback to localStorage if API fails
-      const freeCallUsed = localStorage.getItem(`freeCallUsed_${_id}`);
-      if (freeCallUsed === 'true') {
+      const hasCalledBefore = localStorage.getItem('userHasCalledBefore');
+      if (hasCalledBefore === 'true') {
         setHasCompletedFreeCall(true);
       }
     } finally {
@@ -158,15 +262,30 @@ export default function AstrologerCard({ astrologer }: Props) {
 
   const handleAudioCall = async () => {
     try {
+      // Fetch latest wallet balance first
+      const currentBalance = await fetchWalletPageData();
+
+      // Check wallet balance first
+      const callCost = (rpm || 15) * 2; // Estimate 2 minutes minimum cost
+      if (currentBalance < callCost) {
+        setInsufficientBalanceData({
+          requiredAmount: callCost,
+          serviceType: 'call'
+        });
+        setShowInsufficientBalanceModal(true);
+        setShowAudioConfirmDialog(false);
+        return;
+      }
+
       setIsCallRequested(true);
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      
+
       if (!token || !userDetails?.id) {
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(`${getApiBaseUrl()}/calling/api/call/request-tataTelecom-call`, {
+      const response = await fetch(buildApiUrl('/calling/api/call/request-tataTelecom-call'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,6 +303,20 @@ export default function AstrologerCard({ astrologer }: Props) {
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        // Check if it's a balance-related error
+        if (errorData.message?.toLowerCase().includes('balance') ||
+          errorData.message?.toLowerCase().includes('insufficient')) {
+          setInsufficientBalanceData({
+            requiredAmount: callCost,
+            serviceType: 'call'
+          });
+          setShowInsufficientBalanceModal(true);
+          setShowAudioConfirmDialog(false);
+          setIsCallRequested(false);
+          return;
+        }
+
         throw new Error(errorData.message || 'Failed to initiate audio call');
       }
 
@@ -206,21 +339,46 @@ export default function AstrologerCard({ astrologer }: Props) {
 
   const handleVideoCall = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
-    // For now, redirect to the profile page for video calls
-    router.push(`/astrologers/${_id}`);
+
+    // Get user details for authentication check
+    const userDetails = getUserDetails();
+    if (!userDetails?.id) {
+      alert('Please log in to start a video call');
+      return;
+    }
+
+    // Fetch latest wallet balance first
+    const currentBalance = await fetchWalletPageData();
+
+    // Check wallet balance first
+    const videoCost = (videoRpm || 25) * 2; // Estimate 2 minutes minimum cost for video
+    if (currentBalance < videoCost) {
+      setInsufficientBalanceData({
+        requiredAmount: videoCost,
+        serviceType: 'call'
+      });
+      setShowInsufficientBalanceModal(true);
+      return;
+    }
+
+    // Navigate to video call page with astrologer details
+    const videoCallUrl = `/video-call?astrologerId=${encodeURIComponent(_id)}&astrologerName=${encodeURIComponent(name)}&callType=video&videoRpm=${encodeURIComponent(videoRpm || 25)}`;
+
+    // Open video call in the same tab
+    router.push(videoCallUrl);
   };
 
   const handleCallConfirm = async () => {
     try {
       setCallError(null);
       setIsConnecting(true);
-      
+
       // Get the authentication token and user details
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      
+
       console.log('Retrieved user details:', userDetails);
-      
+
       if (!token) {
         throw new Error('Authentication required. Please login first.');
       }
@@ -232,7 +390,7 @@ export default function AstrologerCard({ astrologer }: Props) {
 
       console.log('Making call request with caller ID:', userDetails.id);
 
-      const response = await fetch('http://localhost:8001/calling/api/call/request-tataTelecom-call', {
+      const response = await fetch(buildApiUrl('/calling/api/call/request-tataTelecom-call'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,11 +408,26 @@ export default function AstrologerCard({ astrologer }: Props) {
       if (!response.ok) {
         const errorData = await response.json();
         console.log('Call request failed:', errorData);
+
+        // Check if it's a balance-related error
+        if (errorData.message?.toLowerCase().includes('balance') ||
+          errorData.message?.toLowerCase().includes('insufficient')) {
+          const callCost = (rpm || 15) * 2; // Estimate 2 minutes minimum cost
+          setInsufficientBalanceData({
+            requiredAmount: callCost,
+            serviceType: 'call'
+          });
+          setShowInsufficientBalanceModal(true);
+          setShowConfirmDialog(false);
+          setIsConnecting(false);
+          return;
+        }
+
         throw new Error(errorData.message || 'Failed to initiate call');
       }
 
-      // Mark free call as used and update state
-      localStorage.setItem(`freeCallUsed_${_id}`, 'true');
+      // Mark free call as used globally and update state
+      localStorage.setItem('userHasCalledBefore', 'true');
       setHasCompletedFreeCall(true);
 
       // Close the dialog and show connecting state
@@ -317,152 +490,134 @@ export default function AstrologerCard({ astrologer }: Props) {
     <>
       <div
         onClick={handleCardClick}
-        className="bg-white rounded-lg border border-gray-200 p-6 cursor-pointer hover:shadow-md hover:border-orange-200 transition-all duration-200"
+        className="group relative bg-white rounded border border-orange-300 p-2 sm:p-3 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col w-full max-w-[390px] mx-auto"
+        style={{
+          boxShadow: '0 2px 8px 0 rgba(247,151,30,0.07)',
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-4">
-          <div className="relative">
+
+        <div className="flex gap-2 sm:gap-3 items-center mb-1 sm:mb-2">
+          <div className="relative flex flex-col items-center">
             <img
               src={profileImage || '/default-astrologer.png'}
               alt={name}
-              className="w-16 h-16 rounded-full object-cover border-2 border-orange-200"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2"
+              style={{ borderColor: astrologer.status === 'online' ? '#56AE50' : '#ff0000' }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`;
               }}
             />
-            <div className="absolute -bottom-1 -right-1 bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-medium">
-              Online
-            </div>
+            {astrologer.status === 'online' && (
+              <span className="text-xs text-green-600 font-medium mt-0.5 sm:mt-1">Online</span>
+            )}
           </div>
-          
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-lg font-semibold text-gray-900 truncate">{name}</h3>
-              <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />
-            </div>
-            <p className="text-sm text-gray-600 mb-1">{languages.join(", ")}</p>
-            <div className="flex flex-wrap gap-1">
-              {specializations.slice(0, 2).map((spec, index) => (
-                <span key={index} className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full text-xs font-medium">
-                  {spec}
-                </span>
-              ))}
-              {specializations.length > 2 && (
-                <span className="text-xs text-gray-500">
-                  +{specializations.length - 2} more
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-4 bg-gray-50 rounded-lg p-3">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Award className="w-3 h-3 text-purple-600" />
-              <span className="text-sm font-semibold text-gray-900">{experience}</span>
-            </div>
-            <span className="text-xs text-gray-500">Years</span>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Users className="w-3 h-3 text-blue-600" />
-              <span className="text-sm font-semibold text-gray-900">{callsCount}</span>
-            </div>
-            <span className="text-xs text-gray-500">Calls</span>
-          </div>
-          
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Star className="w-3 h-3 text-yellow-500 fill-current" />
-              <span className="text-sm font-semibold text-gray-900">
-                {typeof rating === 'number' ? rating.toFixed(1) : rating.avg.toFixed(1)}
+            <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+              <span className="text-base sm:text-lg font-extrabold text-gray-800 truncate">{name}</span>
+              <span className="text-orange-400" title="Verified">
+                <img src="/orange_tick.png" alt="Orange Tick" className="w-3 h-3 sm:w-4 sm:h-4" />
               </span>
             </div>
-            <span className="text-xs text-gray-500">Rating</span>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">
-            Audio: <span className="font-semibold text-green-600">₹{rpm || 15}/min</span>
-          </div>
-
-          {isCheckingHistory ? (
+            <div className="text-gray-700 text-xs font-medium leading-tight truncate mb-0.5 sm:mb-1">
+              {specializations?.join(', ')}
+            </div>
+            <div className="text-gray-500 text-xs truncate mb-0.5 sm:mb-1">
+              {languages?.join(', ')}
+            </div>
+            <div className="text-gray-500 text-xs mb-0.5 sm:mb-1">Exp:- <span className="font-semibold">{experience} years</span></div>
             <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-              <span className="text-gray-500 text-sm">Loading...</span>
+              <span className="text-sm font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-xs font-medium">min.</span></span>
             </div>
-          ) : isCallRequested ? (
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
-                <span className="text-orange-600 font-medium text-sm">Connecting...</span>
-              </div>
-              <div className="text-xs text-gray-500">
-                Time left: {formatTimeLeft()}
-              </div>
-            </div>
-          ) : !hasCompletedFreeCall ? (
-            <button
-              onClick={handleCallButtonClick}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              FREE First Call
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <button
-                onClick={handleAudioCallButtonClick}
-                className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center gap-1"
-              >
-                <Phone className="w-3 h-3" />
-                Call
-              </button>
-              
-              {isVideoCallAllowed && (
-                <button
-                  onClick={handleVideoCall}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center gap-1"
-                >
-                  <Video className="w-3 h-3" />
-                  Video
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Error message */}
-        {callError && (
-          <div className="mt-3 bg-red-50 text-red-600 text-sm p-3 rounded-md border border-red-200">
-            {callError}
           </div>
-        )}
+        </div>
+        <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
+          <span className="flex items-center text-orange-400 text-xs ml-1 sm:ml-2">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const value = typeof rating === 'number' ? rating : rating?.avg || 0;
+              const isHalf = value - i >= 0.5 && value - i < 1;
+              return (
+                <span key={i} className="relative">
+                  <svg width="10" height="10" className="sm:w-3 sm:h-3" fill={i < Math.floor(value) ? '#F7971D' : '#E5E7EB'} viewBox="0 0 20 20">
+                    <polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 " />
+                  </svg>
+                  {isHalf && (
+                    <svg className="absolute left-0 top-0" width="10" height="10" viewBox="0 0 20 20">
+                      <defs>
+                        <linearGradient id={`half-star-${i}`}> <stop offset="50%" stopColor="#F7971D" /><stop offset="50%" stopColor="#E5E7EB" /></linearGradient>
+                      </defs>
+                      <polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 " fill={`url(#half-star-${i})`} />
+                    </svg>
+                  )}
+                </span>
+              );
+            })}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 mb-1 sm:mb-2">
+          <span className="flex flex-col ml-1 sm:ml-2 items-center justify-center mx-auto">
+            <span className="text-gray-400 italic text-xs">{callsCount}</span>
+            <span className="text-gray-400 italic text-xs">orders</span>
+          </span>
+        </div>
+        <div className="flex gap-2 sm:gap-3 md:gap-4 mt-2 sm:mt-auto justify-end w-full">
+          <button
+            className={`${compactButtons ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'} flex items-center justify-center gap-1 border-2 border-[#F7971D] text-[#F7971D] font-semibold rounded-lg bg-white hover:bg-orange-50 transition-all duration-200 text-xs sm:text-sm w-[80px] sm:w-[100px]`}
+            onClick={e => { e.stopPropagation(); /* handleChatClick() */ }}
+          >
+            {/* <MessageCircle className={compactButtons ? "w-4 h-4" : "w-5 h-5"} /> */}
+            <img src="/message.png" alt="Chat" className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Chat</span>
+            <span className="sm:hidden">Chat</span>
+          </button>
+          {showVideoButton && (
+            <button
+              className={`${compactButtons ? 'px-2 py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} flex items-center justify-center gap-1 sm:gap-2 bg-[#F7971D] text-white font-semibold rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs sm:text-base w-[80px] sm:w-auto`}
+              onClick={handleVideoCall}
+            >
+              <Video className={compactButtons ? "w-3 h-3 sm:w-4 sm:h-4" : "w-4 h-4 sm:w-5 sm:h-5"} fill="#fff" />
+              {/* <img src="/video.png" alt="Call" className="w-5 h-5" /> */}
+              <span className="hidden sm:inline">Video</span>
+              <span className="sm:hidden">Video</span>
+            </button>
+          )}
+          <button
+            className={`${compactButtons ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'} flex items-center justify-center gap-1 bg-[#F7971D] text-white font-medium rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs sm:text-sm w-[80px] sm:w-[100px]`}
+            onClick={handleCallButtonClick}
+          >
+            {/* <Phone className={compactButtons ? "w-4 h-4" : "w-5 h-5"} /> */}
+            <img src="/Vector.png" alt="Call" className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Call</span>
+            <span className="sm:hidden">Call</span>
+          </button>
+        </div>
       </div>
 
-      {/* Free Call Confirmation Dialog */}
-      <CallConfirmationDialog
-        isOpen={showConfirmDialog}
-        onClose={handleDialogClose}
-        onConfirm={handleCallConfirm}
-        astrologer={astrologer}
-        isLoading={isConnecting}
-      />
-
       {/* Audio Call Confirmation Dialog */}
-      <CallConfirmationDialog
-        isOpen={showAudioConfirmDialog}
-        onClose={handleAudioDialogClose}
-        onConfirm={handleAudioCall}
-        astrologer={astrologer}
-        isLoading={isConnecting}
-        callType="audio"
-        rate={rpm || 15}
-      />
+      {showAudioConfirmDialog && (
+        <CallConfirmationDialog
+          isOpen={showAudioConfirmDialog}
+          onClose={handleAudioDialogClose}
+          onConfirm={handleAudioCall}
+          astrologer={astrologer}
+          isLoading={isConnecting}
+          callType="audio"
+          rate={rpm}
+        />
+      )}
+
+      {/* Insufficient Balance Modal */}
+      {showInsufficientBalanceModal && insufficientBalanceData && (
+        <InsufficientBalanceModal
+          isOpen={showInsufficientBalanceModal}
+          onClose={() => setShowInsufficientBalanceModal(false)}
+          requiredAmount={insufficientBalanceData.requiredAmount}
+          currentBalance={walletBalance}
+          serviceType={insufficientBalanceData.serviceType}
+        />
+      )}
     </>
   );
-}
+});
+
+export default AstrologerCard;
+

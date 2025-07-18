@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import OtpVerificationScreen from '../../components/auth/OtpVerificationScreen'; 
+import { buildApiUrl, API_CONFIG } from '../../config/api';
 // Adjust the path to wherever your OtpVerificationScreen is located
 
 // Define a type for the country
@@ -77,7 +78,7 @@ export default function AuthenticationFlow({
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,7 +134,7 @@ export default function AuthenticationFlow({
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/send-otp', {
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -185,7 +186,7 @@ export default function AuthenticationFlow({
 
   // Otherwise, show the phone-input screen
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-black bg-opacity-50 p-4">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
         
         {/* Close button */}

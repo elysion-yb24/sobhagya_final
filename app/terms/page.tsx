@@ -1,29 +1,22 @@
+"use client";
 import React from "react";
 
 const TermsOfService = () => {
   return (
-    <div className="min-h-screen bg-gray-100 flex justify-center px-4 sm:px-6 lg:px-8 py-10">
-      <div className="bg-white shadow-lg rounded-xl p-6 sm:p-8 lg:p-10 max-w-3xl w-full border border-gray-200 relative">
-        {/* Background Logo */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: "url('/sobhagya-logo.png')",
-            backgroundSize: "contain",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
-          }}
-        ></div>
-
+    <section className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-white/80 py-0">
+      <div className="relative max-w-5xl mx-auto p-6 sm:p-10 bg-white/90 shadow-2xl rounded-3xl border-t-8 border-orange-200 animate-fade-in-up mt-10 mb-10 z-30 backdrop-blur-md">
+        {/* Faded Monk Logo */}
+        <div className="absolute inset-0 flex justify-center items-center opacity-10 z-0 pointer-events-none select-none">
+          <div style={{width: '320px', height: '320px', background: "url('/monk logo.png') center/contain no-repeat"}} />
+        </div>
         {/* Title Section */}
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#745802] text-center mb-6 underline">
+        <h1 className="relative z-10 text-4xl md:text-5xl font-extrabold text-[#745802] text-center mb-6 tracking-tight">
           Terms of Services
+          <span className="block w-24 h-1 bg-orange-400 mx-auto mt-4 rounded-full"></span>
         </h1>
-
-        <p className="text-gray-700 text-base sm:text-lg leading-relaxed">
+        <p className="text-gray-700 text-lg md:text-xl leading-relaxed relative z-10 font-normal mb-6">
           Welcome to <strong>www.sobhagya.in</strong>. By accessing or using our platform, you agree to comply with and be bound by these Terms of Service. If you do not agree, please refrain from using our services.
         </p>
-
         {/* Sections */}
         {[
           {
@@ -62,47 +55,61 @@ const TermsOfService = () => {
               "We reserve the right to suspend or terminate access to our services for any user who violates these terms or engages in harmful activities.",
           },
         ].map((section, index) => (
-          <div key={index} className="mt-6">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-orange-700 border-l-4 border-orange-500 pl-3">
+          <div key={index} className="mt-8 relative z-10">
+            <h2 className="text-xl md:text-2xl font-semibold text-orange-700 border-l-4 border-orange-400 pl-3 mb-2">
               {section.title}
             </h2>
-            <p className="mt-2 text-gray-700 text-sm sm:text-base leading-relaxed">
+            <p className="mt-1 text-gray-700 text-lg md:text-xl leading-relaxed font-normal">
               {section.content}
             </p>
           </div>
         ))}
-
         {/* User Responsibilities Section */}
-        <div className="mt-8">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-orange-700 border-l-4 border-orange-500 pl-3">
+        <div className="mt-10 relative z-10">
+          <h2 className="text-xl md:text-2xl font-semibold text-orange-700 border-l-4 border-orange-400 pl-3 mb-2">
             User Responsibilities
           </h2>
-          <ul className="mt-3 space-y-2 text-gray-700 text-sm sm:text-base">
+          <ul className="mt-3 space-y-3 text-gray-700 text-lg md:text-xl">
             {[
               "Ensure the accuracy of personal information provided.",
               "Do not share account credentials with others.",
               "Comply with all applicable laws when using our services.",
               "Report any security breaches or unauthorized activity immediately.",
             ].map((item, index) => (
-              <li key={index} className="flex items-start">
-                <span className="text-orange-600 font-medium mr-2">•</span>
+              <li key={index} className="flex items-start gap-2 bg-orange-50 rounded-xl px-4 py-2 shadow-sm font-medium text-gray-800">
+                <span className="text-orange-500 text-lg">•</span>
                 {item}
               </li>
             ))}
           </ul>
         </div>
-
         {/* Governing Law */}
-        <div className="mt-8">
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-orange-700 border-l-4 border-orange-500 pl-3">
+        <div className="mt-10 relative z-10">
+          <h2 className="text-xl md:text-2xl font-semibold text-orange-700 border-l-4 border-orange-400 pl-3 mb-2">
             Governing Law
           </h2>
-          <p className="mt-2 text-gray-700 text-sm sm:text-base leading-relaxed">
+          <p className="mt-1 text-gray-700 text-lg md:text-xl leading-relaxed font-normal">
             These Terms of Service are governed by and interpreted in accordance with the laws of India. Any disputes arising will be subject to the jurisdiction of Indian courts.
           </p>
         </div>
+        {/* Fade-in animation keyframes */}
+        <style jsx>{`
+          .animate-fade-in-up {
+            animation: fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+          }
+          @keyframes fadeInUp {
+            0% {
+              opacity: 0;
+              transform: translateY(40px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
       </div>
-    </div>
+    </section>
   );
 };
 

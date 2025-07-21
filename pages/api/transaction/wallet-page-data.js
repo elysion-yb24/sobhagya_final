@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     }
 
     // Proxy the request to your backend server
-    const backendUrl = 'http://localhost:8001/payment/api/transaction/wallet-page-data';
+      const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL + '/payment/api/transaction/wallet-page-data';
     
     const response = await fetch(backendUrl, {
       method: 'GET',

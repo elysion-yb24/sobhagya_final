@@ -219,7 +219,7 @@ export default function TransactionHistory() {
                       <p className={`text-base sm:text-lg font-bold ${
                         transaction.type === "credit" ? "text-green-600" : "text-red-600"
                       }`}>
-                        {transaction.type === "credit" ? "+" : "-"}₹{transaction.amount.toFixed(2)}
+                        {transaction.type === "credit" ? "+" : ""}₹{transaction.amount.toFixed(2)}
                       </p>
                     </div>
                   </div>

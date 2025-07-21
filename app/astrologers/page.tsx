@@ -172,8 +172,10 @@ export default function AstrologersPage() {
       console.log("🔑 Fetching astrologers with token:", token.slice(0, 20) + '...');
 
       const skip = (page - 1) * itemsPerPage;
+      // Add search param if present
+      const searchParam = debouncedSearchQuery ? `&search=${encodeURIComponent(debouncedSearchQuery)}` : '';
       let response = await fetch(
-        `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=${itemsPerPage}`,
+        `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=${itemsPerPage}${searchParam}`,
         {
           method: "GET",
           credentials: 'include',
@@ -224,7 +226,7 @@ export default function AstrologersPage() {
       }
       console.log('🏁 fetchAstrologers completed');
     }
-  }, [router, astrologersData.length]);
+  }, [router, astrologersData.length, debouncedSearchQuery]);
 
   const processAstrologersData = (result: any, page: number) => {
     console.log("Data response structure:", result);
@@ -435,16 +437,13 @@ export default function AstrologersPage() {
     }
   }, [allAstrologersLoaded, allAstrologers, debouncedSearchQuery, languageFilter, sortBy, itemsPerPage, currentPage]);
 
-  // Reset to page 1 when filters change (for server-side pagination)
+  // Reset astrologer list and scroll state when search query changes
   useEffect(() => {
-    if (!allAstrologersLoaded && (debouncedSearchQuery || languageFilter !== "All" || sortBy === 'video')) {
-      // If we're using server-side pagination and filters change, reset to page 1
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-        fetchAstrologers(1);
-      }
-    }
-  }, [debouncedSearchQuery, languageFilter, sortBy, allAstrologersLoaded, currentPage, fetchAstrologers]);
+    setCurrentPage(1);
+    setAllAstrologers([]);
+    setAllAstrologersLoaded(false); // Reset loaded state
+    fetchAstrologers(1, true); // Fetch with reset=true to clear previous results
+  }, [debouncedSearchQuery]);
 
   // Function to fetch wallet balance
   const fetchWalletBalance = useCallback(async () => {

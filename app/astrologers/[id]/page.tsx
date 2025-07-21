@@ -879,19 +879,25 @@ export default function AstrologerProfilePage() {
 
   const handleVideoCall = async (retryCount = 0) => {
     try {
-      console.log('🎥 Video call button clicked - starting process...');
       setIsVideoCallProcessing(true);
       setShowVideoCallConfirm(false);
       setCurrentCallType('video');
       const token = getAuthToken();
       const userDetails = getUserDetails();
       const userId = userDetails?.id || userDetails?._id;
-      console.log('🔐 Auth check:', { hasToken: !!token, hasUserId: !!userId, userDetails });
       
       if (!token || !userId) {
         throw new Error('Authentication required');
       }
 
+      // Defensive check for astrologer._id
+      if (!astrologer || !astrologer._id) {
+        alert('Astrologer information is missing. Please refresh the page.');
+        setIsVideoCallProcessing(false);
+        setCurrentCallType(null);
+        return;
+      }
+      
       // Fetch latest wallet balance
       const currentBalance = await fetchWalletPageData();
       
@@ -901,8 +907,6 @@ export default function AstrologerProfilePage() {
       if (currentBalance < videoCost) {
         setIsVideoCallProcessing(false);
         setCurrentCallType(null);
-        
-        // Show insufficient balance modal instead of alert
         setInsufficientBalanceData({
           requiredAmount: videoCost,
           serviceType: 'call'
@@ -915,86 +919,17 @@ export default function AstrologerProfilePage() {
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
       const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
-      const channelId = `channel_${astrologer?._id}_${userId}_${timestamp}_${randomId}${retryId}`;
-      const participantName = userDetails.name || userDetails.firstName || 'User';
-      const participantIdentity = userId;
-      const metadata = JSON.stringify({ astrologerId: astrologer?._id, userId, callType: 'video' });
-      console.log('📋 Call parameters:', { 
-        channelId, 
-        participantName, 
-        participantIdentity,
-        astrologerId: astrologer?._id,
-        userId,
-        timestamp,
-        retryCount
-      });
-      
-      // 1. Connect and register socket
-      console.log('🔌 Starting socket connection...');
-      const { socketManager } = await import('../../utils/socket');
-      await socketManager.connect(channelId);
-      console.log('✅ Socket connected successfully');
-      
-      // 2. Initiate call via socket
-      console.log('📞 Initiating call via socket...');
-      await new Promise((resolve, reject) => {
-        socketManager.getSocket()?.emit('initiate_call', {
-          userId,
-          userType: 'user',
-          callType: 'video',
-          channelId,
-          callThrough: 'livekit'
-        }, (response: any) => {
-          console.log('📞 Initiate call response:', response);
-          if (response && !response.error) {
-            resolve(true);
-          } else {
-            reject(new Error(response?.message || 'Failed to initiate call'));
-          }
-        });
-      });
-      console.log('✅ Call initiated successfully');
-      
-      // 3. Join call via socket
-      console.log('👥 Joining call via socket...');
-      await new Promise((resolve, reject) => {
-        socketManager.getSocket()?.emit('user_joined', {
-          channelId,
-          userType: 'user'
-        }, (joinResponse: any) => {
-          console.log('👥 User joined response:', joinResponse);
-          if (joinResponse && !joinResponse.error) {
-            resolve(true);
-          } else {
-            reject(new Error(joinResponse?.message || 'Failed to join call'));
-          }
-        });
-      });
-      console.log('✅ Joined call successfully');
-      
-      // 4. Request LiveKit token
-      console.log('🎫 Requesting LiveKit token...');
-      console.log('🔐 Auth token being sent:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-      
-      // Debug environment variables
-      console.log('🔧 Environment check:', {
-        NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
-        API_CONFIG_BASE_URL: API_CONFIG.BASE_URL,
-        getApiBaseUrl: getApiBaseUrl()
-      });
-      
-      // Build URL with channel as query parameter (required by backend)
-      // Use the main backend endpoint that has livekitController
-      const livekitUrl = `${getApiBaseUrl()}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      console.log('🎫 LiveKit API URL:', livekitUrl);
-      
-      // Request body matches backend livekitController expectations
+      const channelId = `channel_${astrologer._id}_${userId}_${timestamp}_${randomId}${retryId}`;
       const requestBody = {
-        receiverUserId: astrologer?._id,
+        receiverUserId: astrologer._id,
         type: 'video',
         appVersion: '1.0.0'
       };
-      console.log('🎫 LiveKit request body:', requestBody);
+      // --- IMPORTANT DEBUG LOG ---
+      console.log('🚨 SENDING receiverUserId:', astrologer._id, '| requestBody:', requestBody);
+      
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
       
       const response = await fetch(livekitUrl, {
         method: 'POST',
@@ -1006,14 +941,10 @@ export default function AstrologerProfilePage() {
         credentials: 'include',
       });
       
-      console.log('🎫 LiveKit API response status:', response.status);
-      
       if (!response.ok) {
         let errorMessage = 'Failed to initiate video call';
         try {
           const errorData = await response.json();
-          console.error('❌ LiveKit API error:', errorData);
-          
           // Handle specific backend error messages
           if (errorData.message === 'DONT_HAVE_ENOUGH_BALANCE') {
             errorMessage = 'Insufficient wallet balance for video call';
@@ -1032,10 +963,8 @@ export default function AstrologerProfilePage() {
           } else if (errorData.message === 'Channel ID has to be unique each time, check it') {
             // Retry with a new channel ID if we haven't retried too many times
             if (retryCount < 3) {
-              console.log(`🔄 Channel ID conflict, retrying... (attempt ${retryCount + 1})`);
               setIsVideoCallProcessing(false);
               setCurrentCallType(null);
-              // Wait a bit before retrying
               setTimeout(() => {
                 handleVideoCall(retryCount + 1);
               }, 1000);
@@ -1047,55 +976,28 @@ export default function AstrologerProfilePage() {
             errorMessage = errorData.error || errorData.message || errorMessage;
           }
         } catch (parseError) {
-          console.error('❌ Failed to parse error response:', parseError);
           errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
         throw new Error(errorMessage);
       }
       
       const data = await response.json();
-      console.log('🎫 LiveKit response data:', data);
       
       if (!data.success) {
         throw new Error(data.message || 'Failed to get video call token');
       }
       
-      // Extract data from backend response structure
+      // Extract data from backend response structure (matches backend format)
       const { token: livekitToken, channel, livekitSocketURL } = data.data;
-      console.log('🎫 LiveKit extracted data:', { 
-        hasToken: !!livekitToken, 
-        hasWsURL: !!livekitSocketURL, 
-        channel,
-        tokenLength: livekitToken?.length,
-        channelLength: channel?.length,
-        fullData: data.data // Log the full data structure
-      });
       
       if (!livekitToken || !channel) {
-        console.error('❌ Missing required data:', { livekitToken: !!livekitToken, channel: !!channel });
-        console.error('❌ Full response data:', data);
         throw new Error('Missing token or channel in response');
       }
       
-      console.log('✅ LiveKit token received successfully');
-      
       // Open frontend video call page with token and room
       const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(astrologer?.name || '')}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
-      console.log('🚀 Opening video call window:', videoCallUrl);
-      console.log('🔍 URL parameters check:', {
-        token: livekitToken ? livekitToken.substring(0, 20) + '...' : 'null',
-        room: channel,
-        astrologer: astrologer?.name,
-        wsURL: livekitSocketURL
-      });
-      
-      // Test: Open in new tab first to debug
-      console.log('🧪 Testing URL in new tab...');
       window.open(videoCallUrl, '_blank');
-      
-      // Open video call in the same tab
       router.push(videoCallUrl);
-      
       setTimeout(() => {
         setIsVideoCallProcessing(false);
         setCurrentCallType(null);
@@ -1105,7 +1007,14 @@ export default function AstrologerProfilePage() {
       console.error('❌ Video call error:', error);
       setIsVideoCallProcessing(false);
       setCurrentCallType(null);
-      alert(error instanceof Error ? error.message : 'Failed to initiate video call');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate video call';
+      if (errorMessage.includes('timeout')) {
+        alert('Connection timeout: The server is not responding. Please check your internet connection and try again.');
+      } else if (errorMessage.includes('Socket not connected')) {
+        alert('Connection error: Unable to connect to the server. Please refresh the page and try again.');
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 

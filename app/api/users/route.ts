@@ -32,12 +32,18 @@ export async function GET(request: NextRequest) {
     // Add skip and limit from original request
     const skip = request.nextUrl.searchParams.get('skip') || '0';
     const limit = request.nextUrl.searchParams.get('limit') || '50';
+    const search = request.nextUrl.searchParams.get('search');
     queryParams.set('skip', skip);
     queryParams.set('limit', limit);
     
     // Add token if present
     if (token) {
       queryParams.set('token', token);
+    }
+    
+    // Add search if present
+    if (search) {
+      queryParams.set('search', search);
     }
     
     if (queryParams.toString()) {

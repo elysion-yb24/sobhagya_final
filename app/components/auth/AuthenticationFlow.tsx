@@ -186,17 +186,17 @@ export default function AuthenticationFlow({
 
   // Otherwise, show the phone-input screen
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-lg shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg overflow-hidden relative">
+    <div className="min-h-screen bg-gray-50 flex justify-center items-center p-2 sm:p-4 lg:p-6">
+      <div className="bg-white rounded-lg sm:rounded-xl shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl overflow-hidden relative">
         
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-700 hover:text-gray-900 z-10"
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 text-gray-700 hover:text-gray-900 z-10 p-1 sm:p-2 rounded-full hover:bg-gray-100 transition-colors touch-manipulation"
           aria-label="Close"
         >
           <svg xmlns="http://www.w3.org/2000/svg"
-               className="h-5 w-5 sm:h-6 sm:w-6"
+               className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6"
                fill="none"
                viewBox="0 0 24 24"
                stroke="currentColor">
@@ -205,9 +205,9 @@ export default function AuthenticationFlow({
         </button>
 
         {/* Header */}
-        <div className="bg-[#F7971D] py-3 sm:py-4 text-center">
+        <div className="bg-[#F7971D] py-3 sm:py-4 md:py-5 text-center">
           <h1
-            className="text-white text-xl sm:text-2xl md:text-3xl font-medium"
+            className="text-white text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium leading-tight px-4"
             style={{ fontFamily: 'Poppins', letterSpacing: '1%' }}
           >
             Continue With Phone
@@ -215,9 +215,9 @@ export default function AuthenticationFlow({
         </div>
 
         {/* Form Content */}
-        <div className="px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
+        <div className="px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 md:py-8 lg:py-10">
           <p
-            className="text-center text-[#373737] mb-6 sm:mb-8 md:mb-10 font-normal text-base sm:text-lg md:text-xl"
+            className="text-center text-[#373737] mb-4 sm:mb-6 md:mb-8 lg:mb-10 font-normal text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed px-2"
             style={{ fontFamily: 'Poppins' }}
           >
             You&apos;ll receive a 4-digit code to verify your identity
@@ -225,37 +225,37 @@ export default function AuthenticationFlow({
 
           <form onSubmit={handleSubmit}>
             <label
-              className="block text-center text-[#373737] font-normal mb-3 sm:mb-4 md:mb-5 text-base sm:text-lg md:text-xl"
+              className="block text-center text-[#373737] font-normal mb-3 sm:mb-4 md:mb-5 text-sm sm:text-base md:text-lg lg:text-xl"
               style={{ fontFamily: 'Poppins' }}
             >
               Enter Your phone Number
             </label>
 
             {error && (
-              <div className="mb-4 text-red-500 text-center text-sm sm:text-base">
+              <div className="mb-4 text-red-500 text-center text-xs sm:text-sm md:text-base p-2 sm:p-3 bg-red-50 border border-red-200 rounded-lg">
                 {error}
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row justify-center items-center gap-y-3 sm:gap-y-0 sm:gap-x-2 mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row justify-center items-stretch gap-2 sm:gap-0 mb-4 sm:mb-6 md:mb-8">
               {/* Country Code Selector */}
-              <div className="relative w-full sm:w-auto" ref={dropdownRef}>
+              <div className="relative w-full sm:w-auto flex-shrink-0" ref={dropdownRef}>
                 <div
-                  className="flex items-center justify-between bg-[#F2F2F2] px-3 py-2 rounded-md sm:rounded-l-md sm:rounded-r-none border border-gray-300 h-12 cursor-pointer w-full sm:w-24 focus:outline-orange-600"
+                  className="flex items-center justify-between bg-[#F2F2F2] px-3 sm:px-4 py-3 sm:py-2 rounded-md sm:rounded-l-md sm:rounded-r-none border border-gray-300 h-12 sm:h-12 cursor-pointer w-full sm:w-28 md:w-32 focus:outline-orange-600 touch-manipulation"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 >
                   <div className="flex items-center justify-center w-full">
-                    <span className="text-sm mr-1">{selectedCountry.dial_code}</span>
+                    <span className="text-sm sm:text-base mr-1 font-medium">{selectedCountry.dial_code}</span>
                     <Image
                       src={selectedCountry.flag}
                       alt={selectedCountry.name}
                       width={18}
                       height={13}
-                      className="ml-1"
+                      className="ml-1 flex-shrink-0"
                     />
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-gray-500 ml-1"
+                      className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500 ml-1 flex-shrink-0"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -267,12 +267,12 @@ export default function AuthenticationFlow({
 
                 {/* Dropdown */}
                 {isDropdownOpen && (
-                  <div className="absolute left-0 mt-1 w-full sm:w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
+                  <div className="absolute left-0 mt-1 w-full sm:w-64 md:w-72 bg-white border border-gray-200 rounded-md shadow-lg z-10 max-h-60 overflow-y-auto">
                     {/* Search input */}
                     <div className="sticky top-0 bg-white p-2 border-b">
                       <input
                         type="text"
-                        className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                        className="w-full p-2 sm:p-3 border border-gray-300 rounded-md text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-400"
                         placeholder="Search country or code"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -282,7 +282,7 @@ export default function AuthenticationFlow({
                     {filteredCountries.map((country) => (
                       <div
                         key={country.code}
-                        className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                        className="flex items-center p-2 sm:p-3 hover:bg-gray-100 cursor-pointer touch-manipulation"
                         onClick={() => selectCountry(country)}
                       >
                         <Image
@@ -290,15 +290,15 @@ export default function AuthenticationFlow({
                           alt={country.name}
                           width={24}
                           height={16}
-                          className="mr-2"
+                          className="mr-2 flex-shrink-0"
                         />
-                        <span className="text-sm">{country.name}</span>
-                        <span className="ml-auto text-gray-500 text-sm">{country.dial_code}</span>
+                        <span className="text-sm sm:text-base flex-1 truncate">{country.name}</span>
+                        <span className="ml-auto text-gray-500 text-sm sm:text-base flex-shrink-0">{country.dial_code}</span>
                       </div>
                     ))}
 
                     {filteredCountries.length === 0 && (
-                      <div className="p-3 text-center text-gray-500">
+                      <div className="p-3 text-center text-gray-500 text-sm sm:text-base">
                         No results found
                       </div>
                     )}
@@ -310,7 +310,7 @@ export default function AuthenticationFlow({
               <input
                 type="tel"
                 placeholder="Enter Your Phone Number"
-                className="w-full sm:w-64 px-4 py-2 border border-gray-300 bg-[#F2F2F2] rounded-md sm:rounded-l-none sm:rounded-r-md h-12 focus:outline-[#F7971D]"
+                className="w-full sm:flex-1 px-3 sm:px-4 py-3 sm:py-2 border border-gray-300 bg-[#F2F2F2] rounded-md sm:rounded-l-none sm:rounded-r-md h-12 focus:outline-[#F7971D] text-sm sm:text-base"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 required
@@ -321,7 +321,7 @@ export default function AuthenticationFlow({
             <button
               type="submit"
               disabled={isLoading || !phoneNumber}
-              className={`w-full max-w-full sm:max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base ${
+              className={`w-full max-w-full sm:max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-3 sm:py-4 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base touch-manipulation ${
                 (isLoading || !phoneNumber) ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -330,11 +330,11 @@ export default function AuthenticationFlow({
           </form>
 
           {/* Footer Text */}
-          <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6">
+          <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6 leading-relaxed px-2">
             You agree to our 
-            <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1">Privacy Policy</a>
+            <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1 touch-manipulation">Privacy Policy</a>
             <span className="mx-1">&</span>
-            <a href="/terms" className="text-orange-400 hover:underline">Terms of Service</a>
+            <a href="/terms" className="text-orange-400 hover:underline touch-manipulation">Terms of Service</a>
           </p>
         </div>
       </div>

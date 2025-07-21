@@ -251,47 +251,67 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center  px-2">
+    <div className="min-h-screen flex flex-col items-center justify-center px-2 sm:px-4 lg:px-6">
       {/* Premium Header */}
-      <div className="w-full max-w-lg mx-auto flex flex-col items-center mt-8 mb-4">
+      <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mt-4 sm:mt-6 md:mt-8 mb-3 sm:mb-4 md:mb-6">
         <div className="flex flex-col items-center">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3">
-            <Image src="/sobhagya_logo.avif" alt="Astrology Logo" width={80} height={80} className="object-cover" />
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+            <Image 
+              src="/sobhagya_logo.avif" 
+              alt="Astrology Logo" 
+              width={80} 
+              height={80} 
+              className="object-cover w-full h-full rounded-full" 
+            />
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-1 text-center">Sign in to Sobhagya</h1>
-          <p className="text-orange-700 text-base sm:text-lg font-medium text-center mb-2">Connect instantly with expert astrologers</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-1 text-center leading-tight">
+            Sign in to Sobhagya
+          </h1>
+          <p className="text-orange-700 text-sm sm:text-base md:text-lg font-medium text-center mb-2 px-2">
+            Connect instantly with expert astrologers
+          </p>
         </div>
       </div>
 
       {/* Glassmorphism Card */}
       <motion.div 
-        className="w-full max-w-lg mx-auto bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl border-l-4 border-orange-400 p-8 sm:p-10 flex flex-col items-center relative z-10"
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-2xl border-l-4 border-orange-400 p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center relative z-10"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
       >
-        <form onSubmit={handleSubmit} className="w-full space-y-6">
+        <form onSubmit={handleSubmit} className="w-full space-y-4 sm:space-y-5 md:space-y-6">
           {/* Phone Input Group */}
           <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number</label>
-            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-orange-400 bg-white">
+            <label className="block text-xs sm:text-sm md:text-base font-semibold text-gray-700 mb-1">
+              Phone Number
+            </label>
+            <div className="flex rounded-lg sm:rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-orange-400 bg-white">
               {/* Country Selector */}
-              <div className="relative flex items-center bg-gray-50 px-3 border-r border-gray-200 cursor-pointer select-none" ref={dropdownRef}>
+              <div className="relative flex items-center bg-gray-50 px-2 sm:px-3 border-r border-gray-200 cursor-pointer select-none min-w-0" ref={dropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 focus:outline-none"
+                  className="flex items-center gap-1 sm:gap-2 focus:outline-none min-w-0 py-3 sm:py-2"
                 >
-                  <span className="w-6 h-4 mr-1 flex items-center justify-center">
-                    <Image src={selectedCountry.flag} alt={selectedCountry.code} width={24} height={16} className="object-contain rounded-sm" />
+                  <span className="w-5 h-4 sm:w-6 sm:h-4 mr-1 flex items-center justify-center flex-shrink-0">
+                    <Image 
+                      src={selectedCountry.flag} 
+                      alt={selectedCountry.code} 
+                      width={24} 
+                      height={16} 
+                      className="object-contain rounded-sm" 
+                    />
                   </span>
-                  <span className="text-base font-medium">{selectedCountry.dial_code}</span>
-                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  <span className="text-sm sm:text-base font-medium text-gray-700 whitespace-nowrap">
+                    {selectedCountry.dial_code}
+                  </span>
+                  <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform flex-shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 <AnimatePresence>
                   {isDropdownOpen && (
                     <motion.div
-                      className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-auto"
+                      className="absolute top-full left-0 mt-2 w-56 sm:w-64 md:w-72 bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-xl z-50 max-h-60 overflow-auto"
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -305,7 +325,7 @@ export default function LoginPage() {
                             placeholder="Search countries..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400"
+                            className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm sm:text-base"
                           />
                         </div>
                       </div>
@@ -315,13 +335,23 @@ export default function LoginPage() {
                             key={country.code}
                             type="button"
                             onClick={() => selectCountry(country)}
-                            className="w-full flex items-center gap-3 px-4 py-2 hover:bg-orange-50 transition-colors text-left"
+                            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-orange-50 transition-colors text-left touch-manipulation"
                           >
-                            <span className="w-6 h-4 flex items-center justify-center">
-                              <Image src={country.flag} alt={country.code} width={24} height={16} className="object-contain rounded-sm" />
+                            <span className="w-5 h-4 sm:w-6 sm:h-4 flex items-center justify-center flex-shrink-0">
+                              <Image 
+                                src={country.flag} 
+                                alt={country.code} 
+                                width={24} 
+                                height={16} 
+                                className="object-contain rounded-sm" 
+                              />
                             </span>
-                            <span className="flex-1 text-sm">{country.name}</span>
-                            <span className="text-sm text-gray-500">{country.dial_code}</span>
+                            <span className="flex-1 text-xs sm:text-sm text-gray-700 truncate">
+                              {country.name}
+                            </span>
+                            <span className="text-xs sm:text-sm text-gray-500 flex-shrink-0">
+                              {country.dial_code}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -335,41 +365,43 @@ export default function LoginPage() {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="Enter your phone number"
-                className="flex-1 px-4 py-3 bg-transparent outline-none text-lg font-medium text-gray-700"
+                className="flex-1 px-3 sm:px-4 py-3 sm:py-3 bg-transparent outline-none text-base sm:text-lg font-medium text-gray-700 min-w-0"
                 required
               />
             </div>
           </div>
+          
           {/* Error Message */}
           <AnimatePresence>
             {error && (
               <motion.div
-                className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 mt-2"
+                className="flex items-start gap-2 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 mt-2"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <AlertCircle className="w-5 h-5" />
-                <span className="text-sm">{error}</span>
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
+                <span className="text-xs sm:text-sm leading-relaxed">{error}</span>
               </motion.div>
             )}
           </AnimatePresence>
+          
           {/* Submit Button */}
           <motion.button
             type="submit"
             disabled={isLoading || !phoneNumber}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 touch-manipulation text-sm sm:text-base"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
                 <span>Sending OTP...</span>
               </>
             ) : (
               <>
-                <Lock className="w-5 h-5" />
+                <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
                 <span>Send OTP</span>
               </>
             )}
@@ -398,11 +430,11 @@ export default function LoginPage() {
       </div> */}
 
       {/* Footer */}
-      <footer className="w-full max-w-lg mx-auto mt-8 mb-4 text-center text-xs text-gray-400">
+      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 md:mt-8 mb-4 text-center text-xs sm:text-sm text-gray-400 px-4">
         <span>By continuing, you agree to our </span>
-        <button className="text-orange-600 hover:underline">Terms of Service</button>
+        <button className="text-orange-600 hover:underline touch-manipulation">Terms of Service</button>
         <span> and </span>
-        <button className="text-orange-600 hover:underline">Privacy Policy</button>
+        <button className="text-orange-600 hover:underline touch-manipulation">Privacy Policy</button>
       </footer>
     </div>
   );

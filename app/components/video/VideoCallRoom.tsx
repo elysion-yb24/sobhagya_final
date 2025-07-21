@@ -267,10 +267,9 @@ export default function VideoCallRoom({
   const [sendingGift, setSendingGift] = useState(false);
   const [giftNotification, setGiftNotification] = useState<any | null>(null);
 
-  // Fetch callId using roomName on mount
+
   const [callId, setCallId] = useState<string | null>(null);
 
-  // Fetch callId using roomName on mount
   useEffect(() => {
     const fetchCallId = async () => {
       try {
@@ -300,7 +299,7 @@ export default function VideoCallRoom({
     fetchCallId();
   }, [roomName]);
 
-  // Function to send call end to backend
+  
   const sendCallEndToBackend = async () => {
     try {
       const token = getAuthToken();
@@ -324,7 +323,7 @@ export default function VideoCallRoom({
     }
   };
 
-  // Fetch gifts on mount (with Authorization header)
+  
   useEffect(() => {
     const token = getAuthToken();
     fetch(`${getApiBaseUrl()}/calling/api/gift/get-gifts`, {
@@ -347,7 +346,6 @@ export default function VideoCallRoom({
       });
   }, []);
 
-  // Listen for receive_gift
   useEffect(() => {
     function handleReceiveGift(data: any) {
       setGiftNotification(data);
@@ -361,18 +359,18 @@ export default function VideoCallRoom({
     };
   }, []);
 
-  // Safe disconnect function
+
   const handleLeaveCall = useCallback(() => {
     if (isDisconnectingRef.current) return;
     isDisconnectingRef.current = true;
     setCallStats(prev => ({ ...prev, isConnected: false }));
 
-    // Send call end to backend
+  
     sendCallEndToBackend();
 
     if (roomRef.current) {
       try {
-        // Stop local tracks before disconnecting
+        
         roomRef.current.localParticipant.audioTrackPublications.forEach((publication) => {
           if (publication.track) {
             publication.track.stop();

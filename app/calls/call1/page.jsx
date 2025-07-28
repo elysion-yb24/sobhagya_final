@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call1() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get astrologer ID from query parameters
+  const astrologerId = searchParams.get('astrologerId');
+  
+  // Store astrologer ID in localStorage for use in subsequent call flow steps
+  useEffect(() => {
+    if (astrologerId) {
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+      console.log('Stored astrologer ID for call flow:', astrologerId);
+    }
+  }, [astrologerId]);
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);

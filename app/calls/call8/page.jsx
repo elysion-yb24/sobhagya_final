@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call8() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedLanguages, setSelectedLanguages] = useState([]);
   const [isExiting, setIsExiting] = useState(false);
-  const router = useRouter();
 
   const languageOptions = [
     "Hindi",
@@ -34,11 +35,35 @@ export default function Call8() {
     );
   };
 
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call8: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call8: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call8: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
+
   const handleNext = () => {
     if (selectedLanguages.length > 0) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/calls/call9");
+        // Check if we have a stored astrologer ID and pass it to call9
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Call8: Passing astrologer ID to call9:', storedAstrologerId);
+          router.push(`/calls/call9?astrologerId=${storedAstrologerId}`);
+        } else {
+          router.push("/calls/call9");
+        }
       }, 100);
     }
   };

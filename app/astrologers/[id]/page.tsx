@@ -1147,7 +1147,7 @@ export default function AstrologerProfilePage() {
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 md:left-44 md:translate-x-0 transform translate-y-1/2">
             <div className="relative">
               <img
-                src={astrologer?.profileImage || astrologer?.avatar || '/default-astrologer.png'}
+                src={astrologer?.avatar || astrologer?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=144`}
                 alt={astrologer?.name || 'Astrologer'}
                 className="w-32 h-32 md:w-36 md:h-36 rounded-full object-cover shadow-lg"
                 style={{ 
@@ -1378,7 +1378,7 @@ export default function AstrologerProfilePage() {
                         <div className="text-center">
                           <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
                             <img 
-                              src={ast.profileImage || ast.avatar} 
+                              src={ast.avatar || ast.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name)}&background=f97316&color=fff&size=80`} 
                               alt={ast.name}
                               className="w-full h-full object-cover"
                               onError={(e) => {

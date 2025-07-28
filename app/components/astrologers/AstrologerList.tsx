@@ -171,5 +171,5 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   );
 };
 
-// Remove the WalletBalanceProvider wrapper from AstrologerListWithProvider
+
 export default AstrologerList;

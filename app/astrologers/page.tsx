@@ -101,8 +101,6 @@ export default function AstrologersPage() {
   const [videoOnly, setVideoOnly] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [walletError, setWalletError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<'none' | 'transactions' | 'calls'>('none');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showBestAstrologerLoader, setShowBestAstrologerLoader] = useState(false);
@@ -445,65 +443,6 @@ export default function AstrologersPage() {
     fetchAstrologers(1, true); // Fetch with reset=true to clear previous results
   }, [debouncedSearchQuery]);
 
-  // Function to fetch wallet balance
-  const fetchWalletBalance = useCallback(async () => {
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        setWalletError("Authentication required");
-        return;
-      }
-
-      const response = await fetch(
-        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch wallet balance');
-      }
-
-      const data = await response.json();
-      if (data.success && data.data) {
-        setWalletBalance(data.data.balance || 0);
-        setWalletError(null);
-      } else {
-        setWalletError(data.message || 'Failed to fetch balance');
-      }
-    } catch (error) {
-      console.error('Error fetching wallet balance:', error);
-      setWalletError('Failed to fetch balance');
-    }
-  }, []);
-
-  // Handle page change
-  const handlePageChange = useCallback((newPage: number) => {
-    console.log(`🔄 Page change requested: ${currentPage} -> ${newPage}, totalPages: ${totalPages}`);
-    
-    if (newPage >= 1 && newPage !== currentPage && !isLoadingPage) {
-      console.log(`✅ Valid page change: ${newPage}`);
-      
-      if (allAstrologersLoaded) {
-        // If all astrologers are loaded, just change the page (no API call needed)
-        console.log(`📄 All astrologers loaded, changing page to ${newPage}`);
-        setCurrentPage(newPage);
-      } else {
-        // If not all loaded, fetch the specific page
-        console.log(`🌐 Fetching page ${newPage} from API`);
-        fetchAstrologers(newPage);
-      }
-    } else {
-      console.log(`❌ Invalid page change: newPage=${newPage}, currentPage=${currentPage}, isLoadingPage=${isLoadingPage}`);
-    }
-  }, [currentPage, isLoadingPage, allAstrologersLoaded, fetchAstrologers]);
-
   // Function to load all astrologers
   const loadAllAstrologers = useCallback(async () => {
     console.log('🚀 Loading all astrologers...');
@@ -678,7 +617,6 @@ export default function AstrologersPage() {
 
     console.log('✅ Authentication validated, initializing data fetch...');
     fetchAstrologers();
-    fetchWalletBalance();
   }, [mounted, router]);
 
   // Prevent background scrolling when drawer is open
@@ -706,6 +644,14 @@ export default function AstrologersPage() {
     }
   }, [showHistory]);
 
+  // Restore handlePageChange for pagination
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage !== currentPage && !isLoadingPage) {
+      setCurrentPage(newPage);
+      fetchAstrologers(newPage);
+    }
+  };
+
   // Handle refresh button click
   const handleRefresh = async () => {
     console.log('🔄 Refresh requested');
@@ -720,7 +666,7 @@ export default function AstrologersPage() {
         console.log('📄 Resetting to page 1 for refresh');
         setCurrentPage(1);
       }
-      await Promise.all([fetchAstrologers(1), fetchWalletBalance()]);
+      await fetchAstrologers(1);
     } finally {
       setTimeout(() => setIsRefreshing(false), 500); // Small delay for better UX
     }
@@ -788,10 +734,6 @@ export default function AstrologersPage() {
               <Phone className="w-5 h-5" /> 
               <span className="whitespace-nowrap">Calls</span>
             </button>
-            <div className="flex items-center justify-center gap-2 px-4 py-2 h-12 rounded-xl border border-green-200 bg-white text-green-700 font-bold text-base shadow-sm select-none">
-              <Wallet className="w-5 h-5 text-green-500" />
-              <span className="whitespace-nowrap">₹{walletBalance?.toFixed(2) || '0.00'}</span>
-            </div>
           </div>
         </div>
       </section>

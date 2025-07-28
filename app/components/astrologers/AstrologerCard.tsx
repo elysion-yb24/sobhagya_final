@@ -10,6 +10,7 @@ import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
 import CallConfirmationDialog from "../../components/ui/CallConfirmationDialog";
 import { buildApiUrl } from "../../config/api";
+import { useWalletBalance } from './WalletBalanceContext';
 
 interface Astrologer {
   _id: string;
@@ -71,7 +72,8 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
 
   // Insufficient balance modal state
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
-  const [walletBalance, setWalletBalance] = useState(0);
+  // Remove local wallet balance state
+  // const [walletBalance, setWalletBalance] = useState(0);
   const [insufficientBalanceData, setInsufficientBalanceData] = useState<{
     requiredAmount: number;
     serviceType: 'call' | 'gift' | 'consultation';
@@ -80,7 +82,10 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
   // New states for call history checking
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
   const [isCheckingHistory, setIsCheckingHistory] = useState(true);
-  const [isFetchingWallet, setIsFetchingWallet] = useState(false);
+  const { walletBalance, isFetching: isFetchingWallet, refreshWalletBalance } = useWalletBalance();
+
+  // In the AstrologerCard, treat the astrologer prop as 'partner' for consistency
+  const partner = astrologer;
 
   const {
     _id,
@@ -94,7 +99,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     rpm,
     videoRpm,
     isVideoCallAllowed
-  } = astrologer;
+  } = partner;
 
   useEffect(() => {
     // Check if we already have cached data to avoid unnecessary API calls
@@ -113,76 +118,12 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
       setIsCheckingHistory(false);
     }
 
-    fetchWalletBalance();
+    // Only fetch wallet balance once on mount
+    // Remove fetchWalletBalance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array to run only once
 
-  const fetchWalletBalance = async () => {
-    // Prevent multiple simultaneous calls
-    if (isFetchingWallet) return;
-    setIsFetchingWallet(true);
-
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        return;
-      }
-
-      const response = await fetch(
-        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setWalletBalance(data.data.balance || 0);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching wallet balance:', error);
-    } finally {
-      setIsFetchingWallet(false);
-    }
-  };
-
-  const fetchWalletPageData = async () => {
-    try {
-      const token = getAuthToken();
-      if (!token) return 0;
-
-      const response = await fetch(
-        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          const balance = data.data.balance || 0;
-          setWalletBalance(balance);
-          return balance;
-        }
-      }
-      return 0;
-    } catch (error) {
-      console.error('Error fetching wallet page data:', error);
-      return 0;
-    }
-  };
+  // Remove fetchWalletBalance and fetchWalletPageData definitions
 
   const checkCallHistory = async () => {
     try {
@@ -262,12 +203,9 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
 
   const handleAudioCall = async () => {
     try {
-      // Fetch latest wallet balance first
-      const currentBalance = await fetchWalletPageData();
-
-      // Check wallet balance first
+      // Use cached walletBalance instead of fetching again
       const callCost = (rpm || 15) * 2; // Estimate 2 minutes minimum cost
-      if (currentBalance < callCost) {
+      if (walletBalance < callCost) {
         setInsufficientBalanceData({
           requiredAmount: callCost,
           serviceType: 'call'
@@ -347,12 +285,9 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
       return;
     }
 
-    // Fetch latest wallet balance first
-    const currentBalance = await fetchWalletPageData();
-
-    // Check wallet balance first
+    // Use cached walletBalance
     const videoCost = (videoRpm || 25) * 2; // Estimate 2 minutes minimum cost for video
-    if (currentBalance < videoCost) {
+    if (walletBalance < videoCost) {
       setInsufficientBalanceData({
         requiredAmount: videoCost,
         serviceType: 'call'
@@ -361,17 +296,63 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
       return;
     }
 
-    // Navigate to video call page with astrologer details
-    const videoCallUrl = `/video-call?astrologerId=${encodeURIComponent(_id)}&astrologerName=${encodeURIComponent(name)}&callType=video&videoRpm=${encodeURIComponent(videoRpm || 25)}`;
+    // Request LiveKit token and channel from backend
+    const token = getAuthToken();
+    const requestBody = {
+      receiverUserId: partner._id, // use partner._id for receiverUserId
+      type: 'video',
+      appVersion: '1.0.0'
+    };
+    const channelId = Date.now().toString();
+    const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+    const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
 
-    // Open video call in the same tab
-    router.push(videoCallUrl);
+    try {
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        alert('Failed to initiate video call');
+        return;
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data?.token || !data.data?.channel) {
+        alert(data.message || 'Failed to get video call token');
+        return;
+      }
+
+      // Redirect to /video-call with token and room
+      const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(partner.name)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      router.push(videoCallUrl);
+    } catch (err) {
+      alert('Failed to initiate video call');
+    }
   };
 
   const handleCallConfirm = async () => {
     try {
       setCallError(null);
       setIsConnecting(true);
+      // Use cached walletBalance
+      const freeCallCost = (rpm || 15) * 2;
+      if (walletBalance < freeCallCost) {
+        setInsufficientBalanceData({
+          requiredAmount: freeCallCost,
+          serviceType: 'call'
+        });
+        setShowInsufficientBalanceModal(true);
+        setShowConfirmDialog(false);
+        setIsConnecting(false);
+        return;
+      }
 
       // Get the authentication token and user details
       const token = getAuthToken();
@@ -502,12 +483,12 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
               src={profileImage || '/default-astrologer.png'}
               alt={name}
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2"
-              style={{ borderColor: astrologer.status === 'online' ? '#56AE50' : '#ff0000' }}
+              style={{ borderColor: partner.status === 'online' ? '#56AE50' : '#ff0000' }}
               onError={(e) => {
                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`;
               }}
             />
-            {astrologer.status === 'online' && (
+            {partner.status === 'online' && (
               <span className="text-xs text-green-600 font-medium mt-0.5 sm:mt-1">Online</span>
             )}
           </div>
@@ -598,7 +579,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
           isOpen={showAudioConfirmDialog}
           onClose={handleAudioDialogClose}
           onConfirm={handleAudioCall}
-          astrologer={astrologer}
+          astrologer={partner}
           isLoading={isConnecting}
           callType="audio"
           rate={rpm}

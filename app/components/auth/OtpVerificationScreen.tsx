@@ -47,6 +47,18 @@ export default function OtpVerificationScreen({
   const cookies = new Cookies(null, { path: '/' });
 
   useEffect(() => {
+    // Lock background scroll when OTP screen is open
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     if (timeLeft > 0) {
       const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timerId);
@@ -342,19 +354,6 @@ export default function OtpVerificationScreen({
               />
             ))}
           </div>
-
-          {/* Auto-submit indicator */}
-          {otp.every(digit => digit !== '') && verificationStatus === 'idle' && (
-            <div className="mb-4 text-center">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-lg text-orange-700 text-sm">
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Auto-verifying...
-              </div>
-            </div>
-          )}
 
           {/* Error message */}
           {(error || parentError) && (

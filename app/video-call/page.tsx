@@ -36,6 +36,7 @@ export default function VideoCallPage() {
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
   const [isCheckingBalance, setIsCheckingBalance] = useState(true);
   const [isInitializingCall, setIsInitializingCall] = useState(false);
+  const [callId, setCallId] = useState<string | null>(null);
 
   // Check wallet balance and initialize call
   useEffect(() => {
@@ -330,7 +331,7 @@ export default function VideoCallPage() {
     <>
       <VideoCallRoom
         token={token}
-        wsURL={wsURL || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://sobhagya-iothxaak.livekit.cloud'}
+        wsURL={wsURL || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://sobhagya-gpfn4cyx.livekit.cloud'}
         roomName={roomName}
         participantName={getUserDetails()?.name || 'User'}
         astrologerName={astrologerName ? decodeURIComponent(astrologerName) : undefined}

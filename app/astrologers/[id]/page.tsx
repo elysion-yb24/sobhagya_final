@@ -30,6 +30,8 @@ import {
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../../utils/auth-utils";
 import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
+import ConnectingCallModal from '../../components/ui/ConnectingCallModal';
+import CallInitiatedModal from '../../components/ui/CallInitiatedModal';
 
 
 // Updated Astrologer interface with all API fields
@@ -202,6 +204,7 @@ export default function AstrologerProfilePage() {
   const [isAudioCallProcessing, setIsAudioCallProcessing] = useState(false);
   const [isVideoCallProcessing, setIsVideoCallProcessing] = useState(false);
   const [currentCallType, setCurrentCallType] = useState<'audio' | 'video' | null>(null);
+  const [showCallInitiatedModal, setShowCallInitiatedModal] = useState(false);
   
   // Gift/Dakshina states
   const [showGiftModal, setShowGiftModal] = useState(false);
@@ -835,6 +838,12 @@ export default function AstrologerProfilePage() {
       const result = await response.json();
       console.log('Audio call initiated:', result);
 
+      // Show call initiated modal if backend says call is initiated
+      if (result.success || (result.message && result.message.toLowerCase().includes('initiated'))) {
+        setShowCallInitiatedModal(true);
+        setTimeout(() => setShowCallInitiatedModal(false), 10000);
+      }
+
       // Show success state
       setTimeout(() => {
         setIsAudioCallProcessing(false);
@@ -877,6 +886,9 @@ export default function AstrologerProfilePage() {
     }
   };
 
+  // Rename astrologer to partner for consistency
+  const partner = astrologer;
+
   const handleVideoCall = async (retryCount = 0) => {
     try {
       setIsVideoCallProcessing(true);
@@ -890,8 +902,8 @@ export default function AstrologerProfilePage() {
         throw new Error('Authentication required');
       }
 
-      // Defensive check for astrologer._id
-      if (!astrologer || !astrologer._id) {
+      // Defensive check for partner._id
+      if (!partner || !partner._id) {
         alert('Astrologer information is missing. Please refresh the page.');
         setIsVideoCallProcessing(false);
         setCurrentCallType(null);
@@ -902,7 +914,7 @@ export default function AstrologerProfilePage() {
       const currentBalance = await fetchWalletPageData();
       
       // Check wallet balance before proceeding
-      const videoRpm = astrologer?.videoRpm || 20;
+      const videoRpm = partner?.videoRpm || 20;
       const videoCost = videoRpm * 2; // Estimate 2 minutes minimum cost
       if (currentBalance < videoCost) {
         setIsVideoCallProcessing(false);
@@ -919,14 +931,20 @@ export default function AstrologerProfilePage() {
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
       const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
-      const channelId = `channel_${astrologer._id}_${userId}_${timestamp}_${randomId}${retryId}`;
+      const channelId = Date.now().toString();
       const requestBody = {
-        receiverUserId: astrologer._id,
+        receiverUserId: partner._id,
         type: 'video',
         appVersion: '1.0.0'
       };
       // --- IMPORTANT DEBUG LOG ---
-      console.log('🚨 SENDING receiverUserId:', astrologer._id, '| requestBody:', requestBody);
+      console.log('🚨 SENDING receiverUserId:', partner._id, '| requestBody:', requestBody);
+      if (!requestBody.receiverUserId) {
+        alert('receiverUserId is missing. Cannot initiate video call.');
+        setIsVideoCallProcessing(false);
+        setCurrentCallType(null);
+        return;
+      }
       
       const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
       const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
@@ -995,13 +1013,12 @@ export default function AstrologerProfilePage() {
       }
       
       // Open frontend video call page with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(astrologer?.name || '')}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
-      window.open(videoCallUrl, '_blank');
+      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
       router.push(videoCallUrl);
       setTimeout(() => {
         setIsVideoCallProcessing(false);
         setCurrentCallType(null);
-      }, 2000);
+      }, 1000);
       
     } catch (error) {
       console.error('❌ Video call error:', error);
@@ -1025,6 +1042,16 @@ export default function AstrologerProfilePage() {
   const getRatingCount = (rating: number | { avg: number; count: number; max: number; min: number }) => {
     return typeof rating === 'number' ? 0 : rating.count;
   };
+
+  // Dakshina modal scroll lock
+  useEffect(() => {
+    if (showGiftModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [showGiftModal]);
 
   if (isLoading) {
     return (
@@ -1092,161 +1119,161 @@ export default function AstrologerProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Extended Cosmic Background Header */}
-      <div 
-        className="h-40 relative bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/cosmic image.png')"
-        }}
-      >
-        {/* Back button */}
-        <div className="absolute top-4 left-4">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-black transition-colors"
-            onMouseEnter={(e) => e.currentTarget.style.color = '#FFB366'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Back</span>
-          </button>
-        </div>
-
-        {/* Profile Image positioned in cosmic section - Left Aligned */}
-        <div className="absolute bottom-0 left-44 transform translate-y-1/2">
-          <div className="relative">
-            <img
-              src={astrologer?.profileImage || astrologer?.avatar || '/default-astrologer.png'}
-              alt={astrologer?.name || 'Astrologer'}
-              className="w-32 h-32 md:w-36 md:h-36 rounded-full object-cover shadow-lg"
-              style={{ 
-                borderColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=144`;
-              }}
-            />
-            {/* Status indicator positioned on the image */}
-            <div 
-              className="absolute bottom-2 right-2 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center"
-              style={{
-                backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
-              }}
+    <>
+      <ConnectingCallModal visible={isAudioCallProcessing} />
+      <CallInitiatedModal visible={showCallInitiatedModal} onClose={() => setShowCallInitiatedModal(false)} />
+      <div className="min-h-screen bg-white">
+        {/* Extended Cosmic Background Header */}
+        <div 
+          className="h-40 relative bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/cosmic image.png')"
+          }}
+        >
+          {/* Back button */}
+          <div className="absolute top-4 left-4">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-black transition-colors"
+              onMouseEnter={(e) => e.currentTarget.style.color = '#FFB366'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
             >
-              <div 
-                className="w-2 h-2 md:w-3 md:h-3 rounded-full animate-pulse"
-                style={{ backgroundColor: 'white' }}
+              <ArrowLeft className="h-5 w-5" />
+              <span>Back</span>
+            </button>
+          </div>
+
+          {/* Profile Image positioned in cosmic section - Centered on mobile, left on md+ */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 md:left-44 md:translate-x-0 transform translate-y-1/2">
+            <div className="relative">
+              <img
+                src={astrologer?.profileImage || astrologer?.avatar || '/default-astrologer.png'}
+                alt={astrologer?.name || 'Astrologer'}
+                className="w-32 h-32 md:w-36 md:h-36 rounded-full object-cover shadow-lg"
+                style={{ 
+                  borderColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
+                }}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=144`;
+                }}
               />
+              {/* Status indicator positioned on the image */}
+              <div 
+                className="absolute bottom-2 right-2 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
+                }}
+              >
+                <div 
+                  className="w-2 h-2 md:w-3 md:h-3 rounded-full animate-pulse"
+                  style={{ backgroundColor: 'white' }}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="bg-white">
-        <div className="max-w-6xl mx-auto px-6 pt-20 pb-12">
-          {/* Enhanced Profile Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-            {/* Left Column - Main Profile Info */}
-            <div className="lg:col-span-2 space-y-6">
-                             {/* Basic Info */}
-               <div className="bg-white rounded-xl p-6 shadow-sm">
-                 <div className="flex items-center gap-3 mb-3">
-                   <h1 className="text-3xl font-bold text-gray-900">{astrologer?.name}</h1>
-                   
-                   {/* Blue verification tick - Instagram style */}
-                   {/* <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                     <path 
-                       d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" 
-                       fill="#1DA1F2"
-                     />
-                   </svg> */}
+        {/* Main Content */}
+        <div className="bg-white">
+          <div className="max-w-6xl mx-auto px-6 pt-20 pb-12">
+            {/* Enhanced Profile Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+              {/* Left Column - Main Profile Info */}
+              <div className="lg:col-span-2 space-y-6">
+                           {/* Basic Info */}
+                 <div className="bg-white rounded-xl p-6 shadow-sm">
+                   <div className="flex items-center gap-3 mb-3">
+                     <h1 className="text-3xl font-bold text-gray-900">{astrologer?.name}</h1>
+                     
+                     {/* Blue verification tick - Instagram style */}
+                     {/* <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                       <path 
+                         d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" 
+                         fill="#1DA1F2"
+                       />
+                     </svg> */}
 
-                   <img src="/orange_tick.png" alt="Orange Tick" className="w-5 h-5" />
-                   
-                   {/* Status indicator */}
-                   {/* <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
-                     style={{
-                       backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444',
-                       color: 'white'
-                     }}
-                   >
-                     <div 
-                       className="w-2 h-2 rounded-full animate-pulse"
-                       style={{ backgroundColor: 'white' }}
-                     />
-                     <span>
-                       {astrologer?.status === 'online' ? 'Online' : astrologer?.status === 'busy' ? 'Busy' : 'Offline'}
-                     </span>
-                   </div> */}
-                 </div>
-                <p className="text-gray-600 text-lg mb-1">
-                  {astrologer?.specializations?.join(', ')}
-                </p>
-                <p className="text-gray-500 mb-1">
-                  {astrologer?.languages?.join(', ')}
-                </p>
-                <p className="text-gray-500 mb-3">
-                  Exp:- {astrologer?.experience} years
-                </p>
-                <p className="font-bold text-2xl mb-4" style={{ color: '#F7971E' }}>
-                  ₹ {astrologer?.rpm || 15}/ min
-                </p>
+                     <img src="/orange_tick.png" alt="Orange Tick" className="w-5 h-5" />
+                     
+                     {/* Status indicator */}
+                     {/* <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
+                       style={{
+                         backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444',
+                         color: 'white'
+                       }}
+                     >
+                       <div 
+                         className="w-2 h-2 rounded-full animate-pulse"
+                         style={{ backgroundColor: 'white' }}
+                       />
+                       <span>
+                         {astrologer?.status === 'online' ? 'Online' : astrologer?.status === 'busy' ? 'Busy' : 'Offline'}
+                       </span>
+                     </div> */}
+                   </div>
+                  <p className="text-gray-600 text-lg mb-1">
+                    {astrologer?.specializations?.join(', ')}
+                  </p>
+                  <p className="text-gray-500 mb-1">
+                    {astrologer?.languages?.join(', ')}
+                  </p>
+                  <p className="text-gray-500 mb-3">
+                    Exp:- {astrologer?.experience} years
+                  </p>
+                  <p className="font-bold text-2xl mb-4" style={{ color: '#F7971E' }}>
+                    ₹ {astrologer?.rpm || 15}/ min
+                  </p>
 
-                {/* Rating */}
-                <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-5 w-5 ${
-                        i < Math.floor(getRatingDisplay(astrologer?.rating || 5)) ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                  <span className="text-gray-600 font-medium ml-2">
-                    Rating {getRatingDisplay(astrologer?.rating || 5).toFixed(1)}
-                  </span>
-                </div>
+                  {/* Rating */}
+                  <div className="flex items-center gap-2 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-5 w-5 ${
+                          i < Math.floor(getRatingDisplay(astrologer?.rating || 5)) ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                        }`}
+                      />
+                    ))}
+                    <span className="text-gray-600 font-medium ml-2">
+                      Rating {getRatingDisplay(astrologer?.rating || 5).toFixed(1)}
+                    </span>
+                  </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
-                  <button 
-                    className="bg-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
-                    style={{ 
-                      border: `1px solid #F7971E`, 
-                      color: '#F7971E'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FDF4E6'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                  >
-                    Follow
-                  </button>
-                  <button
-                    onClick={() => setShowGiftModal(true)}
-                    className="text-black px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
-                    style={{ backgroundColor: '#F7971E' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
-                  >
-                    Dakshina
-                  </button>
-                  {!hasCompletedFreeCall ? (
+                  {/* Action Buttons - Dakshina, Phone, Video, and Follow side by side */}
+                  <div className="flex flex-wrap gap-2 mb-2">
                     <button
-                      onClick={() => setShowFreeCallConfirm(true)}
-                      disabled={isCallRequested}
-                      className="text-black px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      onClick={() => setShowGiftModal(true)}
+                      className="text-black px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
                       style={{ backgroundColor: '#F7971E' }}
-                      onMouseEnter={(e) => !isCallRequested && (e.currentTarget.style.backgroundColor = '#E8850B')}
-                      onMouseLeave={(e) => !isCallRequested && (e.currentTarget.style.backgroundColor = '#F7971E')}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
                     >
-                      {isCallRequested ? 'Connecting...' : 'OFFER: FREE 1st call'}
+                      Dakshina
                     </button>
-                  ) : (
-                    <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowAudioCallConfirm(true)}
+                      disabled={isAudioCallProcessing}
+                      className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
+                      style={{ 
+                        borderColor: '#4A5568',
+                        color: '#4A5568'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#4A5568';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'white';
+                        e.currentTarget.style.color = '#4A5568';
+                      }}
+                    >
+                      <Phone className="w-4 h-4" />
+                      {isAudioCallProcessing ? 'Connecting...' : ''}
+                    </button>
+                    { (astrologer?.isVideoCallAllowed || astrologer?.callType === 'video' || astrologer?.videoRpm) && (
                       <button
-                        onClick={() => setShowAudioCallConfirm(true)}
-                        disabled={isAudioCallProcessing}
+                        onClick={() => setShowVideoCallConfirm(true)}
+                        disabled={isVideoCallProcessing}
                         className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
                         style={{ 
                           borderColor: '#4A5568',
@@ -1261,192 +1288,181 @@ export default function AstrologerProfilePage() {
                           e.currentTarget.style.color = '#4A5568';
                         }}
                       >
-                        <Phone className="w-4 h-4" />
-                        {isAudioCallProcessing ? 'Connecting...' : ''}
+                        <Video className="w-4 h-4" />
+                        {isVideoCallProcessing ? 'Connecting...' : ''}
                       </button>
-                      {astrologer?.isVideoCallAllowed && (
-                        <button
-                          onClick={() => setShowVideoCallConfirm(true)}
-                          disabled={isVideoCallProcessing}
-                          className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
-                          style={{ 
-                            borderColor: '#4A5568',
-                            color: '#4A5568'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#4A5568';
-                            e.currentTarget.style.color = 'white';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'white';
-                            e.currentTarget.style.color = '#4A5568';
-                          }}
-                        >
-                          <Video className="w-4 h-4" />
-                          {isVideoCallProcessing ? 'Connecting...' : ''}
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    )}
+                    <button 
+                      className="bg-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
+                      style={{ 
+                        border: `1px solid #F7971E`, 
+                        color: '#F7971E'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FDF4E6'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    >
+                      Follow
+                    </button>
+                  </div>
+                </div>
+
+                {/* About Section */}
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">About</h3>
+                  <p className="text-gray-700 leading-relaxed text-base">
+                    {astrologer?.about || `Astrologer ${astrologer?.name} is a renowned expert in ${astrologer?.specializations?.join(', ')}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer?.name} offers personalized consultations to align your life with cosmic energies.`}
+                  </p>
                 </div>
               </div>
 
-              {/* About Section */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="text-xl font-semibold text-gray-900 mb-4">About</h3>
-                <p className="text-gray-700 leading-relaxed text-base">
-                  {astrologer?.about || `Astrologer ${astrologer?.name} is a renowned expert in ${astrologer?.specializations?.join(', ')}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer?.name} offers personalized consultations to align your life with cosmic energies.`}
-                </p>
-              </div>
-            </div>
-
-            {/* Right Column - Stats & Quick Info */}
-            <div className="space-y-6">
-              {/* Call and Message Stats */}
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FDF4E6' }}>
-                      <Phone className="h-5 w-5" style={{ color: '#F7971E' }} />
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Call</div>
-                      <div className="font-semibold text-gray-900">{astrologer?.callsCount || 1}k mins</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FDF4E6' }}>
-                      <MessageCircle className="h-5 w-5" style={{ color: '#F7971E' }} />
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500">Message</div>
-                      <div className="font-semibold text-gray-900">488k mins</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Info Card */}
-             
-            </div>
-          </div>
-
-          {/* Similar Astrologers Section - Centered */}
-          <div className="mb-12 text-center">
-            <h2 className="text-5xl font-bold mb-8" style={{ color: '#745802', fontFamily: 'EB Garamond, serif' }}>
-              Check Similar {astrologer?.specializations?.[0] || 'Astrology'} Experts
-            </h2>
-            
-            {similarLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F7971E' }} />
-                <span className="ml-3 text-gray-600">Loading similar astrologers...</span>
-              </div>
-            ) : (
-              <div className="relative">
-                {/* Left Arrow */}
-                {similarAstrologers.length > 0 && (
-                  <button
-                    onClick={scrollLeft}
-                    className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors"
-                    style={{ marginLeft: '-24px' }}
-                  >
-                    <ChevronLeft className="h-6 w-6 text-gray-600" />
-                  </button>
-                )}
-
-                {/* Scrollable Container */}
-                <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide" id="similar-astrologers-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                  {similarAstrologers.length > 0 ? similarAstrologers.map((ast, index) => (
-                    <div key={ast._id || index} className="flex-shrink-0 w-56 bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="text-center">
-                        <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
-                          <img 
-                            src={ast.profileImage || ast.avatar} 
-                            alt={ast.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name)}&background=f97316&color=fff&size=80`;
-                            }}
-                          />
-                        </div>
-                        <h4 className="font-semibold text-gray-900 mb-2 text-base">{ast.name}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{ast.specializations?.slice(0, 2).join(', ')}</p>
-                        <p className="text-sm text-gray-500 mb-4">Exp: {ast.experience} years</p>
-                        <button 
-                          onClick={() => router.push(`/astrologers/${ast._id}`)}
-                          className="w-full text-black py-3 rounded-lg text-sm font-semibold transition-colors"
-                          style={{ backgroundColor: '#F7971E' }}
-                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
-                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
-                        >
-                          {userHasCalledBefore ? `₹${ast.rpm || 15}/min` : 'OFFER: FREE 1st call'}
-                        </button>
+              {/* Right Column - Stats & Quick Info */}
+              <div className="space-y-6">
+                {/* Call and Message Stats */}
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FDF4E6' }}>
+                        <Phone className="h-5 w-5" style={{ color: '#F7971E' }} />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Call</div>
+                        <div className="font-semibold text-gray-900">{astrologer?.callsCount || 1}k mins</div>
                       </div>
                     </div>
-                  )) : (
-                    <div className="w-full text-center py-12">
-                      <p className="text-gray-500 text-lg">No similar astrologers found</p>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FDF4E6' }}>
+                        <MessageCircle className="h-5 w-5" style={{ color: '#F7971E' }} />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-500">Message</div>
+                        <div className="font-semibold text-gray-900">488k mins</div>
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Right Arrow */}
-                {similarAstrologers.length > 0 && (
-                  <button
-                    onClick={scrollRight}
-                    className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors"
-                    style={{ marginRight: '-24px' }}
-                  >
-                    <ChevronRight className="h-6 w-6 text-gray-600" />
-                  </button>
-                )}
+                {/* Quick Info Card */}
+               
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Reviews Section */}
-          <div className="bg-white">
-            <h3 className="text-2xl font-bold text-gray-900 mb-8">Reviews</h3>
-            
-            {reviewsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F7971E' }} />
-                <span className="ml-3 text-gray-600">Loading reviews...</span>
-              </div>
-            ) : reviews.length > 0 ? (
-              <div className="space-y-8">
-                {reviews.slice(0, 3).map((review, index) => (
-                  <div key={review._id || index} className="flex items-start gap-6 pb-8 border-b border-gray-100 last:border-b-0">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-black font-bold" style={{ backgroundColor: '#F7971E' }}>
-                      {review.userName?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-gray-900 text-lg">{review.userName || 'Anonymous'}</h4>
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-5 w-5 ${
-                                i < (review.rating || 0) ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                              }`}
+            {/* Similar Astrologers Section - Centered */}
+            <div className="mb-12 text-center">
+              <h2 className="text-5xl font-bold mb-8" style={{ color: '#745802', fontFamily: 'EB Garamond, serif' }}>
+                Check Similar {astrologer?.specializations?.[0] || 'Astrology'} Experts
+              </h2>
+              
+              {similarLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F7971E' }} />
+                  <span className="ml-3 text-gray-600">Loading similar astrologers...</span>
+                </div>
+              ) : (
+                <div className="relative">
+                  {/* Left Arrow */}
+                  {similarAstrologers.length > 0 && (
+                    <button
+                      onClick={scrollLeft}
+                      className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors"
+                      style={{ marginLeft: '-24px' }}
+                    >
+                      <ChevronLeft className="h-6 w-6 text-gray-600" />
+                    </button>
+                  )}
+
+                  {/* Scrollable Container */}
+                  <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide" id="similar-astrologers-container" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {similarAstrologers.length > 0 ? similarAstrologers.map((ast, index) => (
+                      <div key={ast._id || index} className="flex-shrink-0 w-56 bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+                        <div className="text-center">
+                          <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
+                            <img 
+                              src={ast.profileImage || ast.avatar} 
+                              alt={ast.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name)}&background=f97316&color=fff&size=80`;
+                              }}
                             />
-                          ))}
+                          </div>
+                          <h4 className="font-semibold text-gray-900 mb-2 text-base">{ast.name}</h4>
+                          <p className="text-sm text-gray-600 mb-2">{ast.specializations?.slice(0, 2).join(', ')}</p>
+                          <p className="text-sm text-gray-500 mb-4">Exp: {ast.experience} years</p>
+                          <button 
+                            onClick={() => router.push(`/astrologers/${ast._id}`)}
+                            className="w-full text-black py-3 rounded-lg text-sm font-semibold transition-colors"
+                            style={{ backgroundColor: '#F7971E' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
+                          >
+                            {userHasCalledBefore ? `₹${ast.rpm || 15}/min` : 'OFFER: FREE 1st call'}
+                          </button>
                         </div>
                       </div>
-                      <p className="text-gray-700 leading-relaxed">{review.comment || 'No comment provided'}</p>
-                    </div>
+                    )) : (
+                      <div className="w-full text-center py-12">
+                        <p className="text-gray-500 text-lg">No similar astrologers found</p>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No reviews yet</p>
-              </div>
-            )}
+
+                  {/* Right Arrow */}
+                  {similarAstrologers.length > 0 && (
+                    <button
+                      onClick={scrollRight}
+                      className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-white shadow-lg rounded-full p-3 hover:bg-gray-50 transition-colors"
+                      style={{ marginRight: '-24px' }}
+                    >
+                      <ChevronRight className="h-6 w-6 text-gray-600" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Reviews Section */}
+            <div className="bg-white">
+              <h3 className="text-2xl font-bold text-gray-900 mb-8">Reviews</h3>
+              
+              {reviewsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F7971E' }} />
+                  <span className="ml-3 text-gray-600">Loading reviews...</span>
+                </div>
+              ) : reviews.length > 0 ? (
+                <div className="space-y-8">
+                  {reviews.slice(0, 3).map((review, index) => (
+                    <div key={review._id || index} className="flex items-start gap-6 pb-8 border-b border-gray-100 last:border-b-0">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-black font-bold" style={{ backgroundColor: '#F7971E' }}>
+                        {review.userName?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-900 text-lg">{review.userName || 'Anonymous'}</h4>
+                          <div className="flex items-center gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-5 w-5 ${
+                                  i < (review.rating || 0) ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-gray-700 leading-relaxed">{review.comment || 'No comment provided'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg">No reviews yet</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -1485,138 +1501,6 @@ export default function AstrologerProfilePage() {
         icon={<Video className="h-6 w-6" />}
         isLoading={isVideoCallProcessing}
       />
-
-      {/* Enhanced Gift Modal */}
-      {showGiftModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Send Dakshina</h2>
-                  <p className="text-gray-600">Wallet Balance: ₹{walletBalance.toFixed(2)}</p>
-                </div>
-                <button
-                  onClick={() => setShowGiftModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {giftSent ? (
-                <div className="text-center py-8">
-                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Gift Sent Successfully!</h3>
-                  <p className="text-gray-600">Your dakshina has been sent to {astrologer.name}</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {gifts.map((gift) => (
-                    <div
-                      key={gift._id}
-                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                        selectedGift?._id === gift._id ? 'border-gray-200' : 'border-gray-200'
-                      }`}
-                      style={{
-                        borderColor: selectedGift?._id === gift._id ? '#F7971E' : '#E5E7EB',
-                        backgroundColor: selectedGift?._id === gift._id ? '#FDF4E6' : 'white'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (selectedGift?._id !== gift._id) {
-                          e.currentTarget.style.borderColor = '#FFB366';
-                          e.currentTarget.style.backgroundColor = '#FDF4E6';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (selectedGift?._id !== gift._id) {
-                          e.currentTarget.style.borderColor = '#E5E7EB';
-                          e.currentTarget.style.backgroundColor = 'white';
-                        }
-                      }}
-                      onClick={() => setSelectedGift(gift)}
-                    >
-                      <div className="text-center">
-                        <div className="w-12 h-12 mx-auto mb-2 rounded-lg bg-gray-100 flex items-center justify-center">
-                          {gift.icon ? (
-                            <img
-                              src={gift.icon}
-                              alt={gift.name}
-                              className="w-full h-full object-cover rounded-lg"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                              }}
-                            />
-                          ) : null}
-                          <Gift className={`h-6 w-6 text-gray-400 ${gift.icon ? 'hidden' : ''}`} />
-                        </div>
-                        <h3 className="font-medium text-gray-900 text-sm mb-1">{gift.name}</h3>
-                        <p className="font-semibold text-sm" style={{ color: '#F7971E' }}>₹{gift.price}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {selectedGift && !giftSent && (
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{selectedGift.name}</h3>
-                      <p className="font-semibold" style={{ color: '#F7971E' }}>₹{selectedGift.price}</p>
-                    </div>
-                    <button
-                      onClick={() => setSelectedGift(null)}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  
-                  {walletBalance >= selectedGift.price ? (
-                    <button
-                      onClick={() => handleSendGift(selectedGift)}
-                      disabled={isSendingGift}
-                      className="w-full text-black py-3 rounded-md font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      style={{ backgroundColor: '#F7971E' }}
-                      onMouseEnter={(e) => !isSendingGift && (e.currentTarget.style.backgroundColor = '#E8850B')}
-                      onMouseLeave={(e) => !isSendingGift && (e.currentTarget.style.backgroundColor = '#F7971E')}
-                    >
-                      <Heart className="h-4 w-4" />
-                      {isSendingGift ? 'Sending...' : 'Send Dakshina'}
-                    </button>
-                  ) : (
-                    <div className="text-center">
-                      <p className="text-red-600 mb-3 text-sm">Insufficient wallet balance</p>
-                      <button
-                        onClick={() => router.push('/wallet')}
-                        className="bg-blue-500 hover:bg-blue-600 text-black px-4 py-2 rounded-md font-medium transition-colors"
-                      >
-                        Add Funds
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Insufficient Balance Modal */}
-      {showInsufficientBalanceModal && insufficientBalanceData && (
-        <InsufficientBalanceModal
-          isOpen={showInsufficientBalanceModal}
-          onClose={() => setShowInsufficientBalanceModal(false)}
-          currentBalance={walletBalance}
-          requiredAmount={insufficientBalanceData.requiredAmount}
-          astrologerName={astrologer?.name}
-          serviceType={insufficientBalanceData.serviceType}
-        />
-      )}
-    </div>
+    </>
   );
 }
-
-

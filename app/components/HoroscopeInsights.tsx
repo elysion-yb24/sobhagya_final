@@ -35,7 +35,7 @@ const HoroscopeInsights: React.FC = () => {
             { img: "/Group 13377.png", label: "Yearly Horoscope" },
           ].map((item, idx) => (
             <div key={item.label} className="flex flex-col items-center animate-fade-in-up">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 relative bg-white rounded-2xl shadow-xl border-t-8 border-orange-200 flex items-center justify-center transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer" style={{ boxShadow: '0 8px 32px 0 rgba(247,151,30,0.10)' }}>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 relative bg-white rounded-2xl shadow-xl border-t-8 border-orange-200 flex items-center justify-center transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer" style={{ boxShadow: '0 8px 32px 0 rgba(247,151,30,0.10)' }}>
               <Image 
                   src={item.img}
                   alt={item.label}

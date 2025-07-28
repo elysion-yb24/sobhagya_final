@@ -10,7 +10,8 @@ import {
   useRoomContext,
   TrackToggle,
   useTracks,
-  VideoTrack
+  VideoTrack,
+  useRemoteParticipants
 } from '@livekit/components-react';
 import { Room, RoomEvent, Track } from 'livekit-client';
 import { 
@@ -27,7 +28,9 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { socketManager } from "../../utils/socket";
 import { getUserDetails, getAuthToken } from "../../utils/auth-utils";
-import { getApiBaseUrl } from "../../config/api";
+import { buildApiUrl, getApiBaseUrl } from "../../config/api";
+import GiftConfirmationDialog from '../ui/GiftConfirmationDialog';
+
 
 // Import LiveKit styles
 import '@livekit/components-styles';
@@ -37,7 +40,12 @@ interface VideoCallRoomProps {
   wsURL: string;
   roomName: string;
   participantName: string;
+  remoteParticipantName?: string;
   astrologerName?: string;
+  partner?: {
+    _id: string;
+    name: string;
+  };
   onDisconnect?: () => void;
 }
 
@@ -65,6 +73,7 @@ const CustomVideoDisplay = () => {
       localVideoTracks: localVideoTracks.length,
       remoteVideoTracks: remoteVideoTracks.length,
       localParticipant: localParticipant?.identity,
+      remoteParticipant: remoteVideoTracks.map(track => track.participant.identity),
       participantIdentities: participants.map(p => p.identity),
       participantNames: participants.map(p => p.name),
       remoteTrackDetails: remoteVideoTracks.map(track => ({
@@ -167,9 +176,11 @@ const CustomVideoDisplay = () => {
 // Custom control bar with mic, camera, gift, and end call buttons
 const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift: () => void }) => {
   const { localParticipant } = useLocalParticipant();
+  const remoteParticipants = useRemoteParticipants();
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
 
+  // Toggle local video
   const toggleVideo = useCallback(async () => {
     try {
       if (isVideoEnabled) {
@@ -195,6 +206,11 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
       console.error('Error toggling audio:', error);
     }
   }, [localParticipant, isAudioEnabled]);
+
+  // Get remote participant camera status (show for first remote participant if present)
+  const remoteCameraStatus = remoteParticipants.length > 0
+    ? remoteParticipants[0].isCameraEnabled
+    : null;
 
   return (
     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 bg-opacity-90 rounded-full px-6 py-3 flex items-center gap-4 z-[60]">
@@ -222,6 +238,14 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
         {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
       </button>
 
+      {/* Show remote participant camera status if present */}
+      {remoteCameraStatus !== null && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded text-white text-sm">
+          <span>Astrologer Camera:</span>
+          {remoteCameraStatus ? <Video className="w-5 h-5 text-green-400" /> : <VideoOff className="w-5 h-5 text-red-400" />}
+        </div>
+      )}
+
       <button
         onClick={onGift}
         className="p-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white transition-all"
@@ -247,13 +271,14 @@ export default function VideoCallRoom({
   roomName,
   participantName,
   astrologerName,
+  partner,
   onDisconnect,
 }: VideoCallRoomProps) {
   const router = useRouter();
   const roomRef = useRef<Room | null>(null);
   const isDisconnectingRef = useRef(false);
-  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const astrologerId = searchParams?.get('astrologerId') || searchParams?.get('astrologer') || '';
+  
+  const astrologerId = partner?._id || '';
   
   const [callStats, setCallStats] = useState<CallStats>({
     duration: 0,
@@ -267,61 +292,77 @@ export default function VideoCallRoom({
   const [sendingGift, setSendingGift] = useState(false);
   const [giftNotification, setGiftNotification] = useState<any | null>(null);
 
+  // Add state for gift confirmation
+  const [pendingGift, setPendingGift] = useState<any | null>(null);
+  const [showGiftConfirm, setShowGiftConfirm] = useState(false);
+
 
   const [callId, setCallId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCallId = async () => {
-      try {
-        const token = getAuthToken();
-        const response = await fetch(`${getApiBaseUrl()}/calling/api/call/call-token-livekit`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            action: "get_call_status",
-            roomName,
-          }),
-          credentials: "include",
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && data.data.callId) {
-            setCallId(data.data.callId);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch callId for room:", err);
-      }
-    };
-    fetchCallId();
-  }, [roomName]);
+  // useEffect(() => {
+    // const fetchCallId = async () => {
+    //   try {
+    //     const token = getAuthToken();
+
+    //     if(!partner || !partner._id) {
+    //       console.error('Partner not found');
+    //       return;
+    //     }
+
+    //     const astrologerId = partner._id;
+      
+    //     const response = await fetch(`${buildApiUrl('/calling/api/call/call-token-livekit')}`, {
+    //       method: "POST",
+    //       headers: {
+    //         "Content-Type": "application/json",
+    //         "Authorization": `Bearer ${token}`,
+    //       },
+    //       body: JSON.stringify({
+    //         receiverUserId: astrologerId,
+    //         type: 'video',
+    //         appVersion: '1.0.0',
+    //       }),
+    //       credentials: "include",
+    //     });
+    //     if (response.ok) {
+    //       const data = await response.json();
+    //       if (data.success && data.data && data.data.callId) {
+    //         setCallId(data.data.callId);
+    //       }
+    //     }
+    //   } catch (err) {
+    //     console.error("Failed to fetch callId for room:", err);
+    //   }
+    // };
+    // fetchCallId();
+  // }, [roomName]);
+
 
   
-  const sendCallEndToBackend = async () => {
-    try {
-      const token = getAuthToken();
-      const user = getUserDetails();
-      if (!callId) return;
-      await fetch(`${getApiBaseUrl()}/calling/api/call/call-token-livekit`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          action: "end_call",
-          callId,
-          userId: user.id || user._id,
-        }),
-        credentials: "include",
-      });
-    } catch (err) {
-      console.error("Failed to send call end to backend:", err);
-    }
-  };
+
+  // const sendCallEndToBackend = async () => {
+  //   try {
+  //     const token = getAuthToken();
+  //     const user = getUserDetails();
+  //     if (!callId) return;
+  //     await fetch(`${getApiBaseUrl()}/calling/api/call/call-token-livekit`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "Authorization": `Bearer ${token}`,
+  //       },
+       
+  //       body: JSON.stringify({
+  //         action: "end_call",
+  //         callId,
+  //         userId: user.id || user._id,
+  //       }),
+  //       credentials: "include",
+  //     });
+  //   } catch (err) {
+  //     console.error("Failed to send call end to backend:", err);
+  //   }
+  // };
 
   
   useEffect(() => {
@@ -359,6 +400,25 @@ export default function VideoCallRoom({
     };
   }, []);
 
+  useEffect(() => {
+    // Ensure socket is connected to the current room/channel before sending gifts
+    let didCancel = false;
+    (async () => {
+      try {
+        if (!roomName) return;
+        // Only connect if not already connected to this channel
+        if (!socketManager.isSocketConnected() || socketManager.getChannelId() !== roomName) {
+          await socketManager.connect(roomName);
+        }
+      } catch (err) {
+        if (!didCancel) {
+          console.error('Failed to connect socket for gifts:', err);
+        }
+      }
+    })();
+    return () => { didCancel = true; };
+  }, [roomName]);
+
 
   const handleLeaveCall = useCallback(() => {
     if (isDisconnectingRef.current) return;
@@ -366,7 +426,7 @@ export default function VideoCallRoom({
     setCallStats(prev => ({ ...prev, isConnected: false }));
 
   
-    sendCallEndToBackend();
+   
 
     if (roomRef.current) {
       try {
@@ -395,7 +455,7 @@ export default function VideoCallRoom({
     } else {
       router.push('/astrologers');
     }
-  }, [router, sendCallEndToBackend]);
+  }, [router]);
 
   // Listen for call_end event to disconnect user if astrologer ends the call
   useEffect(() => {
@@ -459,7 +519,7 @@ export default function VideoCallRoom({
     isDisconnectingRef.current = true;
     roomRef.current = null;
     setCallStats(prev => ({ ...prev, isConnected: false }));
-    sendCallEndToBackend();
+   
     setTimeout(() => {
       if (onDisconnect) {
         onDisconnect();
@@ -470,7 +530,7 @@ export default function VideoCallRoom({
         router.push('/astrologers');
       }
     }, 1500);
-  }, [onDisconnect, router, sendCallEndToBackend]);
+  }, [onDisconnect, router]);
 
   const handleError = useCallback((error: Error) => {
     console.error('Room error:', error);
@@ -588,7 +648,7 @@ export default function VideoCallRoom({
     const user = getUserDetails();
     try {
       await socketManager.sendGift({
-        channelId: roomName,
+        channelId: roomName, 
         giftId: gift._id,
         from: user.id || user._id,
         fromName: user.name || user.displayName || "User",
@@ -620,9 +680,9 @@ export default function VideoCallRoom({
         onError={handleError}
         connect={true}
         options={{
-          // Enable adaptive stream for better performance
+     
           adaptiveStream: true,
-          // Enable dynacast for better performance
+        
           dynacast: true,
           // Audio settings
           audioCaptureDefaults: {
@@ -643,7 +703,7 @@ export default function VideoCallRoom({
         {/* Call Header */}
         <CallHeader />
 
-        {/* Custom Video Display */}
+        {/* All Participant Video Tiles */}
         <CustomVideoDisplay />
 
         {/* Custom Control Bar */}
@@ -668,7 +728,10 @@ export default function VideoCallRoom({
                   <button
                     key={gift._id}
                     className="flex flex-col items-center p-2 border rounded hover:bg-orange-50"
-                    onClick={() => handleSendGift(gift)}
+                    onClick={() => {
+                      setPendingGift(gift);
+                      setShowGiftConfirm(true);
+                    }}
                     disabled={sendingGift}
                   >
                     <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-1" />
@@ -687,6 +750,23 @@ export default function VideoCallRoom({
           <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded shadow-lg z-50">
             🎁 {giftNotification.fromName} sent {giftNotification.giftName}!
           </div>
+        )}
+
+        {/* Render the confirmation dialog */}
+        {showGiftConfirm && pendingGift && (
+          <GiftConfirmationDialog
+            isOpen={showGiftConfirm}
+            onClose={() => setShowGiftConfirm(false)}
+            onConfirm={async () => {
+              setShowGiftConfirm(false);
+              await handleSendGift(pendingGift);
+              setPendingGift(null);
+            }}
+            giftName={pendingGift.name}
+            giftIcon={pendingGift.icon}
+            giftPrice={pendingGift.price}
+            isLoading={sendingGift}
+          />
         )}
       </LiveKitRoom>
     </div>

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 
 const AstrologerCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [visibleCards, setVisibleCards] = useState(4);
 
   
   const astrologers = [
@@ -36,44 +35,30 @@ const AstrologerCarousel = () => {
       experience: "Exp: 2 years",
       image: "/Naresh.png"
     },
-    
   ];
-
 
   const nextSlide = () => {
     setCurrentIndex((prevIndex) => 
-      prevIndex >= astrologers.length - visibleCards ? 0 : prevIndex + 1
+      prevIndex >= astrologers.length - 1 ? 0 : prevIndex + 1
     );
   };
-
 
   const prevSlide = () => {
     setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? astrologers.length - visibleCards : prevIndex - 1
+      prevIndex === 0 ? astrologers.length - 1 : prevIndex - 1
     );
   };
 
-  
+  // Auto-play functionality
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 640) {
-        setVisibleCards(1);
-      } else if (window.innerWidth < 1024) {
-        setVisibleCards(3);
-      } else {
-        setVisibleCards(4);
-      }
-    };
-    
-    
-    handleResize();
-    
-    
-    window.addEventListener('resize', handleResize);
-    
-    
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => 
+        prevIndex >= astrologers.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 3500); // Change slide every 3.5 seconds
+
+    return () => clearInterval(interval);
+  }, [astrologers.length]);
 
   return (
     <div className="w-full py-12 relative" style={{
@@ -104,45 +89,42 @@ const AstrologerCarousel = () => {
           Consult with <em>India's</em> best Astrologers
         </h2>
         
-        {/* Carousel container */}
-        <div className="relative overflow-hidden ">
+        {/* Slider container */}
+        <div className="relative overflow-hidden">
           {/* Previous button */}
           <button 
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-[4px] w-10 h-10 flex items-center justify-center shadow-md"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
             aria-label="Previous astrologer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
           
-          
-          <div 
-            className="flex transition-transform duration-500 ease-in-out gap-4"
-            style={{ 
-              transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
-              width: `${astrologers.length * (100 / visibleCards)}%`
-            }}
-          >
-            {astrologers.map((astrologer) => (
+          {/* Slider track */}
+          <div className="flex transition-transform duration-300 ease-out">
+            {astrologers.map((astrologer, index) => (
               <div 
                 key={astrologer.id} 
-                className="flex-shrink-0 px-2"
-                style={{ width: `${100 / astrologers.length}%` }}
+                className="w-full flex-shrink-0 px-4"
+                style={{ 
+                  transform: `translateX(-${currentIndex * 100}%)`,
+                  transition: 'transform 300ms ease-out'
+                }}
               >
-                <div className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center">
-                  <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-orange-300  mb-3">
+                <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center max-w-sm mx-auto">
+                  <div className="w-32 h-32 rounded-full overflow-hidden border-3 border-orange-300 mb-4 shadow-md">
                     <img
                       src={astrologer.image}
                       alt={astrologer.name}
-                      className="w-full h-100 object-cover "
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                  <h3 className="font-semibold text-lg text-center">{astrologer.name}</h3>
-                  <p className="text-center text-sm text-[#373737] mt-1">{astrologer.expertise}</p>
-                  <p className="text-center text-sm text-[#373737] mt-1">{astrologer.experience}</p>
-                  <Link href="calls/call1" type='button' className="mt-3 bg-[#F7971E] text-black rounded px-1 py-1 text-sm font-medium w-[171px] mx-auto flex justify-center">
+                  <h3 className="font-bold text-xl text-center text-gray-800 mb-2">{astrologer.name}</h3>
+                  <p className="text-center text-sm text-gray-600 mb-1">{astrologer.expertise}</p>
+                  <p className="text-center text-sm text-gray-500 mb-4">{astrologer.experience}</p>
+                  <Link href="calls/call1" className="bg-orange-500 hover:bg-orange-600 text-white rounded-lg px-6 py-2 text-sm font-semibold transition-colors duration-200">
                     OFFER: FREE 1st call
                   </Link>
                 </div>
@@ -150,16 +132,30 @@ const AstrologerCarousel = () => {
             ))}
           </div>
           
-          
+          {/* Next button */}
           <button 
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
             aria-label="Next astrologer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+          
+          {/* Dots indicator */}
+          <div className="flex justify-center mt-6 space-x-2">
+            {astrologers.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>

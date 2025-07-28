@@ -52,8 +52,8 @@ const RashiSection: React.FC = () => {
                 transition={{ duration: 0.2 }}
                 style={{ boxShadow: '0 8px 32px 0 rgba(247,151,30,0.10)' }}
               >
-                <div className="w-16 h-16 mb-2">
-                  <Image src={rashi.image || "/default-image.png"} alt={rashi.name} width={64} height={64} />
+                <div className="w-12 h-12 mb-2">
+                  <Image src={rashi.image || "/default-image.png"} alt={rashi.name} width={48} height={48} />
                 </div>
                 <div className="text-gray-700 text-xl font-bold mb-2 mt-3">{rashi.hindiName}</div>
                 <div className="text-gray-600 text-base font-medium">{rashi.name}</div>

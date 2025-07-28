@@ -412,3 +412,14 @@ img, video {
   background: var(--primary-orange-light);
   color: var(--text-primary);
 }
+
+.ghost-shimmer {
+  background: linear-gradient(90deg, #f5f5f5 25%, #eaeaea 50%, #f5f5f5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+  opacity: 0.7;
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

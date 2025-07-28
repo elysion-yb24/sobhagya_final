@@ -9,7 +9,6 @@ import {
   Clock, 
   Phone, 
   Video, 
-  Users, 
   Award, 
   Languages, 
   Zap,
@@ -19,9 +18,7 @@ import {
   Sparkles,
   Crown,
   Shield,
-  Heart,
-  MessageCircle,
-  TrendingUp
+  Heart
 } from "lucide-react";
 
 const astrologers = [
@@ -117,111 +114,102 @@ interface Astrologer {
 
 const EnhancedAstrologerCard = ({ astrologer, index }: { astrologer: Astrologer; index: number }) => (
   <motion.div 
-    className="bg-white border border-gray-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+    className="group relative bg-white rounded-xl border border-orange-200 p-4 sm:p-5 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] flex flex-col w-full max-w-[320px] h-full"
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay: index * 0.1 }}
-    whileHover={{ y: -5, scale: 1.02 }}
+    style={{
+      boxShadow: '0 4px 12px 0 rgba(247,151,30,0.08)',
+    }}
   >
-    {/* Background decoration */}
-    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-100 to-transparent rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
-    
-    {/* Status badge */}
-    <div className="absolute top-4 right-4 z-10">
-      <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-        astrologer.status === 'online' 
-          ? 'bg-green-100 text-green-700' 
-          : 'bg-yellow-100 text-yellow-700'
-      }`}>
-        <div className={`w-2 h-2 rounded-full ${
-          astrologer.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
-        }`}></div>
-        <span className="capitalize">{astrologer.status}</span>
+    <div className="flex gap-3 sm:gap-4 items-start mb-3 sm:mb-4">
+      <div className="relative flex flex-col items-center flex-shrink-0">
+        <img
+          src={astrologer.image || '/default-astrologer.png'}
+          alt={astrologer.name}
+          className="w-16 h-16 sm:w-18 sm:h-18 rounded-full object-cover border-2 shadow-sm"
+          style={{ borderColor: astrologer.status === 'online' ? '#56AE50' : '#ff0000' }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=64`;
+          }}
+        />
+        {astrologer.status === 'online' && (
+          <span className="text-xs text-green-600 font-medium mt-1">Online</span>
+        )}
       </div>
-    </div>
-
-    {/* Profile section */}
-    <div className="flex flex-col items-center text-center mb-4">
-      <div className="relative">
-        <motion.div 
-          className="w-24 h-24 rounded-full overflow-hidden mb-3 border-3 border-orange-300 bg-gray-100 shadow-lg"
-          whileHover={{ scale: 1.1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {astrologer.image ? (
-            <Image 
-              src={astrologer.image} 
-              alt={astrologer.name} 
-              width={96} 
-              height={96} 
-              className="object-cover w-full h-full" 
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-              <Crown className="w-8 h-8 text-orange-600" />
-            </div>
-          )}
-        </motion.div>
-        
-        {/* Premium badge */}
-        <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center">
-          <Crown className="w-3 h-3 text-white" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-base sm:text-lg font-bold text-gray-800 truncate">{astrologer.name}</span>
+          <span className="text-orange-400 flex-shrink-0" title="Verified">
+            <img src="/orange_tick.png" alt="Orange Tick" className="w-4 h-4" />
+          </span>
+        </div>
+        <div className="text-gray-700 text-xs font-medium leading-tight truncate mb-1">
+          {astrologer.expertise}
+        </div>
+        <div className="text-gray-500 text-xs truncate mb-1">
+          {astrologer.language}
+        </div>
+        <div className="text-gray-500 text-xs mb-2">Exp:- <span className="font-semibold">{astrologer.experience} years</span></div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-gray-900">₹ {astrologer.rate}/<span className="text-xs font-medium">min.</span></span>
         </div>
       </div>
-
-      <h3 className="font-bold text-lg text-gray-900 mb-1">{astrologer.name}</h3>
-      
-      {/* Rating */}
-      <div className="flex items-center gap-1 mb-2">
-        <Star className="w-4 h-4 text-yellow-500 fill-current" />
-        <span className="text-sm font-medium text-gray-700">{astrologer.rating}</span>
-        <span className="text-xs text-gray-500">({astrologer.consultations})</span>
-      </div>
-
-      {/* Languages */}
-      <div className="flex items-center gap-1 mb-2">
-        <Languages className="w-4 h-4 text-gray-400" />
-        <span className="text-sm text-gray-600">{astrologer.language}</span>
-      </div>
     </div>
-
-    {/* Expertise tags */}
-    <div className="flex flex-wrap gap-1 justify-center mb-4">
-      {astrologer.expertise.split(', ').map((skill, i) => (
-        <span 
-          key={i}
-          className="px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-medium"
-        >
-          {skill}
+    
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-1">
+        <span className="flex items-center text-orange-400">
+          {Array.from({ length: 5 }).map((_, i) => {
+            const value = astrologer.rating;
+            const isHalf = value - i >= 0.5 && value - i < 1;
+            return (
+              <span key={i} className="relative">
+                <svg width="12" height="12" className="sm:w-3 sm:h-3" fill={i < Math.floor(value) ? '#F7971D' : '#E5E7EB'} viewBox="0 0 20 20">
+                  <polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 " />
+                </svg>
+                {isHalf && (
+                  <svg className="absolute left-0 top-0" width="12" height="12" viewBox="0 0 20 20">
+                    <defs>
+                      <linearGradient id={`half-star-${i}`}> <stop offset="50%" stopColor="#F7971D" /><stop offset="50%" stopColor="#E5E7EB" /></linearGradient>
+                    </defs>
+                    <polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 " fill={`url(#half-star-${i})`} />
+                  </svg>
+                )}
+              </span>
+            );
+          })}
         </span>
-      ))}
+        <span className="text-xs text-gray-500 ml-1">({astrologer.consultations} orders)</span>
+      </div>
     </div>
-
-    {/* Experience */}
-    <div className="flex items-center justify-center gap-1 mb-4">
-      <Award className="w-4 h-4 text-gray-400" />
-      <span className="text-sm text-gray-600">Exp: {astrologer.experience}</span>
-    </div>
-
-    {/* Rate */}
-    <div className="text-center mb-4">
-      <span className="text-lg font-bold text-orange-600">₹{astrologer.rate}/min</span>
-    </div>
-
-    {/* Action button */}
-    <Link href="/calls/call1">
-      <motion.div
-        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-xl font-semibold text-center hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+    
+    <div className="flex gap-2 sm:gap-3 mt-auto pt-3 border-t border-gray-100">
+      <button
+        className="flex-1 px-3 py-2 flex items-center justify-center gap-1 border-2 border-[#F7971D] text-[#F7971D] font-semibold rounded-lg bg-white hover:bg-orange-50 transition-all duration-200 text-xs"
+        onClick={(e) => { e.stopPropagation(); }}
       >
-        <Gift className="w-4 h-4" />
-        <span>{astrologer.specialOffer}</span>
-      </motion.div>
-    </Link>
-
-    {/* Hover effect overlay */}
-    <div className="absolute inset-0 bg-gradient-to-t from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl"></div>
+        <img src="/message.png" alt="Chat" className="w-4 h-4" />
+        <span>Chat</span>
+      </button>
+      
+      <button
+        className="flex-1 px-3 py-2 flex items-center justify-center gap-1 bg-[#F7971D] text-white font-semibold rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs"
+        onClick={(e) => { e.stopPropagation(); }}
+      >
+        <Video className="w-4 h-4" fill="#fff" />
+        <span>Video</span>
+      </button>
+      
+      <Link href="/calls/call1" className="flex-1">
+        <button
+          className="w-full px-3 py-2 flex items-center justify-center gap-1 bg-[#F7971D] text-white font-medium rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs"
+        >
+          <img src="/Vector.png" alt="Call" className="w-4 h-4" />
+          <span>Call</span>
+        </button>
+      </Link>
+    </div>
   </motion.div>
 );
 
@@ -377,18 +365,19 @@ const AstrologerCallPage = () => {
           <EnhancedLoader />
         ) : (
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 lg:gap-8"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.7 }}
           >
             <AnimatePresence>
               {astrologers.slice(0, showMore ? astrologers.length : 4).map((astrologer, index) => (
-                <EnhancedAstrologerCard 
-                  key={`${astrologer.id}-${index}`} 
-                  astrologer={astrologer} 
-                  index={index}
-                />
+                <div key={`${astrologer.id}-${index}`} className="flex justify-center">
+                  <EnhancedAstrologerCard 
+                    astrologer={astrologer} 
+                    index={index}
+                  />
+                </div>
               ))}
             </AnimatePresence>
           </motion.div>
@@ -423,32 +412,7 @@ const AstrologerCallPage = () => {
           </motion.div>
         )}
 
-        {/* Stats section */}
-        <motion.div 
-          className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 1.2 }}
-        >
-          {[
-            { icon: Users, number: "50,000+", label: "Happy Clients" },
-            { icon: MessageCircle, number: "1M+", label: "Consultations" },
-            { icon: TrendingUp, number: "98%", label: "Success Rate" }
-          ].map((stat, index) => (
-            <motion.div
-              key={index}
-              className="bg-white rounded-2xl p-6 text-center shadow-lg border border-gray-100"
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
-                <stat.icon className="w-8 h-8 text-orange-600" />
-              </div>
-              <h4 className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</h4>
-              <p className="text-gray-600 font-medium">{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
+
       </div>
     </div>
   );

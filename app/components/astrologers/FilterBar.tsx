@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Filter, X, ChevronDown, Star, Clock, MapPin, Languages, Heart, ChevronRight, Check, CreditCard } from 'lucide-react';
+import { Search, ChevronDown, X } from 'lucide-react';
 import { FilterBarSkeleton } from '../ui/SkeletonLoader';
+import { motion } from 'framer-motion';
 
 interface FilterOptions {
   languages: string[];
@@ -12,12 +13,12 @@ interface FilterOptions {
 }
 
 interface FilterBarProps {
-  onSearch: (query: string) => void;
-  onSortChange: (sort: { type: 'audio' | 'video' | 'language', language?: string }) => void;
+  onSearch: (value: string) => void;
+  onSortChange: (sort: { type: 'audio' | 'video' | 'language' | '' , language?: string }) => void;
   isLoading?: boolean;
   totalResults?: number;
-  searchQuery?: string;
-  selectedSort?: 'audio' | 'video' | 'language' | '';
+  searchQuery: string;
+  selectedSort: 'audio' | 'video' | 'language' | '';
   selectedLanguage?: string;
 }
 
@@ -36,6 +37,28 @@ const FilterBar: React.FC<FilterBarProps> = ({
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Typewriter effect for placeholder
+  const [placeholder, setPlaceholder] = useState('');
+  const fullPlaceholder = 'Search for Astrologer';
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (placeholder.length < fullPlaceholder.length) {
+      timeout = setTimeout(() => {
+        setPlaceholder(fullPlaceholder.slice(0, placeholder.length + 1));
+      }, 60);
+    }
+    return () => clearTimeout(timeout);
+  }, [placeholder]);
+  useEffect(() => {
+    setPlaceholder('');
+  }, []);
+
+  // Local state for search input
+  const [localSearch, setLocalSearch] = useState(searchQuery || '');
+  useEffect(() => {
+    setLocalSearch(searchQuery || '');
+  }, [searchQuery]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -109,65 +132,72 @@ const FilterBar: React.FC<FilterBarProps> = ({
   // Keep "Sort by" for audio, video, and empty cases
 
   return (
-    <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 relative z-[9999] px-2 sm:px-0">
-      <div className="flex-1 w-full">
-        {/* Search Bar - Separate container */}
-        <div className="flex-1 relative bg-white border border-gray-200 rounded-xl shadow-md px-3 sm:px-4 py-2 sm:py-3 transition-all duration-300 focus-within:border-orange-300 focus-within:shadow-lg">
+    <motion.div
+      initial={{ x: -80, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 60, damping: 14, delay: 0.1 }}
+      className="w-full"
+    >
+      <div className="flex items-center gap-4 w-full">
+        {/* Search Bar */}
+        <div className="relative flex-1">
           <input
             type="text"
-            placeholder="Search astrologers..."
-            value={searchTerm}
-            onChange={e => { setSearchTerm(e.target.value); onSearch(e.target.value); }}
-            className="w-full bg-transparent border-none outline-none text-base sm:text-lg font-medium py-1 pl-8 sm:pl-10 pr-4 placeholder-gray-400 focus:outline-none focus:ring-0"
+            className="w-full px-5 py-3 rounded-full border border-orange-200 focus:border-orange-400 focus:ring-0 bg-white text-base shadow-none transition-all duration-200 placeholder-gray-400 outline-none"
+            value={localSearch}
+            onChange={e => setLocalSearch(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
           />
-          <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-5 h-5 sm:w-6 sm:h-6 text-orange-400" />
-          {searchTerm && (
+          {localSearch && (
             <button
-              onClick={() => { setSearchTerm(''); onSearch(''); }}
-              className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              onClick={() => setLocalSearch('')}
+              className="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              <X className="w-5 h-5" />
             </button>
           )}
         </div>
-      </div>
-      <div className="w-full sm:w-auto mb-2 sm:mb-0">
-        {/* Sort select */}
-        <div className="relative">
+        {/* Search Icon always outside, now acts as search button */}
+        <button
+          className="flex items-center justify-center h-12 w-12 rounded-full bg-orange-50 border border-orange-200 ml-1 hover:bg-orange-100 transition-colors"
+          onClick={() => onSearch(localSearch)}
+          aria-label="Search Astrologers"
+        >
+          <Search className="w-6 h-6 text-orange-400" />
+        </button>
+        {/* Sort By Dropdown */}
+        <div className="relative min-w-[140px]">
           <select
-            value={sortBy === 'language' && currentLanguage ? currentLanguage : sortBy}
+            value={selectedSort}
             onChange={e => {
               const value = e.target.value;
               if (value === 'audio' || value === 'video') {
-                setSortBy(value);
-                setCurrentLanguage('');
                 onSortChange({ type: value });
               } else if (value === '') {
-                // Handle "Sort By" default option - don't trigger any change
-                setSortBy('');
-                setCurrentLanguage('');
-                // Don't call onSortChange for empty selection
+                onSortChange({ type: '' });
               } else {
-                setSortBy('language');
-                setCurrentLanguage(value);
                 onSortChange({ type: 'language', language: value });
               }
             }}
-            className="w-full sm:w-auto pl-8 pr-3 sm:pr-4 py-2 sm:py-3 rounded-xl font-medium bg-white text-gray-700 border border-gray-200 shadow-md focus:outline-none focus:ring-0 focus:border-orange-300 transition-all duration-300 text-sm sm:text-base appearance-none"
+            className="w-full pl-4 pr-8 py-3 rounded-full font-medium bg-white text-gray-700 border border-gray-200 shadow-md focus:outline-none focus:ring-0 focus:border-orange-300 transition-all duration-300 text-base appearance-none"
           >
             <option value="">Sort By</option>
             <option value="audio">Audio</option>
             <option value="video">Video</option>
             <optgroup label="Languages">
-              {filterOptions.languages.map(lang => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
+              {/* You may want to pass filterOptions.languages as a prop for dynamic languages */}
+              <option value="Hindi">Hindi</option>
+              <option value="English">English</option>
+              <option value="Tamil">Tamil</option>
+              <option value="Telugu">Telugu</option>
+              {/* ...add more as needed */}
             </optgroup>
           </select>
-          <ChevronDown className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400 pointer-events-none" />
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

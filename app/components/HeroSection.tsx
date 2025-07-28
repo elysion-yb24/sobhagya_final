@@ -115,7 +115,7 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* Enhanced Navigation Cards - Mobile Optimized */}
-        <div className="absolute bottom-0 left-0 right-0 z-20 transform translate-y-1/2 mx-auto">
+        <div className="absolute bottom-0 left-0 right-0 z-20 transform translate-y-1/4 mx-auto">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
             <motion.div 
               className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 lg:gap-6"
@@ -270,7 +270,7 @@ const HeroSection: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.3 }}
           >
             <motion.div
-              className="relative z-10 w-full flex justify-center md:justify-end items-end"
+              className="relative z-10 w-full flex justify-center md:justify-end items-end transform translate-y-20 sm:translate-y-24 md:translate-y-28 lg:translate-y-32"
               whileHover={{ scale: 1.02 }}
               transition={{ duration: 0.3 }}
             >
@@ -329,44 +329,44 @@ const HeroSection: React.FC = () => {
         </div>
       </motion.section>
 
-      {/* NEW: Live Session Section - Padding adjusted for responsive nav cards */}
+      {/* NEW: Live Session Section - Enhanced for Desktop */}
       <section className="bg-white pt-32 sm:pt-36 md:pt-40 pb-16 sm:pb-20 md:pb-32">
-        <div className="container mx-auto px-4 sm:px-6">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl text-center font-bold text-[#745802] mb-2"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center font-bold text-[#745802] mb-4"
             style={{ fontFamily: "EB Garamond" }}
           >
             Live Session
           </h2>
           <p
-            className="text-center text-[#745802] mb-6 sm:mb-8 text-sm sm:text-base"
+            className="text-center text-[#745802] mb-8 sm:mb-12 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto"
             style={{ fontFamily: "Poppins" }}
           >
             Live astrology session for real-time insights and guidance on your
             life's path!
           </p>
 
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 sm:gap-6 md:gap-8 lg:gap-20 pt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 xl:gap-12 max-w-7xl mx-auto">
             {/* First Astrologer Card - Pt. Shashtri Ji */}
-            <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
-              <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs flex items-center z-10">
-                <span className="h-2 w-2 bg-white rounded-full mr-1 animate-pulse"></span>
+            <div className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1.5 rounded-full text-sm flex items-center z-10">
+                <span className="h-2 w-2 bg-white rounded-full mr-2 animate-pulse"></span>
                 Live
               </div>
               <img
                 src="/image (11).png"
                 alt="Pt. Shashtri Ji"
-                className="w-full h-56 sm:h-52 object-contain sm:object-cover"
+                className="w-full h-64 lg:h-72 xl:h-80 object-cover object-center"
               />
-              <div className="p-3 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
+              <div className="p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
                 <h3
-                  className="text-white font-semibold text-sm sm:text-base"
+                  className="text-white font-bold text-lg lg:text-xl mb-1"
                   style={{ fontFamily: "Poppins" }}
                 >
                   Pt. Shashtri Ji
                 </h3>
                 <p
-                  className="text-white font-light text-xs sm:text-sm"
+                  className="text-white font-medium text-sm lg:text-base"
                   style={{ fontFamily: "Poppins" }}
                 >
                   Marriage problems expert
@@ -375,25 +375,25 @@ const HeroSection: React.FC = () => {
             </div>
 
             {/* Zodiac Card - Live Astrological Insights */}
-            <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
-              <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs flex items-center z-10">
-                <span className="h-2 w-2 bg-white rounded-full mr-1 animate-pulse"></span>
+            <div className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1.5 rounded-full text-sm flex items-center z-10">
+                <span className="h-2 w-2 bg-white rounded-full mr-2 animate-pulse"></span>
                 Live
               </div>
               <img
                 src="/image (12).png"
                 alt="Live Astrological Insights"
-                className="w-full h-56 sm:h-52 object-contain sm:object-cover"
+                className="w-full h-64 lg:h-72 xl:h-80 object-contain object-center bg-gradient-to-br from-orange-50 to-orange-100"
               />
-              <div className="p-3 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
+              <div className="p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
                 <h3
-                  className="text-white font-semibold text-sm sm:text-base"
+                  className="text-white font-bold text-lg lg:text-xl mb-1"
                   style={{ fontFamily: "Poppins" }}
                 >
                   Live Astrological Insights:
                 </h3>
                 <p
-                  className="text-white text-xs sm:text-sm"
+                  className="text-white font-medium text-sm lg:text-base"
                   style={{ fontFamily: "Poppins" }}
                 >
                   Get clarity on love, career & more
@@ -402,25 +402,25 @@ const HeroSection: React.FC = () => {
             </div>
 
             {/* Third Card - Pt. Rama Krishna */}
-            <div className="w-full sm:w-64 rounded-lg overflow-hidden relative cursor-pointer shadow-md">
-              <div className="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-full text-xs flex items-center z-10">
-                <span className="h-2 w-2 bg-white rounded-full mr-1 animate-pulse"></span>
+            <div className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+              <div className="absolute top-3 left-3 bg-red-600 text-white px-3 py-1.5 rounded-full text-sm flex items-center z-10">
+                <span className="h-2 w-2 bg-white rounded-full mr-2 animate-pulse"></span>
                 Live
               </div>
               <img
                 src="/image (13).png"
                 alt="Pt. Rama Krishna"
-                className="w-full h-56 sm:h-52 object-contain sm:object-cover"
+                className="w-full h-64 lg:h-72 xl:h-80 object-cover"
               />
-              <div className="p-3 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
+              <div className="p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
                 <h3
-                  className="text-white font-semibold text-sm sm:text-base"
+                  className="text-white font-bold text-lg lg:text-xl mb-1"
                   style={{ fontFamily: "Poppins" }}
                 >
                   Pt. Rama Krishna
                 </h3>
                 <p
-                  className="text-white text-xs sm:text-sm"
+                  className="text-white font-medium text-sm lg:text-base"
                   style={{ fontFamily: "Poppins" }}
                 >
                   Today horoscope

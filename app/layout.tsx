@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import Loading from "./rashi/[name]/loading";
 import ClientLayout from "./ClientLayout";
 import ClientPathname from "./components/ClientPathname"; // Import the client component
+import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,14 +23,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <Suspense fallback={<Loading />}>
-          <Header />
-          <ClientLayout>
-            <main className="min-h-screen">{children}</main>
-          </ClientLayout>
-
-         <Footer />
-          
-      
+          <WalletBalanceProvider>
+            <Header />
+            <ClientLayout>
+              <main className="min-h-screen pt-20">{children}</main>
+            </ClientLayout>
+            <Footer />
+          </WalletBalanceProvider>
         </Suspense>
       </body>
     </html>

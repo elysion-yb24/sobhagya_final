@@ -1,7 +1,7 @@
 "use client";
 
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import FilterBar from "../components/astrologers/FilterBar";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { getApiBaseUrl } from "../config/api";
 import { useDebounce } from "../hooks/useDebounce";
+import { useWalletBalance, WalletBalanceProvider } from '../components/astrologers/WalletBalanceContext';
 
 interface Astrologer {
   _id: string;
@@ -94,359 +95,99 @@ export default function AstrologersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  const [astrologersData, setAstrologersData] = useState<Astrologer[]>([]);
+  const [allAstrologers, setAllAstrologers] = useState<Astrologer[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortBy, setSortBy] = useState<'audio' | 'video' | 'language' | ''>("");
   const [languageFilter, setLanguageFilter] = useState<string>("All");
-  const [videoOnly, setVideoOnly] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<'none' | 'transactions' | 'calls'>('none');
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showBestAstrologerLoader, setShowBestAstrologerLoader] = useState(false);
-  const prevSortByRef = useRef<string | undefined>(sortBy);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalAstrologers, setTotalAstrologers] = useState(0);
-  const [isLoadingPage, setIsLoadingPage] = useState(false);
-  const [allAstrologers, setAllAstrologers] = useState<Astrologer[]>([]);
-  const [allAstrologersLoaded, setAllAstrologersLoaded] = useState(false);
-  const [isLoadingAll, setIsLoadingAll] = useState(false);
-  const itemsPerPage = 10;
-
-  // Performance optimization: debounce search
-  const debouncedSearchQuery = useDebounce(searchQuery, 300);
-
-  // Searching state for sort
   const [searching, setSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Only show searching loader if user actively changes sort (not on initial load)
-  const hasInteractedRef = useRef(false);
+  // When searchQuery changes (from FilterBar), show loader for 700ms
   useEffect(() => {
-    if (hasInteractedRef.current && (sortBy === 'audio' || sortBy === 'video')) {
+    if (searchQuery) {
       setSearching(true);
-      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-      const timeout = setTimeout(() => setSearching(false), 1500 + Math.random() * 2500); // 1.5s to 4s
-      searchTimeoutRef.current = timeout;
+      const timeout = setTimeout(() => setSearching(false), 700);
       return () => clearTimeout(timeout);
     } else {
       setSearching(false);
     }
-  }, [sortBy]);
+  }, [searchQuery]);
 
-  // Mark as interacted after first sort change
+  // Fetch all astrologers on mount
   useEffect(() => {
-    if (!hasInteractedRef.current && (sortBy === 'audio' || sortBy === 'video')) {
-      hasInteractedRef.current = true;
-    }
-  }, [sortBy]);
-
-  // Function to fetch astrologers with pagination
-  const fetchAstrologers = useCallback(async (page: number = 1, reset = false) => {
-    console.log(`🚀 Starting fetchAstrologers for page ${page}...`);
-    const isInitialLoad = page === 1 && astrologersData.length === 0;
-    
-    if (isInitialLoad) {
+    setMounted(true);
+    const fetchAllAstrologers = async () => {
       setIsLoading(true);
-    } else {
-      setIsLoadingPage(true);
-    }
     setError(null);
-
     try {
       const token = getAuthToken();
       if (!token) {
-        console.error("❌ No authentication token found after refresh");
         setError("Authentication required. Please log in.");
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
+          setIsLoading(false);
         return;
       }
-
-      console.log("🔑 Fetching astrologers with token:", token.slice(0, 20) + '...');
-
-      const skip = (page - 1) * itemsPerPage;
-      // Add search param if present
-      const searchParam = debouncedSearchQuery ? `&search=${encodeURIComponent(debouncedSearchQuery)}` : '';
-      let response = await fetch(
-        `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=${itemsPerPage}${searchParam}`,
+        const response = await fetch(
+          `${getApiBaseUrl()}/user/api/users?limit=10000`,
         {
           method: "GET",
           credentials: 'include',
           headers: {
-            "Authorization": token ? `Bearer ${token}` : '',
+              "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           cache: "no-store",
         }
       );
-
-      if (response.status === 401) {
-        console.error('❌ 401 Unauthorized error occurred');
-        console.error('📍 Request details:', {
-          url: `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=${itemsPerPage}`,
-          token: token ? `${token.substring(0, 20)}...` : 'NULL',
-          page: page
-        });
-        
-        // Clear authentication data and redirect
-        clearAuthData();
-        setError("Your session has expired. Please log in again.");
-        
-        // Add delay to show error message before redirect
-        setTimeout(() => {
-          console.log('🔄 Redirecting to home after 401 error...');
-          router.push("/");
-        }, 2000);
+        if (!response.ok) {
+          setError("Failed to fetch astrologers");
+          setIsLoading(false);
         return;
       }
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} - ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log("✅ Astrologers fetch successful, processing data...");
-      processAstrologersData(result, page);
-      
-    } catch (error) {
-      console.error("❌ Error fetching astrologers:", error);
-      setError("Failed to load astrologers. Please try again later.");
+        const data = await response.json();
+        setAllAstrologers(data.data?.list || data.list || []);
+      } catch (err) {
+        setError("Failed to fetch astrologers");
     } finally {
-      if (isInitialLoad) {
         setIsLoading(false);
-      } else {
-        setIsLoadingPage(false);
       }
-      console.log('🏁 fetchAstrologers completed');
-    }
-  }, [router, astrologersData.length, debouncedSearchQuery]);
+    };
+    fetchAllAstrologers();
+  }, []);
 
-  const processAstrologersData = (result: any, page: number) => {
-    console.log("Data response structure:", result);
-    
-    // Debug log for language data
-    if (result?.data?.list) {
-      console.log("Language data examples:", result.data.list.slice(0, 3).map((ast: any) => ({
-        language: ast.language,
-        languages: ast.languages,
-        type: {
-          language: ast.language ? typeof ast.language : 'undefined',
-          languages: ast.languages ? typeof ast.languages : 'undefined'
-        }
-      })));
-    }
-    
-    let astrologers: any[] = [];
-    let total = 0;
-    
-    // Handle the specific response structure we're getting
-    if (result?.data?.list && Array.isArray(result.data.list)) {
-      astrologers = result.data.list;
-      total = result.data.total || result.data.count || result.data.totalCount || 0;
-    } else if (result?.list && Array.isArray(result.list)) {
-      astrologers = result.list;
-      total = result.total || result.count || result.totalCount || 0;
-    } else if (Array.isArray(result)) {
-      // Handle direct array response
-      astrologers = result;
-      total = astrologers.length;
-    }
-
-    // Better total estimation logic
-    if (total === 0) {
-      if (astrologers.length === itemsPerPage) {
-        // If we got a full page, estimate there are more pages
-        // Start with a reasonable estimate and adjust as we load more
-        total = Math.max(page * itemsPerPage + 10, 50); // Estimate at least 50 total
-      } else {
-        // If we got less than itemsPerPage, this is likely the last page
-        total = (page - 1) * itemsPerPage + astrologers.length;
-      }
-    }
-
-    console.log(`Found ${astrologers.length} astrologers for page ${page}, total: ${total}`);
-    
-    if (astrologers.length === 0 && page === 1) {
-      console.warn("No astrologers found in response:", result);
-      setError("No astrologers available at the moment.");
-      return;
-    }
-    
-    const normalizedData: Astrologer[] = astrologers.map((ast: any) => ({
-      _id: ast._id || ast.id || ast.numericId?.toString() || '',
-      name: ast.name || "Unknown Astrologer",
-      languages: (() => {
-        // If language is an array, use it
-        if (Array.isArray(ast.language)) {
-          return ast.language.map((lang: string) => lang.trim());
-        }
-        // If language is a string, split by comma
-        if (typeof ast.language === 'string') {
-          return ast.language.split(',').map((lang: string) => lang.trim());
-        }
-        // If languages array exists, use it
-        if (Array.isArray(ast.languages)) {
-          return ast.languages.map((lang: string) => lang.trim());
-        }
-        // Default to Hindi
-        return ["Hindi"];
-      })(),
-      specializations: ast.talksAbout || [],  // Use talksAbout from API
-      experience: ast.age?.toString() || "0",
-      callsCount: ast.calls || 0,
-      rating: ast.rating?.avg || 5,  // Use average rating if available, default to 5
-      profileImage: ast.avatar || "",
-      hasVideo: ast.isVideoCallAllowed || false,
-      status: ast.status || "offline",  // Include status from API
-      talksAbout: ast.talksAbout || [],  // Include specializations from API
-      isVideoCallAllowed: ast.isVideoCallAllowed || false,
-      // Include rate information from API
-      rpm: ast.rpm || "",  // Audio call rate per minute
-      videoRpm: ast.videoRpm || "",  // Video call rate per minute
-      offerRpm: ast.offerRpm,  // Special offer rate if available
-      // Include all other API fields
-      about: ast.about,
-      age: ast.age,
-      avatar: ast.avatar,
-      calls: ast.calls,
-      createdAt: ast.createdAt,
-      isLive: ast.isLive,
-      isRecommended: ast.isRecommended,
-      numericId: ast.numericId,
-      payoutAudioRpm: ast.payoutAudioRpm,
-      payoutVideoRpm: ast.payoutVideoRpm,
-      phone: ast.phone,
-      priority: ast.priority,
-      role: ast.role,
-      sample: ast.sample,
-      upi: ast.upi
-    }));
-
-    console.log("Normalized astrologers data:", normalizedData);
-    
-    // Update pagination info
-    setTotalAstrologers(total);
-    setTotalPages(Math.ceil(total / itemsPerPage));
-    setCurrentPage(page);
-    
-    // Set the data for current page
-    setAstrologersData(normalizedData);
-  };
-
-  // Get all available languages from astrologers data
-  const allLanguages = useMemo(() => {
-    const dataToUse = allAstrologersLoaded && allAstrologers.length > 0 ? allAstrologers : astrologersData;
-    const languages = dataToUse
-      .map((ast) => ast.languages || [])
-      .flat()
-      .map(lang => lang.toLowerCase().trim());
-    
-    // Remove duplicates and sort
-    const uniqueLanguages = Array.from(new Set(languages))
-      .sort()
-      .map(lang => lang.charAt(0).toUpperCase() + lang.slice(1)); // Capitalize first letter
-    
-    return uniqueLanguages;
-  }, [astrologersData, allAstrologersLoaded, allAstrologers]);
-
-  // Filtering and sorting logic
-  const filteredAstrologers = useMemo(() => {
-    // Use allAstrologers if loaded, otherwise use astrologersData
-    let dataToUse = allAstrologersLoaded && allAstrologers.length > 0 ? allAstrologers : astrologersData;
-    let filtered = [...dataToUse];
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (ast) =>
-          ast.name.toLowerCase().includes(query) ||
-          ast.specializations.some((s) => s.toLowerCase().includes(query))
-      );
-    }
-    // Sort/Filter by type
-    if (sortBy === 'video') {
-      filtered = filtered.filter((ast) => ast.hasVideo);
-    } else if (sortBy === 'language' && languageFilter) {
-      filtered = filtered.filter((ast) =>
-        ast.languages.map(l => l.toLowerCase()).includes(languageFilter.toLowerCase())
-      );
-    }
-    // Pagination: slice for current page if allAstrologersLoaded
-    if (allAstrologersLoaded) {
-      const startIdx = (currentPage - 1) * itemsPerPage;
-      const endIdx = startIdx + itemsPerPage;
-      return filtered.slice(startIdx, endIdx);
-    }
-    return filtered;
-  }, [astrologersData, allAstrologersLoaded, allAstrologers, searchQuery, sortBy, languageFilter, currentPage, itemsPerPage]);
+  // Client-side search and filter
+  const filteredAstrologers = allAstrologers.filter(ast => {
+    const matchesSearch =
+      !searchQuery ||
+      ast.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (ast.specializations && ast.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())));
+    const matchesLanguage =
+      languageFilter === "All" ||
+      (ast.languages && ast.languages.some(lang => lang.toLowerCase() === languageFilter.toLowerCase()));
+    const matchesSort =
+      sortBy === '' ||
+      (sortBy === 'audio') ||
+      (sortBy === 'video' && ast.hasVideo);
+    return matchesSearch && matchesLanguage && matchesSort;
+  });
 
   // Handler for sort change from FilterBar
-  const handleSortChange = (sort: { type: 'audio' | 'video' | 'language', language?: string }) => {
+  const handleSortChange = (sort: { type: 'audio' | 'video' | 'language' | '', language?: string }) => {
     // Show loader only when switching to audio from a different sort
-    if (sort.type === 'audio' && prevSortByRef.current !== 'audio') {
+    if (sort.type === 'audio' && sort.type !== sortBy) {
       setShowBestAstrologerLoader(true);
       setTimeout(() => setShowBestAstrologerLoader(false), 1800); // 1.8s loader
     }
     setSortBy(sort.type);
     setLanguageFilter(sort.language || '');
-    prevSortByRef.current = sort.type;
   };
-
-  // Update total pages when filters change and all astrologers are loaded
-  useEffect(() => {
-    if (allAstrologersLoaded) {
-      // Calculate total pages based on all filtered astrologers (not just current page)
-      let allData = allAstrologers;
-      let filtered = [...allData];
-
-      // Apply the same filters as in the main useMemo
-      if (debouncedSearchQuery) {
-        const query = debouncedSearchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (ast) =>
-            ast.name.toLowerCase().includes(query) ||
-            ast.specializations.some((s) => s.toLowerCase().includes(query))
-        );
-      }
-
-      if (languageFilter !== "All") {
-        filtered = filtered.filter((ast) =>
-          ast.languages.some(lang => lang.toLowerCase() === languageFilter.toLowerCase())
-        );
-      }
-
-      if (sortBy === 'video') {
-        filtered = filtered.filter((ast) => ast.hasVideo);
-      }
-
-      const newTotalPages = Math.ceil(filtered.length / itemsPerPage);
-      setTotalPages(newTotalPages);
-      setTotalAstrologers(filtered.length);
-      
-      // If current page is beyond the new total pages, reset to page 1
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(1);
-      }
-    }
-  }, [allAstrologersLoaded, allAstrologers, debouncedSearchQuery, languageFilter, sortBy, itemsPerPage, currentPage]);
-
-  // Reset astrologer list and scroll state when search query changes
-  useEffect(() => {
-    setCurrentPage(1);
-    setAllAstrologers([]);
-    setAllAstrologersLoaded(false); // Reset loaded state
-    fetchAstrologers(1, true); // Fetch with reset=true to clear previous results
-  }, [debouncedSearchQuery]);
 
   // Function to load all astrologers
   const loadAllAstrologers = useCallback(async () => {
     console.log('🚀 Loading all astrologers...');
-    setIsLoadingAll(true);
+    setIsLoading(true);
     
     try {
       const token = getAuthToken();
@@ -461,10 +202,10 @@ export default function AstrologersPage() {
 
       while (hasMore) {
         console.log(`📄 Fetching page ${currentPage}...`);
-        const skip = (currentPage - 1) * itemsPerPage;
+        const skip = (currentPage - 1) * 10; // Assuming itemsPerPage is 10
         
         const response = await fetch(
-          `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=${itemsPerPage}`,
+          `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=10`,
           {
             method: "GET",
             credentials: 'include',
@@ -545,7 +286,7 @@ export default function AstrologersPage() {
         allAstrologersData.push(...normalizedData);
         
         // Check if we should continue
-        if (astrologers.length < itemsPerPage) {
+        if (astrologers.length < 10) { // Assuming itemsPerPage is 10
           hasMore = false;
         } else {
           currentPage++;
@@ -554,18 +295,14 @@ export default function AstrologersPage() {
 
       console.log(`✅ Loaded ${allAstrologersData.length} total astrologers`);
       setAllAstrologers(allAstrologersData);
-      setTotalAstrologers(allAstrologersData.length);
-      setTotalPages(Math.ceil(allAstrologersData.length / itemsPerPage));
-      setAllAstrologersLoaded(true);
-      setCurrentPage(1); // Reset to first page
       
     } catch (error) {
       console.error("❌ Error loading all astrologers:", error);
       setError("Failed to load all astrologers. Please try again.");
     } finally {
-      setIsLoadingAll(false);
+      setIsLoading(false);
     }
-  }, [itemsPerPage]);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -585,10 +322,10 @@ export default function AstrologersPage() {
 
   // Ensure proper pagination initialization
   useEffect(() => {
-    if (mounted && !isLoading && astrologersData.length > 0) {
-      console.log(`📊 Pagination initialized: ${astrologersData.length} astrologers on page ${currentPage}, total: ${totalAstrologers}, pages: ${totalPages}`);
+    if (mounted && !isLoading && allAstrologers.length !== 0) {
+      console.log(`📊 Pagination initialized: ${allAstrologers.length} astrologers on page 1, total: ${allAstrologers.length}, pages: 1`);
     }
-  }, [mounted, isLoading, astrologersData.length, currentPage, totalAstrologers, totalPages]);
+  }, [mounted, isLoading, allAstrologers.length]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -616,8 +353,8 @@ export default function AstrologersPage() {
     }
 
     console.log('✅ Authentication validated, initializing data fetch...');
-    fetchAstrologers();
-  }, [mounted, router]);
+    loadAllAstrologers(); // This function is no longer needed
+  }, [mounted, router, loadAllAstrologers]);
 
   // Prevent background scrolling when drawer is open
   useEffect(() => {
@@ -644,31 +381,23 @@ export default function AstrologersPage() {
     }
   }, [showHistory]);
 
-  // Restore handlePageChange for pagination
-  const handlePageChange = (newPage: number) => {
-    if (newPage >= 1 && newPage !== currentPage && !isLoadingPage) {
-      setCurrentPage(newPage);
-      fetchAstrologers(newPage);
-    }
-  };
-
   // Handle refresh button click
   const handleRefresh = async () => {
     console.log('🔄 Refresh requested');
-    setIsRefreshing(true);
+    setIsLoading(true);
     
     // Update token activity on user interaction
     // updateTokenActivity(); // This function was removed from imports
     
     try {
       // Reset to page 1 when refreshing
-      if (currentPage !== 1) {
+      if (allAstrologers.length !== 0) { // Assuming currentPage is 1
         console.log('📄 Resetting to page 1 for refresh');
-        setCurrentPage(1);
+        // setCurrentPage(1); // No longer needed
       }
-      await fetchAstrologers(1);
+      await loadAllAstrologers();
     } finally {
-      setTimeout(() => setIsRefreshing(false), 500); // Small delay for better UX
+      setTimeout(() => setIsLoading(false), 500); // Small delay for better UX
     }
   };
 
@@ -677,13 +406,17 @@ export default function AstrologersPage() {
     const pages = [];
     const maxVisiblePages = 5;
     
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
+    if (allAstrologers.length === 0) {
+      return [1]; // Show only one page if no data
+    }
+
+    if (allAstrologers.length <= maxVisiblePages) {
+      for (let i = 1; i <= allAstrologers.length; i++) {
         pages.push(i);
       }
     } else {
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+      const startPage = Math.max(1, 1); // Always start from 1
+      const endPage = Math.min(allAstrologers.length, startPage + maxVisiblePages - 1);
       
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
@@ -693,34 +426,36 @@ export default function AstrologersPage() {
     return pages;
   };
 
+  const { walletBalance, isFetching } = useWalletBalance();
+
   if (!mounted) {
     return null; // Return null on server-side and first render
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-orange-50/30">
+    <WalletBalanceProvider>
       {/* FilterBar and Top Controls */}
       <section className="w-full flex justify-center py-6 bg-transparent">
-        <div className="w-full max-w-4xl rounded-2xl shadow-lg border border-orange-100/70 bg-white/90 backdrop-blur-lg px-4 py-3 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="w-full max-w-7xl mx-auto rounded-full shadow-2xl border border-orange-100/70 bg-white/95 backdrop-blur-lg px-10 py-4 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8"
+          style={{ boxShadow: '0 6px 32px 0 rgba(247, 151, 30, 0.10)' }}>
           {/* FilterBar (search + sort by) */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <FilterBar
               onSearch={setSearchQuery}
               onSortChange={handleSortChange}
               isLoading={isLoading}
-              totalResults={totalAstrologers}
+              totalResults={allAstrologers.length}
               searchQuery={searchQuery}
               selectedSort={sortBy}
               selectedLanguage={languageFilter}
             />
           </div>
 
-
           {/* Desktop Buttons (hidden on mobile) */}
-          <div className="hidden sm:flex gap-2 items-center md:ml-4">
+          <div className="hidden sm:flex gap-4 items-center md:ml-8 flex-shrink-0">
             <button
               onClick={() => setShowHistory(showHistory === 'transactions' ? 'none' : 'transactions')}
-              className={`flex items-center justify-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 ${showHistory === 'transactions' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'}`}
+              className={`flex items-center justify-center gap-2 px-6 py-2.5 h-14 rounded-full text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 shadow-sm ${showHistory === 'transactions' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'}`}
               aria-label="Transaction History"
             >
               <CreditCard className="w-5 h-5" /> 
@@ -728,18 +463,27 @@ export default function AstrologersPage() {
             </button>
             <button
               onClick={() => setShowHistory(showHistory === 'calls' ? 'none' : 'calls')}
-              className={`flex items-center justify-center gap-2 px-4 py-2 h-12 rounded-xl text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${showHistory === 'calls' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-green-600 border-green-200 hover:bg-green-100'}`}
+              className={`flex items-center justify-center gap-2 px-6 py-2.5 h-14 rounded-full text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 shadow-sm ${showHistory === 'calls' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-green-600 border-green-200 hover:bg-green-100'}`}
               aria-label="Call History"
             >
               <Phone className="w-5 h-5" /> 
               <span className="whitespace-nowrap">Calls</span>
             </button>
+            <div className="flex items-center justify-center gap-2 px-6 py-2.5 h-14 rounded-full border border-green-200 bg-gradient-to-r from-green-50 to-green-100 text-green-700 font-bold text-base shadow-md select-none transition-all duration-200">
+              <Wallet className="w-5 h-5 text-green-500" />
+              <span className="whitespace-nowrap">₹{walletBalance?.toFixed(2) || '0.00'}</span>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {searching && (
+          <div className="flex justify-center mb-6">
+            <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
                 {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
             <div className="relative mb-6 sm:mb-8">
@@ -751,56 +495,11 @@ export default function AstrologersPage() {
               <p className="text-gray-500 text-sm sm:text-base">Please wait while we connect you with expert astrologers</p>
             </div>
           </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="bg-gradient-to-br from-red-50 to-red-100/50 border border-red-200 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-lg">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <X className="h-6 w-6 text-red-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-red-800 mb-2">Oops! Something went wrong</h3>
-              <p className="text-red-600 mb-4 text-sm">{error}</p>
-              <button
-                onClick={handleRefresh}
-                className="w-full text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                style={{ backgroundColor: '#EF4444' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        ) : 
-          // Show loader if searching (searchQuery is non-empty and allAstrologersLoaded is false or isLoadingAll is true)
-          ((searchQuery && (!allAstrologersLoaded || isLoadingAll)) || searching) ? (
-            <div className="flex flex-col items-center justify-center py-12 sm:py-16 lg:py-20 px-4 relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-50/80 to-orange-100/60 backdrop-blur-sm z-0 rounded-2xl" />
-              <div className="relative z-10 flex flex-col items-center justify-center max-w-md">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg animate-spin-slow">
-                  <svg className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-orange-500 animate-spin" fill="none" viewBox="0 0 56 56">
-                    <circle className="opacity-25" cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="6"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M8 28a20 20 0 0120-20v20z"></path>
-                  </svg>
-                </div>
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-orange-800 mb-2 tracking-wide text-center">Finding the best astrologers...</h3>
-                <p className="text-orange-600 mb-4 text-sm sm:text-base lg:text-lg text-center">Please wait while we update your results</p>
-              </div>
-              <style jsx>{`
-                .animate-spin-slow {
-                  animation: spin 1.2s linear infinite;
-                }
-                @keyframes spin {
-                  0% { transform: rotate(0deg); }
-                  100% { transform: rotate(360deg); }
-                }
-              `}</style>
-            </div>
-          ) :
-        (!searching && filteredAstrologers.length === 0) ? (
+        ) : allAstrologers.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-4">
             <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-lg">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <Users className="h-6 w-6 text-gray-600" />
+                <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-800 mb-2">No astrologers found</h3>
               <p className="text-gray-600 mb-4 text-sm">Try adjusting your search criteria</p>
@@ -808,150 +507,19 @@ export default function AstrologersPage() {
                 onClick={() => {
                   setSearchQuery("");
                   setLanguageFilter("");
-                  setSortBy(""); // Reset sort to default (Sort by)
+                  setSortBy("");
                 }}
                 className="w-full text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 style={{ backgroundColor: '#6B7280' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4B5563'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#6B7280'}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#4B5563')}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#6B7280')}
               >
                 Clear Filters
               </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6 sm:space-y-8">
-            {/* Render loader above AstrologerList */}
-            {showBestAstrologerLoader ? (
-  <div className="flex justify-center items-center min-h-[400px] w-full">
-    <div className="w-full max-w-3xl mx-auto bg-orange-50/60 rounded-2xl flex flex-col items-center justify-center py-16 shadow-md border border-orange-100">
-      <div className="mb-6">
-        <span className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-100 shadow-inner">
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="22" stroke="#F7971E" strokeWidth="4" fill="#FFF7ED" />
-            <path d="M24 6a18 18 0 1 1-12.728 5.272" stroke="#F7971E" strokeWidth="4" strokeLinecap="round"/>
-          </svg>
-        </span>
-      </div>
-      <h2 className="text-2xl sm:text-3xl font-bold text-orange-900 mb-2 text-center">Finding the best astrologers…</h2>
-      <p className="text-orange-700 text-base sm:text-lg text-center">Please wait while we update your results</p>
     </div>
   </div>
 ) : (
   <AstrologerList astrologers={filteredAstrologers} compactButtons={sortBy === 'audio' || sortBy === 'video'} showVideoButton={sortBy === 'video'} />
-)}
-            
-            {/* Mobile-Optimized Pagination */}
-            {/* Debug: totalPages = {totalPages}, currentPage = {currentPage}, allAstrologersLoaded = {allAstrologersLoaded.toString()} */}
-            {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 sm:pt-8">
-                {/* Mobile pagination - simplified */}
-                <div className="sm:hidden flex items-center gap-2 w-full">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1 || isLoadingPage}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                      currentPage === 1 || isLoadingPage
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border border-gray-200'
-                    }`}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </button>
-
-                  <div className="px-4 py-3 text-white rounded-lg font-medium min-w-[80px] text-center" style={{ backgroundColor: '#F7971E' }}>
-                    {currentPage} {totalPages > 0 ? `/ ${totalPages}` : '+'}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={isLoadingPage}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                      isLoadingPage
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm border border-gray-200'
-                    }`}
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {/* Desktop pagination */}
-                <div className="hidden sm:flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1 || isLoadingPage}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-                      currentPage === 1 || isLoadingPage
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md border border-gray-200'
-                    }`}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span>Previous</span>
-                  </button>
-
-                  <div className="flex items-center gap-1">
-                    {getPageNumbers().map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        disabled={isLoadingPage}
-                        className={`w-10 h-10 rounded-xl font-medium transition-all ${
-                          pageNum === currentPage
-                            ? 'text-white shadow-lg'
-                            : isLoadingPage
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md border border-gray-200'
-                        }`}
-                        style={pageNum === currentPage ? { backgroundColor: '#F7971E' } : {}}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={isLoadingPage}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-                      isLoadingPage
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md border border-gray-200'
-                    }`}
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Loading indicator for page changes */}
-            {isLoadingPage && (
-              <div className="flex justify-center py-8">
-                <div className="flex items-center gap-3 px-6 py-3 rounded-xl" style={{ color: '#F7971E', backgroundColor: '#FDF4E6' }}>
-                  <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#F7971E' }}></div>
-                  <span className="font-medium">Loading page {currentPage}...</span>
-                </div>
-              </div>
-            )}
-
-            {/* Loading indicator for loading all astrologers */}
-            {isLoadingAll && (
-              <div className="flex justify-center py-8">
-                <div className="flex flex-col items-center gap-4 px-8 py-6 rounded-xl" style={{ color: '#F7971E', backgroundColor: '#FDF4E6' }}>
-                  <div className="w-8 h-8 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#F7971E' }}></div>
-                  <div className="text-center">
-                    <span className="font-medium text-lg">Loading All Astrologers...</span>
-                    <p className="text-sm text-gray-600 mt-1">This may take a moment</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         )}
       </main>
 
@@ -1115,6 +683,6 @@ export default function AstrologersPage() {
           `}</style>
         </>
       )}
-    </div>
+    </WalletBalanceProvider>
   );
 }

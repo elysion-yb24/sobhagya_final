@@ -40,11 +40,11 @@ const ConsultingSection: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-16 items-start max-w-8xl mx-auto">
           <div className="relative flex justify-center items-center">
             <Image
-              src="/palm-reading.png"
+              src="/palm-reading-Photoroom.png"
               alt="Palm Reading"
               width={220}
               height={220}
-              className="w-full"
+              className="w-full mix-blend-multiply"
               priority
             />
           </div>

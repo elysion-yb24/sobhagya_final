@@ -70,6 +70,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
   const [showAudioConfirmDialog, setShowAudioConfirmDialog] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
 
+
   // Insufficient balance modal state
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
   // Remove local wallet balance state
@@ -467,7 +468,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     router.push(`/astrologers/${_id}`);
   };
 
-  return (
+    return (
     <>
       <div
         onClick={handleCardClick}
@@ -476,7 +477,6 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
           boxShadow: '0 2px 8px 0 rgba(247,151,30,0.07)',
         }}
       >
-
         <div className="flex gap-2 sm:gap-3 items-center mb-1 sm:mb-2">
           <div className="relative flex flex-col items-center">
             <img

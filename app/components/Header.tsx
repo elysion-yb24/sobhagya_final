@@ -17,7 +17,6 @@ const delayBetween = 5000;
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [textIndex, setTextIndex] = useState(0);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -61,18 +60,7 @@ const Header = () => {
     }
   };
 
-  useEffect(() => {
-    const updateScrollProgress = () => {
-      const scrollTop = window.scrollY;
-      const scrollHeight =
-        document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (scrollTop / scrollHeight) * 100;
-      setScrollProgress(progress);
-    };
 
-    window.addEventListener("scroll", updateScrollProgress);
-    return () => window.removeEventListener("scroll", updateScrollProgress);
-  }, []);
 
   // Listen for custom user-auth-changed event for instant header update
   useEffect(() => {
@@ -202,13 +190,7 @@ const Header = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-orange-100/60 shadow-md transition-all duration-300 animate-fadeIn">
-      {/* Progress bar */}
-      <div 
-        className="absolute top-0 left-0 h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-all duration-300 ease-out rounded-full"
-        style={{ width: `${scrollProgress}%` }}
-      />
-      
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-orange-200/60 shadow-lg transition-all duration-300 animate-fadeIn">
       {/* DESKTOP HEADER */}
       <div className="hidden md:block">
         <div className="max-w-8xl mx-auto px-[10px] sm:pr-4 lg:pr-8">
@@ -235,17 +217,17 @@ const Header = () => {
             <nav className="flex-1 flex items-center justify-center gap-2 md:gap-4 lg:gap-6">
               {[
                 { href: "/", label: "Home" },
-                { href: "/call-with-astrologer", label: "Call with Astrologers" },
+                { href: "/call-with-astrologer", label: "Call with Astrologer" },
                 { href: "/about", label: "About" },
                 { href: "/services", label: "Services" },
                 { href: "/contact", label: "Contact" },
                 { href: "/live-session", label: "Live Session" },
-                { href: "/Blog", label: "Blog" },
+                { href: "/blog", label: "Blog" },
               ].map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative text-sm md:text-base font-semibold text-gray-700 px-2 md:px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[120px] md:max-w-[170px] truncate text-center"
+                  className="relative text-sm md:text-base font-semibold text-gray-700 px-2 md:px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[140px] md:max-w-[180px] truncate text-center"
                   style={{ lineHeight: '1.2' }}
                 >
                   <span className="block w-full overflow-hidden text-ellipsis">{item.label}</span>

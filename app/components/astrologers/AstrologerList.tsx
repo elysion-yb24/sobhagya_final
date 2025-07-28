@@ -171,10 +171,5 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   );
 };
 
-const AstrologerListWithProvider: React.FC<AstrologerListProps> = (props) => (
-  <WalletBalanceProvider>
-    <AstrologerList {...props} />
-  </WalletBalanceProvider>
-);
-
-export default AstrologerListWithProvider;
+// Remove the WalletBalanceProvider wrapper from AstrologerListWithProvider
+export default AstrologerList;

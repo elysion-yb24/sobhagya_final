@@ -149,7 +149,7 @@ class SocketManager {
   }
 
   // Initiate a video call (legacy socket-based)
-  async initiateVideoCall(channelId: string, astrologerId: string): Promise<any> {
+  async initiateVideoCall(channelId: string, receiverUserId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       if (!this.socket || !this.isConnected) {
         reject(new Error('Socket not connected'));
@@ -163,7 +163,7 @@ class SocketManager {
         return;
       }
 
-      console.log('Initiating video call via socket:', { channelId, astrologerId });
+      console.log('Initiating video call via socket:', { channelId, receiverUserId });
 
       // Set a timeout for the operation
       const timeout = setTimeout(() => {
@@ -185,6 +185,7 @@ class SocketManager {
         userType: 'user',
         callType: 'video',
         channelId: channelId,
+        receiverUserId: receiverUserId,
         callThrough: 'livekit'
       }, (response: any) => {
         if (response && !response.error) {
@@ -196,7 +197,7 @@ class SocketManager {
             userType: 'user'
           }, (joinResponse: any) => {
             clearTimeout(timeout);
-            if (joinResponse && !joinResponse.error) {
+            if (joinResponse && !joinResponse.error) {  
               console.log('Successfully joined the call');
               resolve(joinResponse);
             } else {
@@ -293,6 +294,9 @@ class SocketManager {
     return this.isConnected;
   }
 
+  getChannelId(): string | null {
+    return this.channelId;
+  }
   
   sendGift({
     channelId,

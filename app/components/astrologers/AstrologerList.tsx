@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AstrologerCard from './AstrologerCard';
 import { AstrologerCardSkeleton, ListSkeleton } from '../ui/SkeletonLoader';
+import { WalletBalanceProvider } from './WalletBalanceContext';
 
 interface Astrologer {
   _id: string;
@@ -170,4 +171,10 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   );
 };
 
-export default AstrologerList;
+const AstrologerListWithProvider: React.FC<AstrologerListProps> = (props) => (
+  <WalletBalanceProvider>
+    <AstrologerList {...props} />
+  </WalletBalanceProvider>
+);
+
+export default AstrologerListWithProvider;

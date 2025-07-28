@@ -56,12 +56,12 @@ const ConsultingSection: React.FC = () => {
                   {index !== consultingTopics.length - 1 && (
                     <div className="absolute left-1/2 top-[calc(100%+1rem)] h-16 w-[2px] bg-orange-200 -translate-x-1/2"></div>
                   )}
-                  <div className="flex items-center justify-center bg-white p-4 rounded-2xl shadow-xl border-t-8 border-orange-200">
+                  <div className="flex items-center justify-center bg-white p-2 rounded-2xl shadow-xl border-t-8 border-orange-200">
                     <Image
                       src={topic.image}
                       alt={topic.title}
-                      width={70}
-                      height={70}
+                      width={40}
+                      height={40}
                       className="object-contain"
                     />
                   </div>

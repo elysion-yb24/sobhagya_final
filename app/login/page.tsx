@@ -62,8 +62,18 @@ export default function LoginPage() {
     try {
       const isAuthValid = isAuthenticated();
       if (isAuthValid) {
-        console.log('✅ User already authenticated, redirecting to astrologers');
-        router.push('/astrologers');
+        console.log('✅ User already authenticated, checking for stored astrologer ID');
+        // Check if there's a stored astrologer ID from the call flow
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Found stored astrologer ID, redirecting to profile:', storedAstrologerId);
+          // Do NOT remove it here!
+          // Redirect to the specific astrologer profile
+          router.push(`/astrologers/${storedAstrologerId}`);
+        } else {
+          console.log('No stored astrologer ID, redirecting to astrologers page');
+          router.push('/astrologers');
+        }
       }
     } catch (error) {
       console.log('❌ Authentication check failed on login page:', error);
@@ -128,8 +138,20 @@ export default function LoginPage() {
     if (data && data.verified === true) {
       console.log("OTP verification completed successfully by child component");
       setError(null);
-      // Redirect to astrologers page after successful authentication
-      router.push('/astrologers');
+      
+      // Check if there's a stored astrologer ID from the call flow
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      
+      if (storedAstrologerId) {
+        console.log('Found stored astrologer ID, redirecting to profile:', storedAstrologerId);
+        // Clear the stored ID to avoid future conflicts
+        localStorage.removeItem('selectedAstrologerId');
+        // Redirect to the specific astrologer profile
+        router.push(`/astrologers/${storedAstrologerId}`);
+      } else {
+        // Redirect to astrologers page after successful authentication
+        router.push('/astrologers');
+      }
       return;
     }
 
@@ -171,8 +193,19 @@ export default function LoginPage() {
           setError("Authentication succeeded but no token was received.");
         }
         
-        // Redirect to astrologers page after successful authentication
-        router.push('/astrologers');
+        // Check if there's a stored astrologer ID from the call flow
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        
+        if (storedAstrologerId) {
+          console.log('Found stored astrologer ID, redirecting to profile:', storedAstrologerId);
+          // Clear the stored ID to avoid future conflicts
+          localStorage.removeItem('selectedAstrologerId');
+          // Redirect to the specific astrologer profile
+          router.push(`/astrologers/${storedAstrologerId}`);
+        } else {
+          // Redirect to astrologers page after successful authentication
+          router.push('/astrologers');
+        }
       } else {
         setError(responseData.message || 'Failed to verify OTP. Please try again.');
       }

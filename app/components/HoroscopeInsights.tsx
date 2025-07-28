@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 
 const HoroscopeInsights: React.FC = () => {
   return (
-    <section className="py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
+    <section className="py-12 relative overflow-hidden">
       {/* Faded astrology icon background (optional) */}
       <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
         <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={400} height={400} className="object-contain" />
@@ -35,7 +35,7 @@ const HoroscopeInsights: React.FC = () => {
             { img: "/Group 13377.png", label: "Yearly Horoscope" },
           ].map((item, idx) => (
             <div key={item.label} className="flex flex-col items-center animate-fade-in-up">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 relative bg-white rounded-2xl shadow-xl border-t-8 border-orange-200 flex items-center justify-center transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer" style={{ boxShadow: '0 8px 32px 0 rgba(247,151,30,0.10)' }}>
+              <div className="w-8 h-8 sm:w-12 sm:h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 relative rounded-2xl shadow-lg flex items-center justify-center transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl cursor-pointer">
               <Image 
                   src={item.img}
                   alt={item.label}

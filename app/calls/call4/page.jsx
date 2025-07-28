@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call4() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [date, setDate] = useState("");
   const [month, setMonth] = useState("");
   const [year, setYear] = useState("");
   const [isExiting, setIsExiting] = useState(false);
-  const router = useRouter();
 
   const dateOptions = Array.from({ length: 31 }, (_, i) => i + 1);
   const monthOptions = [
@@ -20,11 +21,35 @@ export default function Call4() {
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 100 }, (_, i) => currentYear - i);
 
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call4: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call4: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call4: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
+
   const handleNext = () => {
     if (date && month && year) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/calls/call5");
+        // Check if we have a stored astrologer ID and pass it to call5
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Call4: Passing astrologer ID to call5:', storedAstrologerId);
+          router.push(`/calls/call5?astrologerId=${storedAstrologerId}`);
+        } else {
+          router.push("/calls/call5");
+        }
       }, 100);
     }
   };

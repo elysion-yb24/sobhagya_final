@@ -1,17 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import Image from "next/image";
-import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function Call3() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [gender, setGender] = useState(null);
   const [isExiting, setIsExiting] = useState(false);
 
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call3: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call3: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call3: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
+
   const handleGenderChange = (selectedGender) => {
     setGender(selectedGender);
+  };
+
+  const handleNext = () => {
+    if (gender) {
+      setIsExiting(true);
+      setTimeout(() => {
+        // Check if we have a stored astrologer ID and pass it to call4
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Call3: Passing astrologer ID to call4:', storedAstrologerId);
+          router.push(`/calls/call4?astrologerId=${storedAstrologerId}`);
+        } else {
+          router.push("/calls/call4");
+        }
+      }, 100);
+    }
   };
 
   return (
@@ -166,20 +201,19 @@ export default function Call3() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                   >
-                    <Link href={gender ? "/calls/call4" : "#"} passHref>
-                      <motion.button
-                        type="button"
-                          className={`w-full sm:w-72 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg ${
-                          gender
-                              ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:scale-105 active:scale-95"
-                              : "bg-gray-400 text-gray-500 cursor-not-allowed opacity-50"
-                        }`}
-                        disabled={!gender}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        Next
-                      </motion.button>
-                    </Link>
+                    <motion.button
+                      type="button"
+                      onClick={handleNext}
+                      disabled={!gender}
+                        className={`w-full sm:w-72 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg ${
+                        gender
+                            ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:scale-105 active:scale-95"
+                            : "bg-gray-400 text-gray-500 cursor-not-allowed opacity-50"
+                      }`}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Next
+                    </motion.button>
                   </motion.div>
                 </form>
               </motion.div>

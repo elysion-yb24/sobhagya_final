@@ -25,6 +25,14 @@ export default function Call2() {
         setName(userDetails.name);
       }
     }
+    
+    // Log the stored astrologer ID for debugging
+    const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+    if (storedAstrologerId) {
+      console.log('Call2: Found stored astrologer ID:', storedAstrologerId);
+    } else {
+      console.log('Call2: No stored astrologer ID found');
+    }
   }, [searchParams]);
 
   const handleNameChange = (e) => {
@@ -51,7 +59,14 @@ export default function Call2() {
           router.push("/astrologers");
         } else {
           // Normal call flow, continue to next step
-          router.push("/calls/call3");
+          // Check if we have a stored astrologer ID and pass it to call3
+          const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+          if (storedAstrologerId) {
+            console.log('Call2: Passing astrologer ID to call3:', storedAstrologerId);
+            router.push(`/calls/call3?astrologerId=${storedAstrologerId}`);
+          } else {
+            router.push("/calls/call3");
+          }
         }
       }, 100);
     }

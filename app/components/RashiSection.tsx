@@ -28,7 +28,7 @@ const RashiSection: React.FC = () => {
 
   return (
     <>
-      <motion.section className="bg-gradient-to-br from-orange-50 via-white to-white/80 py-20 relative overflow-hidden">
+      <motion.section className="bg-gradient-to-br from-orange-50 via-white to-white/80 py-12 relative overflow-hidden">
         {/* Faded astrology icon background (optional) */}
         <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
           <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={400} height={400} className="object-contain" />

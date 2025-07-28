@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 // Remove the import of the full login page - we'll handle navigation differently 
 
 export default function Call9() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedChallenges, setSelectedChallenges] = useState([]);
   const [isExiting, setIsExiting] = useState(false);
-  const router = useRouter();
 
   const challengeOptions = [
     "Love & Marriage",
@@ -31,10 +32,33 @@ export default function Call9() {
     });
   };
 
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call9: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call9: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call9: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
+
   const handleNext = () => {
     if (selectedChallenges.length > 0) {
       // Store selected challenges in sessionStorage for later use
       sessionStorage.setItem('selectedChallenges', JSON.stringify(selectedChallenges));
+      
+      // Log the astrologer ID that will be used after login
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call9: Astrologer ID will be used after login:', storedAstrologerId);
+      }
       
       // Navigate to the login page instead of opening a modal
       setIsExiting(true);

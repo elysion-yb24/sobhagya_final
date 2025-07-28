@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
-import { getAuthToken, getUserDetails } from "../../utils/auth-utils";
+import { getAuthToken, getUserDetails, isAuthenticated } from "../../utils/auth-utils";
 import { Phone, Video, Star, Users, Award, Loader2, CheckCircle, MessageCircle } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
@@ -465,7 +465,16 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
 
   // Navigate to /astrologer/[ID] on entire card click
   const handleCardClick = () => {
-    router.push(`/astrologers/${_id}`);
+    // Check if user is authenticated
+    const isAuthValid = isAuthenticated();
+    
+    if (isAuthValid) {
+      // If authenticated, go directly to astrologer profile
+      router.push(`/astrologers/${_id}`);
+    } else {
+      // If not authenticated, go to call flow with astrologer ID
+      router.push(`/calls/call1?astrologerId=${_id}`);
+    }
   };
 
     return (
@@ -480,7 +489,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
         <div className="flex gap-2 sm:gap-3 items-center mb-1 sm:mb-2">
           <div className="relative flex flex-col items-center">
             <img
-              src={profileImage || '/default-astrologer.png'}
+              src={partner.avatar || partner.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`}
               alt={name}
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2"
               style={{ borderColor: partner.status === 'online' ? '#56AE50' : '#ff0000' }}

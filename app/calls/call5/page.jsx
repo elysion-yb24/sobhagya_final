@@ -1,14 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call5() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [knowBirthTime, setKnowBirthTime] = useState(null);
   const [isExiting, setIsExiting] = useState(false);
-  const router = useRouter();
+
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call5: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call5: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call5: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
 
   const handleOptionChange = (option) => {
     setKnowBirthTime(option);
@@ -18,10 +36,21 @@ export default function Call5() {
     if (knowBirthTime !== null) {
       setIsExiting(true);
       setTimeout(() => {
-        if (knowBirthTime === "yes") {
-          router.push("/calls/call6");
+        // Check if we have a stored astrologer ID and pass it to the next step
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Call5: Passing astrologer ID to next step:', storedAstrologerId);
+          if (knowBirthTime === "yes") {
+            router.push(`/calls/call6?astrologerId=${storedAstrologerId}`);
+          } else {
+            router.push(`/calls/call7?astrologerId=${storedAstrologerId}`);
+          }
         } else {
-          router.push("/calls/call7");
+          if (knowBirthTime === "yes") {
+            router.push("/calls/call6");
+          } else {
+            router.push("/calls/call7");
+          }
         }
       }, 100);
     }

@@ -1,26 +1,51 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call6() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("");
   const [meridiem, setMeridiem] = useState("");
   const [isExiting, setIsExiting] = useState(false);
-  const router = useRouter();
 
   const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
   const minuteOptions = Array.from({ length: 60 }, (_, i) => i);
   const meridiemOptions = ["AM", "PM"];
 
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call6: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call6: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call6: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
+
   const handleNext = () => {
     if (hour && minute && meridiem) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/calls/call7");
+        // Check if we have a stored astrologer ID and pass it to call7
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Call6: Passing astrologer ID to call7:', storedAstrologerId);
+          router.push(`/calls/call7?astrologerId=${storedAstrologerId}`);
+        } else {
+          router.push("/calls/call7");
+        }
       }, 100);
     }
   };

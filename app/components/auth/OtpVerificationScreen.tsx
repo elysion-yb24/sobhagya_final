@@ -218,13 +218,10 @@ export default function OtpVerificationScreen({
           window.dispatchEvent(new Event('user-auth-changed'));
         }
         // Call onVerify only to notify success, don't pass data that would trigger another verification
-        console.log("Calling onVerify and redirecting...");
+        console.log("Calling onVerify - parent will handle redirect...");
         onVerify({ success: true, verified: true });
         
-        // Small delay to ensure header updates before redirect
-        setTimeout(() => {
-        router.push("/astrologers");
-        }, 100);
+        // Let the parent component handle the redirect based on stored astrologer ID
       } else {
         setVerificationStatus('error');
         setError(data.message || "Invalid OTP. Please check the code and try again.");

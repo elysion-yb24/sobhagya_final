@@ -3,15 +3,16 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call7() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [location, setLocation] = useState("");
   const [isExiting, setIsExiting] = useState(false);
   const [locationOptions, setLocationOptions] = useState([]);
   const [filteredOptions, setFilteredOptions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const router = useRouter();
 
   // Fetching Indian cities dynamically from an API
   useEffect(() => {
@@ -48,6 +49,23 @@ export default function Call7() {
     }
   };
 
+  // Check for astrologer ID from query params or localStorage
+  useEffect(() => {
+    const astrologerId = searchParams.get('astrologerId');
+    if (astrologerId) {
+      console.log('Call7: Found astrologer ID in query params:', astrologerId);
+      localStorage.setItem('selectedAstrologerId', astrologerId);
+    } else {
+      // Check localStorage as fallback
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      if (storedAstrologerId) {
+        console.log('Call7: Found stored astrologer ID:', storedAstrologerId);
+      } else {
+        console.log('Call7: No astrologer ID found');
+      }
+    }
+  }, [searchParams]);
+
   // Select a city and close the dropdown
   const handleSelectCity = (city) => {
     setLocation(city);
@@ -58,7 +76,14 @@ export default function Call7() {
     if (location) {
       setIsExiting(true);
       setTimeout(() => {
-        router.push("/calls/call8");
+        // Check if we have a stored astrologer ID and pass it to call8
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        if (storedAstrologerId) {
+          console.log('Call7: Passing astrologer ID to call8:', storedAstrologerId);
+          router.push(`/calls/call8?astrologerId=${storedAstrologerId}`);
+        } else {
+          router.push("/calls/call8");
+        }
       }, 100);
     }
   };

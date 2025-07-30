@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   Star, 
@@ -186,6 +186,7 @@ function ConfirmationDialog({
 export default function AstrologerProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const astrologerId = params?.id as string;
   
   const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
@@ -271,6 +272,27 @@ export default function AstrologerProfilePage() {
       fetchSimilarAstrologers();
     }
   }, [astrologer]);
+
+  // Handle callType query parameter for direct call initiation
+  useEffect(() => {
+    const callType = searchParams?.get('callType');
+    if (callType && astrologer) {
+      console.log('Found callType in query params:', callType);
+      
+      // Small delay to ensure page is fully loaded
+      setTimeout(() => {
+        if (callType === 'audio') {
+          setShowAudioCallConfirm(true);
+        } else if (callType === 'video') {
+          setShowVideoCallConfirm(true);
+        }
+        
+        // Clear the query parameter from URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }, 1000);
+    }
+  }, [searchParams, astrologer]);
 
   const fetchSimilarAstrologers = async () => {
     try {
@@ -889,6 +911,38 @@ export default function AstrologerProfilePage() {
   // Rename astrologer to partner for consistency
   const partner = astrologer;
 
+  const handleAudioCallClick = () => {
+    // Check if user is authenticated
+    const isAuthValid = isAuthenticated();
+    
+    if (isAuthValid) {
+      // If authenticated, show confirmation dialog
+      setShowAudioCallConfirm(true);
+    } else {
+      // If not authenticated, store call type and astrologer ID, then go through call flow
+      localStorage.setItem('selectedAstrologerId', astrologer?._id || '');
+      localStorage.setItem('callType', 'audio');
+      console.log('User not authenticated, redirecting to call flow for audio call');
+      router.push('/calls/call1?astrologerId=' + (astrologer?._id || ''));
+    }
+  };
+
+  const handleVideoCallClick = () => {
+    // Check if user is authenticated
+    const isAuthValid = isAuthenticated();
+    
+    if (isAuthValid) {
+      // If authenticated, show confirmation dialog
+      setShowVideoCallConfirm(true);
+    } else {
+      // If not authenticated, store call type and astrologer ID, then go through call flow
+      localStorage.setItem('selectedAstrologerId', astrologer?._id || '');
+      localStorage.setItem('callType', 'video');
+      console.log('User not authenticated, redirecting to call flow for video call');
+      router.push('/calls/call1?astrologerId=' + (astrologer?._id || ''));
+    }
+  };
+
   const handleVideoCall = async (retryCount = 0) => {
     try {
       setIsVideoCallProcessing(true);
@@ -1251,7 +1305,7 @@ export default function AstrologerProfilePage() {
                       Dakshina
                     </button>
                     <button
-                      onClick={() => setShowAudioCallConfirm(true)}
+                      onClick={() => handleAudioCallClick()}
                       disabled={isAudioCallProcessing}
                       className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
                       style={{ 
@@ -1272,7 +1326,7 @@ export default function AstrologerProfilePage() {
                     </button>
                     { (astrologer?.isVideoCallAllowed || astrologer?.callType === 'video' || astrologer?.videoRpm) && (
                       <button
-                        onClick={() => setShowVideoCallConfirm(true)}
+                        onClick={() => handleVideoCallClick()}
                         disabled={isVideoCallProcessing}
                         className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
                         style={{ 

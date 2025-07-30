@@ -49,29 +49,36 @@ const ConsultingSection: React.FC = () => {
             />
           </div>
 
-          <div className="space-y-14">
-            {consultingTopics.map((topic, index) => (
-              <div key={topic.title} className="flex items-start gap-8 animate-fade-in-up">
-                <div className="relative flex flex-col items-center">
-                  {index !== consultingTopics.length - 1 && (
-                    <div className="absolute left-1/2 top-[calc(100%+1rem)] h-16 w-[2px] bg-orange-200 -translate-x-1/2"></div>
-                  )}
-                  <div className="flex items-center justify-center bg-white p-2 rounded-2xl shadow-xl border-t-8 border-orange-200">
-                    <Image
-                      src={topic.image}
-                      alt={topic.title}
-                      width={40}
-                      height={40}
-                      className="object-contain"
-                    />
+                      <div className="relative">
+              {/* Vertical timeline line */}
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#E69126]"></div>
+              
+              <div className="space-y-12">
+                {consultingTopics.map((topic, index) => (
+                  <div key={topic.title} className="flex items-start gap-6 animate-fade-in-up relative">
+                    {/* Orange dot on timeline */}
+                    <div className="absolute left-6 top-4 w-4 h-4 bg-[#E69126] rounded-full -translate-x-1/2 z-10"></div>
+                    
+                    {/* Icon */}
+                    <div className="flex items-center justify-center w-20 h-20 ml-12">
+                                            <Image
+                        src={topic.image}
+                        alt={topic.title}
+                        width={40}
+                        height={40}
+                        className="object-contain"
+                        
+                      />
+                    </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 pt-1">
+                    <h3 className="text-xl font-bold mb-2 text-gray-800">{topic.title}</h3>
+                    <p className="text-gray-600 text-base leading-relaxed">{topic.description}</p>
                   </div>
                 </div>
-                <div className="flex-1 ">
-                  <h3 className="text-2xl font-extrabold mb-3 text-gray-800">{topic.title}</h3>
-                  <p className="text-gray-600 text-lg leading-relaxed max-w-md font-medium">{topic.description}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>

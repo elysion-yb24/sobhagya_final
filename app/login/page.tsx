@@ -65,11 +65,19 @@ export default function LoginPage() {
         console.log('✅ User already authenticated, checking for stored astrologer ID');
         // Check if there's a stored astrologer ID from the call flow
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        const callType = localStorage.getItem('callType');
+        
         if (storedAstrologerId) {
-          console.log('Found stored astrologer ID, redirecting to profile:', storedAstrologerId);
-          // Do NOT remove it here!
-          // Redirect to the specific astrologer profile
-          router.push(`/astrologers/${storedAstrologerId}`);
+          console.log('Found stored astrologer ID:', storedAstrologerId, 'call type:', callType);
+          
+          if (callType === 'audio' || callType === 'video') {
+            // Redirect to astrologer profile with call type for direct call initiation
+            console.log('Redirecting to astrologer profile for direct call initiation');
+            router.push(`/astrologers/${storedAstrologerId}?callType=${callType}`);
+          } else {
+            // Redirect to the specific astrologer profile
+            router.push(`/astrologers/${storedAstrologerId}`);
+          }
         } else {
           console.log('No stored astrologer ID, redirecting to astrologers page');
           router.push('/astrologers');
@@ -195,13 +203,23 @@ export default function LoginPage() {
         
         // Check if there's a stored astrologer ID from the call flow
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        const callType = localStorage.getItem('callType');
         
         if (storedAstrologerId) {
-          console.log('Found stored astrologer ID, redirecting to profile:', storedAstrologerId);
-          // Clear the stored ID to avoid future conflicts
+          console.log('Found stored astrologer ID:', storedAstrologerId, 'call type:', callType);
+          
+          // Clear the stored data to avoid future conflicts
           localStorage.removeItem('selectedAstrologerId');
-          // Redirect to the specific astrologer profile
-          router.push(`/astrologers/${storedAstrologerId}`);
+          localStorage.removeItem('callType');
+          
+          if (callType === 'audio' || callType === 'video') {
+            // Redirect to astrologer profile with call type for direct call initiation
+            console.log('Redirecting to astrologer profile for direct call initiation');
+            router.push(`/astrologers/${storedAstrologerId}?callType=${callType}`);
+          } else {
+            // Redirect to the specific astrologer profile
+            router.push(`/astrologers/${storedAstrologerId}`);
+          }
         } else {
           // Redirect to astrologers page after successful authentication
           router.push('/astrologers');

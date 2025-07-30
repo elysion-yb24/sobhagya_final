@@ -239,34 +239,39 @@ const AstrologerCarousel = () => {
             {astrologers.map((astrologer, index) => (
               <div 
                 key={astrologer._id} 
-                className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex-shrink-0 px-2 md:px-4"
+                className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex-shrink-0 px-1 md:px-2"
                 style={{ 
                   transform: `translateX(-${currentIndex * 100}%)`,
                   transition: 'transform 300ms ease-out'
                 }}
               >
                 <div 
-                  className="bg-white rounded-lg shadow-lg flex flex-col items-center w-64 h-64 p-4 mx-auto border-2 border-[#F7971E] cursor-pointer hover:shadow-xl transition-shadow"
+                  className="bg-white rounded-lg shadow-lg flex flex-col items-center w-56 h-64 p-4 mx-auto border-2 border-[#F7971E] cursor-pointer hover:shadow-xl transition-shadow"
                   onClick={() => handleAstrologerClick(astrologer._id)}
+                  style={{ minHeight: '256px' }}
                 >
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#F7971E] mb-3 shadow-md">
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#F7971E] mb-3 shadow-md flex items-center justify-center" style={{ borderRadius: '50%' }}>
                     <img
-                      src={astrologer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=80`}
+                      src={astrologer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=96`}
                       alt={astrologer.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
+                      style={{ borderRadius: '50%' }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=80`;
+                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=96`;
                       }}
                     />
                   </div>
-                  <h3 className="font-bold text-base text-center text-gray-800 mb-2" style={{ fontFamily: "Poppins" }}>
-                    {astrologer.name}
+                  <h3 className="font-bold text-base text-center text-gray-800 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
+                    {astrologer.name.split(' ').length > 2 
+                      ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
+                      : astrologer.name
+                    }
                   </h3>
-                  <p className="text-center text-sm text-gray-600 mb-2" style={{ fontFamily: "Poppins" }}>
-                    {astrologer.talksAbout?.slice(0, 3).join(", ") || "Astrology Expert"}
+                  <p className="text-center text-sm text-gray-600 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
+                    {astrologer.talksAbout?.slice(0, 2).join(", ") || "Astrology Expert"}
                   </p>
-                  <p className="text-center text-xs text-gray-500 mb-4" style={{ fontFamily: "Poppins" }}>
+                  <p className="text-center text-xs text-gray-500 mb-4 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
                     Exp: {Math.floor(astrologer.callMinutes / 60)} hours
                   </p>
                   <button

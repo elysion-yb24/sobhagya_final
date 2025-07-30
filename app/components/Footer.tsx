@@ -34,18 +34,18 @@ const Footer: React.FC = () => {
         />
       </div>
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Title text */}
-        <h2 className="text-orange-400 text-center text-2xl mb-12 underline decoration-orange-400 underline-offset-8">
+        <h2 className="text-orange-400 text-center text-lg sm:text-xl md:text-2xl mb-8 sm:mb-12 underline decoration-orange-400 underline-offset-8 px-4">
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-32 md:gap-x-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-x-16">
 
 
           {/* Logo and Social Media */}
-          <div className="flex flex-col items-center justify-center gap-4 mb-24">
-            <div className="relative w-[150px] h-[150px]">
+          <div className="flex flex-col items-center justify-center gap-4 mb-12 sm:mb-16 md:mb-24">
+            <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[150px] md:h-[150px]">
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
@@ -54,7 +54,7 @@ const Footer: React.FC = () => {
               />
             </div>
             <p
-              className={`${eagleLake.className} text-orange-400 text-4xl font-semibold`}
+              className={`${eagleLake.className} text-orange-400 text-2xl sm:text-3xl md:text-4xl font-semibold`}
             >
               Sobhagya
             </p>
@@ -107,69 +107,69 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Navigation Links - Two columns */}
-          <div className="ml-20">
+          <div className="ml-0 sm:ml-10 md:ml-20">
             <div className="space-y-2">
               <Link
                 href="/"
-                className="flex items-center text-white hover:text-orange-400"
+                className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
               >
-                <span className="text-orange-400 mr-2 text-lg">›</span> Home
+                <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Home
               </Link>
               <Link
                 href="/about"
-                className="flex items-center text-white hover:text-orange-400"
+                className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
               >
-                <span className="text-orange-400 mr-2 text-lg">›</span> About us
+                <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> About us
               </Link>
 
-              <div className="space-y-2 flex flex-col ">
+              <div className="space-y-2 flex flex-col">
                 <Link
                   href="/services"
-                  className="flex items-center text-white hover:text-orange-400"
+                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
                 >
-                  <span className="text-orange-400 mr-2 text-lg">›</span> Services
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Services
                 </Link>
                 <Link
                   href="/call-with-astrologer"
-                  className="flex items-center text-white hover:text-orange-400"
+                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
                 >
-                  <span className="text-orange-400 mr-2 text-lg">›</span> Call With Astrologer
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Call With Astrologer
                 </Link>
                 <Link
                   href="/live-session"
-                  className="flex items-center text-white hover:text-orange-400 whitespace-nowrap"
+                  className="flex items-center text-white hover:text-orange-400 whitespace-nowrap text-sm sm:text-base"
                 >
-                  <span className="text-orange-400 mr-2 text-lg whitespace-normal">›</span> Live Session
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg whitespace-normal">›</span> Live Session
                 </Link>
 
                 <Link
                   href="https://store.sobhagya.in"
-                  className="flex items-center text-white hover:text-orange-400"
+                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
                   target="_blank"
                 >
-                  <span className="text-orange-400 mr-2 text-lg">›</span> Shop
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Shop
                 </Link>
                 <Link
                   href="/blog"
-                  className="flex items-center text-white hover:text-orange-400"
+                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
                   target="_blank"
                 >
-                  <span className="text-orange-400 mr-2 text-lg">›</span> Blog
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Blog
                 </Link>
                 <Link
                   href="/contact"
-                  className="flex items-center text-white hover:text-orange-400"
+                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
                   target="_blank"
                 >
-                  <span className="text-orange-400 mr-2 text-lg">›</span> Contact Us
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Contact Us
 
                 </Link>
                 <Link
                   href="/contact"
-                  className="flex items-center text-white hover:text-orange-400"
+                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
                   target="_blank"
                 >
-                  <span className="text-orange-400 mr-2 text-lg">›</span> Sign In
+                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Sign In
 
                 </Link>
               </div>
@@ -177,28 +177,28 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Contact Info */}
-          <div className="space-y-5 mt-10 -ml-10">
-            <div className="flex items-center gap-x-8 ">
-              <img src="/Vector (1).png" alt="Website" className="w-5 h-5  " />
+          <div className="space-y-4 sm:space-y-5 mt-8 sm:mt-10 -ml-0 sm:-ml-10">
+            <div className="flex items-center gap-x-4 sm:gap-x-8">
+              <img src="/Vector (1).png" alt="Website" className="w-4 h-4 sm:w-5 sm:h-5" />
               <a
                 href="https://www.sobhagya.in"
-                className="text-white hover:text-orange-400  "
+                className="text-white hover:text-orange-400 text-sm sm:text-base"
               >
                 www.sobhagyaApp.com
               </a>
             </div>
-            <div className="flex items-center gap-x-8">
-              <img src="/Vector (2).png" alt="Email" className="w-5 h-5" />
+            <div className="flex items-center gap-x-4 sm:gap-x-8">
+              <img src="/Vector (2).png" alt="Email" className="w-4 h-4 sm:w-5 sm:h-5" />
               <a
                 href="mailto:support@sobhagya.in"
-                className="text-white hover:text-orange-400"
+                className="text-white hover:text-orange-400 text-sm sm:text-base"
               >
                 SobhagyaApp@gmail.com
               </a>
             </div>
-            <div className="flex items-center gap-x-8">
-              <img src="/Vector (3).png" alt="Phone" className="w-5 h-5" />
-              <span>
+            <div className="flex items-center gap-x-4 sm:gap-x-8">
+              <img src="/Vector (3).png" alt="Phone" className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-sm sm:text-base">
                 <a
                   href="tel:+918077781807"
                   className="text-white hover:text-orange-400"
@@ -229,7 +229,7 @@ const Footer: React.FC = () => {
               <p>ELYSION SOFTWARES PRIVATE LIMITED</p>
             </div> */}
 
-            <div className="flex items-center justify-start gap-x-8 ml-4  mt-6 cursor-pointer">
+            <div className="flex items-center justify-start gap-x-4 sm:gap-x-8 ml-0 sm:ml-4 mt-6 cursor-pointer">
               <Link
                 href="https://apps.apple.com"
                 target="_blank"
@@ -238,8 +238,9 @@ const Footer: React.FC = () => {
                 <Image
                   src="/appstore.png"
                   alt="App Store"
-                  width={130}
-                  height={40}
+                  width={100}
+                  height={30}
+                  className="w-20 sm:w-24 md:w-32 h-auto"
                 />
               </Link>
 
@@ -251,13 +252,14 @@ const Footer: React.FC = () => {
                 <Image
                   src="/playstore.png"
                   alt="Google Play"
-                  width={130}
-                  height={40}
+                  width={100}
+                  height={30}
+                  className="w-20 sm:w-24 md:w-32 h-auto"
                 />
               </Link>
             </div>
 
-            <p className="mr-20 text-center text-sm italic mt-2">
+            <p className="mr-0 sm:mr-20 text-center text-xs sm:text-sm italic mt-2">
               Stay Connected with Astrology!
             </p>
           </div>

@@ -28,39 +28,44 @@ const RashiSection: React.FC = () => {
 
   return (
     <>
-      <motion.section className="bg-gradient-to-br from-orange-50 via-white to-white/80 py-12 relative overflow-hidden">
-        {/* Faded astrology icon background (optional) */}
+      <motion.section className="bg-[#E691261A] py-10 sm:py-12 relative overflow-hidden">
         <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
-          <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={400} height={400} className="object-contain" />
+          <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={300} height={300} className="object-contain" />
         </div>
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className="text-center mb-6 text-[#745802] text-5xl font-extrabold tracking-tight" style={{ fontFamily: "EB Garamond" }}>
-            Astrology Insights for Your Rashi
-            <span className="block w-24 h-1 bg-orange-400 mx-auto mt-4 rounded-full"></span>
+        <div className="container mx-auto px-4 relative z-10 max-w-screen-xl">
+          <h2 className="text-center mb-4 sm:mb-6 text-[#373737] text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight" style={{ fontFamily: "EB Garamond" }}>
+            Astrology Insights for Your Rashi Today
+            <span className="block w-20 sm:w-24 h-1 bg-orange-400 mx-auto mt-3 rounded-full"></span>
           </h2>
-          <p className="text-center mb-12 text-[#745802] text-lg font-medium">
+          <p className="text-center mb-10 sm:mb-12 text-[#373737] text-base sm:text-lg font-medium px-2 sm:px-0">
             Get accurate predictions, guidance, and remedies for love, career, health, and more
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-10 max-w-6xl mx-auto">
-            {rashiSigns.map((rashi, idx) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-6 sm:gap-8 md:gap-10 max-w-6xl mx-auto">
+            {rashiSigns.map((rashi) => (
               <motion.div
                 key={rashi.name}
                 onClick={() => handleClick(rashi.name)}
-                className="bg-white p-7 rounded-2xl flex flex-col items-center justify-center shadow-xl border-t-8 border-orange-200 cursor-pointer transition-transform duration-300 hover:-translate-y-2 hover:shadow-2xl group relative animate-fade-in-up"
-                whileHover={{ scale: 1.07 }}
+                className="bg-white p-4 sm:p-6 shadow-md cursor-pointer transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg group relative animate-fade-in-up"
+                whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.2 }}
-                style={{ boxShadow: '0 8px 32px 0 rgba(247,151,30,0.10)' }}
               >
-                <div className="w-12 h-12 mb-2">
-                  <Image src={rashi.image || "/default-image.png"} alt={rashi.name} width={48} height={48} />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mb-2 flex items-center justify-center mx-auto">
+                  <Image
+                    src={rashi.image || "/default-image.png"}
+                    alt={rashi.name}
+                    width={40}
+                    height={40}
+                    className="object-contain"
+                  />
                 </div>
-                <div className="text-gray-700 text-xl font-bold mb-2 mt-3">{rashi.hindiName}</div>
-                <div className="text-gray-600 text-base font-medium">{rashi.name}</div>
+                <div className="text-[#373737] text-sm sm:text-base font-medium mb-1 text-center">{rashi.hindiName}</div>
+                <div className="text-[#373737] text-xs font-medium text-center">{rashi.name}</div>
               </motion.div>
             ))}
           </div>
         </div>
+
         {/* Fade-in animation keyframes */}
         <style jsx>{`
           .animate-fade-in-up {

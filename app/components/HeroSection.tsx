@@ -38,7 +38,7 @@ const HeroSection: React.FC = () => {
       icon: "/chat2.png",
       iconComponent: MessageCircle,
       href: "/calls/call1",
-    
+
       color: "from-blue-500 to-blue-600"
     },
     {
@@ -47,19 +47,19 @@ const HeroSection: React.FC = () => {
       icon: "/contact2.png",
       iconComponent: PhoneIcon,
       href: "/call-with-astrologer",
-     
+
       color: "from-green-500 to-green-600"
     },
     {
       id: "shop",
       title: "Astromall Shop",
-      icon: "/shopping mart.png",
+      icon: "/astromall.png",
       iconComponent: ShoppingBag,
       href: "https://store.sobhagya.in",
-     
+
       color: "from-orange-500 to-orange-600",
       isExternal: true,
-      featured: true
+      featured: false
     }
   ];
 
@@ -124,7 +124,7 @@ const HeroSection: React.FC = () => {
               Your's might be waiting
             </p>
             <Link href="/call-with-astrologer">
-              <button className="bg-white text-orange-600 px-5 py-3 font-semibold rounded-lg shadow-md hover:shadow-lg transition duration-300 flex items-center justify-center mx-auto md:mx-0" style={{
+              <button className="bg-white text-orange-600 px-5 py-3 font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#F7971D] hover:text-white transition-all duration-300 flex items-center justify-center mx-auto md:mx-0" style={{
                 fontFamily: "Poppins"
               }}>
                 <PhoneIcon className="w-5 h-5 mr-2" />
@@ -147,7 +147,7 @@ const HeroSection: React.FC = () => {
                   className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] object-contain"
                 />
               </div>
-              
+
               <Image
                 src="/astrologer.png"
                 alt="Astrologer"
@@ -193,29 +193,41 @@ const HeroSection: React.FC = () => {
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className={`rounded-lg px-3 py-2.5 flex items-center text-center shadow-md transition hover:shadow-lg ${card.featured
-                      ? "bg-gradient-to-br from-[#F7971D] to-[#F7971D] text-white"
-                      : "bg-white text-gray-800"
-                    }`}
+                    className="rounded-lg px-3 py-2.5 flex items-center text-center shadow-md transition-all duration-300 hover:shadow-lg bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white group"
                   >
-                    <Image src={card.icon} alt={card.title} width={16} height={16} className="mr-1.5" />
+                    <div className="mr-1.5 flex items-center justify-center">
+                      <Image
+                        src={card.icon}
+                        alt={card.title}
+                        width={20}
+                        height={20}
+                        className="block transition-all duration-300 group-hover:brightness-0 group-hover:invert"
+                        style={{ display: 'block' }}
+                      />
+                    </div>
                     <span className="text-xs font-medium">{card.title}</span>
                   </div>
                 </Link>
               ))}
             </div>
-            
+
             {/* Desktop: Original card layout */}
             <div className="hidden sm:grid grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto">
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className={`rounded-xl p-6 py-8 flex flex-col items-center text-center shadow-md transition hover:shadow-lg ${card.featured
-                      ? "bg-gradient-to-br from-[#F7971D] to-[#F7971D] text-white"
-                      : "bg-white text-gray-800"
-                    }`}
+                    className="rounded-xl p-6 py-8 flex flex-col items-center text-center shadow-md transition-all duration-300 hover:shadow-lg group bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white"
                   >
-                    <Image src={card.icon} alt={card.title} width={36} height={36} />
+                    <div className="flex items-center justify-center">
+                      <Image
+                        src={card.icon}
+                        alt={card.title}
+                        width={48}
+                        height={48}
+                        className="block transition-all duration-300 group-hover:brightness-0 group-hover:invert"
+                        style={{ display: 'block' }}
+                      />
+                    </div>
                     <h3 className="font-semibold mt-2">{card.title}</h3>
                   </div>
                 </Link>
@@ -239,114 +251,79 @@ const HeroSection: React.FC = () => {
             className="text-center text-[#745802] mb-8 sm:mb-12 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto"
             style={{ fontFamily: "Poppins" }}
           >
-            Live astrology session for real-time insights and guidance on your
-            life's path!
+            Live astrology session for real-time insights and guidance on your life's path!
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-6 lg:gap-8 xl:gap-12 max-w-7xl mx-auto">
-            {/* First Astrologer Card - Pt. Shashtri Ji */}
-            <div className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="absolute top-4 left-4 text-[#F51010] px-3 py-1.5 text-sm flex items-center z-10">
-                <span className="h-2.5 w-2.5 bg-[#F51010] rounded-full mr-2 animate-pulse" style={{
-                  fontFamily: "Poppins",
-                  color: "#F51010",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}></span>
-                <span style={{
-                  fontFamily: "Poppins",
-                  color: "#F51010",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}>Live</span>
-              </div>
-              <img
-                src="/image (11).png"
-                alt="Pt. Shashtri Ji"
-                className="w-full h-56 sm:h-64 lg:h-96 xl:h-[500px] object-cover object-center"
-              />
-              <div className="p-4 sm:p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
-                <h3
-                  className="text-white font-bold text-lg sm:text-lg lg:text-xl mb-1"
-                  style={{ fontFamily: "Poppins" }}
-                >
-                  Pt. Shashtri Ji
-                </h3>
-                <p
-                  className="text-white font-medium text-sm sm:text-sm lg:text-base"
-                  style={{ fontFamily: "Poppins" }}
-                >
-                  Marriage problems expert
-                </p>
-              </div>
-            </div>
 
-            {/* Zodiac Card - Live Astrological Insights */}
-            <div className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="absolute top-4 left-4 text-[#F51010] px-3 py-1.5 text-sm flex items-center z-10">
-                <span className="h-2.5 w-2.5 bg-[#F51010] rounded-full mr-2 animate-pulse"></span>
-                <span style={{
-                  fontFamily: "Poppins",
-                  color: "#F51010",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}>Live</span>
-              </div>
-              <img
-                src="/image (12).png"
-                alt="Live Astrological Insights"
-                className="w-full h-56 sm:h-64 lg:h-96 xl:h-[500px] object-cover object-center bg-gradient-to-br from-orange-50 to-orange-100"
-              />
-              <div className="p-4 sm:p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
-                <h3
-                  className="text-white font-bold text-lg sm:text-lg lg:text-xl mb-1"
-                  style={{ fontFamily: "Poppins" }}
-                >
-                  Live Astrological Insights:
-                </h3>
-                <p
-                  className="text-white font-medium text-sm sm:text-sm lg:text-base"
-                  style={{ fontFamily: "Poppins" }}
-                >
-                  Get clarity on love, career & more
-                </p>
-              </div>
-            </div>
+            {/* Card Component - Reusable */}
+            {[
+              {
+                img: "/image (11).png",
+                alt: "Pt. Shashtri Ji",
+                name: "Pt. Shashtri Ji",
+                subtitle: "Marriage problems expert"
+              },
+              {
+                img: "/image (12).png",
+                alt: "Live Astrological Insights",
+                name: "Live Astrological Insights:",
+                subtitle: "Get clarity on love, career & more"
+              },
+              {
+                img: "/image (13).png",
+                alt: "Pt. Rama Krishna",
+                name: "Pt. Rama Krishna",
+                subtitle: "Today horoscope"
+              }
+            ].map(({ img, alt, name, subtitle }) => (
+              <div
+                key={name}
+                className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              >
+                {/* Live Badge */}
+                <div className="absolute top-4 left-4 text-[#F51010] px-4 py-2 text-base flex items-center z-10">
+                  <span className="h-3 w-3 bg-[#F51010] rounded-full mr-2 animate-pulse"></span>
+                  <span
+                    style={{
+                      fontFamily: "Poppins",
+                      color: "#F51010",
+                      fontSize: "14px",
+                      fontWeight: "bold"
+                    }}
+                  >
+                    Live
+                  </span>
+                </div>
 
-            {/* Third Card - Pt. Rama Krishna */}
-            <div className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-              <div className="absolute top-4 left-4 text-[#F51010] px-3 py-1.5 text-sm flex items-center z-10">
-                <span className="h-2.5 w-2.5 bg-[#F51010] rounded-full mr-2 animate-pulse"></span>
-                <span style={{
-                  fontFamily: "Poppins",
-                  color: "#F51010",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}>Live</span>
+                {/* Image */}
+                <img
+                  src={img}
+                  alt={alt}
+                  className="w-full h-56 sm:h-64 lg:h-96 xl:h-[500px] object-cover object-center"
+                />
+
+                {/* Overlay */}
+                <div className="p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
+                  <h3
+                    className="text-white font-bold text-lg sm:text-lg lg:text-xl mb-1"
+                    style={{ fontFamily: "Poppins" }}
+                  >
+                    {name}
+                  </h3>
+                  <p
+                    className="text-white font-medium text-sm sm:text-sm lg:text-base"
+                    style={{ fontFamily: "Poppins" }}
+                  >
+                    {subtitle}
+                  </p>
+                </div>
               </div>
-              <img
-                src="/image (13).png"
-                alt="Pt. Rama Krishna"
-                className="w-full h-56 sm:h-64 lg:h-96 xl:h-[500px] object-cover"
-              />
-              <div className="p-4 sm:p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
-                <h3
-                  className="text-white font-bold text-lg sm:text-lg lg:text-xl mb-1"
-                  style={{ fontFamily: "Poppins" }}
-                >
-                  Pt. Rama Krishna
-                </h3>
-                <p
-                  className="text-white font-medium text-sm sm:text-sm lg:text-base"
-                  style={{ fontFamily: "Poppins" }}
-                >
-                  Today horoscope
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
+
     </div>
   );
 };

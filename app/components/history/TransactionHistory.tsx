@@ -31,22 +31,25 @@ export default function TransactionHistory() {
         return;
       }
 
-      const response = await fetch(
-        buildApiUrl("/payment/api/transaction/transactions?skip=0&limit=10"),
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        }
-      );
+      const apiUrl = buildApiUrl("/payment/api/transaction/transactions?skip=0&limit=10");
+      console.log('Fetching transactions from:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+      });
+
+      console.log('Transaction history response status:', response.status);
 
       const data = await response.json();
+      console.log('Transaction history response data:', data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch transactions');
+        throw new Error(data.message || `Failed to fetch transactions (Status: ${response.status})`);
       }
 
       if (data.success && data.data) {

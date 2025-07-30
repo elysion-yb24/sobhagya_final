@@ -37,23 +37,28 @@ export default function CallHistory() {
         return;
       }
 
-      const response = await fetch(
-        buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user"),
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        }
-      );
+      const apiUrl = buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user");
+      console.log('Fetching call logs from:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
+      });
+
+      console.log('Call history response status:', response.status);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch call logs');
+        const errorText = await response.text();
+        console.error('Call history error response:', errorText);
+        throw new Error(`Failed to fetch call logs (Status: ${response.status})`);
       }
 
       const data = await response.json();
+      console.log('Call history response data:', data);
       
       // Handle the API response structure
       let calls = [];

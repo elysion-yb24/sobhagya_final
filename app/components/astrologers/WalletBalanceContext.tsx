@@ -24,25 +24,37 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       const token = getAuthToken();
       if (!token) {
+        console.log('No auth token found, setting wallet balance to 0');
         setWalletBalance(0);
         return;
       }
-      const response = await fetch(
-        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        }
-      );
+      
+      const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
+      console.log('Fetching wallet balance from:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      
+      console.log('Wallet balance response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Wallet balance response data:', data);
         if (data.success && data.data) {
           setWalletBalance(data.data.balance || 0);
+        } else {
+          console.warn('Wallet balance response not successful:', data);
         }
+      } else {
+        console.error('Wallet balance API failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
       }
     } catch (error) {
       console.error('Error fetching wallet balance:', error);

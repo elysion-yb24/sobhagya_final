@@ -28,8 +28,15 @@ export function buildApiUrl(endpoint: string): string {
 
 // Helper function to get API base URL
 export function getApiBaseUrl(): string {
+  // Check for environment variable first
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  
+  // Fallback based on environment
   if (process.env.NODE_ENV === 'production') {
     return 'https://micro.sobhagya.in';
   }
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001';
+  
+  return 'http://localhost:8001';
 } 

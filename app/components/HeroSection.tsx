@@ -138,13 +138,13 @@ const HeroSection: React.FC = () => {
           <div className="w-full md:w-1/2 flex justify-center md:justify-end relative">
             <div className="relative">
               {/* Big zodiac sign behind astrologer */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0 -translate-x-8 -translate-y-32">
+              <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0 -translate-y-20 sm:-translate-y-32">
                 <Image
                   src="/zodiac-right.png"
                   alt="Background Zodiac"
                   width={400}
                   height={400}
-                  className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] object-contain"
+                  className="w-[250px] h-[250px] sm:w-[300px] sm:h-[300px] md:w-[400px] md:h-[400px] object-contain"
                 />
               </div>
 
@@ -153,7 +153,7 @@ const HeroSection: React.FC = () => {
                 alt="Astrologer"
                 width={600}
                 height={600}
-                className="object-contain max-w-[300px] sm:max-w-[400px] md:max-w-[650px] translate-y-[20px] relative z-10"
+                className="object-contain max-w-[280px] sm:max-w-[400px] md:max-w-[650px] translate-y-[10px] sm:translate-y-[20px] relative z-10"
                 priority
               />
               {/* Three zodiac signs around astrologer image */}

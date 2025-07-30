@@ -95,11 +95,14 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     specializations,
     experience,
     callsCount,
+    calls,
     rating,
     profileImage,
     rpm,
     videoRpm,
-    isVideoCallAllowed
+    isVideoCallAllowed,
+    age,
+    talksAbout
   } = partner;
 
   useEffect(() => {
@@ -511,10 +514,21 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             <div className="text-gray-700 text-xs font-medium leading-tight truncate mb-0.5 sm:mb-1">
               {specializations?.join(', ')}
             </div>
+            
+            
+            
+            {partner.talksAbout && partner.talksAbout.length > 0 && (
+              <div className="text-gray-500 text-xs truncate mb-0.5 sm:mb-1">
+              <span className="font-semibold">{partner.talksAbout.slice(0, 2).join(', ')}</span>
+              </div>
+            )}
             <div className="text-gray-500 text-xs truncate mb-0.5 sm:mb-1">
-              {languages?.join(', ')}
+             <span className="font-semibold">{(languages || partner.language)?.join(', ')}</span>
             </div>
-            <div className="text-gray-500 text-xs mb-0.5 sm:mb-1">Exp:- <span className="font-semibold">{experience} years</span></div>
+            <div className="text-gray-500 text-xs mb-0.5 sm:mb-1">
+              Exp:- <span className="font-semibold">{age || experience} years</span>
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-sm font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-xs font-medium">min.</span></span>
             </div>
@@ -545,8 +559,8 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
         </div>
         <div className="flex items-center gap-1 mb-1 sm:mb-2">
           <span className="flex flex-col ml-1 sm:ml-2 items-center justify-center mx-auto">
-            <span className="text-gray-400 italic text-xs">{callsCount}</span>
-            <span className="text-gray-400 italic text-xs">orders</span>
+            <span className="text-gray-400 italic text-xs gap-2">{calls || callsCount}&nbsp;orders</span>
+            
           </span>
         </div>
         <div className="flex gap-2 sm:gap-3 md:gap-4 mt-2 sm:mt-auto justify-end w-full">

@@ -33,51 +33,39 @@ const BlogSection = () => {
   const router = useRouter();
 
   return (
-    <section className="py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
+    <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
       {/* Faded astrology icon background (optional) */}
-      <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
+      {/* <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
         <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={600} height={600} className="object-contain" />
-      </div>
-      <div className="container mx-auto px-4 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="mb-2 text-6xl font-extrabold text-[#745802] tracking-tight" style={{ fontFamily:'EB Garamond' }}>
+      </div> */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="mb-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#745802] tracking-tight" style={{ fontFamily:'EB Garamond' }}>
             Our Blogs
-            <span className="block w-24 h-1 bg-orange-400 mx-auto mt-4 rounded-full"></span>
+            <span className="block w-16 sm:w-20 md:w-24 h-1 bg-orange-400 mx-auto mt-2 sm:mt-4"></span>
           </h2>
-          <p className="text-[#745802] text-base font-medium">Your daily source for astrology insights & guidance</p>
+          <p className="text-[#745802] text-sm sm:text-base font-medium mt-4">Your daily source for astrology insights & guidance</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
           {blogs.map((blog, idx) => (
             <div
               key={blog.id}
-              className="bg-white rounded-3xl shadow-2xl border-t-8 border-orange-200 overflow-hidden cursor-pointer transition-transform duration-300 hover:-translate-y-3 hover:shadow-2xl group relative animate-fade-in-up"
-              style={{ boxShadow: '0 8px 32px 0 rgba(247,151,30,0.10)' }}
+              className="bg-white shadow-lg overflow-hidden cursor-pointer transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl group relative animate-fade-in-up"
               onClick={() => router.push(`/blog/${blog.id}`)}
             >
-              {/* Gradient border top */}
-              <div className="h-2 w-full bg-gradient-to-r from-orange-400 via-yellow-300 to-orange-400" />
-              <div className="relative h-[220px] group-hover:scale-105 transition-transform duration-300">
+              <div className="relative h-[180px] sm:h-[200px] group-hover:scale-105 transition-transform duration-300">
                 <Image src={blog.image || "/default-image.png"} alt={blog.title} fill className="object-cover" />
-                {/* Blog index badge */}
-                <div className="absolute top-3 left-3 bg-white/80 text-orange-500 font-bold rounded-full px-3 py-1 text-xs shadow">
-                  #{idx + 1}
-                </div>
               </div>
-              <div className="p-7 flex flex-col gap-3">
-                <h3 className="text-2xl font-extrabold text-gray-900 group-hover:text-orange-600 transition-colors duration-200" style={{ fontFamily: 'EB Garamond' }}>{blog.title}</h3>
-                <p className="text-gray-600 text-base leading-relaxed mb-2 font-medium">
-                  {blog.content.substring(0, 100)}...
+              <div className="p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 mb-3">{blog.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed mb-4 h-10 overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                  {blog.content}
                   <span className="text-[#F7971E] cursor-pointer ml-1 font-semibold">see more</span>
                 </p>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center font-bold text-orange-500 text-base border-2 border-orange-200 shadow">
-                      {blog.author.split(' ').map(w => w[0]).join('').toUpperCase()}
-                    </div>
-                    <span className="text-sm text-gray-500 font-semibold">{blog.author}</span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-medium">{blog.date}</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm text-gray-500 font-medium">{blog.author}</span>
+                  <span className="text-xs sm:text-sm text-gray-400 font-medium">{blog.date}</span>
                 </div>
               </div>
             </div>

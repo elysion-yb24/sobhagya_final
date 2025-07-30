@@ -196,7 +196,7 @@ const Header = () => {
         <div className="max-w-8xl mx-auto px-[10px] sm:pr-4 lg:pr-8">
           <div className="flex items-center h-16 md:h-20 justify-between">
             {/* Left: Logo/Brand, responsive width */}
-            <div className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-[140px] md:min-w-[170px] justify-start">
+            <Link href="/" className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-[140px] md:min-w-[170px] justify-start hover:scale-105 transition-transform duration-200 cursor-pointer">
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
@@ -212,11 +212,10 @@ const Header = () => {
                   Your Trusted Astrology Platform
                 </span>
               </div>
-            </div>
+            </Link>
             {/* Center: Navigation, flex-1, centered */}
             <nav className="flex-1 flex items-center justify-center gap-2 md:gap-4 lg:gap-6">
               {[
-                { href: "/", label: "Home" },
                 { href: "/call-with-astrologer", label: "Call with Astrologer" },
                 { href: "/about", label: "About" },
                 { href: "/services", label: "Services" },
@@ -402,8 +401,10 @@ const Header = () => {
                     {/* Wallet Balance */}
                     <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200 shadow-sm mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center shadow-sm">
-                          <span className="text-xl">💳</span>
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
                         </div>
                         <div>
                           <p className="text-sm text-green-700 font-medium">Wallet Balance</p>
@@ -413,31 +414,35 @@ const Header = () => {
                     </div>
                     
                     {/* Account Menu Items */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <Link 
                         href="/astrologers?openHistory=transactions"
-                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-blue-200"
                         onClick={() => setIsOpen(false)}
                       >
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-lg">💸</span>
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-md">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
                         </div>
                         <span className="flex-1">Transaction History</span>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-blue-500">
                           →
                         </div>
                       </Link>
                       
                       <Link 
                         href="/astrologers?openHistory=calls"
-                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-green-200"
                         onClick={() => setIsOpen(false)}
                       >
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <span className="text-lg">📞</span>
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
                         </div>
                         <span className="flex-1">Call History</span>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-green-500">
                           →
                         </div>
                       </Link>
@@ -451,10 +456,12 @@ const Header = () => {
                 <h3 className="text-sm font-semibold text-gray-500 mb-3">Navigation</h3>
                 <nav className="space-y-2">
                   {[
-                    { href: "/", label: "Home", icon: "🕉️", bgColor: "bg-blue-100" },
-                    { href: "/astrologers", label: "Astrologers", icon: "🔮", bgColor: "bg-purple-100" },
+                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
                     { href: "/about", label: "About", icon: "✨", bgColor: "bg-indigo-100" },
-                    { href: "/contact", label: "Contact", icon: "📞", bgColor: "bg-teal-100" },
+                    { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
+                    { href: "/contact", label: "Contact", icon: "📧", bgColor: "bg-teal-100" },
+                    { href: "/live-session", label: "Live Session", icon: "🎥", bgColor: "bg-red-100" },
+                    { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
                   ].map((item, index) => (
                     <Link 
                       key={item.href}

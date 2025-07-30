@@ -168,7 +168,7 @@ const AstrologerCallPage = () => {
 
   return (
     <WalletBalanceProvider>
-      <div className="w-full bg-gradient-to-br from-orange-50 via-white to-orange-50 min-h-screen">
+      <div className="w-full bg-white min-h-screen">
         {/* Enhanced Header banner */}
         <motion.div 
           className="relative h-[200px] overflow-hidden mb-8"
@@ -212,17 +212,10 @@ const AstrologerCallPage = () => {
           </div>
           
           <div className="relative flex flex-col items-center justify-center h-full text-center px-6">
-            <motion.div
-              className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4 backdrop-blur-sm"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              <Phone className="w-8 h-8 text-white" />
-            </motion.div>
+           
             
             <motion.h1 
-              className="text-white text-3xl sm:text-4xl md:text-5xl font-bold mb-2"
+              className="text-white text-6xl sm:text-4xl md:text-6xl font-bold mb-2"
               style={{ fontFamily: "EB Garamond" }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -243,8 +236,12 @@ const AstrologerCallPage = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.6 }}
           >
-            <h3 className="text-3xl font-bold text-gray-900 mb-2">Our astrology experts are ready to assist you! Whether you need a consultation or have inquiries, get immediate answers to your life’s questions.</h3>
-            <p className="text-gray-600"> Connect with skilled Astrologers for personalized insights on love, career, health, and beyond.</p>
+            <p className="text-gray-800 text-lg mb-6 leading-relaxed">
+              Our astrology experts are ready to assist you! Whether you need a consultation or have inquiries, get immediate answers to your life's questions.
+            </p>
+            <p className="text-gray-800 text-lg leading-relaxed">
+              <span className="font-semibold">Connect with skilled Astrologers</span> for personalized insights on love, career, health, and beyond.
+            </p>
           </motion.div>
 
           {isLoading ? (

@@ -12,6 +12,7 @@
     "@heroicons/react": "^2.2.0",
     "@livekit/components-react": "^2.9.14",
     "@livekit/components-styles": "^1.1.6",
+    "@tailwindcss/aspect-ratio": "^0.4.2",
     "firebase-admin": "^13.4.0",
     "framer-motion": "^12.23.0",
     "livekit-client": "^2.13.8",

@@ -7,7 +7,6 @@ import Loading from "./rashi/[name]/loading";
 import ClientLayout from "./ClientLayout";
 import ClientPathname from "./components/ClientPathname"; // Import the client component
 import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
-import DebugInfo from "./components/DebugInfo";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,7 +32,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <main className="min-h-screen pt-16 md:pt-24">{children}</main>
             </ClientLayout>
             <Footer />
-            <DebugInfo />
           </WalletBalanceProvider>
         </Suspense>
       </body>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { Phone, Clock, Loader2, RefreshCw } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
+import { apiRequestJson } from "../../utils/api-config";
 
 interface CallLog {
   _id: string;
@@ -40,24 +41,7 @@ export default function CallHistory() {
       const apiUrl = buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user");
       console.log('Fetching call logs from:', apiUrl);
       
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-      });
-
-      console.log('Call history response status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Call history error response:', errorText);
-        throw new Error(`Failed to fetch call logs (Status: ${response.status})`);
-      }
-
-      const data = await response.json();
+      const data = await apiRequestJson(apiUrl, { token });
       console.log('Call history response data:', data);
       
       // Handle the API response structure

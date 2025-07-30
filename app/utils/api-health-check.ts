@@ -4,8 +4,8 @@ export async function checkApiHealth() {
   const baseUrl = getApiBaseUrl();
   const endpoints = [
     '/payment/api/transaction/wallet-balance',
-    '/payment/api/transaction/transactions?skip=0&limit=1',
-    '/calling/api/call/call-log?skip=0&limit=1&role=user',
+    '/payment/api/transaction/transactions?skip=0&limit=10',
+    '/calling/api/call/call-log?skip=0&limit=10&role=user',
   ];
 
   const results = [];

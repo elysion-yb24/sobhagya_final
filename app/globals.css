@@ -346,6 +346,22 @@ html, body {
   .btn-ghost {
     @apply py-2.5 px-4 text-sm;
   }
+  
+  /* Ensure proper mobile header spacing */
+  body {
+    padding-top: 0;
+  }
+  
+  /* Prevent horizontal scrolling on mobile */
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  
+  /* Better touch targets for mobile */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* Accessibility Improvements */

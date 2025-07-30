@@ -283,12 +283,12 @@ const Header = () => {
 
           {/* Mobile Action Buttons */}
           <div className="flex items-center gap-2">
-          <a
-            href="tel:+919876543201"
+          <Link
+            href="/call-with-astrologer"
               className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 transition-all duration-300 hover:scale-110"
           >
               <Phone size={16} />
-          </a>
+          </Link>
           
           {mounted && isAuthenticatedUser ? (
             <button

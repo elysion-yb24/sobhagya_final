@@ -7,6 +7,7 @@ import Loading from "./rashi/[name]/loading";
 import ClientLayout from "./ClientLayout";
 import ClientPathname from "./components/ClientPathname"; // Import the client component
 import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
+import DebugInfo from "./components/DebugInfo";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,14 +22,18 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </head>
       <body className={inter.className}>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
             <Header />
             <ClientLayout>
-              <main className="min-h-screen pt-20">{children}</main>
+              <main className="min-h-screen pt-16 md:pt-24">{children}</main>
             </ClientLayout>
             <Footer />
+            <DebugInfo />
           </WalletBalanceProvider>
         </Suspense>
       </body>

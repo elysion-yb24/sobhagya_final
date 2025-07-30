@@ -15,17 +15,18 @@ export function createApiRequestOptions(options: ApiRequestOptions): RequestInit
     ...headers,
   };
 
-  if (token) {
-    requestHeaders['Authorization'] = `Bearer ${token}`;
-  }
-
   const requestOptions: RequestInit = {
     method,
     headers: requestHeaders,
   };
 
-  // Add credentials for development, but not for production to avoid CORS issues
-  if (process.env.NODE_ENV === 'development') {
+  // In production, don't send Authorization header to avoid CORS issues
+  // The backend should handle authentication via cookies or other means
+  if (process.env.NODE_ENV === 'development' && token) {
+    requestHeaders['Authorization'] = `Bearer ${token}`;
+    requestOptions.credentials = 'include';
+  } else if (process.env.NODE_ENV === 'production') {
+    // For production, use credentials to send cookies
     requestOptions.credentials = 'include';
   }
 

@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { getAuthToken } from '../../utils/auth-utils';
 import { getApiBaseUrl } from '../../config/api';
 import { apiRequestJson } from '../../utils/api-config';
+import { customHeaderApiRequestJson } from '../../utils/secure-production-api';
 
 interface WalletBalanceContextType {
   walletBalance: number;
@@ -34,7 +35,13 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log('Fetching wallet balance from:', apiUrl);
       
       try {
-        const data = await apiRequestJson(apiUrl, { token });
+        let data;
+        if (process.env.NODE_ENV === 'production') {
+          data = await customHeaderApiRequestJson(apiUrl);
+        } else {
+          data = await apiRequestJson(apiUrl, { token });
+        }
+        
         console.log('Wallet balance response data:', data);
         if (data.success && data.data) {
           setWalletBalance(data.data.balance || 0);

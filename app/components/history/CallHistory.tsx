@@ -5,6 +5,7 @@ import { getAuthToken } from "../../utils/auth-utils";
 import { Phone, Clock, Loader2, RefreshCw } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
 import { apiRequestJson } from "../../utils/api-config";
+import { customHeaderApiRequestJson } from "../../utils/secure-production-api";
 
 interface CallLog {
   _id: string;
@@ -41,7 +42,12 @@ export default function CallHistory() {
       const apiUrl = buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user");
       console.log('Fetching call logs from:', apiUrl);
       
-      const data = await apiRequestJson(apiUrl, { token });
+      let data;
+      if (process.env.NODE_ENV === 'production') {
+        data = await customHeaderApiRequestJson(apiUrl);
+      } else {
+        data = await apiRequestJson(apiUrl, { token });
+      }
       console.log('Call history response data:', data);
       
       // Handle the API response structure

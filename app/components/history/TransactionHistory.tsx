@@ -5,6 +5,7 @@ import { getAuthToken } from "../../utils/auth-utils";
 import { ArrowUpRight, ArrowDownLeft, Wallet, Loader2 } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
 import { apiRequestJson } from "../../utils/api-config";
+import { customHeaderApiRequestJson } from "../../utils/secure-production-api";
 
 interface Transaction {
   _id: string;
@@ -35,7 +36,13 @@ export default function TransactionHistory() {
       const apiUrl = buildApiUrl("/payment/api/transaction/transactions?skip=0&limit=10");
       console.log('Fetching transactions from:', apiUrl);
       
-      const data = await apiRequestJson(apiUrl, { token });
+      let data;
+      if (process.env.NODE_ENV === 'production') {
+        data = await customHeaderApiRequestJson(apiUrl);
+      } else {
+        data = await apiRequestJson(apiUrl, { token });
+      }
+      
       console.log('Transaction history response data:', data);
 
       if (data.success && data.data) {

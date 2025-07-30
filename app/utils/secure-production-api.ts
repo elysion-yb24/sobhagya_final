@@ -1,5 +1,6 @@
 import { getAuthToken } from './auth-utils';
 import { getApiBaseUrl } from '../config/api';
+import { logEnvironmentInfo, isProduction } from './environment-check';
 
 // More secure approach for production - use cookies instead of query parameters
 export async function secureProductionApiRequest(url: string, options: RequestInit = {}) {
@@ -50,6 +51,9 @@ export async function secureProductionApiRequestJson<T = any>(url: string, optio
 export async function customHeaderApiRequest(url: string, options: RequestInit = {}) {
   const token = getAuthToken();
   
+  // Log environment info for debugging
+  logEnvironmentInfo();
+  
   const requestOptions: RequestInit = {
     method: options.method || 'GET',
     headers: {
@@ -62,6 +66,7 @@ export async function customHeaderApiRequest(url: string, options: RequestInit =
   };
 
   console.log(`Custom Header API Request to: ${url}`);
+  console.log('Request headers:', requestOptions.headers);
   
   try {
     const response = await fetch(url, requestOptions);

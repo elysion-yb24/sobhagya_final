@@ -8,6 +8,7 @@ import { Menu, X, Phone, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData, getAuthToken } from "../utils/auth-utils";
 import { getApiBaseUrl } from "../config/api";
+import { customHeaderApiRequestJson } from "../utils/secure-production-api";
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 
@@ -40,20 +41,30 @@ const Header = () => {
       const token = getAuthToken();
       if (!token) return;
 
-      const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-balance`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setWalletBalance(data.data.balance || 0);
+      const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
+      
+      let data;
+      if (process.env.NODE_ENV === 'production') {
+        data = await customHeaderApiRequestJson(apiUrl);
+      } else {
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          data = await response.json();
+        } else {
+          throw new Error(`HTTP ${response.status}`);
         }
+      }
+
+      if (data.success && data.data) {
+        setWalletBalance(data.data.balance || 0);
       }
     } catch (error) {
       console.error('Error fetching wallet balance:', error);

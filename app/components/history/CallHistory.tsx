@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { Phone, Clock, Loader2, RefreshCw } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
-import { apiRequestJson } from "../../utils/api-config";
-import { customHeaderApiRequestJson } from "../../utils/secure-production-api";
 
 interface CallLog {
   _id: string;
@@ -42,28 +40,36 @@ export default function CallHistory() {
       const apiUrl = buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user");
       console.log('Fetching call logs from:', apiUrl);
       
-      let data;
-      if (process.env.NODE_ENV === 'production') {
-        data = await customHeaderApiRequestJson(apiUrl);
-      } else {
-        data = await apiRequestJson(apiUrl, { token });
-      }
-      console.log('Call history response data:', data);
-      
-      // Handle the API response structure
-      let calls = [];
-      if (data.data?.list && Array.isArray(data.data.list)) {
-        calls = data.data.list;
-      } else if (data.list && Array.isArray(data.list)) {
-        calls = data.list;
-      } else if (Array.isArray(data.data)) {
-        calls = data.data;
-      } else if (Array.isArray(data)) {
-        calls = data;
-      }
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
 
-      setCallLogs(calls);
-      setError(null);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Call history response data:', data);
+        
+        // Handle the API response structure
+        let calls = [];
+        if (data.data?.list && Array.isArray(data.data.list)) {
+          calls = data.data.list;
+        } else if (data.list && Array.isArray(data.list)) {
+          calls = data.list;
+        } else if (Array.isArray(data.data)) {
+          calls = data.data;
+        } else if (Array.isArray(data)) {
+          calls = data;
+        }
+
+        setCallLogs(calls);
+        setError(null);
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
     } catch (error) {
       console.error('Error fetching call logs:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch call logs');

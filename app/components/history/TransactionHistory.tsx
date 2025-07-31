@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { ArrowUpRight, ArrowDownLeft, Wallet, Loader2 } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
-import { apiRequestJson } from "../../utils/api-config";
-import { customHeaderApiRequestJson } from "../../utils/secure-production-api";
 
 interface Transaction {
   _id: string;
@@ -36,22 +34,29 @@ export default function TransactionHistory() {
       const apiUrl = buildApiUrl("/payment/api/transaction/transactions?skip=0&limit=10");
       console.log('Fetching transactions from:', apiUrl);
       
-      let data;
-      if (process.env.NODE_ENV === 'production') {
-        data = await customHeaderApiRequestJson(apiUrl);
-      } else {
-        data = await apiRequestJson(apiUrl, { token });
-      }
-      
-      console.log('Transaction history response data:', data);
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
 
-      if (data.success && data.data) {
-        // Debug: Log the actual transaction data to see what fields are available
-        console.log('Transaction data:', data.data.list);
-        setTransactions(data.data.list || []);
-        setError(null);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Transaction history response data:', data);
+
+        if (data.success && data.data) {
+          // Debug: Log the actual transaction data to see what fields are available
+          console.log('Transaction data:', data.data.list);
+          setTransactions(data.data.list || []);
+          setError(null);
+        } else {
+          throw new Error(data.message || 'No transactions found');
+        }
       } else {
-        throw new Error(data.message || 'No transactions found');
+        throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);

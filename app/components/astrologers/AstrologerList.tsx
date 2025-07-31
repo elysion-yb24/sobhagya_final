@@ -144,7 +144,11 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
             className="animate-fadeInUp flex justify-center"
             style={{ animationDelay: `${(index % 6) * 0.1}s` }}
           >
-            <AstrologerCard astrologer={astrologer} compactButtons={compactButtons} showVideoButton={showVideoButton}/>
+            <AstrologerCard 
+              astrologer={astrologer} 
+              compactButtons={compactButtons} 
+              showVideoButton={showVideoButton || astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video'}
+            />
           </div>
         ))}
       </div>

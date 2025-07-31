@@ -20,6 +20,7 @@ interface FilterBarProps {
   searchQuery: string;
   selectedSort: 'audio' | 'video' | 'language' | '';
   selectedLanguage?: string;
+  videoCallCount?: number;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({
@@ -30,6 +31,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   searchQuery = '',
   selectedSort = '',
   selectedLanguage = '',
+  videoCallCount = 0,
 }) => {
   const [searchTerm, setSearchTerm] = useState(searchQuery);
   const [sortBy, setSortBy] = useState<'audio' | 'video' | 'language' | ''>(selectedSort);
@@ -183,8 +185,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
             className="w-full pl-4 pr-8 py-3 rounded-full font-medium bg-white text-gray-700 border border-gray-200 shadow-md focus:outline-none focus:ring-0 focus:border-orange-300 transition-all duration-300 text-base appearance-none"
           >
             <option value="">Sort By</option>
-            <option value="audio">Audio</option>
-            <option value="video">Video</option>
+            <option value="audio">Audio Calls</option>
+            <option value="video">Video Calls ({videoCallCount})</option>
             <optgroup label="Languages">
               {/* You may want to pass filterOptions.languages as a prop for dynamic languages */}
               <option value="Hindi">Hindi</option>

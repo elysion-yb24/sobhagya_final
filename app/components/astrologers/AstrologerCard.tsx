@@ -529,8 +529,15 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
               Exp:- <span className="font-semibold">{age || experience} years</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-xs font-medium">min.</span></span>
+              {/* Show video call indicator */}
+              {(astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video') && (
+                <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-xs">
+                  <Video className="w-3 h-3" />
+                  <span className="font-medium">Video</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -573,13 +580,13 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             <span className="hidden sm:inline">Chat</span>
             <span className="sm:hidden">Chat</span>
           </button>
-          {showVideoButton && (
+          {/* Show video button if astrologer supports video calls */}
+          {(showVideoButton || astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video') && (
             <button
               className={`${compactButtons ? 'px-2 py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} flex items-center justify-center gap-1 sm:gap-2 bg-[#F7971D] text-white font-semibold rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs sm:text-base w-[80px] sm:w-auto`}
               onClick={handleVideoCall}
             >
               <Video className={compactButtons ? "w-3 h-3 sm:w-4 sm:h-4" : "w-4 h-4 sm:w-5 sm:h-5"} fill="#fff" />
-              {/* <img src="/video.png" alt="Call" className="w-5 h-5" /> */}
               <span className="hidden sm:inline">Video</span>
               <span className="sm:hidden">Video</span>
             </button>

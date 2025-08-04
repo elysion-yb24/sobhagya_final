@@ -58,8 +58,8 @@ interface AstrologerListProps {
   showVideoButton?: boolean;
 }
 
-const AstrologerList: React.FC<AstrologerListProps> = ({ 
-  astrologers, 
+const AstrologerList: React.FC<AstrologerListProps> = ({
+  astrologers,
   isLoading = false,
   isLoadingMore = false,
   hasError = false,
@@ -73,18 +73,16 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
     setMounted(true);
   }, []);
 
-  // Show skeleton loading for initial load
   if (isLoading && astrologers.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-4 sm:gap-y-6 stagger-animation px-2 sm:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-1 sm:gap-x-2 lg:gap-x-8 gap-y-6 px-1 sm:px-0">
           <ListSkeleton count={6} ItemSkeleton={AstrologerCardSkeleton} />
         </div>
       </div>
     );
   }
 
-  // Error state with retry
   if (hasError && astrologers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -101,19 +99,13 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
             We're having trouble connecting to our servers. Please check your internet connection and try again.
           </p>
           {onRetry && (
-            <button
-              onClick={onRetry}
-              className="btn-primary"
-            >
-              Try Again
-            </button>
+            <button onClick={onRetry} className="btn-primary">Try Again</button>
           )}
         </div>
       </div>
     );
   }
 
-  // Empty state
   if (!isLoading && astrologers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -135,25 +127,23 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Astrologers Grid with stagger animation */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 lg:gap-x-4 gap-y-4 sm:gap-y-6 stagger-animation px-2 sm:px-0">
+    <div className="space-y-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 gap-y-6 px-2 sm:px-0">
         {astrologers.map((astrologer, index) => (
           <div
             key={astrologer._id}
             className="animate-fadeInUp flex justify-center"
             style={{ animationDelay: `${(index % 6) * 0.1}s` }}
           >
-            <AstrologerCard 
-              astrologer={astrologer} 
-              compactButtons={compactButtons} 
+            <AstrologerCard
+              astrologer={astrologer}
+              compactButtons={compactButtons}
               showVideoButton={showVideoButton || astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video'}
             />
           </div>
         ))}
       </div>
 
-      {/* Loading more indicator */}
       {isLoadingMore && (
         <div className="flex justify-center py-8">
           <div className="flex items-center gap-3 px-6 py-3 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -163,7 +153,6 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
         </div>
       )}
 
-      {/* Performance hint for large lists */}
       {astrologers.length > 50 && (
         <div className="text-center py-4">
           <p className="text-sm text-gray-500">
@@ -174,6 +163,5 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
     </div>
   );
 };
-
 
 export default AstrologerList;

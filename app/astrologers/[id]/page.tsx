@@ -1198,7 +1198,7 @@ export default function AstrologerProfilePage() {
           </div>
 
           {/* Profile Image positioned in cosmic section - Centered on mobile, left on md+ */}
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 md:left-44 md:translate-x-0 transform translate-y-1/2">
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 md:left-48 md:translate-x-0 transform translate-y-1/2">
             <div className="relative">
               <img
                 src={astrologer?.avatar || astrologer?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=144`}

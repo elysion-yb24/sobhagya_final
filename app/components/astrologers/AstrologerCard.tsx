@@ -484,12 +484,12 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     <>
       <div
         onClick={handleCardClick}
-        className="group relative bg-white rounded border border-orange-300 p-2 sm:p-3 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col w-full max-w-[390px] mx-auto"
+        className="group relative bg-white rounded border border-orange-300 p-1.5 sm:p-2 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col w-full max-w-[390px] mx-auto h-full"
         style={{
           boxShadow: '0 2px 8px 0 rgba(247,151,30,0.07)',
         }}
       >
-        <div className="flex gap-2 sm:gap-3 items-center mb-1 sm:mb-2">
+        <div className="flex gap-2 sm:gap-2 items-center mb-1 sm:mb-1.5 flex-1">
           <div className="relative flex flex-col items-center">
             <img
               src={partner.avatar || partner.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`}
@@ -505,32 +505,27 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
-              <span className="text-base sm:text-lg font-extrabold text-gray-800 truncate">{name}</span>
+            <div className="flex items-center gap-1 mb-0.5">
+              <span className="text-xl sm:text-2xl font-extrabold text-gray-800 truncate">{name}</span>
               <span className="text-orange-400" title="Verified">
                 <img src="/orange_tick.png" alt="Orange Tick" className="w-3 h-3 sm:w-4 sm:h-4" />
               </span>
             </div>
-            <div className="text-gray-700 text-xs font-medium leading-tight truncate mb-0.5 sm:mb-1">
-              {specializations?.join(', ')}
+            <div className="text-gray-700 text-base font-medium leading-tight truncate mb-0.5">
+              {partner.talksAbout && partner.talksAbout.length > 0 
+                ? partner.talksAbout.slice(0, 3).join(', ')
+                : specializations?.join(', ')
+              }
             </div>
-            
-            
-            
-            {partner.talksAbout && partner.talksAbout.length > 0 && (
-              <div className="text-gray-500 text-xs truncate mb-0.5 sm:mb-1">
-              <span className="font-semibold">{partner.talksAbout.slice(0, 2).join(', ')}</span>
-              </div>
-            )}
-            <div className="text-gray-500 text-xs truncate mb-0.5 sm:mb-1">
+            <div className="text-gray-500 text-base truncate mb-0.5">
              <span className="font-semibold">{(languages || partner.language)?.join(', ')}</span>
             </div>
-            <div className="text-gray-500 text-xs mb-0.5 sm:mb-1">
+            <div className="text-gray-500 text-base mb-0.5">
               Exp:- <span className="font-semibold">{age || experience} years</span>
             </div>
 
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-xs font-medium">min.</span></span>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-lg font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-base font-medium">min.</span></span>
               {/* Show video call indicator */}
               {(astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video') && (
                 <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-xs">
@@ -541,8 +536,8 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1 mb-0.5 sm:mb-1">
-          <span className="flex items-center text-orange-400 text-xs ml-1 sm:ml-2">
+        <div className="flex items-center gap-1 mb-1">
+          <span className="flex items-center text-orange-400 text-base ml-1 sm:ml-2">
             {Array.from({ length: 5 }).map((_, i) => {
               const value = typeof rating === 'number' ? rating : rating?.avg || 0;
               const isHalf = value - i >= 0.5 && value - i < 1;
@@ -564,13 +559,13 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             })}
           </span>
         </div>
-        <div className="flex items-center gap-1 mb-1 sm:mb-2">
+        <div className="flex items-center gap-1 mb-1">
           <span className="flex flex-col ml-1 sm:ml-2 items-center justify-center mx-auto">
-            <span className="text-gray-400 italic text-xs gap-2">{calls || callsCount}&nbsp;orders</span>
+            <span className="text-gray-400 italic text-base gap-2">{calls || callsCount}&nbsp;orders</span>
             
           </span>
         </div>
-        <div className="flex gap-2 sm:gap-3 md:gap-4 mt-2 sm:mt-auto justify-end w-full">
+        <div className="flex gap-1.5 sm:gap-2 md:gap-3 mt-auto justify-end w-full">
           <button
             className={`${compactButtons ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'} flex items-center justify-center gap-1 border-2 border-[#F7971D] text-[#F7971D] font-semibold rounded-lg bg-white hover:bg-orange-50 transition-all duration-200 text-xs sm:text-sm w-[80px] sm:w-[100px]`}
             onClick={e => { e.stopPropagation(); /* handleChatClick() */ }}

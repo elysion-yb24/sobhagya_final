@@ -104,6 +104,9 @@ export default function AstrologersPage() {
   const [showHistory, setShowHistory] = useState<'none' | 'transactions' | 'calls'>('none');
   const [showBestAstrologerLoader, setShowBestAstrologerLoader] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // When searchQuery changes (from FilterBar), show loader for 700ms
   useEffect(() => {
@@ -116,46 +119,91 @@ export default function AstrologersPage() {
     }
   }, [searchQuery]);
 
-  // Fetch all astrologers on mount
-  useEffect(() => {
-    setMounted(true);
-    const fetchAllAstrologers = async () => {
+  // Fetch astrologers with pagination
+  const fetchAstrologers = async (page: number = 1, append: boolean = false) => {
+    if (page === 1) {
       setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
     setError(null);
+    
     try {
       const token = getAuthToken();
       if (!token) {
         setError("Authentication required. Please log in.");
-          setIsLoading(false);
+        setIsLoading(false);
+        setIsLoadingMore(false);
         return;
       }
-        const response = await fetch(
-          `${getApiBaseUrl()}/user/api/users?limit=10000`,
+      
+      const skip = (page - 1) * 10;
+      const response = await fetch(
+        `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=10`,
         {
           method: "GET",
           credentials: 'include',
           headers: {
-              "Authorization": `Bearer ${token}`,
+            "Authorization": `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           cache: "no-store",
         }
       );
-        if (!response.ok) {
-          setError("Failed to fetch astrologers");
-          setIsLoading(false);
+      
+      if (!response.ok) {
+        setError("Failed to fetch astrologers");
+        setIsLoading(false);
+        setIsLoadingMore(false);
         return;
       }
-        const data = await response.json();
-        setAllAstrologers(data.data?.list || data.list || []);
-      } catch (err) {
-        setError("Failed to fetch astrologers");
+      
+      const data = await response.json();
+      const newAstrologers = data.data?.list || data.list || [];
+      
+      if (append) {
+        setAllAstrologers(prev => [...prev, ...newAstrologers]);
+      } else {
+        setAllAstrologers(newAstrologers);
+      }
+      
+      // Check if there are more astrologers to load
+      setHasMore(newAstrologers.length === 10);
+      
+    } catch (err) {
+      setError("Failed to fetch astrologers");
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Fetch initial astrologers on mount
+  useEffect(() => {
+    setMounted(true);
+    fetchAstrologers(1, false);
+  }, []);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isLoadingMore || !hasMore) return;
+      
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      
+      // Load more when user is near bottom (100px from bottom)
+      if (scrollTop + windowHeight >= documentHeight - 100) {
+        const nextPage = currentPage + 1;
+        setCurrentPage(nextPage);
+        fetchAstrologers(nextPage, true);
       }
     };
-    fetchAllAstrologers();
-  }, []);
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isLoadingMore, hasMore, currentPage]);
 
   // Client-side search and filter
   const filteredAstrologers = allAstrologers.filter(ast => {
@@ -384,21 +432,9 @@ export default function AstrologersPage() {
   // Handle refresh button click
   const handleRefresh = async () => {
     console.log('🔄 Refresh requested');
-    setIsLoading(true);
-    
-    // Update token activity on user interaction
-    // updateTokenActivity(); // This function was removed from imports
-    
-    try {
-      // Reset to page 1 when refreshing
-      if (allAstrologers.length !== 0) { // Assuming currentPage is 1
-        console.log('📄 Resetting to page 1 for refresh');
-        // setCurrentPage(1); // No longer needed
-      }
-      await loadAllAstrologers();
-    } finally {
-      setTimeout(() => setIsLoading(false), 500); // Small delay for better UX
-    }
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchAstrologers(1, false);
   };
 
   // Generate page numbers for pagination
@@ -435,8 +471,8 @@ export default function AstrologersPage() {
   return (
     <WalletBalanceProvider>
       {/* FilterBar and Top Controls */}
-      <section className="w-full flex justify-center py-6 bg-transparent">
-        <div className="w-full max-w-7xl mx-auto rounded-full shadow-2xl border border-orange-100/70 bg-white/95 backdrop-blur-lg px-10 py-4 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8"
+      <section className="w-full flex justify-center py-3 bg-transparent">
+        <div className="w-full max-w-7xl mx-auto rounded-full shadow-2xl border border-orange-100/70 bg-white/95 backdrop-blur-lg px-10 py-3 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8"
           style={{ boxShadow: '0 6px 32px 0 rgba(247, 151, 30, 0.10)' }}>
           {/* FilterBar (search + sort by) */}
           <div className="flex-1 min-w-0">
@@ -478,7 +514,7 @@ export default function AstrologersPage() {
       </section>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-4">
         {searching && (
           <div className="flex justify-center mb-6">
             <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
@@ -519,7 +555,15 @@ export default function AstrologersPage() {
     </div>
   </div>
 ) : (
-  <AstrologerList astrologers={filteredAstrologers} compactButtons={sortBy === 'audio' || sortBy === 'video'} showVideoButton={sortBy === 'video'} />
+  <AstrologerList 
+    astrologers={filteredAstrologers} 
+    isLoading={isLoading}
+    isLoadingMore={isLoadingMore}
+    hasError={!!error}
+    onRetry={() => fetchAstrologers(1, false)}
+    compactButtons={sortBy === 'audio' || sortBy === 'video'} 
+    showVideoButton={sortBy === 'video'} 
+  />
         )}
       </main>
 

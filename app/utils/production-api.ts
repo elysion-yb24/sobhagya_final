@@ -11,6 +11,7 @@ export async function productionApiRequest(url: string, options: RequestInit = {
   const requestOptions: RequestInit = {
     method: options.method || 'GET',
     headers: {
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       ...options.headers,
     },

@@ -26,9 +26,9 @@ export function buildApiUrl(endpoint: string): string {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 }
 
-// Helper function to get API base URL
+
 export function getApiBaseUrl(): string {
-  // Check for environment variable first
+  
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL;
   }

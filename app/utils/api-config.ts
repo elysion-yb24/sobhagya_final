@@ -1,3 +1,4 @@
+import { request } from 'http';
 import { getApiBaseUrl } from '../config/api';
 
 interface ApiRequestOptions {
@@ -27,7 +28,9 @@ export function createApiRequestOptions(options: ApiRequestOptions): RequestInit
     requestOptions.credentials = 'include';
   } else if (process.env.NODE_ENV === 'production') {
     // For production, use credentials to send cookies
+    requestOptions.credentials = 'same-origin';
     requestOptions.credentials = 'include';
+
   }
 
   if (body) {

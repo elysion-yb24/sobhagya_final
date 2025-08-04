@@ -97,27 +97,26 @@ const Header = () => {
   // Always check auth state on mount to ensure correct display after redirects
   useEffect(() => {
     if (mounted) {
-      console.log('🔍 Header checking auth state on mount...');
+      // Prevent duplicate fetch if already loaded
+      if (userProfile) return;
       const authenticated = isAuthenticated();
-      console.log('🔐 Is authenticated:', authenticated);
       setIsAuthenticatedUser(authenticated);
       if (authenticated) {
         let userDetails = getUserDetails();
-        console.log('👤 User details from localStorage:', userDetails);
         setUserProfile(userDetails);
-        fetchUserProfile().then(freshProfile => {
-          console.log('🔄 Fresh profile from fetchUserProfile:', freshProfile);
-          if (freshProfile) setUserProfile(freshProfile);
-        });
-        // Fetch wallet balance
+        // Only fetch if not present or outdated (older than 5 min)
+        if (!userDetails || !userDetails.timestamp || Date.now() - userDetails.timestamp > 5 * 60 * 1000) {
+          fetchUserProfile().then(freshProfile => {
+            if (freshProfile) setUserProfile(freshProfile);
+          });
+        }
         fetchWalletBalance();
       } else {
-        console.log('❌ Not authenticated, clearing user profile');
         setUserProfile(null);
         setWalletBalance(0);
       }
     }
-  }, [mounted]);
+  }, [mounted, userProfile]);
 
   const handleLogout = async () => {
     try {

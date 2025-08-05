@@ -30,17 +30,17 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       // Check if user is authenticated
       if (!isAuthenticated()) {
-        console.log('❌ User not authenticated');
+        console.log('❌ User not authenticated, setting balance to 0');
         setWalletBalance(0);
-        setAuthError('User not authenticated');
+        setAuthError(null); // Don't show error for logout
         return;
       }
 
       const token = getAuthToken();
       if (!token) {
-        console.log('❌ No auth token found');
+        console.log('❌ No auth token found, setting balance to 0');
         setWalletBalance(0);
-        setAuthError('No authentication token found');
+        setAuthError(null); // Don't show error for logout
         return;
       }
 
@@ -55,8 +55,16 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (error: any) {
       console.error('❌ Error fetching wallet balance:', error);
       
+      // Check if user is still authenticated after error
+      if (!isAuthenticated()) {
+        console.log('❌ User no longer authenticated after error, clearing data');
+        setWalletBalance(0);
+        setAuthError(null); // Don't show error for logout
+        return;
+      }
+      
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        console.log('�� 401 error detected');
+        console.log('🔐 401 error detected');
         
         // Check if it's the specific payment service auth error
         if (error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
@@ -76,6 +84,30 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       setIsFetching(false);
     }
   }, [isFetching]);
+
+  // Listen for logout events and clear wallet data
+  useEffect(() => {
+    const handleLogout = () => {
+      console.log('🚪 Logout detected, clearing wallet data');
+      setWalletBalance(0);
+      setAuthError(null);
+    };
+
+    // Listen for custom logout event
+    window.addEventListener('user-logout', handleLogout);
+    
+    // Also check periodically if user is still authenticated
+    const checkAuthInterval = setInterval(() => {
+      if (!isAuthenticated()) {
+        handleLogout();
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => {
+      window.removeEventListener('user-logout', handleLogout);
+      clearInterval(checkAuthInterval);
+    };
+  }, []);
 
   useEffect(() => {
     fetchWalletBalance();

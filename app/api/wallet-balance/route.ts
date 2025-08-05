@@ -10,6 +10,27 @@ export async function GET(request: NextRequest) {
     console.log('=== WALLET BALANCE API DEBUG ===');
     console.log('Authorization header:', authHeader);
     console.log('Token from query:', token);
+    
+    // If no authentication is provided, return empty response instead of error
+    if (!authHeader && !token) {
+      console.log('No authentication provided, returning empty response');
+      return NextResponse.json({
+        success: true,
+        data: {
+          balance: 0,
+          currency: 'INR',
+          lastUpdated: new Date().toISOString()
+        }
+      }, { 
+        status: 200,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        }
+      });
+    }
+    
     console.log('All request headers:', Object.fromEntries(request.headers.entries()));
     
     // Prepare headers for backend request

@@ -7,9 +7,7 @@ import { Eagle_Lake } from "next/font/google";
 import { Menu, X, Phone, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
-import { getApiBaseUrl } from '../config/api';
-import { fetchWalletBalance as productionFetchWalletBalance } from '../utils/production-api';
-import { isProduction } from '../utils/environment-check';
+import { fetchWalletBalance as simpleFetchWalletBalance } from '../utils/production-api';
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 
@@ -46,59 +44,15 @@ const Header = () => {
         return;
       }
 
-      // Use production-safe API wrapper
-      if (isProduction()) {
-        console.log('Using production-safe wallet balance API in Header');
-        try {
-          const balance = await productionFetchWalletBalance();
-          setWalletBalance(balance);
-        } catch (error: any) {
-          console.error('Production wallet balance fetch failed in Header:', error);
-          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-            console.log('401 error in Header - clearing auth data');
-            clearAuthData();
-            setWalletBalance(0);
-            // Trigger auth change event
-            window.dispatchEvent(new CustomEvent('user-auth-changed'));
-          } else {
-            setWalletBalance(0);
-          }
-        }
-      } else {
-        // Development: Use direct API call
-        const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
-        
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            setWalletBalance(data.data.balance || 0);
-          } else {
-            console.warn('Wallet balance response not successful in Header:', data);
-            setWalletBalance(0);
-          }
-        } else if (response.status === 401) {
-          console.error('401 Unauthorized in Header - Token may be expired');
-          clearAuthData();
-          setWalletBalance(0);
-          // Trigger auth change event
-          window.dispatchEvent(new CustomEvent('user-auth-changed'));
-        } else {
-          console.error(`HTTP ${response.status} error in Header`);
-          setWalletBalance(0);
-        }
-      }
+      // Use simple API function (works same in dev and production)
+      console.log('Fetching wallet balance in Header...');
+      const balance = await simpleFetchWalletBalance();
+      setWalletBalance(balance);
+      
     } catch (error: any) {
       console.error('Error fetching wallet balance in Header:', error);
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        console.log('401 error in Header - clearing auth data');
         clearAuthData();
         setWalletBalance(0);
         // Trigger auth change event

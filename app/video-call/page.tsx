@@ -3,9 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getUserDetails, getAuthToken } from '../utils/auth-utils';
-import { getApiBaseUrl } from '../config/api';
-import { fetchWalletBalance as productionFetchWalletBalance } from '../utils/production-api';
-import { isProduction } from '../utils/environment-check';
+import { fetchWalletBalance as simpleFetchWalletBalance } from '../utils/production-api';
 import InsufficientBalanceModal from '../components/ui/InsufficientBalanceModal';
 import VideoCallRoom from '../components/video/VideoCallRoom';
 
@@ -197,34 +195,9 @@ export default function VideoCallPage() {
         return 0;
       }
 
-      let balance = 0;
-
-      // Use production-safe API wrapper
-      if (isProduction()) {
-        console.log('Using production-safe wallet balance API');
-        balance = await productionFetchWalletBalance();
-      } else {
-        // Development: Use direct API call
-        const response = await fetch(
-          `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
-          {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            credentials: 'include',
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          balance = data.data?.balance || 0;
-        } else {
-          setError("Failed to check wallet balance");
-          return 0;
-        }
-      }
+      // Use simple API function (works same in dev and production)
+      console.log('Checking wallet balance for video call...');
+      const balance = await simpleFetchWalletBalance();
 
       setWalletBalance(balance);
 

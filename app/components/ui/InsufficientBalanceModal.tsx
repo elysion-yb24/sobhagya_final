@@ -6,6 +6,8 @@ import { Wallet, Plus, CreditCard, ArrowRight, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { getAuthToken } from '../../utils/auth-utils';
 import { getApiBaseUrl } from '../../config/api';
+import { fetchTransactionHistory } from '../../utils/production-api';
+import { isProduction } from '../../utils/environment-check';
 
 interface RechargeOption {
   amount: number;
@@ -64,61 +66,53 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
         return;
       }
 
-      // Use backend API base URL to avoid wrong origin
-      const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-page-data`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        // Remove credentials to avoid CORS issues
-        credentials: 'include',
-      });
+      let apiResponse;
 
-      if (response.ok) {
-        const apiResponse = await response.json();
-        console.log('Wallet page data from backend:', apiResponse);
-        
-        // Handle the real API response structure
-        if (apiResponse.success) {
-          const data = apiResponse.data || apiResponse;
-          setWalletData(data);
-          
-          // Extract recharge options from API response
-          // The API might return rechargeOptions, recharge_options, packages, plans, or balances
-          const rechargeOptionsFromAPI = data.rechargeOptions || 
-                                         data.recharge_options || 
-                                         data.packages || 
-                                         data.plans || 
-                                         data.balances ||
-                                         [];
-          
-          if (Array.isArray(rechargeOptionsFromAPI) && rechargeOptionsFromAPI.length > 0) {
-            // Transform API data to our expected format
-            const transformedOptions = rechargeOptionsFromAPI.map(option => ({
-              amount: option.amount || option.value || option.price,
-              bonus: option.bonus || option.extra || option.bonusAmount || option.additional,
-              label: option.label || option.name || option.title,
-              bonusPercentage: option.bonusPercentage || option.bonus_percentage
-            }));
-            
-            setRechargeOptions(transformedOptions);
-          } else {
-            console.log('No recharge options in API response, using defaults');
-            setRechargeOptions(getDefaultRechargeOptions());
-          }
+      // Use production-safe API wrapper
+      if (isProduction()) {
+        console.log('Using production-safe transaction API');
+        const data = await fetchTransactionHistory();
+        apiResponse = { success: true, data };
+      } else {
+        // Development: Use direct API call
+        const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-page-data`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          apiResponse = await response.json();
         } else {
-          console.error('API response indicates failure:', apiResponse);
+          throw new Error(`HTTP ${response.status}`);
+        }
+      }
+
+      console.log('Wallet page data from backend:', apiResponse);
+      
+      // Handle the real API response structure
+      if (apiResponse.success && apiResponse.data) {
+        const { rechargeOptions: backendRechargeOptions, walletBalance } = apiResponse.data;
+        
+        if (backendRechargeOptions && Array.isArray(backendRechargeOptions)) {
+          setRechargeOptions(backendRechargeOptions);
+        } else {
+          console.warn('Backend recharge options not found or invalid, using defaults');
           setRechargeOptions(getDefaultRechargeOptions());
         }
+        
+        if (typeof walletBalance === 'number') {
+          // setCurrentBalance(walletBalance); // This line was removed from the new_code, so it's removed here.
+        }
       } else {
-        console.error('Failed to fetch wallet page data:', response.status, await response.text());
-        // Use fallback options
+        console.warn('Backend response not successful, using default recharge options');
         setRechargeOptions(getDefaultRechargeOptions());
       }
     } catch (error) {
       console.error('Error fetching wallet page data:', error);
-      // Use fallback options
       setRechargeOptions(getDefaultRechargeOptions());
     } finally {
       setIsLoadingData(false);

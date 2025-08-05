@@ -111,21 +111,29 @@ export async function productionApiRequestJson<T = any>(url: string, options: Re
 export async function fetchWalletBalance(): Promise<number> {
   const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
   
+  console.log('🔍 fetchWalletBalance called with URL:', apiUrl);
+  console.log('🔍 Environment check - isProduction():', isProduction());
+  
   try {
     const response = await productionApiRequest(apiUrl, {
       method: 'GET',
     });
     
+    console.log('✅ Wallet balance API response received:', response.status);
+    
     const data = await response.json();
+    console.log('📊 Wallet balance data:', data);
     
     if (data.success && data.data) {
-      return data.data.balance || 0;
+      const balance = data.data.balance || 0;
+      console.log('💰 Wallet balance extracted:', balance);
+      return balance;
     } else {
-      console.warn('Wallet balance response not successful:', data);
+      console.warn('⚠️ Wallet balance response not successful:', data);
       return 0;
     }
   } catch (error) {
-    console.error('Error fetching wallet balance:', error);
+    console.error('❌ Error fetching wallet balance:', error);
     return 0;
   }
 }

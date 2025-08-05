@@ -46,6 +46,7 @@ import {
 import { getApiBaseUrl } from "../config/api";
 import { useDebounce } from "../hooks/useDebounce";
 import { useWalletBalance, WalletBalanceProvider } from '../components/astrologers/WalletBalanceContext';
+import DebugInfo from '../components/DebugInfo';
 
 interface Astrologer {
   _id: string;
@@ -727,6 +728,11 @@ export default function AstrologersPage() {
           `}</style>
         </>
       )}
+
+      {/* Debug Info - Remove this after testing */}
+      <div className="container mx-auto px-4 py-8">
+        <DebugInfo />
+      </div>
     </WalletBalanceProvider>
   );
 }

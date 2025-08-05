@@ -31,7 +31,8 @@ export default function TransactionHistory() {
         return;
       }
 
-      const apiUrl = buildApiUrl("/payment/api/transaction/transactions?skip=0&limit=10");
+      // Use Next.js API route instead of calling backend directly to avoid CORS
+      const apiUrl = '/api/transaction-history?skip=0&limit=10';
       console.log('Fetching transactions from:', apiUrl);
       
       const response = await fetch(apiUrl, {
@@ -49,8 +50,8 @@ export default function TransactionHistory() {
 
         if (data.success && data.data) {
           // Debug: Log the actual transaction data to see what fields are available
-          console.log('Transaction data:', data.data.list);
-          setTransactions(data.data.list || []);
+          console.log('Transaction data:', data.data.transactions);
+          setTransactions(data.data.transactions || []);
           setError(null);
         } else {
           throw new Error(data.message || 'No transactions found');

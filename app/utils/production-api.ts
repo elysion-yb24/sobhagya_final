@@ -83,7 +83,7 @@ export async function simpleApiRequestJson<T = any>(url: string, options: Reques
 
 // Simple wallet balance function
 export async function fetchWalletBalance(): Promise<number> {
-  const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
+  const apiUrl = '/api/wallet-balance';
   
   console.log('💰 Fetching wallet balance from:', apiUrl);
   
@@ -116,7 +116,7 @@ export async function fetchWalletBalance(): Promise<number> {
 
 // Simple transaction history function
 export async function fetchTransactionHistory(): Promise<any> {
-  const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-page-data`;
+  const apiUrl = '/api/transaction-history';
   
   console.log('📋 Fetching transaction history from:', apiUrl);
   

@@ -5,6 +5,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 // Utility functions (import from your utils if needed)
 import { getAuthToken } from '../../utils/auth-utils';
 import { getApiBaseUrl } from '../../config/api';
+import { fetchWalletBalance as productionFetchWalletBalance } from '../../utils/production-api';
+import { isProduction } from '../../utils/environment-check';
 
 interface WalletBalanceContextType {
   walletBalance: number;
@@ -29,28 +31,36 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
       
-      const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
-      console.log('Fetching wallet balance from:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Wallet balance response data:', data);
-        if (data.success && data.data) {
-          setWalletBalance(data.data.balance || 0);
-        } else {
-          console.warn('Wallet balance response not successful:', data);
-        }
+      // Use production-safe API wrapper
+      if (isProduction()) {
+        console.log('Using production-safe wallet balance API');
+        const balance = await productionFetchWalletBalance();
+        setWalletBalance(balance);
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        // Development: Use direct API call
+        const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
+        console.log('Fetching wallet balance from:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Wallet balance response data:', data);
+          if (data.success && data.data) {
+            setWalletBalance(data.data.balance || 0);
+          } else {
+            console.warn('Wallet balance response not successful:', data);
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
@@ -74,7 +84,7 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useWalletBalance = () => {
   const context = useContext(WalletBalanceContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useWalletBalance must be used within a WalletBalanceProvider');
   }
   return context;

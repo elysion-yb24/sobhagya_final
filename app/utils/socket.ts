@@ -244,6 +244,28 @@ class SocketManager {
     });
   }
 
+  // Emit call_end event to notify other participants
+  emitCallEnd(channelId: string, reason: string = 'USER_ENDED'): void {
+    if (!this.socket || !this.isConnected) {
+      console.warn('Socket not connected, cannot emit call_end');
+      return;
+    }
+
+    const userDetails = getUserDetails();
+    const userId = userDetails?.id || userDetails?._id;
+    if (!userId) {
+      console.warn('User not authenticated, cannot emit call_end');
+      return;
+    }
+
+    console.log('Emitting call_end event:', { channelId, userId, reason });
+    this.socket.emit('call_end', {
+      channelId: channelId,
+      userId: userId,
+      reason: reason
+    });
+  }
+
   // Join as broadcaster (for astrologers)
   async joinAsBroadcaster(channelId: string, astrologerId: string): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -278,9 +300,24 @@ class SocketManager {
   // Disconnect socket
   disconnect() {
     if (this.socket) {
+      console.log('Disconnecting socket and cleaning up...');
+      
+      // Emit call_end event before disconnecting if we have channel info
+      if (this.channelId && this.userId) {
+        this.emitCallEnd(this.channelId, 'USER_DISCONNECTED');
+      }
+      
+      // Remove all event listeners
+      this.socket.removeAllListeners();
+      
+      // Disconnect the socket
       this.socket.disconnect();
       this.socket = null;
       this.isConnected = false;
+      this.channelId = null;
+      this.userId = null;
+      
+      console.log('Socket disconnected and cleaned up');
     }
   }
 
@@ -379,6 +416,41 @@ class SocketManager {
   onGiftRequest(callback: (data: any) => void) {
     if (!this.socket) return;
     this.socket.on('gift_request', callback);
+  }
+
+  // Request gift from user (for astrologers)
+  requestGiftFromUser(channelId: string, giftId: string, giftName: string, giftIcon: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.isConnected) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+
+      const userDetails = getUserDetails();
+      const userId = userDetails?.id || userDetails?._id;
+      if (!userId) {
+        reject(new Error('User not authenticated'));
+        return;
+      }
+
+      console.log('🎁 Requesting gift from user:', { channelId, giftId, giftName });
+
+      this.socket.emit('request_gift_from_user', {
+        channelId: channelId,
+        giftId: giftId,
+        giftName: giftName,
+        giftIcon: giftIcon,
+        fromUserId: userId
+      }, (response: any) => {
+        if (response && !response.error) {
+          console.log('✅ Gift request sent successfully');
+          resolve(response);
+        } else {
+          console.error('❌ Failed to request gift:', response?.message);
+          reject(new Error(response?.message || 'Failed to request gift'));
+        }
+      });
+    });
   }
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApiBaseUrl } from '../../config/api';
+import { getApiBaseUrl } from '../../../config/api';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const token = request.nextUrl.searchParams.get('token');
     
-    console.log('=== TRANSACTION HISTORY API DEBUG ===');
+    console.log('=== WALLET PAGE DATA API DEBUG ===');
     console.log('Authorization header:', authHeader);
     console.log('Token from query:', token);
     
@@ -17,10 +17,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
-          transactions: [],
-          total: 0,
-          skip: 0,
-          limit: 10
+          rechargeOptions: [],
+          walletBalance: 0
         }
       }, { 
         status: 200,
@@ -43,7 +41,7 @@ export async function GET(request: NextRequest) {
     const apiBaseUrl = getApiBaseUrl();
     console.log('🔧 API Base URL being used:', apiBaseUrl);
     
-    let targetUrl = `${apiBaseUrl}/payment/api/transaction/transactions`;
+    let targetUrl = `${apiBaseUrl}/payment/api/transaction/wallet-page-data`;
     const queryParams = new URLSearchParams();
     
     // Add authorization header if present
@@ -69,12 +67,6 @@ export async function GET(request: NextRequest) {
       console.log('Added Cookie header to backend request');
     }
     
-    // Add pagination parameters from request
-    const skip = request.nextUrl.searchParams.get('skip') || '0';
-    const limit = request.nextUrl.searchParams.get('limit') || '10';
-    queryParams.set('skip', skip);
-    queryParams.set('limit', limit);
-    
     // Add token if present
     if (token) {
       queryParams.set('token', token);
@@ -93,16 +85,12 @@ export async function GET(request: NextRequest) {
     });
     
     const data = await response.json();
-    console.log('Transaction History API response status:', response.status);
-    console.log('Transaction History API response data:', data);
+    console.log('Wallet Page Data API response status:', response.status);
+    console.log('Wallet Page Data API response data:', data);
     
     // If we get a 401, return the actual backend error response
     if (response.status === 401) {
-      console.log('❌ 401 Authentication failed for payment service (transaction history)');
-      console.log('🔍 This might be due to:');
-      console.log('   - Payment service requiring different authentication');
-      console.log('   - Token format not accepted by payment service');
-      console.log('   - Payment service not configured to accept user service tokens');
+      console.log('❌ 401 Authentication failed for payment service (wallet page data)');
       
       // Return the actual backend error response
       return NextResponse.json(data, { 
@@ -115,7 +103,7 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    console.log('=== END TRANSACTION HISTORY API DEBUG ===');
+    console.log('=== END WALLET PAGE DATA API DEBUG ===');
     
     return NextResponse.json(data, { 
       status: response.status,
@@ -127,9 +115,9 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Proxy error in transaction history API:', error);
+    console.error('Proxy error in wallet page data API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', message: 'Failed to fetch transaction history' },
+      { error: 'Internal server error', message: 'Failed to fetch wallet page data' },
       { 
         status: 500,
         headers: {

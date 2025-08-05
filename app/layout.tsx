@@ -7,6 +7,7 @@ import Loading from "./rashi/[name]/loading";
 import ClientLayout from "./ClientLayout";
 import ClientPathname from "./components/ClientPathname"; // Import the client component
 import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
+import AuthErrorHandler from "@/app/components/AuthErrorHandler";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={inter.className}>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
+            <AuthErrorHandler />
             <Header />
             <ClientLayout>
               <main className="min-h-screen pt-16 md:pt-24">{children}</main>

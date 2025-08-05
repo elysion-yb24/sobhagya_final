@@ -40,13 +40,30 @@ const Header = () => {
   const fetchWalletBalance = async () => {
     try {
       const token = getAuthToken();
-      if (!token) return;
+      if (!token) {
+        console.log('No auth token found in Header, setting wallet balance to 0');
+        setWalletBalance(0);
+        return;
+      }
 
       // Use production-safe API wrapper
       if (isProduction()) {
         console.log('Using production-safe wallet balance API in Header');
-        const balance = await productionFetchWalletBalance();
-        setWalletBalance(balance);
+        try {
+          const balance = await productionFetchWalletBalance();
+          setWalletBalance(balance);
+        } catch (error: any) {
+          console.error('Production wallet balance fetch failed in Header:', error);
+          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+            console.log('401 error in Header - clearing auth data');
+            clearAuthData();
+            setWalletBalance(0);
+            // Trigger auth change event
+            window.dispatchEvent(new CustomEvent('user-auth-changed'));
+          } else {
+            setWalletBalance(0);
+          }
+        }
       } else {
         // Development: Use direct API call
         const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
@@ -64,13 +81,31 @@ const Header = () => {
           const data = await response.json();
           if (data.success && data.data) {
             setWalletBalance(data.data.balance || 0);
+          } else {
+            console.warn('Wallet balance response not successful in Header:', data);
+            setWalletBalance(0);
           }
+        } else if (response.status === 401) {
+          console.error('401 Unauthorized in Header - Token may be expired');
+          clearAuthData();
+          setWalletBalance(0);
+          // Trigger auth change event
+          window.dispatchEvent(new CustomEvent('user-auth-changed'));
         } else {
-          throw new Error(`HTTP ${response.status}`);
+          console.error(`HTTP ${response.status} error in Header`);
+          setWalletBalance(0);
         }
       }
-    } catch (error) {
-      console.error('Error fetching wallet balance:', error);
+    } catch (error: any) {
+      console.error('Error fetching wallet balance in Header:', error);
+      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+        clearAuthData();
+        setWalletBalance(0);
+        // Trigger auth change event
+        window.dispatchEvent(new CustomEvent('user-auth-changed'));
+      } else {
+        setWalletBalance(0);
+      }
     }
   };
 
@@ -524,6 +559,6 @@ const Header = () => {
 
     </header>
   );
-};
-
+  };
+  
 export default Header;

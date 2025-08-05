@@ -132,8 +132,15 @@ export async function fetchWalletBalance(): Promise<number> {
       console.warn('⚠️ Wallet balance response not successful:', data);
       return 0;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error fetching wallet balance:', error);
+    
+    // Re-throw 401 errors so they can be handled by the calling component
+    if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+      console.error('🔐 Authentication error in fetchWalletBalance, re-throwing for proper handling');
+      throw error;
+    }
+    
     return 0;
   }
 }

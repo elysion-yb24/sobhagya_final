@@ -2,11 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-// Utility functions (import from your utils if needed)
+// Utility functions
 import { getAuthToken, isAuthenticated, clearAuthData } from '../../utils/auth-utils';
-import { getApiBaseUrl } from '../../config/api';
-import { fetchWalletBalance as productionFetchWalletBalance } from '../../utils/production-api';
-import { isProduction } from '../../utils/environment-check';
+import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/production-api';
 
 interface WalletBalanceContextType {
   walletBalance: number;
@@ -22,17 +20,17 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isFetching, setIsFetching] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  const fetchWalletBalance = useCallback(async (retryCount = 0) => {
+  const fetchWalletBalance = useCallback(async () => {
     if (isFetching) return;
     setIsFetching(true);
     setAuthError(null);
     
-    console.log(`🔄 Fetching wallet balance (attempt ${retryCount + 1})`);
+    console.log('🔄 Fetching wallet balance...');
     
     try {
       // Check if user is authenticated
       if (!isAuthenticated()) {
-        console.log('❌ User not authenticated, setting wallet balance to 0');
+        console.log('❌ User not authenticated');
         setWalletBalance(0);
         setAuthError('User not authenticated');
         return;
@@ -40,85 +38,25 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const token = getAuthToken();
       if (!token) {
-        console.log('❌ No auth token found, setting wallet balance to 0');
+        console.log('❌ No auth token found');
         setWalletBalance(0);
         setAuthError('No authentication token found');
         return;
       }
 
-      console.log('✅ User authenticated, token available');
+      console.log('✅ User authenticated, fetching wallet balance');
       
-      // Use production-safe API wrapper
-      if (isProduction()) {
-        console.log('🌐 Using production-safe wallet balance API');
-        try {
-          const balance = await productionFetchWalletBalance();
-          console.log(`💰 Wallet balance fetched successfully: ${balance}`);
-          setWalletBalance(balance);
-          setAuthError(null);
-        } catch (error: any) {
-          console.error('❌ Production wallet balance fetch failed:', error);
-          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-            console.log('🔐 401 error detected, clearing auth data');
-            setAuthError('Authentication failed. Please login again.');
-            // Clear auth data on 401
-            clearAuthData();
-          } else {
-            setAuthError('Failed to fetch wallet balance');
-          }
-          setWalletBalance(0);
-        }
-      } else {
-        // Development: Use direct API call
-        const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
-        console.log('🔧 Development mode - Fetching wallet balance from:', apiUrl);
-        
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-        
-        console.log(`📡 Development response status: ${response.status}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📊 Wallet balance response data:', data);
-          if (data.success && data.data) {
-            setWalletBalance(data.data.balance || 0);
-            setAuthError(null);
-          } else {
-            console.warn('⚠️ Wallet balance response not successful:', data);
-            setAuthError('Invalid response format');
-            setWalletBalance(0);
-          }
-        } else if (response.status === 401) {
-          console.error('🔐 401 Unauthorized - Token may be expired');
-          setAuthError('Authentication failed. Please login again.');
-          setWalletBalance(0);
-          // Clear auth data on 401
-          clearAuthData();
-          
-          // Retry once after clearing auth data
-          if (retryCount === 0) {
-            console.log('🔄 Retrying wallet balance fetch after clearing auth data...');
-            setTimeout(() => {
-              fetchWalletBalance(1);
-            }, 1000);
-          }
-        } else {
-          console.error(`❌ HTTP ${response.status} error`);
-          setAuthError(`Server error: ${response.status}`);
-          setWalletBalance(0);
-        }
-      }
+      // Use simple API function (works same in dev and production)
+      const balance = await simpleFetchWalletBalance();
+      console.log('💰 Wallet balance fetched:', balance);
+      setWalletBalance(balance);
+      setAuthError(null);
+      
     } catch (error: any) {
       console.error('❌ Error fetching wallet balance:', error);
+      
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        console.log('🔐 401 error in catch block, clearing auth data');
+        console.log('🔐 401 error detected, clearing auth data');
         setAuthError('Authentication failed. Please login again.');
         clearAuthData();
       } else {

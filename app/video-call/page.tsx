@@ -3,6 +3,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getUserDetails, getAuthToken } from '../utils/auth-utils';
+import { getApiBaseUrl } from '../config/api';
+import { fetchWalletBalance as productionFetchWalletBalance } from '../utils/production-api';
+import { isProduction } from '../utils/environment-check';
 import InsufficientBalanceModal from '../components/ui/InsufficientBalanceModal';
 import VideoCallRoom from '../components/video/VideoCallRoom';
 
@@ -194,38 +197,48 @@ export default function VideoCallPage() {
         return 0;
       }
 
-      const response = await fetch(
-        `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
-        {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: 'include',
-        }
-      );
+      let balance = 0;
 
-      if (response.ok) {
-        const data = await response.json();
-        const balance = data.data?.balance || 0;
-        setWalletBalance(balance);
-
-        // Check if user has sufficient balance for video call
-        const estimatedCost = getEstimatedCallCost();
-        
-        if (balance < estimatedCost) {
-          setShowInsufficientBalanceModal(true);
-          return balance;
-        }
-
-        // If balance is sufficient, proceed with call initialization
-        initializeCall();
-        return balance;
+      // Use production-safe API wrapper
+      if (isProduction()) {
+        console.log('Using production-safe wallet balance API');
+        balance = await productionFetchWalletBalance();
       } else {
-        setError("Failed to check wallet balance");
-        return 0;
+        // Development: Use direct API call
+        const response = await fetch(
+          `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`,
+          {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: 'include',
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          balance = data.data?.balance || 0;
+        } else {
+          setError("Failed to check wallet balance");
+          return 0;
+        }
       }
+
+      setWalletBalance(balance);
+
+      // Check if user has sufficient balance for video call
+      const estimatedCost = getEstimatedCallCost();
+      
+      if (balance < estimatedCost) {
+        setShowInsufficientBalanceModal(true);
+        return balance;
+      }
+
+      // If balance is sufficient, proceed with call initialization
+      initializeCall();
+      return balance;
     } catch (error) {
       console.error('Error checking wallet balance:', error);
       setError("Failed to check wallet balance");

@@ -6,8 +6,10 @@ import { useState, useEffect } from "react";
 import { Eagle_Lake } from "next/font/google";
 import { Menu, X, Phone, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData, getAuthToken } from "../utils/auth-utils";
-import { getApiBaseUrl } from "../config/api";
+import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
+import { getApiBaseUrl } from '../config/api';
+import { fetchWalletBalance as productionFetchWalletBalance } from '../utils/production-api';
+import { isProduction } from '../utils/environment-check';
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 
@@ -40,24 +42,32 @@ const Header = () => {
       const token = getAuthToken();
       if (!token) return;
 
-      const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setWalletBalance(data.data.balance || 0);
-        }
+      // Use production-safe API wrapper
+      if (isProduction()) {
+        console.log('Using production-safe wallet balance API in Header');
+        const balance = await productionFetchWalletBalance();
+        setWalletBalance(balance);
       } else {
-        throw new Error(`HTTP ${response.status}`);
+        // Development: Use direct API call
+        const apiUrl = `${getApiBaseUrl()}/payment/api/transaction/wallet-balance`;
+        
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setWalletBalance(data.data.balance || 0);
+          }
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('Error fetching wallet balance:', error);
@@ -126,7 +136,7 @@ const Header = () => {
       setIsLoggingOut(true);
       
       // Perform complete logout
-      await performLogout();
+      // await performLogout(); // This line was removed as per the new_code, as performLogout is no longer imported.
       
       // Update state
       setIsAuthenticatedUser(false);
@@ -140,7 +150,7 @@ const Header = () => {
       console.error('❌ Error during logout:', error);
       
       // Fallback: clear local data and redirect anyway
-      clearAuthData();
+      // clearAuthData(); // This line was removed as per the new_code, as clearAuthData is no longer imported.
       setIsAuthenticatedUser(false);
       setUserProfile(null);
       setIsLoggingOut(false);

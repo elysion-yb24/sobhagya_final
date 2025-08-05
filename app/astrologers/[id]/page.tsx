@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../../utils/auth-utils";
 import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
+import { fetchWalletBalance as productionFetchWalletBalance } from '../../utils/production-api';
+import { isProduction } from '../../utils/environment-check';
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
 import ConnectingCallModal from '../../components/ui/ConnectingCallModal';
 import CallInitiatedModal from '../../components/ui/CallInitiatedModal';
@@ -597,18 +599,31 @@ export default function AstrologerProfilePage() {
   const fetchWalletBalance = async () => {
     try {
       const token = getAuthToken();
-      const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-balance`, {
-        method: "GET",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: 'include',
-      });
+      if (!token) {
+        console.log('No auth token found for wallet balance');
+        return;
+      }
 
-      if (response.ok) {
-        const data = await response.json();
-        setWalletBalance(data.data?.balance || 0);
+      // Use production-safe API wrapper
+      if (isProduction()) {
+        console.log('Using production-safe wallet balance API');
+        const balance = await productionFetchWalletBalance();
+        setWalletBalance(balance);
+      } else {
+        // Development: Use direct API call
+        const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-balance`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setWalletBalance(data.data?.balance || 0);
+        }
       }
     } catch (error) {
       console.error('Error fetching wallet balance:', error);

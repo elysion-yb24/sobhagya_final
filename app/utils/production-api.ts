@@ -1,7 +1,7 @@
 import { getAuthToken } from './auth-utils';
 import { getApiBaseUrl } from '../config/api';
 import { isProduction } from './environment-check';
-import { debugCookies, setSecureCookie } from './cookie-debug';
+import { debugCookies, setSecureCookie, testCookieSetting } from './cookie-debug';
 
 // For production, we'll use a different approach since Authorization headers are blocked
 export async function productionApiRequest(url: string, options: RequestInit = {}) {
@@ -11,37 +11,32 @@ export async function productionApiRequest(url: string, options: RequestInit = {
   if (isProduction()) {
     console.log('🔍 Debugging cookies in production...');
     debugCookies();
+    testCookieSetting();
   }
   
-  // In production, use both Authorization header and cookies (like the working users API)
+  // In production, use Authorization header as primary auth (like the working users API)
   if (isProduction()) {
-    // Set token in cookie for server-side access (using the same name as working APIs)
+    // Try to set token cookie for additional auth support
     if (token && typeof document !== 'undefined') {
-      const cookieSet = setSecureCookie('token', token, {
-        maxAge: 3600,
-        secure: true,
-        sameSite: 'lax'
-      });
+      console.log('🔧 Attempting to set token cookie...');
       
-      if (!cookieSet) {
-        console.warn('⚠️ Failed to set token cookie, trying alternative approach');
-        // Fallback: try without secure flag
-        setSecureCookie('token', token, {
-          maxAge: 3600,
-          secure: false,
-          sameSite: 'lax'
-        });
+      // Simple cookie setting without complex domain logic
+      try {
+        document.cookie = `token=${token}; path=/; max-age=3600; secure; samesite=lax`;
+        console.log('✅ Token cookie set');
+      } catch (error) {
+        console.warn('⚠️ Failed to set token cookie:', error);
       }
     }
     
     const requestOptions: RequestInit = {
       method: options.method || 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`, // Include Authorization header like working APIs
+        'Authorization': `Bearer ${token}`, // Primary authentication method
         'Content-Type': 'application/json',
         ...options.headers,
       },
-      credentials: 'include', // Send cookies
+      credentials: 'include', // Send any existing cookies
       ...options,
     };
 

@@ -40,6 +40,56 @@ export function debugCookies() {
   console.log('=== End Cookie Debug ===');
 }
 
+// Test function to manually test cookie setting
+export function testCookieSetting() {
+  if (typeof document === 'undefined') {
+    console.log('Cannot test cookies on server side');
+    return;
+  }
+
+  console.log('🧪 Testing cookie setting...');
+  
+  // Test 1: Basic cookie
+  try {
+    document.cookie = 'test_basic=basic_value; path=/; max-age=60';
+    console.log('✅ Basic cookie set');
+  } catch (error) {
+    console.error('❌ Basic cookie failed:', error);
+  }
+  
+  // Test 2: Secure cookie
+  try {
+    document.cookie = 'test_secure=secure_value; path=/; max-age=60; secure; samesite=lax';
+    console.log('✅ Secure cookie set');
+  } catch (error) {
+    console.error('❌ Secure cookie failed:', error);
+  }
+  
+  // Test 3: Cross-domain cookie
+  try {
+    document.cookie = 'test_domain=domain_value; path=/; max-age=60; domain=.sobhagya.in; secure; samesite=lax';
+    console.log('✅ Cross-domain cookie set');
+  } catch (error) {
+    console.error('❌ Cross-domain cookie failed:', error);
+  }
+  
+  // Check all cookies after setting
+  console.log('📋 All cookies after test:', document.cookie);
+  
+  // Parse and show specific test cookies
+  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split('=');
+    acc[key] = value;
+    return acc;
+  }, {} as Record<string, string>);
+  
+  console.log('🔍 Test cookies found:', {
+    test_basic: cookies.test_basic || 'Not found',
+    test_secure: cookies.test_secure || 'Not found',
+    test_domain: cookies.test_domain || 'Not found'
+  });
+}
+
 export function checkCookieSupport() {
   if (typeof document === 'undefined') {
     return { supported: false, reason: 'Server side' };
@@ -85,6 +135,7 @@ export function setSecureCookie(name: string, value: string, options: {
   maxAge?: number;
   secure?: boolean;
   sameSite?: 'strict' | 'lax' | 'none';
+  domain?: string;
 } = {}) {
   if (typeof document === 'undefined') {
     console.warn('Cannot set cookie on server side');
@@ -92,9 +143,14 @@ export function setSecureCookie(name: string, value: string, options: {
   }
 
   try {
-    const { maxAge = 3600, secure = true, sameSite = 'strict' } = options;
+    const { maxAge = 3600, secure = true, sameSite = 'lax', domain } = options;
     
     let cookieString = `${name}=${value}; path=/; max-age=${maxAge}`;
+    
+    // Set domain for cross-subdomain cookies
+    if (domain) {
+      cookieString += `; domain=${domain}`;
+    }
     
     if (secure) {
       cookieString += '; secure';
@@ -104,9 +160,23 @@ export function setSecureCookie(name: string, value: string, options: {
       cookieString += `; samesite=${sameSite}`;
     }
     
+    console.log(`🔧 Setting cookie: ${cookieString}`);
     document.cookie = cookieString;
-    console.log(`✅ Set secure cookie: ${name}`);
-    return true;
+    
+    // Verify the cookie was set
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    
+    if (cookies[name]) {
+      console.log(`✅ Successfully set cookie: ${name}`);
+      return true;
+    } else {
+      console.warn(`⚠️ Cookie ${name} not found after setting`);
+      return false;
+    }
   } catch (error) {
     console.error(`❌ Failed to set cookie ${name}:`, error);
     return false;

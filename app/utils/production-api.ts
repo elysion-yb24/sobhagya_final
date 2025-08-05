@@ -10,6 +10,39 @@ export async function simpleApiRequest(url: string, options: RequestInit = {}) {
     throw new Error('No authentication token available');
   }
 
+  // Ensure token is also set as cookie (like the working users API)
+  if (typeof document !== 'undefined') {
+    try {
+      // Set cookie with same settings as storeAuthToken
+      document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; SameSite=Lax; Secure`;
+      console.log('🍪 Token cookie set for API request');
+      
+      // Also try setting for cross-domain access
+      try {
+        document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; domain=.sobhagya.in; SameSite=Lax; Secure`;
+        console.log('🍪 Token cookie set for cross-domain (.sobhagya.in)');
+      } catch (crossDomainError) {
+        console.warn('⚠️ Failed to set cross-domain cookie:', crossDomainError);
+      }
+      
+      // Also try setting without SameSite for cross-site requests
+      try {
+        document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; Secure`;
+        console.log('🍪 Token cookie set without SameSite');
+      } catch (noSameSiteError) {
+        console.warn('⚠️ Failed to set cookie without SameSite:', noSameSiteError);
+      }
+      
+      // Also try setting without secure flag in case of HTTP
+      if (window.location.protocol === 'http:') {
+        document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; SameSite=Lax`;
+        console.log('🍪 Token cookie set without secure flag (HTTP)');
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to set token cookie:', error);
+    }
+  }
+
   const requestOptions: RequestInit = {
     method: options.method || 'GET',
     headers: {
@@ -23,6 +56,7 @@ export async function simpleApiRequest(url: string, options: RequestInit = {}) {
 
   console.log(`🌐 API Request to: ${url}`);
   console.log('Request headers:', requestOptions.headers);
+  console.log('Current cookies:', typeof document !== 'undefined' ? document.cookie : 'Server side');
   
   try {
     const response = await fetch(url, requestOptions);

@@ -32,8 +32,8 @@ export function storeAuthToken(token: string): boolean {
     // Store timestamp
     localStorage.setItem('tokenTimestamp', Date.now().toString());
     
-    // Store in cookies for server-side access
-    document.cookie = `authToken=${token}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
+    // Store in cookies for server-side access (using same name as working APIs)
+    document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; SameSite=Lax; Secure`;
     
     return true;
   } catch (e) {

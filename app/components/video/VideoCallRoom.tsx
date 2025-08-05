@@ -290,7 +290,8 @@ export default function VideoCallRoom({
   const [gifts, setGifts] = useState<any[]>([]);
   const [showGiftPanel, setShowGiftPanel] = useState(false);
   const [sendingGift, setSendingGift] = useState(false);
-  const [giftNotification, setGiftNotification] = useState<any | null>(null);
+  const [giftNotification, setGiftNotification] = useState<any>(null);
+  const [giftRequest, setGiftRequest] = useState<any>(null);
 
   // Add state for gift confirmation
   const [pendingGift, setPendingGift] = useState<any | null>(null);
@@ -400,6 +401,22 @@ export default function VideoCallRoom({
     };
   }, []);
 
+  // Listen for gift requests from astrologer
+  useEffect(() => {
+    function handleGiftRequest(data: any) {
+      console.log('🎁 Gift request received:', data);
+      setGiftRequest(data);
+      // Auto-hide gift request after 10 seconds
+      setTimeout(() => setGiftRequest(null), 10000);
+    }
+    socketManager.onGiftRequest(handleGiftRequest);
+    return () => {
+      if (socketManager.getSocket()) {
+        socketManager.getSocket()?.off('gift_request', handleGiftRequest);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     // Ensure socket is connected to the current room/channel before sending gifts
     let didCancel = false;
@@ -425,12 +442,21 @@ export default function VideoCallRoom({
     isDisconnectingRef.current = true;
     setCallStats(prev => ({ ...prev, isConnected: false }));
 
-  
-   
+    console.log('📞 User ending call - cleaning up...');
 
+    // Emit call_end event to notify astrologer and server
+    if (roomName) {
+      try {
+        socketManager.emitCallEnd(roomName, 'USER_ENDED');
+      } catch (error) {
+        console.error('Failed to emit call_end event:', error);
+      }
+    }
+
+    // Clean up LiveKit room
     if (roomRef.current) {
       try {
-        
+        // Stop all local tracks
         roomRef.current.localParticipant.audioTrackPublications.forEach((publication) => {
           if (publication.track) {
             publication.track.stop();
@@ -441,21 +467,32 @@ export default function VideoCallRoom({
             publication.track.stop();
           }
         });
+        
+        // Disconnect from room
         setTimeout(() => {
           if (roomRef.current) {
             roomRef.current.disconnect();
           }
         }, 50);
       } catch (error) {
-        console.error('Error during disconnect:', error);
-        setTimeout(() => {
-          router.push('/astrologers');
-        }, 100);
+        console.error('Error during LiveKit disconnect:', error);
       }
-    } else {
-      router.push('/astrologers');
     }
-  }, [router]);
+
+    // Clean up socket connection
+    setTimeout(() => {
+      try {
+        socketManager.disconnect();
+      } catch (error) {
+        console.error('Error during socket disconnect:', error);
+      }
+      
+      // Navigate away
+      setTimeout(() => {
+        router.push('/astrologers');
+      }, 100);
+    }, 100);
+  }, [router, roomName]);
 
   // Listen for call_end event to disconnect user if astrologer ends the call
   useEffect(() => {
@@ -749,6 +786,33 @@ export default function VideoCallRoom({
         {giftNotification && (
           <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded shadow-lg z-50">
             🎁 {giftNotification.fromName} sent {giftNotification.giftName}!
+          </div>
+        )}
+
+        {/* Gift Request Notification */}
+        {giftRequest && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-orange-100 border border-orange-400 text-orange-800 px-6 py-3 rounded shadow-lg z-50 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🎁</span>
+              <span className="font-medium">
+                {astrologerName || 'Astrologer'} is requesting a gift!
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setShowGiftPanel(true);
+                setGiftRequest(null);
+              }}
+              className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
+            >
+              Send Gift
+            </button>
+            <button
+              onClick={() => setGiftRequest(null)}
+              className="text-orange-600 hover:text-orange-800 text-sm"
+            >
+              ✕
+            </button>
           </div>
         )}
 

@@ -32,6 +32,7 @@ import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
 import ConnectingCallModal from '../../components/ui/ConnectingCallModal';
 import CallInitiatedModal from '../../components/ui/CallInitiatedModal';
+import GiftConfirmationDialog from '../../components/ui/GiftConfirmationDialog';
 
 
 // Updated Astrologer interface with all API fields
@@ -1322,7 +1323,7 @@ export default function AstrologerProfilePage() {
                       }}
                     >
                       <Phone className="w-4 h-4" />
-                      {isAudioCallProcessing ? 'Connecting...' : ''}
+                      {isAudioCallProcessing ? 'Connecting...' : 'Audio Call'}
                     </button>
                     { (astrologer?.isVideoCallAllowed || astrologer?.callType === 'video' || astrologer?.videoRpm) && (
                       <button
@@ -1343,7 +1344,7 @@ export default function AstrologerProfilePage() {
                         }}
                       >
                         <Video className="w-4 h-4" />
-                        {isVideoCallProcessing ? 'Connecting...' : ''}
+                        {isVideoCallProcessing ? 'Connecting...' : 'Video Call'}
                       </button>
                     )}
                     <button 
@@ -1555,6 +1556,82 @@ export default function AstrologerProfilePage() {
         icon={<Video className="h-6 w-6" />}
         isLoading={isVideoCallProcessing}
       />
+
+      {/* Gift Selection Modal */}
+      {showGiftModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-xl p-6 shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Send Dakshina</h2>
+              <button
+                onClick={() => setShowGiftModal(false)}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-600 text-sm mb-4">
+                Choose a gift to send to {astrologer?.name}. Your wallet balance: ₹{walletBalance}
+              </p>
+            </div>
+
+            {gifts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {gifts.map((gift) => (
+                  <button
+                    key={gift._id}
+                    onClick={() => {
+                      setSelectedGift(gift);
+                      setShowGiftConfirm(true);
+                      setShowGiftModal(false);
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
+                      selectedGift?._id === gift._id 
+                        ? 'border-orange-500 bg-orange-50' 
+                        : 'border-gray-200 hover:border-orange-300'
+                    } ${walletBalance < gift.price ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={walletBalance < gift.price}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-2" />
+                      <h3 className="font-semibold text-gray-900 text-sm mb-1">{gift.name}</h3>
+                      <p className="text-orange-600 font-bold">₹{gift.price}</p>
+                      {walletBalance < gift.price && (
+                        <p className="text-red-500 text-xs mt-1">Insufficient balance</p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Gift className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No gifts available at the moment.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Gift Confirmation Dialog */}
+      {showGiftConfirm && selectedGift && (
+        <GiftConfirmationDialog
+          isOpen={showGiftConfirm}
+          onClose={() => {
+            setShowGiftConfirm(false);
+            setSelectedGift(null);
+          }}
+          onConfirm={async () => {
+            await handleSendGift(selectedGift);
+          }}
+          giftName={selectedGift.name}
+          giftIcon={selectedGift.icon}
+          giftPrice={selectedGift.price}
+          isLoading={isSendingGift}
+        />
+      )}
     </>
   );
 }

@@ -1,3 +1,73 @@
+# Sobhagya - Astrology Video Calling Platform
+
+## New Features Added
+
+### 1. Gift Request Listener
+- **Functionality**: Astrologers can now request gifts from users during video calls
+- **Implementation**: 
+  - Added `onGiftRequest()` method in `SocketManager` to listen for gift requests
+  - Added `requestGiftFromUser()` method for astrologers to send gift requests
+  - Added gift request notification UI in `VideoCallRoom` component
+  - Gift requests auto-hide after 10 seconds or when user clicks "Send Gift"
+
+### 2. Enhanced Call End Handling
+- **Functionality**: Proper socket cleanup when calls end
+- **Implementation**:
+  - Added `emitCallEnd()` method to notify other participants when call ends
+  - Enhanced `disconnect()` method to properly clean up socket connections
+  - Updated `handleLeaveCall()` in `VideoCallRoom` to emit call_end event and clean up socket
+  - Improved error handling and logging for better debugging
+
+### Socket Events
+- `call_end`: Emitted when a participant ends the call
+- `gift_request`: Emitted when astrologer requests a gift from user
+- `request_gift_from_user`: Emitted by astrologer to request specific gift
+
+### Usage Examples
+
+#### For Users (in VideoCallRoom):
+```typescript
+// Gift request listener is automatically set up
+// Users will see a notification when astrologer requests a gift
+// Clicking "Send Gift" opens the gift panel
+```
+
+#### For Astrologers:
+```typescript
+// Request a gift from user
+await socketManager.requestGiftFromUser(
+  channelId, 
+  giftId, 
+  giftName, 
+  giftIcon
+);
+```
+
+#### Call End Handling:
+```typescript
+// When user ends call
+socketManager.emitCallEnd(roomName, 'USER_ENDED');
+socketManager.disconnect(); // This also emits call_end and cleans up
+```
+
+## Technical Details
+
+### Socket Manager Enhancements
+- Added proper event emission for call end
+- Enhanced disconnect method with cleanup
+- Added gift request functionality for astrologers
+- Improved error handling and logging
+
+### UI Components
+- Gift request notification with "Send Gift" button
+- Auto-hide functionality for gift requests
+- Proper positioning and styling for notifications
+
+### Error Handling
+- Graceful handling of socket disconnections
+- Proper cleanup of event listeners
+- Error logging for debugging
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

@@ -12,15 +12,24 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Authorization header required' });
     }
 
+    // Extract token from Authorization header
+    const token = authHeader.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Valid token required' });
+    }
+
     // Proxy the request to your backend server
-      const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL + '/payment/api/transaction/wallet-page-data';
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL + '/payment/api/transaction/wallet-page-data';
+    
+    console.log('Proxying request to:', backendUrl);
     
     const response = await fetch(backendUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-       
+        'Cookie': req.headers.cookie || '', // Forward cookies from client
         ...(req.headers['user-agent'] && { 'User-Agent': req.headers['user-agent'] }),
       },
       credentials: 'include',

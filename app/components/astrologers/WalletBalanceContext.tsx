@@ -56,9 +56,18 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       console.error('❌ Error fetching wallet balance:', error);
       
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        console.log('🔐 401 error detected, clearing auth data');
-        setAuthError('Authentication failed. Please login again.');
-        clearAuthData();
+        console.log('�� 401 error detected');
+        
+        // Check if it's the specific payment service auth error
+        if (error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
+          setAuthError('Payment service authentication issue. Please contact support.');
+        } else {
+          console.log('Clearing auth data due to 401 error');
+          setAuthError('Authentication failed. Please login again.');
+          clearAuthData();
+        }
+      } else if (error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
+        setAuthError('Payment service authentication issue. Please contact support.');
       } else {
         setAuthError('Failed to fetch wallet balance');
       }

@@ -29,15 +29,28 @@ export function buildApiUrl(endpoint: string): string {
 
 
 export function getApiBaseUrl(): string {
-  
+  // If environment variable is explicitly set, use it
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     return process.env.NEXT_PUBLIC_API_BASE_URL;
   }
   
-  // Fallback based on environment
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    // If running on localhost, use local backend
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      return 'http://localhost:8001';
+    }
+    // If running on production domain, use production backend
+    if (window.location.hostname.includes('sobhagya.in')) {
+      return 'https://micro.sobhagya.in';
+    }
+  }
+  
+  // Fallback based on NODE_ENV
   if (process.env.NODE_ENV === 'production') {
     return 'https://micro.sobhagya.in';
   }
   
+  // Default to localhost for development
   return 'http://localhost:8001';
 } 

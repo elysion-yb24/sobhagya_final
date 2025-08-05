@@ -100,13 +100,21 @@ export async function fetchWalletBalance(): Promise<number> {
       return balance;
     } else {
       console.warn('⚠️ Wallet balance response not successful:', data);
+      
+      // Check for specific payment service auth error
+      if (data.error === 'PAYMENT_SERVICE_AUTH_REQUIRED') {
+        throw new Error('PAYMENT_SERVICE_AUTH_REQUIRED: ' + data.message);
+      }
+      
       return 0;
     }
   } catch (error: any) {
     console.error('❌ Error fetching wallet balance:', error);
     
-    // Re-throw 401 errors for proper handling
-    if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+    // Re-throw 401 errors and payment service auth errors for proper handling
+    if (error.message?.includes('401') || 
+        error.message?.includes('Unauthorized') || 
+        error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
       throw error;
     }
     

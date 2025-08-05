@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (authHeader) {
       try {
         // Try to call backend logout API
-        const targetUrl = 'http://localhost:8001/auth/api/logout';
+        const targetUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://micro.sobhagya.in'}/auth/api/logout`;
         console.log('📡 Calling backend logout API:', targetUrl);
         
         const response = await fetch(targetUrl, {
@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
           console.log('✅ Backend logout successful');
         } else {
           console.warn('⚠️ Backend logout failed, but continuing with cleanup');
+          console.log('Backend response status:', response.status);
+          const errorText = await response.text();
+          console.log('Backend error response:', errorText);
         }
       } catch (backendError) {
         console.warn('⚠️ Backend logout API call failed:', backendError);
@@ -50,10 +53,12 @@ export async function POST(request: NextRequest) {
       'refresh_token',
       'sessionId',
       'user',
-      'auth-token'
+      'auth-token',
+      'AuthToken'
     ];
     
     cookiesToClear.forEach(cookieName => {
+      // Clear for current domain
       response.cookies.set(cookieName, '', {
         expires: new Date(0),
         path: '/',
@@ -61,6 +66,18 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       });
+      
+      // Also try to clear for parent domain in production
+      if (process.env.NODE_ENV === 'production') {
+        response.cookies.set(cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          httpOnly: false,
+          secure: true,
+          sameSite: 'lax',
+          domain: '.sobhagya.in'
+        });
+      }
     });
     
     console.log('🎉 Logout process completed successfully');
@@ -88,10 +105,12 @@ export async function POST(request: NextRequest) {
       'refresh_token',
       'sessionId',
       'user',
-      'auth-token'
+      'auth-token',
+      'AuthToken'
     ];
     
     cookiesToClear.forEach(cookieName => {
+      // Clear for current domain
       response.cookies.set(cookieName, '', {
         expires: new Date(0),
         path: '/',
@@ -99,6 +118,18 @@ export async function POST(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax'
       });
+      
+      // Also try to clear for parent domain in production
+      if (process.env.NODE_ENV === 'production') {
+        response.cookies.set(cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          httpOnly: false,
+          secure: true,
+          sameSite: 'lax',
+          domain: '.sobhagya.in'
+        });
+      }
     });
     
     return response;

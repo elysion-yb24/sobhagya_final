@@ -125,7 +125,7 @@ const Header = () => {
       setIsLoggingOut(true);
       
       // Perform complete logout
-      // await performLogout(); // This line was removed as per the new_code, as performLogout is no longer imported.
+      await performLogout();
       
       // Update state
       setIsAuthenticatedUser(false);
@@ -139,7 +139,7 @@ const Header = () => {
       console.error('❌ Error during logout:', error);
       
       // Fallback: clear local data and redirect anyway
-      // clearAuthData(); // This line was removed as per the new_code, as clearAuthData is no longer imported.
+      clearAuthData();
       setIsAuthenticatedUser(false);
       setUserProfile(null);
       setIsLoggingOut(false);

@@ -5,6 +5,7 @@ export const API_CONFIG = {
   // Production: NEXT_PUBLIC_API_BASE_URL=https://micro.sobhagya.in
   // For Guftagu API: NEXT_PUBLIC_API_URL=https://api.guftagu.app
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001',
+  BASE_URL_G: process.env.NEXT_PUBLIC_API_BASE_URL_G || 'https://micro.sobhagya.in',
   
   // API endpoints
   ENDPOINTS: {
@@ -16,7 +17,7 @@ export const API_CONFIG = {
     USER: {
       USERS: 'user/api/users',
       ASTROLOGERS: 'user/api/astrologers',
-      WALLET_BALANCE: 'user/api/wallet/balance'
+      WALLET_BALANCE: 'payment/api/transaction/wallet-balance'
     }
   }
 };

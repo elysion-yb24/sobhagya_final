@@ -19,6 +19,7 @@ export function debugCookies() {
   
   console.log('Parsed cookies:', cookies);
   console.log('Auth token in cookies:', cookies.auth_token || 'Not found');
+  console.log('Token in cookies:', cookies.token || 'Not found');
   console.log('Access token in cookies:', cookies.access_token || 'Not found');
   console.log('AuthToken in cookies:', cookies.AuthToken || 'Not found');
   

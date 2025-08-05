@@ -883,8 +883,8 @@ export default function AstrologerProfilePage() {
       const token = getAuthToken();
       if (!token) return;
 
-      // Fetch wallet balance
-      const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-balance`, {
+      // Use Next.js API route instead of calling backend directly to avoid CORS
+      const response = await fetch('/api/wallet-balance', {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,

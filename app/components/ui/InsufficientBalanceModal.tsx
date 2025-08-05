@@ -74,8 +74,8 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
         const data = await fetchTransactionHistory();
         apiResponse = { success: true, data };
       } else {
-        // Development: Use direct API call
-        const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/wallet-page-data`, {
+        // Development: Use Next.js API route instead of direct backend call
+        const response = await fetch('/api/payment/wallet-page-data', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -177,7 +177,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
         isWeb: false,
         chatPlanName: '',
       };
-      const response = await fetch(`${getApiBaseUrl()}/payment/api/transaction/phonepe/initiate`, {
+      const response = await fetch('/api/payment/phonepe/initiate', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -297,7 +297,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
     while (attempts < maxAttempts) {
       await new Promise((res) => setTimeout(res, delay));
       try {
-        const resp = await fetch(`${getApiBaseUrl()}/payment/api/transaction/phonepe-status-check`, {
+        const resp = await fetch('/api/payment/phonepe/status-check', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

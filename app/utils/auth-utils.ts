@@ -260,6 +260,10 @@ export function clearAuthData(): void {
       if (typeof window !== 'undefined') {
         (window as any).authState = null;
         (window as any).userProfile = null;
+        
+        // Dispatch logout event for components to respond
+        window.dispatchEvent(new CustomEvent('user-logout'));
+        console.log('📢 Dispatched user-logout event');
       }
     } catch (globalError) {
       console.warn('Error clearing global state:', globalError);

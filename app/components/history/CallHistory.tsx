@@ -36,8 +36,8 @@ export default function CallHistory() {
         setIsLoading(false);
         return;
       }
-
-      const apiUrl = buildApiUrl("/calling/api/call/call-log?skip=0&limit=10&role=user");
+      // Use Next.js API route instead of calling backend directly to avoid CORS
+      const apiUrl = '/api/calling/call-log?skip=0&limit=10&role=user';
       console.log('Fetching call logs from:', apiUrl);
       
       const response = await fetch(apiUrl, {

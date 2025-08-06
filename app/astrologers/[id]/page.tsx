@@ -31,7 +31,6 @@ import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "..
 import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/production-api';
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
-import ConnectingCallModal from '../../components/ui/ConnectingCallModal';
 import CallInitiatedModal from '../../components/ui/CallInitiatedModal';
 import GiftConfirmationDialog from '../../components/ui/GiftConfirmationDialog';
 
@@ -803,10 +802,9 @@ export default function AstrologerProfilePage() {
     }
   };
 
-  const handleAudioCall = async () => {
+  const handleAudioCall = async (retryCount = 0) => {
     try {
       setIsAudioCallProcessing(true);
-      setShowAudioCallConfirm(false);
       setCurrentCallType('audio');
       const token = getAuthToken();
       const userDetails = getUserDetails();
@@ -815,17 +813,23 @@ export default function AstrologerProfilePage() {
         throw new Error('Authentication required');
       }
 
+      // Defensive check for partner._id
+      if (!partner || !partner._id) {
+        alert('Astrologer information is missing. Please refresh the page.');
+        setIsAudioCallProcessing(false);
+        setCurrentCallType(null);
+        return;
+      }
+      
       // Fetch latest wallet balance
       const currentBalance = await fetchWalletPageData();
-
+      
       // Check wallet balance before proceeding
-      const audioRpm = astrologer?.rpm || 15;
+      const audioRpm = partner?.rpm || 15;
       const audioCost = audioRpm * 2; // Estimate 2 minutes minimum cost
       if (currentBalance < audioCost) {
         setIsAudioCallProcessing(false);
         setCurrentCallType(null);
-        
-        // Show insufficient balance modal instead of throwing error
         setInsufficientBalanceData({
           requiredAmount: audioCost,
           serviceType: 'call'
@@ -833,48 +837,119 @@ export default function AstrologerProfilePage() {
         setShowInsufficientBalanceModal(true);
         return;
       }
-
-      const response = await fetch(`${getApiBaseUrl()}/calling/api/call/request-tataTelecom-call`, {
+      
+      // Generate unique channel ID with timestamp and retry count to avoid conflicts
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
+      const channelId = Date.now().toString();
+      const requestBody = {
+        receiverUserId: partner._id,
+        type: 'call',
+        appVersion: '1.0.0'
+      };
+      // --- IMPORTANT DEBUG LOG ---
+      console.log('🚨 SENDING receiverUserId:', partner._id, '| requestBody:', requestBody);
+      if (!requestBody.receiverUserId) {
+        alert('receiverUserId is missing. Cannot initiate audio call.');
+        setIsAudioCallProcessing(false);
+        setCurrentCallType(null);
+        return;
+      }
+      
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+      
+      const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          astrologerId: astrologer?._id,
-          callerId: userDetails.id,
-          receiverId: astrologer?._id,
-          callType: 'audio',
-          rpm: astrologer?.rpm || 15,
-        }),
+        body: JSON.stringify(requestBody),
         credentials: 'include',
       });
-
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to initiate audio call');
+        let errorMessage = 'Failed to initiate audio call';
+        try {
+          const errorData = await response.json();
+          // Handle specific backend error messages
+          if (errorData.message === 'DONT_HAVE_ENOUGH_BALANCE') {
+            errorMessage = 'Insufficient wallet balance for audio call';
+          } else if (errorData.message === 'User not online') {
+            errorMessage = 'Astrologer is currently offline';
+          } else if (errorData.message === 'User not available for audio call') {
+            errorMessage = 'Audio calls are not available with this astrologer';
+          } else if (errorData.message === 'User already on another call, wait for a few minutes') {
+            errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
+          } else if (errorData.message === 'User Not Found') {
+            errorMessage = 'Astrologer not found';
+          } else if (errorData.message === 'You have been blocked by Partner') {
+            errorMessage = 'You have been blocked by this astrologer';
+          } else if (errorData.message === 'This user cannot initiate a call. Please create a new account.') {
+            errorMessage = 'Your account needs to be verified to make audio calls';
+          } else if (errorData.message === 'Channel ID has to be unique each time, check it') {
+            // Retry with a new channel ID if we haven't retried too many times
+            if (retryCount < 3) {
+              setIsAudioCallProcessing(false);
+              setCurrentCallType(null);
+              setTimeout(() => {
+                handleAudioCall(retryCount + 1);
+              }, 1000);
+              return;
+            } else {
+              errorMessage = 'Unable to start audio call due to session conflicts. Please try again later.';
+            }
+          } else {
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          }
+        } catch (parseError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
-
-      const result = await response.json();
-      console.log('Audio call initiated:', result);
-
-      // Show call initiated modal if backend says call is initiated
-      if (result.success || (result.message && result.message.toLowerCase().includes('initiated'))) {
-        setShowCallInitiatedModal(true);
-        setTimeout(() => setShowCallInitiatedModal(false), 10000);
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to get audio call token');
       }
-
-      // Show success state
+      
+      // Extract data from backend response structure (matches backend format)
+      const { token: livekitToken, channel, livekitSocketURL } = data.data;
+      
+      if (!livekitToken || !channel) {
+        throw new Error('Missing token or channel in response');
+      }
+      
+      // Store astrologer ID and image in localStorage for navigation back and avatar display
+      localStorage.setItem('lastAstrologerId', partner._id);
+      localStorage.setItem('callSource', 'astrologerProfile');
+      if (partner.avatar) {
+        localStorage.setItem(`astrologer_image_${partner._id}`, partner.profileImage);
+      }
+      
+      // Open frontend audio call page with token and room
+      const audioCallUrl = `/audio-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
+      router.push(audioCallUrl);
       setTimeout(() => {
         setIsAudioCallProcessing(false);
         setCurrentCallType(null);
-      }, 3000);
-
+      }, 1000);
+      
     } catch (error) {
-      console.error('Audio call error:', error);
+      console.error('❌ Audio call error:', error);
       setIsAudioCallProcessing(false);
       setCurrentCallType(null);
-      alert(error instanceof Error ? error.message : 'Failed to initiate audio call');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate audio call';
+      if (errorMessage.includes('timeout')) {
+        alert('Connection timeout: The server is not responding. Please check your internet connection and try again.');
+      } else if (errorMessage.includes('Socket not connected')) {
+        alert('Connection error: Unable to connect to the server. Please refresh the page and try again.');
+      } else {
+        alert(errorMessage);
+      }
     }
   };
 
@@ -914,8 +989,8 @@ export default function AstrologerProfilePage() {
     const isAuthValid = isAuthenticated();
     
     if (isAuthValid) {
-      // If authenticated, show confirmation dialog
-      setShowAudioCallConfirm(true);
+      // If authenticated, directly initiate audio call
+      handleAudioCall();
     } else {
       // If not authenticated, store call type and astrologer ID, then go through call flow
       localStorage.setItem('selectedAstrologerId', astrologer?._id || '');
@@ -930,8 +1005,8 @@ export default function AstrologerProfilePage() {
     const isAuthValid = isAuthenticated();
     
     if (isAuthValid) {
-      // If authenticated, show confirmation dialog
-      setShowVideoCallConfirm(true);
+      // If authenticated, directly initiate video call
+      handleVideoCall();
     } else {
       // If not authenticated, store call type and astrologer ID, then go through call flow
       localStorage.setItem('selectedAstrologerId', astrologer?._id || '');
@@ -944,7 +1019,6 @@ export default function AstrologerProfilePage() {
   const handleVideoCall = async (retryCount = 0) => {
     try {
       setIsVideoCallProcessing(true);
-      setShowVideoCallConfirm(false);
       setCurrentCallType('video');
       const token = getAuthToken();
       const userDetails = getUserDetails();
@@ -1064,8 +1138,15 @@ export default function AstrologerProfilePage() {
         throw new Error('Missing token or channel in response');
       }
       
+      // Store astrologer ID and image in localStorage for navigation back and avatar display
+      localStorage.setItem('lastAstrologerId', partner._id);
+      localStorage.setItem('callSource', 'astrologerProfile');
+      if (partner.avatar) {
+        localStorage.setItem(`astrologer_image_${partner._id}`, partner.profileImage);
+      }
+      
       // Open frontend video call page with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
+      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
       router.push(videoCallUrl);
       setTimeout(() => {
         setIsVideoCallProcessing(false);
@@ -1172,7 +1253,6 @@ export default function AstrologerProfilePage() {
 
   return (
     <>
-      <ConnectingCallModal visible={isAudioCallProcessing} />
       <CallInitiatedModal visible={showCallInitiatedModal} onClose={() => setShowCallInitiatedModal(false)} />
       <div className="min-h-screen bg-white">
         {/* Extended Cosmic Background Header */}
@@ -1322,7 +1402,7 @@ export default function AstrologerProfilePage() {
                       <Phone className="w-4 h-4" />
                       {isAudioCallProcessing ? 'Connecting...' : 'Audio Call'}
                     </button>
-                    { (astrologer?.isVideoCallAllowed || astrologer?.callType === 'video' || astrologer?.videoRpm) && (
+                    { (astrologer?.isVideoCallAllowed) && (
                       <button
                         onClick={() => handleVideoCallClick()}
                         disabled={isVideoCallProcessing}

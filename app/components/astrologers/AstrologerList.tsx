@@ -138,7 +138,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
             <AstrologerCard
               astrologer={astrologer}
               compactButtons={compactButtons}
-              showVideoButton={showVideoButton || astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video'}
+              showVideoButton={showVideoButton || astrologer.isVideoCallAllowed}
             />
           </div>
         ))}

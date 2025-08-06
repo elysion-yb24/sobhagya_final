@@ -222,7 +222,6 @@ const Header = () => {
                 { href: "/about", label: "About" },
                 { href: "/services", label: "Services" },
                 { href: "/contact", label: "Contact" },
-                { href: "/live-session", label: "Live Session" },
                 { href: "/blog", label: "Blog" },
               ].map((item) => (
                 <Link
@@ -530,7 +529,6 @@ const Header = () => {
                     { href: "/about", label: "About", icon: "✨", bgColor: "bg-indigo-100" },
                     { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
                     { href: "/contact", label: "Contact", icon: "📧", bgColor: "bg-teal-100" },
-                    { href: "/live-session", label: "Live Session", icon: "🎥", bgColor: "bg-red-100" },
                     { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
                   ].map((item, index) => (
                     <Link 

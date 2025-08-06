@@ -12,10 +12,10 @@ const poppins = Poppins({
 const Footer: React.FC = () => {
   return (
     <footer
-      className={`bg-[#373737] text-white py-12 relative overflow-hidden ${poppins.className}`}
+      className={`bg-[#373737] text-white py-8 sm:py-10 lg:py-12 relative overflow-hidden ${poppins.className}`}
     >
       {/* Top Left Zodiac Background Image */}
-      <div className="absolute top-[-50px] left-[-150px] w-[400px] h-[300px] opacity-10">
+      <div className="absolute top-[-50px] left-[-150px] w-[300px] h-[200px] sm:w-[400px] sm:h-[300px] opacity-10">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Bottom Right Zodiac Background Image */}
-      <div className="absolute bottom-[-100px] right-[20px] w-[400px] h-[300px] opacity-10">
+      <div className="absolute bottom-[-100px] right-[20px] w-[300px] h-[200px] sm:w-[400px] sm:h-[300px] opacity-10">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
@@ -36,16 +36,111 @@ const Footer: React.FC = () => {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Title text */}
-        <h2 className="text-orange-400 text-center text-lg sm:text-xl md:text-2xl mb-8 sm:mb-12 underline decoration-orange-400 underline-offset-8 px-4">
+        <h2 className="text-orange-400 text-center text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 lg:mb-12 underline decoration-orange-400 underline-offset-8 px-2 sm:px-4">
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-x-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
+          {/* GET IN TOUCH */}
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-orange-400 font-semibold text-base sm:text-lg mb-3 sm:mb-4">GET IN TOUCH</h3>
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-orange-400 text-base sm:text-lg">◆</span>
+                <a
+                  href="mailto:support@sobhagya.in"
+                  className="text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                >
+                  support@sobhagya.in
+                </a>
+              </div>
+              <p className="text-white text-xs ml-4 sm:ml-6 opacity-80">
+                (we will respond within 24 hours)
+              </p>
+            </div>
+          </div>
 
+          {/* QUICK LINKS */}
+          <div className="space-y-3 sm:space-y-4">
+            <h3 className="text-orange-400 font-semibold text-base sm:text-lg mb-3 sm:mb-4">QUICK LINKS</h3>
+            <div className="space-y-2 sm:space-y-3">
+              <Link
+                href="/privacy-policy"
+                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+              >
+                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Privacy Policy
+              </Link>
+              <Link
+                href="/refund-policy"
+                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+              >
+                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Refund Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+              >
+                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Terms of Service
+              </Link>
+              <Link
+                href="/shipping-policy"
+                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+              >
+                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Shipping Policy
+              </Link>
+            </div>
+            
+            {/* Social Media Icons */}
+            <div className="flex items-center space-x-3 sm:space-x-4 mt-4 sm:mt-6">
+              <Link
+                href="https://www.instagram.com/sobhagya.bhakti?igsh=MTJveTdrdnk2NXR1eA=="
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-orange-400 transition-colors duration-300 p-1"
+                aria-label="Follow us on Instagram"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              </Link>
+              <Link
+                href="https://linkedin.com/company/sobhagya"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white hover:text-orange-400 transition-colors duration-300 p-1"
+                aria-label="Follow us on LinkedIn"
+              >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                </svg>
+              </Link>
+            </div>
+          </div>
 
-          {/* Logo and Social Media */}
-          <div className="flex flex-col items-center justify-center gap-4 mb-12 sm:mb-16 md:mb-24">
-            <div className="relative w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] md:w-[150px] md:h-[150px]">
+          {/* SERVICES */}
+          <div className="space-y-3 sm:space-y-4 sm:col-span-2 lg:col-span-1">
+            <h3 className="text-orange-400 font-semibold text-base sm:text-lg mb-3 sm:mb-4">SERVICES</h3>
+            <div className="space-y-2 sm:space-y-3">
+              <Link
+                href="/call-with-astrologer"
+                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+              >
+                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Call with Astrologer
+              </Link>
+              <Link
+                href="/pooja-session"
+                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+              >
+                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Pooja Session
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Bottom with Logo */}
+        <div className="border-t border-gray-700 mt-6 sm:mt-8 pt-4 sm:pt-6 text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12">
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
@@ -53,222 +148,9 @@ const Footer: React.FC = () => {
                 className="object-contain"
               />
             </div>
-            <p
-              className={`${eagleLake.className} text-orange-400 text-2xl sm:text-3xl md:text-4xl font-semibold`}
-            >
-              Sobhagya
-            </p>
-            {/* <div className="flex space-x-3">
-              <Link
-                href="#"
-                className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center"
-              >
-                <Image
-                  src="/Group 13405.png"
-                  alt="Facebook"
-                  width={20}
-                  height={20}
-                />
-              </Link>
-              <Link
-                href="#"
-                className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center"
-              >
-                <Image
-                  src="/Group 13406.png"
-                  alt="Email"
-                  width={20}
-                  height={20}
-                />
-              </Link>
-              <Link
-                href="#"
-                className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center"
-              >
-                <Image
-                  src="/Group 13407.png"
-                  alt="YouTube"
-                  width={20}
-                  height={20}
-                />
-              </Link>
-              <Link
-                href="#"
-                className="w-10 h-10 bg-orange-400 rounded-full flex items-center justify-center"
-              >
-                <Image
-                  src="/Group 13408.png"
-                  alt="Twitter"
-                  width={20}
-                  height={20}
-                />
-              </Link>
-            </div> */}
-          </div>
-
-          {/* Navigation Links - Two columns */}
-          <div className="ml-0 sm:ml-10 md:ml-20">
-            <div className="space-y-2">
-              <Link
-                href="/"
-                className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-              >
-                <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Home
-              </Link>
-              <Link
-                href="/about"
-                className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-              >
-                <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> About us
-              </Link>
-
-              <div className="space-y-2 flex flex-col">
-                <Link
-                  href="/services"
-                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Services
-                </Link>
-                <Link
-                  href="/call-with-astrologer"
-                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Call With Astrologer
-                </Link>
-                <Link
-                  href="/live-session"
-                  className="flex items-center text-white hover:text-orange-400 whitespace-nowrap text-sm sm:text-base"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg whitespace-normal">›</span> Live Session
-                </Link>
-
-                <Link
-                  href="https://store.sobhagya.in"
-                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-                  target="_blank"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Shop
-                </Link>
-                <Link
-                  href="/blog"
-                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-                  target="_blank"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Blog
-                </Link>
-                <Link
-                  href="/contact"
-                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-                  target="_blank"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Contact Us
-
-                </Link>
-                <Link
-                  href="/contact"
-                  className="flex items-center text-white hover:text-orange-400 text-sm sm:text-base"
-                  target="_blank"
-                >
-                  <span className="text-orange-400 mr-2 text-base sm:text-lg">›</span> Sign In
-
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Info */}
-          <div className="space-y-4 sm:space-y-5 mt-8 sm:mt-10 -ml-0 sm:-ml-10">
-            <div className="flex items-center gap-x-4 sm:gap-x-8">
-              <img src="/Vector (1).png" alt="Website" className="w-4 h-4 sm:w-5 sm:h-5" />
-              <a
-                href="https://www.sobhagya.in"
-                className="text-white hover:text-orange-400 text-sm sm:text-base"
-              >
-               www.sobhagya.in
-              </a>
-            </div>
-            <div className="flex items-center gap-x-4 sm:gap-x-8">
-              <img src="/Vector (2).png" alt="Email" className="w-4 h-4 sm:w-5 sm:h-5" />
-              <a
-                href="mailto:support@sobhagya.in"
-                className="text-white hover:text-orange-400 text-sm sm:text-base"
-              >
-                support@sobhagya.in
-              </a>
-            </div>
-            {/* <div className="flex items-center gap-x-4 sm:gap-x-8">
-              <img src="/Vector (3).png" alt="Phone" className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base">
-                <a
-                  href="tel:+918077781807"
-                  className="text-white hover:text-orange-400"
-                >
-                  +91 8077781807
-                </a>
-                ,{" "}
-                <a
-                  href="tel:+918383962622"
-                  className="text-white hover:text-orange-400"
-                >
-                  +91 8383962622
-                </a>
-              </span>
-            </div> */}
-            {/* <div className="flex items-start gap-x-2">
-              <img
-                src="/Vector (4).png"
-                alt="Location"
-                className="w-5 h-5 mt-1"
-              />
-              <p className="text-sm">
-              F-Block 10/9 Krishna Nagar Temple, Delhi, India, 110051
-              </p>
-            </div> */}
-            {/* <div className="flex items-center gap-x-2">
-              <img src="/Vector (5).png" alt="Company" className="w-5 h-5" />
-              <p>ELYSION SOFTWARES PRIVATE LIMITED</p>
-            </div> */}
-
-            <div className="flex items-center justify-start gap-x-4 sm:gap-x-8 ml-0 sm:ml-4 mt-6 cursor-pointer">
-              <Link
-                href="https://apps.apple.com"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Image
-                  src="/appstore.png"
-                  alt="App Store"
-                  width={100}
-                  height={30}
-                  className="w-20 sm:w-24 md:w-32 h-auto"
-                />
-              </Link>
-
-              <Link
-                href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Image
-                  src="/playstore.png"
-                  alt="Google Play"
-                  width={100}
-                  height={30}
-                  className="w-20 sm:w-24 md:w-32 h-auto"
-                />
-              </Link>
-            </div>
-
-            <p className="mr-0 sm:mr-20 text-center text-xs sm:text-sm italic mt-2">
-              Stay Connected with Astrology!
-            </p>
+            <span className="text-white text-lg sm:text-xl font-semibold">SOBHAGYA</span>
           </div>
         </div>
-
-        {/* Footer Bottom */}
-        {/* <div className="border-t border-gray-700 mt-8 pt-6 text-center text-sm">
-          <p>(© ELYSION SOFTWARES PRIVATE LIMITED. All Rights Reserved)</p>
-        </div> */}
       </div>
     </footer>
   );

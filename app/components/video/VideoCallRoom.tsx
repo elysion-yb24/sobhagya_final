@@ -213,53 +213,53 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
     : null;
 
   return (
-    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 bg-opacity-90 rounded-full px-6 py-3 flex items-center gap-4 z-[60]">
+    <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 bg-opacity-90 rounded-full px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-2 sm:gap-4 z-[60]">
       <button
         onClick={toggleAudio}
-        className={`p-3 rounded-full transition-all ${
+        className={`p-2 sm:p-3 rounded-full transition-all ${
           isAudioEnabled 
             ? 'bg-gray-700 hover:bg-gray-600 text-white' 
             : 'bg-red-500 hover:bg-red-600 text-white'
         }`}
         title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
       >
-        {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        {isAudioEnabled ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
       </button>
 
       <button
         onClick={toggleVideo}
-        className={`p-3 rounded-full transition-all ${
+        className={`p-2 sm:p-3 rounded-full transition-all ${
           isVideoEnabled 
             ? 'bg-gray-700 hover:bg-gray-600 text-white' 
             : 'bg-red-500 hover:bg-red-600 text-white'
         }`}
         title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
       >
-        {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+        {isVideoEnabled ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
       </button>
 
       {/* Show remote participant camera status if present */}
       {remoteCameraStatus !== null && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-gray-800 rounded text-white text-sm">
+        <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-gray-800 rounded text-white text-xs sm:text-sm">
           <span>Astrologer Camera:</span>
-          {remoteCameraStatus ? <Video className="w-5 h-5 text-green-400" /> : <VideoOff className="w-5 h-5 text-red-400" />}
+          {remoteCameraStatus ? <Video className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />}
         </div>
       )}
 
       <button
         onClick={onGift}
-        className="p-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white transition-all"
+        className="p-2 sm:p-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white transition-all"
         title="Send Gift"
       >
-        🎁
+        <span className="text-sm sm:text-base">🎁</span>
       </button>
 
       <button
         onClick={onEndCall}
-        className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all"
+        className="p-2 sm:p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all"
         title="End call"
       >
-        <PhoneOff className="w-5 h-5" />
+        <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     </div>
   );
@@ -437,19 +437,27 @@ export default function VideoCallRoom({
   }, [roomName]);
 
 
-  const handleLeaveCall = useCallback(() => {
+  const handleLeaveCall = useCallback(async () => {
     if (isDisconnectingRef.current) return;
     isDisconnectingRef.current = true;
     setCallStats(prev => ({ ...prev, isConnected: false }));
 
     console.log('📞 User ending call - cleaning up...');
 
-    // Emit call_end event to notify astrologer and server
+    // Emit end_call event to notify astrologer and server
     if (roomName) {
       try {
-        socketManager.emitCallEnd(roomName, 'USER_ENDED');
+        // Check if socket is connected before trying to emit
+        if (socketManager.isSocketConnected()) {
+          await socketManager.endCall(roomName, 'USER_ENDED');
+        } else {
+          // If socket is not connected, just emit the event directly
+          socketManager.emitCallEnd(roomName, 'USER_ENDED');
+        }
       } catch (error) {
-        console.error('Failed to emit call_end event:', error);
+        console.error('Failed to emit end_call event:', error);
+        // Fallback to emitCallEnd if endCall fails
+        socketManager.emitCallEnd(roomName, 'USER_ENDED');
       }
     }
 
@@ -468,12 +476,18 @@ export default function VideoCallRoom({
           }
         });
         
-        // Disconnect from room
-        setTimeout(() => {
+        // Add a small delay to ensure socket events are sent
+        setTimeout(async () => {
           if (roomRef.current) {
-            roomRef.current.disconnect();
+            try {
+              await roomRef.current.disconnect();
+            } catch (roomError) {
+              console.warn('📞 Room disconnect error (usually harmless):', roomError);
+              // Try to force disconnect by setting room to null
+              roomRef.current = null;
+            }
           }
-        }, 50);
+        }, 100);
       } catch (error) {
         console.error('Error during LiveKit disconnect:', error);
       }
@@ -482,32 +496,84 @@ export default function VideoCallRoom({
     // Clean up socket connection
     setTimeout(() => {
       try {
+        console.log('📞 Disconnecting socket manager...');
         socketManager.disconnect();
       } catch (error) {
         console.error('Error during socket disconnect:', error);
       }
       
+      // Force cleanup room reference
+      roomRef.current = null;
+      
       // Navigate away
       setTimeout(() => {
-        router.push('/astrologers');
+        const callSource = localStorage.getItem('callSource');
+        const astrologerId = localStorage.getItem('lastAstrologerId');
+        
+        if (callSource === 'astrologerCard') {
+          // If user came from astrologer card, go back to astrologers list
+          router.push('/astrologers');
+        } else if (callSource === 'astrologerProfile' && astrologerId) {
+          // If user came from astrologer profile, go back to that profile
+          router.push(`/astrologers/${astrologerId}`);
+        } else {
+          // Fallback to astrologers list
+          router.push('/astrologers');
+        }
+        
+        // Clean up localStorage
+        localStorage.removeItem('callSource');
       }, 100);
     }, 100);
   }, [router, roomName]);
 
-  // Listen for call_end event to disconnect user if astrologer ends the call
+  // Listen for end_call event and partner disconnection to disconnect user if astrologer ends the call
   useEffect(() => {
     function handleCallEnd(data: any) {
       console.log('📞 Call ended by server:', data);
       handleLeaveCall();
     }
+
+    function handlePartnerDisconnect(data: any) {
+      console.log('📞 Partner disconnected:', data);
+      // Show notification to user
+      alert('Astrologer has disconnected from the call.');
+      handleLeaveCall();
+    }
+
+    function handlePartnerLeft(data: any) {
+      console.log('📞 Partner left the call:', data);
+      alert('Astrologer has left the call.');
+      handleLeaveCall();
+    }
+
+    function handleCallTerminated(data: any) {
+      console.log('📞 Call terminated:', data);
+      alert('Call has been terminated.');
+      handleLeaveCall();
+    }
+
     const socket = socketManager.getSocket();
     if (socket) {
+      // Listen for various call end and partner disconnection events
+      socket.on('end_call', handleCallEnd);
       socket.on('call_end', handleCallEnd);
+      socket.on('partner_disconnect', handlePartnerDisconnect);
+      socket.on('partner_left', handlePartnerLeft);
+      socket.on('call_terminated', handleCallTerminated);
+      socket.on('broadcaster_disconnect', handlePartnerDisconnect);
+      socket.on('broadcaster_left', handlePartnerLeft);
     }
     return () => {
       const socket = socketManager.getSocket();
       if (socket) {
+        socket.off('end_call', handleCallEnd);
         socket.off('call_end', handleCallEnd);
+        socket.off('partner_disconnect', handlePartnerDisconnect);
+        socket.off('partner_left', handlePartnerLeft);
+        socket.off('call_terminated', handleCallTerminated);
+        socket.off('broadcaster_disconnect', handlePartnerDisconnect);
+        socket.off('broadcaster_left', handlePartnerLeft);
       }
     };
   }, [handleLeaveCall]);
@@ -571,12 +637,48 @@ export default function VideoCallRoom({
 
   const handleError = useCallback((error: Error) => {
     console.error('Room error:', error);
-    // Don't automatically disconnect on errors, let user decide
+    
+    // Handle DataChannel errors gracefully (they're usually harmless)
+    if (error.message.includes('DataChannel') || error.message.includes('lossy')) {
+      console.warn('📞 DataChannel error (usually harmless):', error.message);
+      return; // Don't show alert for DataChannel errors
+    }
+    
+    // For other errors, log but don't automatically disconnect
+    console.error('📞 Room error:', error);
   }, []);
 
-  // Cleanup on unmount
+  // Cleanup on unmount and page unload
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      console.log('📞 VideoCallRoom: Page unloading, forcing cleanup...');
+      
+      // Force disconnect socket manager
+      try {
+        socketManager.disconnect();
+      } catch (error) {
+        console.warn('📞 Force socket disconnect on page unload error:', error);
+      }
+      
+      // Force disconnect room
+      if (roomRef.current) {
+        try {
+          roomRef.current.disconnect();
+        } catch (error) {
+          console.warn('📞 Force room disconnect on page unload error:', error);
+        }
+      }
+    };
+
+    // Add beforeunload event listener
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
+      console.log('📞 VideoCallRoom: Component unmounting, forcing cleanup...');
+      
+      // Remove beforeunload event listener
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
       if (roomRef.current && !isDisconnectingRef.current) {
         isDisconnectingRef.current = true;
         try {
@@ -585,52 +687,62 @@ export default function VideoCallRoom({
           console.error('Cleanup error:', error);
         }
       }
+      
+      // Force disconnect socket manager
+      try {
+        socketManager.disconnect();
+      } catch (error) {
+        console.warn('📞 Force socket disconnect on unmount error:', error);
+      }
+      
+      // Force cleanup room reference
+      roomRef.current = null;
     };
   }, []);
 
   // Call info header
   const CallHeader = React.memo(() => (
-    <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-[60] pointer-events-none">
-      <div className="bg-black bg-opacity-70 rounded-lg px-4 py-2 text-white pointer-events-auto">
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="font-medium">
+    <div className="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex justify-between items-center z-[60] pointer-events-none">
+      <div className="bg-black bg-opacity-70 rounded-lg px-2 sm:px-4 py-1 sm:py-2 text-white pointer-events-auto">
+        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="font-medium truncate max-w-20 sm:max-w-none">
               {astrologerName ? `Call with ${astrologerName}` : 'Video Call'}
             </span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4" />
+          <div className="flex items-center gap-1 sm:gap-2">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>{formatDuration(callStats.duration)}</span>
           </div>
 
           {callStats.isConnected && (
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
               <span>Connected</span>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex gap-2 pointer-events-auto">
+      <div className="flex gap-1 sm:gap-2 pointer-events-auto">
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className="bg-black bg-opacity-70 rounded-lg p-2 text-white hover:bg-opacity-90 transition-all"
+          className="bg-black bg-opacity-70 rounded-lg p-1.5 sm:p-2 text-white hover:bg-opacity-90 transition-all"
           title="Settings"
           disabled={isDisconnectingRef.current}
         >
-          <Settings className="w-5 h-5" />
+          <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
         
         <button
           onClick={handleLeaveCall}
-          className="bg-red-500 bg-opacity-80 rounded-lg p-2 text-white hover:bg-opacity-100 transition-all disabled:opacity-50"
+          className="bg-red-500 bg-opacity-80 rounded-lg p-1.5 sm:p-2 text-white hover:bg-opacity-100 transition-all disabled:opacity-50"
           title="Leave call"
           disabled={isDisconnectingRef.current}
         >
-          <PhoneOff className="w-5 h-5" />
+          <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       </div>
     </div>

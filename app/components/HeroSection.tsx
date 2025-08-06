@@ -67,7 +67,7 @@ const HeroSection: React.FC = () => {
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Enhanced Hero Section */}
       <motion.section
-        className="text-white relative w-full flex flex-col justify-start px-4 sm:px-8 pt-16 pb-4 md:pt-20 sm:pb-6"
+        className="text-white relative w-full flex flex-col justify-start pt-16 pb-4 md:pt-20 sm:pb-6"
         style={{
           backgroundImage: "url(/image.png)",
           backgroundSize: "cover",
@@ -109,7 +109,7 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="container mx-auto relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-0 md:gap-8">
+        <div className="container mx-auto px-4 sm:px-8 relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-0 md:gap-8">
 
           {/* Mobile: Astrologer image first, then text */}
           {/* Desktop: Left: text */}

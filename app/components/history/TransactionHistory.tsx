@@ -7,14 +7,23 @@ import { buildApiUrl } from "../../config/api";
 
 interface Transaction {
   _id: string;
-  amount: number;
-  date: string;
+  amount: number | null;
+  balance?: number;
+  date?: string;
   status: string;
-  type: string;
+  type?: string;
   description?: string;
-  createdAt?: string; // Add alternative date fields
+  createdAt?: string;
   updatedAt?: string;
   timestamp?: string | number;
+  isCredited?: boolean;
+  paymentFor?: string;
+  notes?: {
+    callerName?: string;
+    receiverName?: string;
+    callDuration?: number | null;
+    rpm?: number | null;
+  };
 }
 
 export default function TransactionHistory() {
@@ -50,8 +59,15 @@ export default function TransactionHistory() {
 
         if (data.success && data.data) {
           // Debug: Log the actual transaction data to see what fields are available
-          console.log('Transaction data:', data.data.transactions);
-          setTransactions(data.data.transactions || []);
+          console.log('Transaction data:', data.data.list);
+          console.log('Sample transaction:', data.data.list[0]);
+          if (data.data.list[0]) {
+            console.log('Amount:', data.data.list[0].amount, 'Type:', typeof data.data.list[0].amount);
+            console.log('IsCredited:', data.data.list[0].isCredited, 'Type:', typeof data.data.list[0].isCredited);
+            console.log('Status:', data.data.list[0].status);
+            console.log('PaymentFor:', data.data.list[0].paymentFor);
+          }
+          setTransactions(data.data.list || []);
           setError(null);
         } else {
           throw new Error(data.message || 'No transactions found');
@@ -185,9 +201,9 @@ export default function TransactionHistory() {
             <div className="flex items-start gap-2 sm:gap-3">
               {/* Transaction type icon */}
               <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                transaction.type === "credit" ? "bg-green-100" : "bg-red-100"
+                (transaction.amount || 0) >= 0 ? "bg-green-100" : "bg-red-100"
               }`}>
-                {transaction.type === "credit" ? (
+                {(transaction.amount || 0) >= 0 ? (
                   <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 ) : (
                   <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
@@ -200,7 +216,7 @@ export default function TransactionHistory() {
                   {/* Transaction info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                      {transaction.description || `${transaction.type === "credit" ? "Credit" : "Debit"} Transaction`}
+                      {transaction.description || transaction.paymentFor || `${(transaction.amount || 0) >= 0 ? "Credit" : "Debit"} Transaction`}
                     </h4>
                     <p className="text-xs text-gray-500 mt-1">
                       {formatDate(transaction)}
@@ -210,7 +226,7 @@ export default function TransactionHistory() {
                   {/* Amount and status */}
                   <div className="flex items-center justify-between gap-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      transaction.status === "completed" ? "bg-green-100 text-green-800" :
+                      transaction.status === "done" || transaction.status === "completed" ? "bg-green-100 text-green-800" :
                       transaction.status === "cancelled" ? "bg-gray-100 text-gray-600" :
                       "bg-red-100 text-red-600"
                     }`}>
@@ -219,9 +235,9 @@ export default function TransactionHistory() {
                     
                     <div className="text-right">
                       <p className={`text-base sm:text-lg font-bold ${
-                        transaction.type === "credit" ? "text-green-600" : "text-red-600"
+                        (transaction.amount || 0) >= 0 ? "text-green-600" : "text-red-600"
                       }`}>
-                        {transaction.type === "credit" ? "+" : ""}₹{transaction.amount.toFixed(2)}
+                        {(transaction.amount || 0) >= 0 ? "+" : "-"}₹{Math.abs(transaction.amount || 0).toFixed(2)}
                       </p>
                     </div>
                   </div>

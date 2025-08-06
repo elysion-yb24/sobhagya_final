@@ -472,9 +472,8 @@ export default function AstrologersPage() {
   return (
     <WalletBalanceProvider>
       {/* FilterBar and Top Controls */}
-      <section className="w-full flex justify-center py-3 bg-transparent">
-        <div className="w-full max-w-7xl mx-auto rounded-full shadow-2xl border border-orange-100/70 bg-white/95 backdrop-blur-lg px-10 py-3 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8"
-          style={{ boxShadow: '0 6px 32px 0 rgba(247, 151, 30, 0.10)' }}>
+      <section className="w-full flex justify-center py-3 ">
+        <div className="w-full max-w-7xl mx-auto px-10 py-3 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8">
           {/* FilterBar (search + sort by) */}
           <div className="flex-1 min-w-0">
             <FilterBar

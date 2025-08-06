@@ -14,6 +14,7 @@ interface LiveKitCallParams {
   balance: number;
   callThrough: 'livekit';
   livekitSocketURL: string;
+  callType?: 'video' | 'call';
 }
 
 class SocketManager {
@@ -78,13 +79,13 @@ class SocketManager {
         console.log('User joined the call:', callDetails);
       });
 
-      this.socket.on('call_end', (data) => {
+      this.socket.on('end_call', (data) => {
         console.log('Call ended:', data);
       });
     });
   }
 
-  // Initiate LiveKit video call
+  // Initiate LiveKit call (video or audio)
   async initiateLiveKitCall(params: LiveKitCallParams): Promise<any> {
     try {
       // Debug: Check multiple token sources
@@ -125,7 +126,7 @@ class SocketManager {
         credentials: 'include',
         body: JSON.stringify({
           receiverUserId: params.receiverNumericId,
-          type: 'video',
+          type: params.callType || 'video',
           appVersion: '1.0.0'
         })
       });
@@ -213,8 +214,8 @@ class SocketManager {
     });
   }
 
-  // End call
-  endCall(channelId: string, reason: string = 'USER_ENDED'): Promise<void> {
+  // Initiate an audio call (legacy socket-based)
+  async initiateAudioCall(channelId: string, receiverUserId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       if (!this.socket || !this.isConnected) {
         reject(new Error('Socket not connected'));
@@ -228,6 +229,75 @@ class SocketManager {
         return;
       }
 
+      console.log('Initiating audio call via socket:', { channelId, receiverUserId });
+
+      // Set a timeout for the operation
+      const timeout = setTimeout(() => {
+        reject(new Error('Socket operation timed out'));
+      }, 10000); // 10 second timeout
+
+      console.log(
+        'initiate_call', {
+        userId: userId,
+        userType: 'user',
+        callType: 'call',
+        channelId: channelId,
+        callThrough: 'livekit'
+      }
+      )
+      // Emit initiate_call event
+      this.socket.emit('initiate_call', {
+        userId: userId,
+        userType: 'user',
+        callType: 'call',
+        channelId: channelId,
+        receiverUserId: receiverUserId,
+        callThrough: 'livekit'
+      }, (response: any) => {
+        if (response && !response.error) {
+          console.log('Audio call initiated successfully:', response);
+          
+          // Emit user_joined event
+          this.socket?.emit('user_joined', {
+            channelId: channelId,
+            userType: 'user'
+          }, (joinResponse: any) => {
+            clearTimeout(timeout);
+            if (joinResponse && !joinResponse.error) {  
+              console.log('Successfully joined the audio call');
+              resolve(joinResponse);
+            } else {
+              reject(new Error(joinResponse?.message || 'Failed to join audio call'));
+            }
+          });
+        } else {
+            console.log('Failed to initiate audio call', response);
+          clearTimeout(timeout);
+          reject(new Error(response?.message || 'Failed to initiate audio call'));
+        }
+      });
+    });
+  }
+
+  // End call
+  endCall(channelId: string, reason: string = 'USER_ENDED'): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.isConnected) {
+        console.warn('Socket not connected, using emitCallEnd as fallback');
+        this.emitCallEnd(channelId, reason);
+        resolve(); // Resolve anyway since we emitted the event
+        return;
+      }
+
+      const userDetails = getUserDetails();
+      const userId = userDetails?.id || userDetails?._id;
+      if (!userId) {
+        console.warn('User not authenticated, using emitCallEnd as fallback');
+        this.emitCallEnd(channelId, reason);
+        resolve(); // Resolve anyway since we emitted the event
+        return;
+      }
+
       this.socket.emit('end_call', {
         channelId: channelId,
         userId: userId,
@@ -238,32 +308,38 @@ class SocketManager {
           console.log('Call ended successfully');
           resolve();
         } else {
-          reject(new Error(response?.message || 'Failed to end call'));
+          console.warn('Call end response error, but continuing:', response?.message || 'No response');
+          resolve(); // Resolve anyway to continue with cleanup
         }
       });
     });
   }
 
-  // Emit call_end event to notify other participants
+  // Emit end_call event to notify other participants
   emitCallEnd(channelId: string, reason: string = 'USER_ENDED'): void {
     if (!this.socket || !this.isConnected) {
-      console.warn('Socket not connected, cannot emit call_end');
+      console.warn('Socket not connected, cannot emit end_call');
       return;
     }
 
     const userDetails = getUserDetails();
     const userId = userDetails?.id || userDetails?._id;
     if (!userId) {
-      console.warn('User not authenticated, cannot emit call_end');
+      console.warn('User not authenticated, cannot emit end_call');
       return;
     }
 
-    console.log('Emitting call_end event:', { channelId, userId, reason });
-    this.socket.emit('call_end', {
-      channelId: channelId,
-      userId: userId,
-      reason: reason
-    });
+    console.log('Emitting end_call event:', { channelId, userId, reason });
+    try {
+      this.socket.emit('end_call', {
+        channelId: channelId,
+        userId: userId,
+        reason: reason
+      });
+    } catch (error) {
+      console.warn('Failed to emit end_call event:', error);
+      // Continue anyway, the call will be cleaned up by the room disconnect
+    }
   }
 
   // Join as broadcaster (for astrologers)
@@ -302,22 +378,39 @@ class SocketManager {
     if (this.socket) {
       console.log('Disconnecting socket and cleaning up...');
       
-      // Emit call_end event before disconnecting if we have channel info
-      if (this.channelId && this.userId) {
-        this.emitCallEnd(this.channelId, 'USER_DISCONNECTED');
+      try {
+        // Emit end_call event before disconnecting if we have channel info
+        if (this.channelId && this.userId) {
+          this.emitCallEnd(this.channelId, 'USER_DISCONNECTED');
+        }
+        
+        // Remove all event listeners
+        this.socket.removeAllListeners();
+        
+        // Disconnect the socket
+        this.socket.disconnect();
+        
+        // Force close the socket connection
+        if (this.socket.connected) {
+          this.socket.close();
+        }
+        
+        this.socket = null;
+        this.isConnected = false;
+        this.channelId = null;
+        this.userId = null;
+        
+        console.log('Socket disconnected and cleaned up');
+      } catch (error) {
+        console.warn('Error during socket disconnect:', error);
+        // Force cleanup even if there's an error
+        this.socket = null;
+        this.isConnected = false;
+        this.channelId = null;
+        this.userId = null;
       }
-      
-      // Remove all event listeners
-      this.socket.removeAllListeners();
-      
-      // Disconnect the socket
-      this.socket.disconnect();
-      this.socket = null;
-      this.isConnected = false;
-      this.channelId = null;
-      this.userId = null;
-      
-      console.log('Socket disconnected and cleaned up');
+    } else {
+      console.log('No socket to disconnect');
     }
   }
 

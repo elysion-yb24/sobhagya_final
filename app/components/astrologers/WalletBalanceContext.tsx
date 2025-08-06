@@ -93,8 +93,19 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       setAuthError(null);
     };
 
+    const handleAuthChange = () => {
+      console.log('🔐 Auth change detected, refreshing wallet balance');
+      // Add a small delay to ensure auth data is properly set
+      setTimeout(() => {
+        fetchWalletBalance();
+      }, 100);
+    };
+
     // Listen for custom logout event
     window.addEventListener('user-logout', handleLogout);
+    
+    // Listen for auth change events (login/logout)
+    window.addEventListener('user-auth-changed', handleAuthChange);
     
     // Also check periodically if user is still authenticated
     const checkAuthInterval = setInterval(() => {
@@ -105,9 +116,10 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
     return () => {
       window.removeEventListener('user-logout', handleLogout);
+      window.removeEventListener('user-auth-changed', handleAuthChange);
       clearInterval(checkAuthInterval);
     };
-  }, []);
+  }, [fetchWalletBalance]);
 
   useEffect(() => {
     fetchWalletBalance();

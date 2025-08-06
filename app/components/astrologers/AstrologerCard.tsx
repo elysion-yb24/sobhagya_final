@@ -8,7 +8,6 @@ import { getAuthToken, getUserDetails, isAuthenticated } from "../../utils/auth-
 import { Phone, Video, Star, Users, Award, Loader2, CheckCircle, MessageCircle } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
-import CallConfirmationDialog from "../../components/ui/CallConfirmationDialog";
 import { buildApiUrl } from "../../config/api";
 import { useWalletBalance } from './WalletBalanceContext';
 
@@ -64,12 +63,7 @@ interface Props {
 const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactButtons = false, showVideoButton = false }: Props) {
   const router = useRouter();
   const [isCallRequested, setIsCallRequested] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
   const [callError, setCallError] = useState<string | null>(null);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showAudioConfirmDialog, setShowAudioConfirmDialog] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-
 
   // Insufficient balance modal state
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
@@ -197,12 +191,12 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
 
   const handleCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
-    setShowConfirmDialog(true);
+    handleAudioCall();
   };
 
   const handleAudioCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
-    setShowAudioConfirmDialog(true);
+    handleAudioCall();
   };
 
   const handleAudioCall = async () => {
@@ -215,7 +209,6 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
           serviceType: 'call'
         });
         setShowInsufficientBalanceModal(true);
-        setShowAudioConfirmDialog(false);
         return;
       }
 
@@ -227,19 +220,23 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
         throw new Error('Authentication required');
       }
 
-      const response = await fetch(buildApiUrl('/calling/api/call/request-tataTelecom-call'), {
+      // Request LiveKit token and channel from backend for audio call
+      const requestBody = {
+        receiverUserId: _id,
+        type: 'call',
+        appVersion: '1.0.0'
+      };
+      const channelId = Date.now().toString();
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+
+      const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          astrologerId: _id,
-          callerId: userDetails.id,
-          receiverId: _id,
-          callType: 'audio',
-          rpm: rpm || 15,
-        }),
+        body: JSON.stringify(requestBody),
         credentials: 'include',
       });
 
@@ -254,64 +251,65 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             serviceType: 'call'
           });
           setShowInsufficientBalanceModal(true);
-          setShowAudioConfirmDialog(false);
-          setIsCallRequested(false);
           return;
         }
 
         throw new Error(errorData.message || 'Failed to initiate audio call');
       }
 
-      // Close the dialog and show connecting state
-      setShowAudioConfirmDialog(false);
-      setIsCallRequested(true);
+      const data = await response.json();
+      if (!data.success || !data.data?.token || !data.data?.channel) {
+        throw new Error(data.message || 'Failed to get audio call token');
+      }
 
-      // Show success state for 3 seconds
-      setTimeout(() => {
-        setIsCallRequested(false);
-      }, 3000);
+      // Store navigation source and astrologer ID for proper back navigation
+      localStorage.setItem('lastAstrologerId', _id);
+      localStorage.setItem('callSource', 'astrologerCard');
+
+      // Redirect to audio call page with token and room
+      const audioCallUrl = `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(name)}&astrologerId=${encodeURIComponent(_id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      router.push(audioCallUrl);
 
     } catch (error) {
       console.error('Audio call error:', error);
       setCallError(error instanceof Error ? error.message : 'Failed to initiate audio call');
-      setIsCallRequested(false);
-      // Keep dialog open to show error
+      // Show error alert
+      alert(error instanceof Error ? error.message : 'Failed to initiate audio call');
     }
   };
 
   const handleVideoCall = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
 
-    // Get user details for authentication check
-    const userDetails = getUserDetails();
-    if (!userDetails?.id) {
-      alert('Please log in to start a video call');
-      return;
-    }
-
-    // Use cached walletBalance
-    const videoCost = (videoRpm || 25) * 2; // Estimate 2 minutes minimum cost for video
-    if (walletBalance < videoCost) {
-      setInsufficientBalanceData({
-        requiredAmount: videoCost,
-        serviceType: 'call'
-      });
-      setShowInsufficientBalanceModal(true);
-      return;
-    }
-
-    // Request LiveKit token and channel from backend
-    const token = getAuthToken();
-    const requestBody = {
-      receiverUserId: partner._id, // use partner._id for receiverUserId
-      type: 'video',
-      appVersion: '1.0.0'
-    };
-    const channelId = Date.now().toString();
-    const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-    const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
     try {
+      const userDetails = getUserDetails();
+      if (!userDetails?.id) {
+        alert('Please log in to start a video call');
+        return;
+      }
+
+      // Use cached walletBalance
+      const videoCost = (videoRpm || 25) * 2; // Estimate 2 minutes minimum cost for video
+      if (walletBalance < videoCost) {
+        setInsufficientBalanceData({
+          requiredAmount: videoCost,
+          serviceType: 'call'
+        });
+        setShowInsufficientBalanceModal(true);
+        return;
+      }
+
+      // Request LiveKit token and channel from backend
+      const token = getAuthToken();
+      const requestBody = {
+        receiverUserId: partner._id, // use partner._id for receiverUserId
+        type: 'video',
+        appVersion: '1.0.0'
+      };
+      const channelId = Date.now().toString();
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+
       const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
@@ -333,138 +331,19 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
         return;
       }
 
+      // Store navigation source and astrologer ID for proper back navigation
+      localStorage.setItem('lastAstrologerId', partner._id);
+      localStorage.setItem('callSource', 'astrologerCard');
+      
       // Redirect to /video-call with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(partner.name)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(partner.name)}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
       router.push(videoCallUrl);
     } catch (err) {
       alert('Failed to initiate video call');
     }
   };
 
-  const handleCallConfirm = async () => {
-    try {
-      setCallError(null);
-      setIsConnecting(true);
-      // Use cached walletBalance
-      const freeCallCost = (rpm || 15) * 2;
-      if (walletBalance < freeCallCost) {
-        setInsufficientBalanceData({
-          requiredAmount: freeCallCost,
-          serviceType: 'call'
-        });
-        setShowInsufficientBalanceModal(true);
-        setShowConfirmDialog(false);
-        setIsConnecting(false);
-        return;
-      }
-
-      // Get the authentication token and user details
-      const token = getAuthToken();
-      const userDetails = getUserDetails();
-
-      console.log('Retrieved user details:', userDetails);
-
-      if (!token) {
-        throw new Error('Authentication required. Please login first.');
-      }
-
-      if (!userDetails || !userDetails.id) {
-        console.log('User details missing or invalid:', userDetails);
-        throw new Error('User details not found. Please login again.');
-      }
-
-      console.log('Making call request with caller ID:', userDetails.id);
-
-      const response = await fetch(buildApiUrl('/calling/api/call/request-tataTelecom-call'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          astrologerId: _id,
-          callerId: userDetails.id,
-          receiverId: _id,
-          callType: 'free',
-        }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log('Call request failed:', errorData);
-
-        // Check if it's a balance-related error
-        if (errorData.message?.toLowerCase().includes('balance') ||
-          errorData.message?.toLowerCase().includes('insufficient')) {
-          const callCost = (rpm || 15) * 2; // Estimate 2 minutes minimum cost
-          setInsufficientBalanceData({
-            requiredAmount: callCost,
-            serviceType: 'call'
-          });
-          setShowInsufficientBalanceModal(true);
-          setShowConfirmDialog(false);
-          setIsConnecting(false);
-          return;
-        }
-
-        throw new Error(errorData.message || 'Failed to initiate call');
-      }
-
-      // Mark free call as used globally and update state
-      localStorage.setItem('userHasCalledBefore', 'true');
-      setHasCompletedFreeCall(true);
-
-      // Close the dialog and show connecting state
-      setShowConfirmDialog(false);
-      setIsCallRequested(true);
-      setIsConnecting(false);
-
-      // Start the timer
-      const timer = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime <= 1) {
-            clearInterval(timer);
-            setIsCallRequested(false);
-            return 120; // Reset to 2 minutes
-          }
-          return prevTime - 1;
-        });
-      }, 1000);
-
-      // Cleanup timer on component unmount
-      return () => clearInterval(timer);
-
-    } catch (error) {
-      console.error('Call request error:', error);
-      setCallError(error instanceof Error ? error.message : 'Failed to initiate call. Please try again.');
-      setIsCallRequested(false);
-      setIsConnecting(false);
-      setTimeLeft(120);
-      // Keep dialog open to show error
-    }
-  };
-
-  const handleDialogClose = () => {
-    if (!isConnecting) {
-      setShowConfirmDialog(false);
-      setCallError(null);
-    }
-  };
-
-  const handleAudioDialogClose = () => {
-    if (!isConnecting) {
-      setShowAudioConfirmDialog(false);
-      setCallError(null);
-    }
-  };
-
-  // Format time left into minutes and seconds
-  const formatTimeLeft = () => {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  // Remove the old dialog close handler since we don't have confirmation dialogs anymore
 
   // Navigate to /astrologer/[ID] on entire card click
   const handleCardClick = () => {
@@ -527,7 +406,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             <div className="flex items-center gap-2 mb-0.5">
               <span className="text-lg font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-base font-medium">min.</span></span>
               {/* Show video call indicator */}
-              {(astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video') && (
+              {(astrologer.isVideoCallAllowed) && (
                 <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-xs">
                   <Video className="w-3 h-3" />
                   <span className="font-medium">Video</span>
@@ -575,8 +454,8 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             <span className="hidden sm:inline">Chat</span>
             <span className="sm:hidden">Chat</span>
           </button>
-          {/* Show video button if astrologer supports video calls */}
-          {(showVideoButton || astrologer.isVideoCallAllowed || astrologer.hasVideo || astrologer.callType === 'video') && (
+          {/* Show video button only if astrologer has isVideoCallAllowed as true */}
+          {(showVideoButton || astrologer.isVideoCallAllowed) && (
             <button
               className={`${compactButtons ? 'px-2 py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} flex items-center justify-center gap-1 sm:gap-2 bg-[#F7971D] text-white font-semibold rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs sm:text-base w-[80px] sm:w-auto`}
               onClick={handleVideoCall}
@@ -597,19 +476,6 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
           </button>
         </div>
       </div>
-
-      {/* Audio Call Confirmation Dialog */}
-      {showAudioConfirmDialog && (
-        <CallConfirmationDialog
-          isOpen={showAudioConfirmDialog}
-          onClose={handleAudioDialogClose}
-          onConfirm={handleAudioCall}
-          astrologer={partner}
-          isLoading={isConnecting}
-          callType="audio"
-          rate={rpm}
-        />
-      )}
 
       {/* Insufficient Balance Modal */}
       {showInsufficientBalanceModal && insufficientBalanceData && (

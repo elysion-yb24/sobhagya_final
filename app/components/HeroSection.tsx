@@ -67,7 +67,7 @@ const HeroSection: React.FC = () => {
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Enhanced Hero Section */}
       <motion.section
-        className="text-white relative w-full flex flex-col justify-start px-4 sm:px-8 pt-10 pb-4 sm:pt-14 sm:pb-6"
+        className="text-white relative w-full flex flex-col justify-start px-4 sm:px-8 pt-16 pb-4 md:pt-20 sm:pb-6"
         style={{
           backgroundImage: "url(/image.png)",
           backgroundSize: "cover",
@@ -109,9 +109,11 @@ const HeroSection: React.FC = () => {
         </div>
 
         {/* Content */}
-        <div className="container mx-auto relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-4 md:gap-8">
-          {/* Left: text */}
-          <div className="w-full md:w-3/4 text-center md:text-left">
+        <div className="container mx-auto relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-0 md:gap-8">
+
+          {/* Mobile: Astrologer image first, then text */}
+          {/* Desktop: Left: text */}
+          <div className="w-full md:w-3/4 text-center md:text-left order-2 md:order-1 -mt-8 md:mt-0">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-2" style={{
               fontFamily: "Poppins"
             }}>
@@ -134,8 +136,9 @@ const HeroSection: React.FC = () => {
             </Link>
           </div>
 
-          {/* Right: astrologer image - positioned to touch orange background edge */}
-          <div className="w-full md:w-1/2 flex justify-center md:justify-end relative">
+          {/* Mobile: Right: astrologer image first */}
+          {/* Desktop: Right: astrologer image - positioned to touch orange background edge */}
+          <div className="w-full md:w-1/2 flex justify-center md:justify-end relative order-1 md:order-2">
             <div className="relative">
               {/* Big zodiac sign behind astrologer */}
               <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0 -translate-y-20 sm:-translate-y-32">
@@ -186,7 +189,7 @@ const HeroSection: React.FC = () => {
       {/* Orange background section for cards */}
       <div className="relative">
         {/* Navigation cards: positioned half on orange background */}
-        <div className="relative z-20 -mt-18 sm:-mt-20 ">
+        <div className="relative z-20 -mt-5 sm:-mt-36">
           <div className="w-[100vw] mx-auto px-4 sm:px-6 md:px-8">
             {/* Mobile: Horizontal small buttons */}
             <div className="flex flex-row justify-center gap-2 sm:hidden mb-6">

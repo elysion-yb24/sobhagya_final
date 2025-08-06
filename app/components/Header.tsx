@@ -194,29 +194,29 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-orange-200/60 shadow-lg transition-all duration-300 animate-fadeIn">
       {/* DESKTOP HEADER */}
-      <div className="hidden md:block">
-        <div className="max-w-8xl mx-auto px-[10px] sm:pr-4 lg:pr-8">
-          <div className="flex items-center h-16 md:h-20 justify-between">
+      <div className="hidden lg:block">
+        <div className="max-w-8xl mx-auto px-4 lg:px-8">
+          <div className="flex items-center h-20 justify-between">
             {/* Left: Logo/Brand, responsive width */}
-            <Link href="/" className="flex items-center gap-2 md:gap-3 flex-shrink-0 min-w-[140px] md:min-w-[170px] justify-start hover:scale-105 transition-transform duration-200 cursor-pointer">
+            <Link href="/" className="flex items-center gap-3 flex-shrink-0 min-w-[170px] justify-start hover:scale-105 transition-transform duration-200 cursor-pointer">
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
                 width={36}
                 height={36}
-                className="w-10 h-10 md:w-14 md:h-14 object-contain"
+                className="w-14 h-14 object-contain"
               />
               <div className="flex flex-col justify-center">
-                <span className="text-xl md:text-2xl font-extrabold text-orange-500 tracking-tight" style={{ fontFamily: 'EB Garamond', letterSpacing: '0.01em' }}>
+                <span className="text-2xl font-extrabold text-orange-500 tracking-tight" style={{ fontFamily: 'EB Garamond', letterSpacing: '0.01em' }}>
                   Sobhagya
                 </span>
-                <span className="text-xs text-gray-400 font-medium tracking-wide mt-0.5 hidden lg:block" style={{ letterSpacing: '0.02em' }}>
+                <span className="text-xs text-gray-400 font-medium tracking-wide mt-0.5" style={{ letterSpacing: '0.02em' }}>
                   Your Trusted Astrology Platform
                 </span>
               </div>
             </Link>
             {/* Center: Navigation, flex-1, centered */}
-            <nav className="flex-1 flex items-center justify-center gap-2 md:gap-4 lg:gap-6">
+            <nav className="flex-1 flex items-center justify-center gap-4 lg:gap-6">
               {[
                 { href: "/call-with-astrologer", label: "Call with Astrologer" },
                 { href: "/about", label: "About" },
@@ -228,7 +228,7 @@ const Header = () => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative text-sm md:text-base font-semibold text-gray-700 px-2 md:px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[140px] md:max-w-[180px] truncate text-center"
+                  className="relative text-base font-semibold text-gray-700 px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[180px] truncate text-center"
                   style={{ lineHeight: '1.2' }}
                 >
                   <span className="block w-full overflow-hidden text-ellipsis">{item.label}</span>
@@ -237,26 +237,94 @@ const Header = () => {
               ))}
             </nav>
             {/* Right: User/Login, responsive width */}
-            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0 min-w-[160px] md:min-w-[210px] justify-end">
+            <div className="flex items-center gap-2 flex-shrink-0 min-w-[210px] justify-end">
               {isAuthenticatedUser ? (
-                <div className="flex items-center gap-1 md:gap-2 bg-orange-50/70 border border-orange-100 rounded-full px-2 md:px-3 py-1.5 shadow-sm">
-                  <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-200 flex items-center justify-center">
-                    <User className="w-4 h-4 md:w-5 md:h-5 text-orange-600" />
+                <div className="flex items-center gap-2 bg-orange-50/70 border border-orange-100 rounded-full px-3 py-1.5 shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center">
+                    <User className="w-5 h-5 text-orange-600" />
                 </div>
-                  <span className="text-gray-700 font-medium text-xs md:text-sm max-w-[80px] md:max-w-[100px] truncate">{getDisplayName()}</span>
+                  <span className="text-gray-700 font-medium text-sm max-w-[100px] truncate">{getDisplayName()}</span>
                     <button
                       onClick={handleLogout}
-                    className="ml-1 p-1 md:p-2 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
+                    className="ml-1 p-2 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
                       disabled={isLoggingOut}
                     title="Logout"
                     >
-                    <LogOut className="w-3 h-3 md:w-4 md:h-4" />
+                    <LogOut className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
                   <Link
                     href="/calls/call1"
-                  className="px-3 md:px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-sm md:text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  className="px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  >
+                    Signup/Login
+                  </Link>
+                )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABLET HEADER */}
+      <div className="hidden md:block lg:hidden">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center h-16 justify-between">
+            {/* Left: Logo/Brand */}
+            <Link href="/" className="flex items-center gap-2 flex-shrink-0 min-w-[140px] justify-start hover:scale-105 transition-transform duration-200 cursor-pointer">
+              <Image
+                src="/sobhagya_logo.avif"
+                alt="Sobhagya"
+                width={36}
+                height={36}
+                className="w-12 h-12 object-contain"
+              />
+              <div className="flex flex-col justify-center">
+                <span className="text-xl font-extrabold text-orange-500 tracking-tight" style={{ fontFamily: 'EB Garamond', letterSpacing: '0.01em' }}>
+                  Sobhagya
+                </span>
+              </div>
+            </Link>
+            {/* Center: Navigation */}
+            <nav className="flex-1 flex items-center justify-center gap-3">
+              {[
+                { href: "/call-with-astrologer", label: "Call with Astrologer" },
+                { href: "/about", label: "About" },
+                { href: "/services", label: "Services" },
+                { href: "/contact", label: "Contact" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="relative text-sm font-semibold text-gray-700 px-2 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[140px] truncate text-center"
+                  style={{ lineHeight: '1.2' }}
+                >
+                  <span className="block w-full overflow-hidden text-ellipsis">{item.label}</span>
+                  <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
+                </Link>
+              ))}
+            </nav>
+            {/* Right: User/Login */}
+            <div className="flex items-center gap-2 flex-shrink-0 min-w-[160px] justify-end">
+              {isAuthenticatedUser ? (
+                <div className="flex items-center gap-1 bg-orange-50/70 border border-orange-100 rounded-full px-2 py-1.5 shadow-sm">
+                  <div className="w-6 h-6 rounded-full bg-orange-200 flex items-center justify-center">
+                    <User className="w-4 h-4 text-orange-600" />
+                </div>
+                  <span className="text-gray-700 font-medium text-xs max-w-[80px] truncate">{getDisplayName()}</span>
+                    <button
+                      onClick={handleLogout}
+                    className="ml-1 p-1 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
+                      disabled={isLoggingOut}
+                    title="Logout"
+                    >
+                    <LogOut className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/calls/call1"
+                  className="px-3 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-sm shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     Signup/Login
                   </Link>

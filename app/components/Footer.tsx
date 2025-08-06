@@ -184,7 +184,7 @@ const Footer: React.FC = () => {
                 href="https://www.sobhagya.in"
                 className="text-white hover:text-orange-400 text-sm sm:text-base"
               >
-                www.sobhagyaApp.com
+               www.sobhagya.in
               </a>
             </div>
             <div className="flex items-center gap-x-4 sm:gap-x-8">
@@ -193,10 +193,10 @@ const Footer: React.FC = () => {
                 href="mailto:support@sobhagya.in"
                 className="text-white hover:text-orange-400 text-sm sm:text-base"
               >
-                SobhagyaApp@gmail.com
+                support@sobhagya.in
               </a>
             </div>
-            <div className="flex items-center gap-x-4 sm:gap-x-8">
+            {/* <div className="flex items-center gap-x-4 sm:gap-x-8">
               <img src="/Vector (3).png" alt="Phone" className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="text-sm sm:text-base">
                 <a
@@ -213,7 +213,7 @@ const Footer: React.FC = () => {
                   +91 8383962622
                 </a>
               </span>
-            </div>
+            </div> */}
             {/* <div className="flex items-start gap-x-2">
               <img
                 src="/Vector (4).png"

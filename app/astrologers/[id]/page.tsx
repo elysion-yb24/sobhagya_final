@@ -246,6 +246,14 @@ export default function AstrologerProfilePage() {
   useEffect(() => {
     console.log('🚀 Page useEffect triggered:', { astrologerId });
     
+    // Check user role first
+    const user = getUserDetails();
+    if (user && user.role === 'friend') {
+      console.log('User is a friend, redirecting to partner info page');
+      router.push('/partner-info');
+      return;
+    }
+    
     // Initialize auth with token validation and extension
     const isAuthValid = isAuthenticated();
     
@@ -1424,17 +1432,7 @@ export default function AstrologerProfilePage() {
                         {isVideoCallProcessing ? 'Connecting...' : 'Video Call'}
                       </button>
                     )}
-                    <button 
-                      className="bg-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
-                      style={{ 
-                        border: `1px solid #F7971E`, 
-                        color: '#F7971E'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FDF4E6'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
-                    >
-                      Follow
-                    </button>
+
                   </div>
                 </div>
 

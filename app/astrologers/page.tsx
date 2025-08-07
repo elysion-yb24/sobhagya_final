@@ -109,6 +109,16 @@ export default function AstrologersPage() {
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Check user role on component mount
+  useEffect(() => {
+    const user = getUserDetails();
+    if (user && user.role === 'friend') {
+      console.log('User is a friend, redirecting to partner info page');
+      router.push('/partner-info');
+      return;
+    }
+  }, [router]);
+
   // When searchQuery changes (from FilterBar), show loader for 700ms
   useEffect(() => {
     if (searchQuery) {

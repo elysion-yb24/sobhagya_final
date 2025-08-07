@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'universal-cookie';
+import { motion, AnimatePresence } from 'framer-motion';
 import { storeAuthToken, storeUserDetails } from "../../utils/auth-utils";
 import { buildApiUrl, API_CONFIG } from '../../config/api';
 
@@ -303,64 +304,81 @@ export default function OtpVerificationScreen({
   const isSubmitDisabled = isLoading || parentIsLoading || isResending || otp.some(digit => !digit);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-center items-center bg-gradient-to-br from-orange-50 via-white to-orange-100/60">
-      {/* Small Sobhagya Logo above card */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center">
-        <img src="/sobhagya-logo.png" alt="Sobhagya Logo" className="w-14 h-14 object-contain rounded-full bg-white/80 border border-orange-100" />
-      </div>
-
-      {/* Main card - simple, spiritual */}
-      <div className="relative bg-white/95 rounded-2xl w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl border border-orange-100/40 mt-24 p-0 shadow-none">
-        {/* Header section */}
-        <div className="relative px-4 sm:px-6 md:px-8 pt-8 pb-4 text-center">
-          {/* Title */}
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold text-gray-900 mb-2 tracking-tight leading-tight">
+    <div className="min-h-screen flex flex-col items-center justify-start px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
+      {/* Premium Header */}
+      <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mb-4 sm:mb-6">
+        <div className="flex flex-col items-center">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2">
+            <img 
+              src="/sobhagya_logo.avif" 
+              alt="Astrology Logo" 
+              className="object-cover w-full h-full rounded-full" 
+            />
+          </div>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 mb-1 text-center leading-tight">
             Verify Your Phone
           </h1>
-
-          {/* Gentle message */}
-        
-          
-          {/* Subtitle */}
-          <p className="text-gray-600 text-sm sm:text-base md:text-lg mb-3 sm:mb-4 leading-relaxed px-2">
+          <p className="text-orange-700 text-sm sm:text-base font-medium text-center mb-2 px-2">
             Enter the 4-digit verification code sent to
           </p>
-          {/* Phone number display */}
-          <div className="inline-flex items-center px-4 py-2 bg-orange-50 rounded-lg border border-orange-100/50">
-            <span className="text-orange-600 font-semibold text-base sm:text-lg md:text-xl">
+          <div className="inline-flex items-center px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-200">
+            <span className="text-orange-700 font-semibold text-sm sm:text-base md:text-lg">
               {countryCode} {phoneNumber}
             </span>
           </div>
         </div>
+      </div>
 
-        {/* OTP Input Section */}
-        <div className="px-4 sm:px-6 md:px-8 pb-4 sm:pb-6">
-          <div className="flex justify-center gap-3 mb-4 sm:mb-6">
-            {otp.map((digit, index) => (
-              <input
-                key={index}
-                id={`otp-input-${index}`}
-                type="text"
-                inputMode="numeric"
-                maxLength={4}
-                value={digit}
-                onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ""))}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl sm:text-3xl bg-white border-2 border-orange-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all duration-200 font-bold text-gray-900 hover:border-orange-200"
-                style={{fontFamily: 'Poppins', letterSpacing: '0.1em'}}
-              />
-            ))}
+      {/* Glassmorphism Card */}
+      <motion.div 
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-2xl border-l-4 border-orange-400 p-3 sm:p-4 md:p-6 flex flex-col items-center relative z-10"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+      >
+        <div className="w-full space-y-3 sm:space-y-4">
+          {/* OTP Input Group */}
+          <div className="space-y-2">
+            <label className="block text-xs sm:text-sm md:text-base font-semibold text-gray-700 mb-1 text-center">
+              Enter 4-digit code
+            </label>
+            <div className="flex justify-center gap-2 sm:gap-3">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-input-${index}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={digit}
+                  onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ""))}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-xl sm:text-2xl md:text-3xl bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 font-bold text-gray-900 hover:border-orange-200"
+                  style={{fontFamily: 'Poppins', letterSpacing: '0.1em'}}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Error message */}
-          {(error || parentError) && (
-            <div className="mb-4 p-3 sm:p-4 bg-red-50 border border-red-100 rounded-lg text-red-600 text-sm font-medium text-center">
-              {error || parentError}
-            </div>
-          )}
+          {/* Error Message */}
+          <AnimatePresence>
+            {(error || parentError) && (
+              <motion.div
+                className="flex items-start gap-2 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 mt-2"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs sm:text-sm leading-relaxed">{error || parentError}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Resend section */}
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 mb-4 sm:mb-6">
+          {/* Resend Section */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0">
             <div className="text-gray-500 text-xs sm:text-sm order-2 sm:order-1">
               {timeLeft > 0 ? (
                 <span className="flex items-center gap-1 sm:gap-2">
@@ -402,53 +420,54 @@ export default function OtpVerificationScreen({
             </button>
           </div>
 
-          {/* Action buttons */}
-          <div className="space-y-2 sm:space-y-3">
-            <button
-              onClick={handleVerify}
-              disabled={isSubmitDisabled}
-              className={`w-full bg-gradient-to-r from-orange-400 to-orange-300 text-white py-3 sm:py-4 rounded-lg shadow-none font-semibold text-base sm:text-lg md:text-xl transition-all duration-200 ${
-                isSubmitDisabled 
-                  ? "opacity-50 cursor-not-allowed" 
-                  : "hover:from-orange-500 hover:to-orange-400 hover:scale-[1.01] active:scale-[0.98]"
-              }`}
-            >
-              {isLoading || parentIsLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Verifying...
-                </span>
-              ) : (
-                "Verify & Continue"
-              )}
-            </button>
+          {/* Submit Button */}
+          <motion.button
+            onClick={handleVerify}
+            disabled={isSubmitDisabled}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 touch-manipulation text-sm sm:text-base"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {isLoading || parentIsLoading ? (
+              <>
+                <svg className="animate-spin w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Verifying...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Verify & Continue</span>
+              </>
+            )}
+          </motion.button>
 
-            <button
-              onClick={onBack}
-              className="w-full bg-transparent text-gray-500 py-3 sm:py-4 rounded-lg hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base md:text-lg font-medium hover:text-gray-700"
-            >
-              ← Back to Login
-            </button>
-          </div>
+          {/* Back Button */}
+          <button
+            onClick={onBack}
+            className="w-full bg-transparent text-gray-500 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base touch-manipulation"
+          >
+            <span className="flex items-center justify-center gap-2">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Login</span>
+            </span>
+          </button>
         </div>
+      </motion.div>
 
-        {/* Footer */}
-        <div className="px-4 sm:px-6 md:px-8 pb-4 sm:pb-6">
-          <p className="text-center text-xs sm:text-sm text-gray-400 leading-relaxed px-2">
-            By continuing, you agree to our{' '}
-            <a href="/privacy-policy" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
-              Privacy Policy
-            </a>{' '}
-            and{' '}
-            <a href="/terms" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
-              Terms of Service
-            </a>
-          </p>
-        </div>
-      </div>
+      {/* Footer */}
+      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-400 px-4">
+        <span>By continuing, you agree to our </span>
+        <button className="text-orange-600 hover:underline touch-manipulation">Terms of Service</button>
+        <span> and </span>
+        <button className="text-orange-600 hover:underline touch-manipulation">Privacy Policy</button>
+      </footer>
     </div>
   );
 }

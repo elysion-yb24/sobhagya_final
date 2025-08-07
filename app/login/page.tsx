@@ -19,7 +19,7 @@ import {
   Loader2
 } from 'lucide-react';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
-import { getAuthToken, clearAuthData, isAuthenticated } from '../utils/auth-utils';
+import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from '../utils/auth-utils';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 
 // Define types for country and authentication data
@@ -63,6 +63,15 @@ export default function LoginPage() {
       const isAuthValid = isAuthenticated();
       if (isAuthValid) {
         console.log('✅ User already authenticated, checking for stored astrologer ID');
+        
+        // Check user role first
+        const user = getUserDetails();
+        if (user && user.role === 'friend') {
+          console.log('User is a friend, redirecting to partner info page');
+          router.push('/partner-info');
+          return;
+        }
+        
         // Check if there's a stored astrologer ID from the call flow
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
         const callType = localStorage.getItem('callType');
@@ -204,6 +213,13 @@ export default function LoginPage() {
         // Check if there's a stored astrologer ID from the call flow
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
         const callType = localStorage.getItem('callType');
+
+        // Check user role
+        const user = getUserDetails();
+        if (user && user.role === 'friend') {
+          router.push('/partner-info');
+          return;
+        }
         
         if (storedAstrologerId) {
           console.log('Found stored astrologer ID:', storedAstrologerId, 'call type:', callType);

@@ -107,6 +107,39 @@ export default function TransactionHistory() {
     return new Date().toISOString();
   };
 
+  const getTransactionDisplayName = (transaction: Transaction): string => {
+    // Check if it's a call-related transaction
+    const paymentFor = transaction.paymentFor?.toLowerCase() || '';
+    const description = transaction.description?.toLowerCase() || '';
+    
+    // Video call transactions
+    if (paymentFor.includes('video') || description.includes('video') || 
+        paymentFor.includes('videocall') || description.includes('videocall')) {
+      return 'Video Call';
+    }
+    
+    // Audio call transactions
+    if (paymentFor.includes('audio') || description.includes('audio') || 
+        paymentFor.includes('call') || description.includes('call')) {
+      return 'Audio Call';
+    }
+    
+    // Gift transactions
+    if (paymentFor.includes('gift') || description.includes('gift')) {
+      return 'Gift Sent';
+    }
+    
+    // Wallet recharge
+    if (paymentFor.includes('recharge') || description.includes('recharge') || 
+        paymentFor.includes('wallet') || description.includes('wallet')) {
+      return 'Wallet Recharge';
+    }
+    
+    // Return original description or paymentFor if available
+    return transaction.description || transaction.paymentFor || 
+           `${(transaction.amount || 0) >= 0 ? "Credit" : "Debit"} Transaction`;
+  };
+
   const formatDate = (transaction: Transaction) => {
     try {
       const dateString = getTransactionDate(transaction);
@@ -201,12 +234,12 @@ export default function TransactionHistory() {
             <div className="flex items-start gap-2 sm:gap-3">
               {/* Transaction type icon */}
               <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                (transaction.amount || 0) >= 0 ? "bg-green-100" : "bg-red-100"
+                (transaction.amount || 0) >= 0 ? "bg-green-100" : "bg-orange-100"
               }`}>
                 {(transaction.amount || 0) >= 0 ? (
                   <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
                 ) : (
-                  <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-red-600" />
+                  <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
                 )}
               </div>
 
@@ -216,8 +249,18 @@ export default function TransactionHistory() {
                   {/* Transaction info */}
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                      {transaction.description || transaction.paymentFor || `${(transaction.amount || 0) >= 0 ? "Credit" : "Debit"} Transaction`}
+                      {getTransactionDisplayName(transaction)}
                     </h4>
+                    {transaction.notes?.receiverName && (
+                      <p className="text-xs text-orange-600 font-medium mt-1">
+                        with {transaction.notes.receiverName}
+                      </p>
+                    )}
+                    {transaction.notes?.callDuration && (
+                      <p className="text-xs text-gray-600 mt-0.5">
+                        Duration: {Math.round(transaction.notes.callDuration / 60)} min
+                      </p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       {formatDate(transaction)}
                     </p>
@@ -235,7 +278,7 @@ export default function TransactionHistory() {
                     
                     <div className="text-right">
                       <p className={`text-base sm:text-lg font-bold ${
-                        (transaction.amount || 0) >= 0 ? "text-green-600" : "text-red-600"
+                        (transaction.amount || 0) >= 0 ? "text-green-600" : "text-orange-600"
                       }`}>
                         {(transaction.amount || 0) >= 0 ? "+" : "-"}₹{Math.abs(transaction.amount || 0).toFixed(2)}
                       </p>

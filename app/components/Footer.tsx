@@ -40,63 +40,63 @@ const Footer: React.FC = () => {
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-12">
           {/* GET IN TOUCH */}
-          <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-orange-400 font-semibold text-base sm:text-lg mb-3 sm:mb-4">GET IN TOUCH</h3>
-            <div className="space-y-2 sm:space-y-3">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <span className="text-orange-400 text-base sm:text-lg">◆</span>
+          <div className="text-left lg:text-center space-y-4 sm:space-y-5">
+            <h3 className="text-orange-400 font-semibold text-lg sm:text-xl mb-4 sm:mb-5">GET IN TOUCH</h3>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-start lg:justify-center gap-3">
+                <span className="text-orange-400 text-lg">◆</span>
                 <a
                   href="mailto:support@sobhagya.in"
-                  className="text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                  className="text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
                 >
                   support@sobhagya.in
                 </a>
               </div>
-              <p className="text-white text-xs ml-4 sm:ml-6 opacity-80">
+              <p className="text-white text-xs sm:text-sm opacity-80 lg:text-center">
                 (we will respond within 24 hours)
               </p>
             </div>
           </div>
 
           {/* QUICK LINKS */}
-          <div className="space-y-3 sm:space-y-4">
-            <h3 className="text-orange-400 font-semibold text-base sm:text-lg mb-3 sm:mb-4">QUICK LINKS</h3>
-            <div className="space-y-2 sm:space-y-3">
+          <div className="text-left lg:text-center space-y-4 sm:space-y-5">
+            <h3 className="text-orange-400 font-semibold text-lg sm:text-xl mb-4 sm:mb-5">QUICK LINKS</h3>
+            <div className="space-y-3 sm:space-y-4">
               <Link
                 href="/privacy-policy"
-                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                className="flex items-center justify-start lg:justify-center text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
               >
-                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Privacy Policy
+                <span className="text-orange-400 mr-3 text-base">◆</span> Privacy Policy
               </Link>
               <Link
                 href="/refund-policy"
-                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                className="flex items-center justify-start lg:justify-center text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
               >
-                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Refund Policy
+                <span className="text-orange-400 mr-3 text-base">◆</span> Refund Policy
               </Link>
               <Link
                 href="/terms"
-                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                className="flex items-center justify-start lg:justify-center text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
               >
-                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Terms of Service
+                <span className="text-orange-400 mr-3 text-base">◆</span> Terms of Service
               </Link>
               <Link
                 href="/shipping-policy"
-                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                className="flex items-center justify-start lg:justify-center text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
               >
-                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Shipping Policy
+                <span className="text-orange-400 mr-3 text-base">◆</span> Shipping Policy
               </Link>
             </div>
             
             {/* Social Media Icons */}
-            <div className="flex items-center space-x-3 sm:space-x-4 mt-4 sm:mt-6">
+            <div className="flex items-center justify-start lg:justify-center space-x-4 sm:space-x-5 mt-6 sm:mt-8">
               <Link
                 href="https://www.instagram.com/sobhagya.bhakti?igsh=MTJveTdrdnk2NXR1eA=="
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-orange-400 transition-colors duration-300 p-1"
+                className="text-white hover:text-orange-400 transition-colors duration-300 p-2 bg-white/10 rounded-full hover:bg-white/20"
                 aria-label="Follow us on Instagram"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@ const Footer: React.FC = () => {
                 href="https://linkedin.com/company/sobhagya"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-white hover:text-orange-400 transition-colors duration-300 p-1"
+                className="text-white hover:text-orange-400 transition-colors duration-300 p-2 bg-white/10 rounded-full hover:bg-white/20"
                 aria-label="Follow us on LinkedIn"
               >
                 <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
@@ -118,29 +118,29 @@ const Footer: React.FC = () => {
           </div>
 
           {/* SERVICES */}
-          <div className="space-y-3 sm:space-y-4 sm:col-span-2 lg:col-span-1">
-            <h3 className="text-orange-400 font-semibold text-base sm:text-lg mb-3 sm:mb-4">SERVICES</h3>
-            <div className="space-y-2 sm:space-y-3">
+          <div className="text-left lg:text-center space-y-4 sm:space-y-5 md:col-span-2 lg:col-span-1">
+            <h3 className="text-orange-400 font-semibold text-lg sm:text-xl mb-4 sm:mb-5">SERVICES</h3>
+            <div className="space-y-3 sm:space-y-4">
               <Link
                 href="/call-with-astrologer"
-                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                className="flex items-center justify-start lg:justify-center text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
               >
-                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Call with Astrologer
+                <span className="text-orange-400 mr-3 text-base">◆</span> Call with Astrologer
               </Link>
               <Link
                 href="/pooja-session"
-                className="flex items-center text-white hover:text-orange-400 text-xs sm:text-sm transition-colors"
+                className="flex items-center justify-start lg:justify-center text-white hover:text-orange-400 text-sm sm:text-base transition-colors ml-4 lg:ml-0"
               >
-                <span className="text-orange-400 mr-2 sm:mr-3 text-sm sm:text-base">◆</span> Pooja Session
+                <span className="text-orange-400 mr-3 text-base">◆</span> Pooja Session
               </Link>
             </div>
           </div>
         </div>
 
         {/* Footer Bottom with Logo */}
-        <div className="border-t border-gray-700 mt-6 sm:mt-8 pt-4 sm:pt-6 text-center">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12">
+        <div className="border-t border-gray-700 mt-8 sm:mt-10 pt-6 sm:pt-8 text-center">
+          <div className="flex flex-col items-center justify-center gap-3 sm:gap-4">
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14">
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
@@ -148,7 +148,7 @@ const Footer: React.FC = () => {
                 className="object-contain"
               />
             </div>
-            <span className="text-white text-lg sm:text-xl font-semibold">SOBHAGYA</span>
+            <span className="text-white text-xl sm:text-2xl font-semibold">SOBHAGYA</span>
           </div>
         </div>
       </div>

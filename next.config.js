@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['baatein.blob.core.windows.net'],
+    domains: ['baatein.blob.core.windows.net', 'sobhagya.blob.core.windows.net', 'ui-avatars.com'],
   },
   async rewrites() {
     return [

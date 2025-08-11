@@ -128,7 +128,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
 
   return (
     <div className="space-y-12">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 gap-y-6 px-2 sm:px-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-2 sm:gap-x-3 lg:gap-x-6 gap-y-6 lg:gap-y-8 px-2 sm:px-0">
         {astrologers.map((astrologer, index) => (
           <div
             key={astrologer._id}

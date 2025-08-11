@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { getApiBaseUrl } from '@/app/config/api';
 import { isAuthenticated } from '@/app/utils/auth-utils';
 
@@ -27,9 +28,9 @@ const AstrologerCarousel = () => {
   const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
   const [loading, setLoading] = useState(true);
 
- 
+
   // Test API accessibility
-  
+
 
   // Fetch astrologers from API
   useEffect(() => {
@@ -38,10 +39,10 @@ const AstrologerCarousel = () => {
         setLoading(true);
         const baseUrl = getApiBaseUrl();
         const apiUrl = `${baseUrl}/user/api/users-list`;
-        
+
         console.log('Fetching from:', apiUrl);
-        
-      
+
+
         const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -49,12 +50,12 @@ const AstrologerCarousel = () => {
             'Content-Type': 'application/json',
           },
         });
-        
+
         // Check if response is ok
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         // Check content type
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
@@ -64,10 +65,10 @@ const AstrologerCarousel = () => {
           console.error('Response text:', text.substring(0, 200));
           throw new Error('Response is not JSON');
         }
-        
+
         const data = await response.json();
         console.log('API Response:', data);
-        
+
         if (data.success && data.data?.list) {
           setAstrologers(data.data.list);
         } else {
@@ -138,7 +139,7 @@ const AstrologerCarousel = () => {
   const nextSlide = () => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
-    setCurrentIndex((prevIndex) => 
+    setCurrentIndex((prevIndex) =>
       prevIndex >= maxIndex ? 0 : prevIndex + 1
     );
   };
@@ -146,7 +147,7 @@ const AstrologerCarousel = () => {
   const prevSlide = () => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
-    setCurrentIndex((prevIndex) => 
+    setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? maxIndex : prevIndex - 1
     );
   };
@@ -154,11 +155,11 @@ const AstrologerCarousel = () => {
   // Auto-play functionality
   useEffect(() => {
     if (astrologers.length === 0) return;
-    
+
     const interval = setInterval(() => {
       const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
       const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
-      setCurrentIndex((prevIndex) => 
+      setCurrentIndex((prevIndex) =>
         prevIndex >= maxIndex ? 0 : prevIndex + 1
       );
     }, 3500); // Change slide every 3.5 seconds
@@ -170,7 +171,7 @@ const AstrologerCarousel = () => {
   const handleAstrologerClick = (astrologerId: string) => {
     // Check if user is authenticated
     const isAuthValid = isAuthenticated();
-    
+
     if (isAuthValid) {
       // If authenticated, go directly to astrologer profile
       router.push(`/astrologers/${astrologerId}`);
@@ -187,7 +188,7 @@ const AstrologerCarousel = () => {
       }}>
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-center text-white text-5xl md:text-4xl font-bold mb-10" style={{
-            fontFamily:'EB Garamond',
+            fontFamily: 'EB Garamond',
           }}>
             Consult with <em>India's</em> best Astrologers
           </h2>
@@ -208,10 +209,10 @@ const AstrologerCarousel = () => {
   return (
     <div
       className="w-full py-12"
-        style={{
-          backgroundImage: "url('/image.png')",
-          position: "relative",
-        }}
+      style={{
+        backgroundImage: "url('/image.png')",
+        position: "relative",
+      }}
     >
       <div className="max-w-6xl mx-auto px-4">
         <h2
@@ -220,11 +221,11 @@ const AstrologerCarousel = () => {
         >
           Consult with <em>India's</em> best Astrologers
         </h2>
-        
+
         {/* Slider container */}
         <div className="relative overflow-hidden">
           {/* Previous button */}
-          <button 
+          <button
             onClick={prevSlide}
             className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
             aria-label="Previous astrologer"
@@ -233,37 +234,41 @@ const AstrologerCarousel = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          
+
           {/* Slider track */}
           <div className="flex transition-transform duration-300 ease-out">
             {astrologers.map((astrologer, index) => (
-              <div 
-                key={astrologer._id} 
+              <div
+                key={astrologer._id}
                 className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex-shrink-0 px-1 md:px-2"
-                style={{ 
+                style={{
                   transform: `translateX(-${currentIndex * 100}%)`,
                   transition: 'transform 300ms ease-out'
                 }}
               >
-                <div 
+                <div
                   className="bg-white rounded-lg shadow-lg flex flex-col items-center w-56 h-64 p-4 mx-auto border-2 border-[#F7971E] cursor-pointer hover:shadow-xl transition-shadow"
                   onClick={() => handleAstrologerClick(astrologer._id)}
                   style={{ minHeight: '256px' }}
                 >
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-[#F7971E] mb-3 shadow-md flex items-center justify-center" style={{ borderRadius: '50%' }}>
-                    <img
-                      src={astrologer.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=96`}
+                  <div className="relative w-24 h-24 mb-3 shadow-md rounded-full overflow-hidden border-4 border-[#F7971E]">
+                    <Image
+                      src={
+                        astrologer.avatar ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          astrologer.name
+                        )}&background=f97316&color=fff&size=96`
+                      }
                       alt={astrologer.name}
+                      width={96}
+                      height={96}
                       className="w-full h-full object-cover rounded-full"
-                      style={{ borderRadius: '50%' }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=96`;
-                      }}
                     />
                   </div>
+
+
                   <h3 className="font-bold text-base text-center text-gray-800 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
-                    {astrologer.name.split(' ').length > 2 
+                    {astrologer.name.split(' ').length > 2
                       ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
                       : astrologer.name
                     }
@@ -288,9 +293,9 @@ const AstrologerCarousel = () => {
               </div>
             ))}
           </div>
-          
+
           {/* Next button */}
-          <button 
+          <button
             onClick={nextSlide}
             className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
             aria-label="Next astrologer"
@@ -299,16 +304,15 @@ const AstrologerCarousel = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
-          
-          {/* Dots indicator - only show on mobile */}
-          <div className="flex justify-center mt-4 md:hidden space-x-2">
+
+          {/* Dots indicator - only show on mobile (smaller dots) */}
+          <div className="flex justify-center mt-2 md:hidden space-x-1">
             {astrologers.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'
-                }`}
+                className={`rounded-full transition-colors ${index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'}`}
+                style={{ width: 6, height: 6 }}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}

@@ -192,7 +192,7 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-b border-orange-200/60 shadow-lg transition-all duration-300 animate-fadeIn">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl shadow-lg transition-all duration-300 animate-fadeIn">
       {/* DESKTOP HEADER */}
       <div className="hidden lg:block">
         <div className="max-w-8xl mx-auto px-4 lg:px-8">

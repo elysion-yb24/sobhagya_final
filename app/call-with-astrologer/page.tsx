@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from 'next/navigation';
+import { isAuthenticated } from '../utils/auth-utils';
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Star, 
@@ -94,13 +96,18 @@ const EnhancedLoader = () => (
 
 const AstrologerCallPage = () => {
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
   const [allAstrologers, setAllAstrologers] = useState<Astrologer[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch all astrologers on mount
+  // Redirect authenticated users to /astrologers, else fetch all astrologers
   useEffect(() => {
     setMounted(true);
+    if (isAuthenticated()) {
+      router.replace('/astrologers');
+      return;
+    }
     const fetchAllAstrologers = async () => {
       setIsLoading(true);
       setError(null);
@@ -152,11 +159,7 @@ const AstrologerCallPage = () => {
     fetchAllAstrologers();
   }, []);
 
-  // No authentication required for this API
-  useEffect(() => {
-    if (!mounted) return;
-    console.log('🔍 Call with Astrologer page mounted - no authentication required');
-  }, [mounted]);
+  // No extra auth logs
 
   if (!mounted) {
     return (

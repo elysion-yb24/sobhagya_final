@@ -156,19 +156,27 @@ export default function LoginPage() {
       console.log("OTP verification completed successfully by child component");
       setError(null);
       
-      // Check if there's a stored astrologer ID from the call flow
+      // After OTP success, route based on intent
       const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-      
-      if (storedAstrologerId) {
-        console.log('Found stored astrologer ID, redirecting to profile:', storedAstrologerId);
-        // Clear the stored ID to avoid future conflicts
-        localStorage.removeItem('selectedAstrologerId');
-        // Redirect to the specific astrologer profile
-        router.push(`/astrologers/${storedAstrologerId}`);
-      } else {
-        // Redirect to astrologers page after successful authentication
-        router.push('/astrologers');
+      const chatIntent = localStorage.getItem('chatIntent');
+      if (storedAstrologerId && chatIntent === '1') {
+        // Open chat with deterministic room id
+        const profile = getUserDetails();
+        const currentUserId = profile?.id || profile?._id || '';
+        const currentUserName = profile?.displayName || profile?.name || 'User';
+        if (currentUserId) {
+          const a = currentUserId;
+          const b = storedAstrologerId;
+          const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
+          // Clear intent keys
+          localStorage.removeItem('selectedAstrologerId');
+          localStorage.removeItem('chatIntent');
+          window.location.href = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(storedAstrologerId)}`;
+          return;
+        }
       }
+      // Default redirect
+      router.push('/astrologers');
       return;
     }
 
@@ -210,34 +218,42 @@ export default function LoginPage() {
           setError("Authentication succeeded but no token was received.");
         }
         
-        // Check if there's a stored astrologer ID from the call flow
+        // Post-OTP: handle chat intent first
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
         const callType = localStorage.getItem('callType');
+        const chatIntent = localStorage.getItem('chatIntent');
 
-        // Check user role
         const user = getUserDetails();
         if (user && user.role === 'friend') {
           router.push('/partner-info');
           return;
         }
-        
+
+        if (storedAstrologerId && chatIntent === '1') {
+          const profile = getUserDetails();
+          const currentUserId = profile?.id || profile?._id || '';
+          const currentUserName = profile?.displayName || profile?.name || 'User';
+          if (currentUserId) {
+            const a = currentUserId;
+            const b = storedAstrologerId;
+            const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
+            localStorage.removeItem('selectedAstrologerId');
+            localStorage.removeItem('chatIntent');
+            window.location.href = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(storedAstrologerId)}`;
+            return;
+          }
+        }
+
         if (storedAstrologerId) {
           console.log('Found stored astrologer ID:', storedAstrologerId, 'call type:', callType);
-          
-          // Clear the stored data to avoid future conflicts
           localStorage.removeItem('selectedAstrologerId');
           localStorage.removeItem('callType');
-          
           if (callType === 'audio' || callType === 'video') {
-            // Redirect to astrologer profile with call type for direct call initiation
-            console.log('Redirecting to astrologer profile for direct call initiation');
             router.push(`/astrologers/${storedAstrologerId}?callType=${callType}`);
           } else {
-            // Redirect to the specific astrologer profile
             router.push(`/astrologers/${storedAstrologerId}`);
           }
         } else {
-          // Redirect to astrologers page after successful authentication
           router.push('/astrologers');
         }
       } else {

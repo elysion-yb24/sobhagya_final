@@ -67,7 +67,7 @@ const HeroSection: React.FC = () => {
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Enhanced Hero Section */}
       <motion.section
-        className="text-white relative w-full flex flex-col justify-start pt-16 pb-4 md:pt-20 sm:pb-6"
+        className="text-white relative w-full flex flex-col justify-start pt-0 md:pt-0 pb-4 sm:pb-6"
         style={{
           backgroundImage: "url(/image.png)",
           backgroundSize: "cover",
@@ -113,15 +113,18 @@ const HeroSection: React.FC = () => {
 
           {/* Mobile: Astrologer image first, then text */}
           {/* Desktop: Left: text */}
-          <div className="w-full md:w-3/4 text-center md:text-left order-2 md:order-1 -mt-8 md:mt-0">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-2" style={{
-              fontFamily: "Poppins"
+          <div className="w-full md:w-5/6 text-center md:text-left order-2 md:order-1 -mt-12 md:-mt-6">
+            <h1 className="font-bold leading-tight mb-2 whitespace-nowrap" style={{
+              fontFamily: "EB Garamond",
+              fontSize: '55px',
+              fontWeight: 700,
+              lineHeight: 1.1
             }}>
-              <span className="text-2xl sm:text-5xl md:text-3xl lg:text-5xl">{consultationCount.toLocaleString()}</span>{" "}
-              <span className="text-2xl sm:text-3xl md:text-3xl lg:text-5xl">Consultations Done</span>
+              <span>{consultationCount}</span>{" "}
+              <span>Consultations Done</span>
             </h1>
             <p className="text-sm sm:text-base md:text-2xl font-semibold mb-4" style={{
-              fontFamily: "Poppins"
+              fontFamily: "EB Garamond"
             }}>
               Your's might be waiting
             </p>
@@ -140,14 +143,14 @@ const HeroSection: React.FC = () => {
           {/* Desktop: Right: astrologer image - positioned to touch orange background edge */}
           <div className="w-full md:w-1/2 flex justify-center md:justify-end relative order-1 md:order-2">
             <div className="relative">
-              {/* Big zodiac sign behind astrologer */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0 -translate-y-20 sm:-translate-y-32">
+              {/* Big zodiac sign behind astrologer - full visible */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0">
                 <Image
                   src="/zodiac-right.png"
                   alt="Background Zodiac"
-                  width={400}
-                  height={400}
-                  className="w-[250px] h-[250px] sm:w-[300px] sm:h-[300px] md:w-[400px] md:h-[400px] object-contain"
+                  width={300}
+                  height={300}
+                  className="w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] md:w-[470px] md:h-[470px] object-contain"
                 />
               </div>
 
@@ -161,25 +164,18 @@ const HeroSection: React.FC = () => {
               />
               {/* Three zodiac signs around astrologer image */}
               <motion.div
-                className="absolute top-4 left-4 opacity-80 z-20"
-                animate={{ rotate: [0, 15, -15, 0], y: [0, -10, 0] }}
+                className="absolute left-3 bottom-8 md:bottom-20 md:left-[-50px] z-20"
+                animate={{ rotate: [0, 10, -10, 0], y: [0, -6, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Image src="/Group (1) 5.png" alt="Top Left Zodiac" width={50} height={50} />
+                <Image src="/Group (1) 5.png" alt="Bottom Left Zodiac" width={70} height={70} />
               </motion.div>
               <motion.div
-                className="absolute top-4 right-4 opacity-80 z-20"
-                animate={{ rotate: [0, -15, 15, 0], y: [0, -8, 0] }}
+                className="absolute right-5 md:right-[-50px] top-1/2 -translate-y-1/2  z-20"
+                animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               >
-                <Image src="/Group (1) 4.png" alt="Top Right Zodiac" width={50} height={50} />
-              </motion.div>
-              <motion.div
-                className="absolute bottom-8 left-1/2 transform -translate-x-1/2 opacity-80 z-20"
-                animate={{ rotate: [0, 10, -10, 0], y: [0, -5, 0] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              >
-                <Image src="/zodiac-right.png" alt="Bottom Center Zodiac" width={50} height={50} />
+                <Image src="/Group (1) 4.png" alt="Right Middle Zodiac" width={100} height={100} />
               </motion.div>
             </div>
           </div>
@@ -189,7 +185,7 @@ const HeroSection: React.FC = () => {
       {/* Orange background section for cards */}
       <div className="relative">
         {/* Navigation cards: positioned half on orange background */}
-        <div className="relative z-20 -mt-5 sm:-mt-36">
+        <div className="relative z-20 -mt-1 sm:-mt-28 md:-mt-9 lg:-mt-16">
           <div className="w-[100vw] mx-auto px-4 sm:px-6 md:px-8">
             {/* Mobile: Horizontal small buttons */}
             <div className="flex flex-row justify-center gap-2 sm:hidden mb-6">

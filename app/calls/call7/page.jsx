@@ -6,100 +6,104 @@ import Head from "next/head";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call7() {
+  const [placeOfBirth, setPlaceOfBirth] = useState("");
+  const [filteredCities, setFilteredCities] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+  const [isValidCity, setIsValidCity] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [location, setLocation] = useState("");
-  const [isExiting, setIsExiting] = useState(false);
-  const [locationOptions, setLocationOptions] = useState([]);
-  const [filteredOptions, setFilteredOptions] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
 
-  // Fetching Indian cities dynamically from an API
+  // Comprehensive list of Indian cities
+  const cityList = [
+    // Major Metro Cities
+    "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad", "Jaipur", "Surat",
+    "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Patna", "Vadodara", "Rajkot",
+    "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Kalyan", "Vasai-Virar", "Varanasi", "Srinagar",
+    "Aurangabad", "Navi Mumbai", "Solapur", "Ranchi", "Jabalpur", "Gwalior", "Coimbatore", "Vijayawada", "Jodhpur", "Madurai",
+    "Raipur", "Kota", "Guwahati", "Chandigarh", "Mysore", "Bareilly", "Aligarh", "Jalandhar", "Tiruchirappalli", "Bhubaneswar",
+    "Salem", "Warangal", "Guntur", "Bhiwandi", "Saharanpur", "Gorakhpur", "Bikaner", "Amravati", "Noida", "Jamshedpur",
+    "Bhilai", "Cuttack", "Firozabad", "Kochi", "Nellore", "Bhavnagar", "Dehradun", "Durgapur", "Asansol", "Rourkela",
+    "Nanded", "Kolhapur", "Ajmer", "Akola", "Jamnagar", "Ujjain", "Loni", "Siliguri", "Jhansi", "Ulhasnagar",
+    "Jammu", "Mangalore", "Erode", "Belgaum", "Ambattur", "Tirunelveli", "Malegaon", "Gaya", "Jalgaon", "Maheshtala",
+    "Tiruppur", "Davangere", "Kozhikode", "Akbarpur", "Bokaro", "Shahjahanpur", "Mirzapur", "Supaul", "Prayagraj", "Haldwani",
+    "Bilaspur", "Dhanbad", "Amritsar", "Haora", "New Delhi", "Puducherry", "Shimla", "Puri", "Murtazabad", "Shrirampur",
+    "Chandannagar", "Sultanpur Mazra", "Krishnanagar", "Barakpur", "Bhalswa Jahangirpur", "Nangloi Jat", "Balasore", "Dalupura",
+    "Yelahanka", "Titagarh", "Dam Dam", "Bansbaria", "Madhavaram", "Abbigeri", "Baj Baj", "Garhi", "Mirpeta", "Nerkunram",
+    "Kendrapada", "Sijua", "Manali", "Kankuria", "Chakapara", "Pappakurichchi", "Herohalli", "Madipakkam", "Sabalpur", "Bauria",
+    "Salua", "Chik Banavar", "Jalhalli", "Chinnasekkadu", "Jethuli", "Nagtala", "Pakri", "Hunasamaranhalli", "Hesarghatta", "Bommayapalaiyam",
+    "Gundur", "Punadih", "Hariladih", "Alawalpur", "Madnaikanhalli", "Bagalur", "Kadiganahalli", "Khanpur Zabti", "Mahuli", "Zeyadah Kot",
+    "Arshakunti", "Mirchi", "Sonudih", "Bayandhalli", "Sondekoppa", "Babura", "Madavar", "Kadabgeri", "Nanmangalam", "Taliganja",
+    "Tarchha", "Belgharia", "Kammanhalli", "Ambapuram", "Sonnappanhalli", "Kedihati", "Doddajivanhalli", "Simli Murarpur", "Sonawan", "Devanandapur",
+    "Tribeni", "Huttanhalli", "Nathupur", "Bali", "Vajarhalli", "Alija Kotla", "Saino", "Shekhpura", "Cachohalli", "Andheri",
+    "Narayanpur Kola", "Gyan Chak", "Kasgatpur", "Kitanelli", "Harchandi", "Santoshpur", "Bendravadi", "Kodagihalli", "Harna Buzurg", "Mailanhalli",
+    "Sultampur", "Adakimaranhalli", "Secunderabad", "Pallavaram", "Byatarayanpur", "Tiruvottiyur", "Muzaffarpur", "Oulgaret", "Salt Lake City", "Bhatpara",
+    "Kukatpalli", "Dasarhalli", "Kalyan-Dombivali", "Pimpri-Chinchwad", "Vishakhapatnam", "Prayagraj", "Nāsik", "Kalyān", "Najafgarh", "Bhayandar"
+  ];
+
   useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const response = await fetch("https://countriesnow.space/api/v0.1/countries/population/cities");
-        const data = await response.json();
-        if (data && data.data) {
-          const indianCities = data.data
-            .filter((city) => city.country === "India")
-            .map((city) => city.city);
-          setLocationOptions(indianCities);
-          setFilteredOptions(indianCities);
-        }
-      } catch (error) {
-        console.error("Error fetching location data:", error);
-      }
-    };
-    fetchLocations();
+    // Log the stored astrologer ID for debugging
+    const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+    if (storedAstrologerId) {
+      console.log('Call7: Found stored astrologer ID:', storedAstrologerId);
+    } else {
+      console.log('Call7: No stored astrologer ID found');
+    }
   }, []);
 
-  // Filter locations dynamically based on user input
-  const handleSearch = (e) => {
-    const searchQuery = e.target.value.toLowerCase();
-    setLocation(e.target.value);
-    if (searchQuery.length > 0) {
-      setShowDropdown(true);
-      const filtered = locationOptions.filter((city) =>
-        city.toLowerCase().includes(searchQuery)
+  const handlePlaceChange = (e) => {
+    const value = e.target.value;
+    setPlaceOfBirth(value);
+    
+    if (value.trim()) {
+      // Filter cities based on input
+      const filtered = cityList.filter(city => 
+        city.toLowerCase().includes(value.toLowerCase())
       );
-      setFilteredOptions(filtered);
+      setFilteredCities(filtered);
+      setShowDropdown(true);
+      
+      // Check if the entered value matches a city exactly
+      const exactMatch = cityList.find(city => 
+        city.toLowerCase() === value.toLowerCase()
+      );
+      setIsValidCity(!!exactMatch);
     } else {
+      setFilteredCities([]);
       setShowDropdown(false);
+      setIsValidCity(false);
     }
   };
 
-  // Check for astrologer ID from query params or localStorage
-  useEffect(() => {
-    const astrologerId = searchParams.get('astrologerId');
-    if (astrologerId) {
-      console.log('Call7: Found astrologer ID in query params:', astrologerId);
-      localStorage.setItem('selectedAstrologerId', astrologerId);
-    } else {
-      // Check localStorage as fallback
-      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-      if (storedAstrologerId) {
-        console.log('Call7: Found stored astrologer ID:', storedAstrologerId);
-      } else {
-        console.log('Call7: No astrologer ID found');
-      }
-    }
-  }, [searchParams]);
-
-  // Select a city and close the dropdown
-  const handleSelectCity = (city) => {
-    setLocation(city);
+  const handleCitySelect = (city) => {
+    setPlaceOfBirth(city);
     setShowDropdown(false);
+    setIsValidCity(true);
   };
 
   const handleNext = () => {
-    if (location) {
+    if (placeOfBirth.trim() && isValidCity) {
+      // Store the place of birth in localStorage for the next step
+      localStorage.setItem('userPlaceOfBirth', placeOfBirth.trim());
       setIsExiting(true);
       setTimeout(() => {
-        // Check if we have a stored astrologer ID and pass it to call8
-        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-        if (storedAstrologerId) {
-          console.log('Call7: Passing astrologer ID to call8:', storedAstrologerId);
-          router.push(`/calls/call8?astrologerId=${storedAstrologerId}`);
-        } else {
-          router.push("/calls/call8");
-        }
+        router.push("/calls/call8");
       }, 100);
     }
   };
 
-  return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Premium Background Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-orange-100/50 to-white"></div>
-      
-      {/* Subtle Astrology Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-10 left-10 w-20 h-20 bg-orange-400 rounded-full blur-xl"></div>
-        <div className="absolute top-1/4 right-20 w-16 h-16 bg-orange-300 rounded-full blur-lg"></div>
-        <div className="absolute bottom-1/3 left-1/4 w-12 h-12 bg-orange-200 rounded-full blur-md"></div>
-      </div>
+  const handleBack = () => {
+    // Check if user knows birth time to determine where to go back
+    const knowBirthTime = localStorage.getItem('knowBirthTime');
+    if (knowBirthTime === "yes") {
+      router.push("/calls/call6");
+    } else {
+      router.push("/calls/call5");
+    }
+  };
 
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center p-9">
       <AnimatePresence mode="wait">
         {!isExiting && (
           <motion.div
@@ -108,7 +112,7 @@ export default function Call7() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="min-h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 relative z-10"
+            className="w-full max-w-[1141px] h-[600px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
           >
             <Head>
               <title>Guidance Form</title>
@@ -116,135 +120,149 @@ export default function Call7() {
               <link rel="icon" href="/favicon.ico" />
             </Head>
 
-            {/* Premium Card Container */}
+            {/* Title */}
+            <motion.h1
+              initial={{ y: -10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="font-medium font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[50px]"
+            >
+              Enter Your Details
+            </motion.h1>
+
+            {/* Progress Bar with 8 steps */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="relative mb-10"
+            >
+              <div className="h-1 bg-gray-300 w-full rounded-full">
+                <motion.div 
+                  className="h-1 bg-[#F7971D] rounded-full"
+                  initial={{ width: "0%" }}
+                  animate={{ width: "87.5%" }}
+                  transition={{ duration: 1, delay: 0.5 }}
+                ></motion.div>
+              </div>
+
+              <div className="flex justify-between absolute w-full top-0 transform -translate-y-1/2">
+                {[...Array(8)].map((_, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
+                    className={`w-3 h-3 rounded-full ${
+                      index < 7 ? "bg-[#F7971D]" : "bg-gray-300"
+                    }`}
+                  ></motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Main Question */}
+            <motion.h2 
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.7 }}
+              className="text-xl font-normal text-center text-[#373737] mb-10 mt-16"
+            >
+              What is your place of birth?
+            </motion.h2>
+
+            {/* Place Input Field with Dropdown */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl 
-                         px-6 sm:px-8 md:px-10 lg:px-12 
-                         py-8 sm:py-10 md:py-12
-                         bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-orange-200/50 
-                         flex flex-col relative overflow-hidden"
+              transition={{ duration: 0.6, delay: 0.8 }}
+              className="w-full max-w-md mx-auto mb-24 mt-8 relative"
             >
-              {/* Card Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-100/20 to-transparent rounded-2xl"></div>
+              <input
+                type="text"
+                value={placeOfBirth}
+                onChange={handlePlaceChange}
+                onFocus={() => {
+                  if (placeOfBirth.trim()) {
+                    setShowDropdown(true);
+                  }
+                }}
+                className={`w-full h-16 px-6 py-4 bg-white rounded-xl border-2 transition-all duration-300 shadow-sm hover:shadow-md text-lg font-medium placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-orange-100 ${
+                  isValidCity 
+                    ? "border-green-500" 
+                    : placeOfBirth.trim() 
+                    ? "border-red-500" 
+                    : "border-gray-200 focus:border-[#F7971D]"
+                }`}
+                placeholder="Enter your place of birth"
+              />
               
-            {/* Title */}
-              <motion.h1
-                initial={{ y: -10, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="font-bold text-center text-gray-800 
-                          mb-8 sm:mb-10 
-                          text-2xl sm:text-3xl md:text-4xl
-                          relative z-10"
-              >
-              Enter Your Details
-              </motion.h1>
-
-              {/* Enhanced Progress Bar */}
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="relative mb-10 flex items-center"
-              >
-                <div className="h-2 bg-gray-200 w-full rounded-full shadow-inner">
-                  <motion.div 
-                    className="h-2 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full shadow-sm"
-                    initial={{ width: "0%" }}
-                    animate={{ width: "71.4%" }}
-                    transition={{ duration: 1, delay: 0.5 }}
-                  ></motion.div>
-              </div>
-                <div className="flex justify-between absolute w-full top-1 transform -translate-y-1/2">
-                {[...Array(7)].map((_, index) => (
-                    <motion.div
-                    key={index}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-                      className={`w-3 h-3 rounded-full shadow-sm ${
-                        index < 5 ? "bg-orange-500" : "bg-gray-300"
-                    }`}
-                    ></motion.div>
-                ))}
-              </div>
-              </motion.div>
-
-              <form className="flex flex-col flex-grow items-center justify-center relative z-10">
-                <motion.h2 
-                  initial={{ y: 10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.7 }}
-                  className="text-2xl sm:text-3xl font-semibold text-center text-gray-700 mb-8"
-                >
-                Where were you Born?
-                </motion.h2>
-
-                {/* Enhanced Location Input */}
+              {/* City Dropdown */}
+              {showDropdown && filteredCities.length > 0 && (
                 <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.8 }}
-                  className="mb-10 flex justify-center relative w-full max-w-md"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute top-full left-0 w-full bg-white border-2 border-gray-200 rounded-xl shadow-xl mt-2 max-h-52 overflow-y-auto z-20"
                 >
-                <input
-                  type="text"
-                  value={location}
-                  onChange={handleSearch}
-                  placeholder="Type your city name..."
-                    className="w-full h-14 px-6 py-4 bg-white rounded-xl border-2 border-gray-200 
-                             focus:border-orange-400 focus:ring-4 focus:ring-orange-100 focus:outline-none 
-                             text-lg font-medium text-gray-700 placeholder-gray-400
-                             transition-all duration-300 shadow-sm hover:shadow-md"
-                />
-                  {/* Enhanced Dropdown Results */}
-                {showDropdown && filteredOptions.length > 0 && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="absolute top-full left-0 w-full bg-white border-2 border-orange-200 rounded-xl shadow-xl mt-2 max-h-52 overflow-y-auto z-20"
+                  {filteredCities.map((city, index) => (
+                    <div
+                      key={index}
+                      className="px-6 py-3 cursor-pointer hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 border-b border-gray-100 last:border-b-0"
+                      onClick={() => handleCitySelect(city)}
                     >
-                    {filteredOptions.map((city, index) => (
-                      <div
-                        key={index}
-                          className="px-6 py-3 cursor-pointer hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 border-b border-gray-100 last:border-b-0"
-                        onClick={() => handleSelectCity(city)}
-                      >
-                        {city}
-                      </div>
-                    ))}
-                    </motion.div>
-                )}
+                      {city}
+                    </div>
+                  ))}
                 </motion.div>
+              )}
 
-                {/* Enhanced Next Button */}
-                <motion.div
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.9 }}
-                  className="flex justify-center w-full"
+              {/* Validation Message */}
+              {placeOfBirth.trim() && !isValidCity && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-red-500 text-sm mt-2 text-center"
                 >
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  disabled={!location}
-                    className={`w-full sm:w-72 px-8 py-4 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg ${
-                    location
-                        ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:scale-105 active:scale-95"
-                      : "bg-gray-400 cursor-not-allowed"
-                  }`}
-                >
-                  Next
-                </button>
-                </motion.div>
-            </form>
+                  Please select a valid city from the dropdown
+                </motion.p>
+              )}
+
+              {/* Success Message - REMOVED */}
             </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+            {/* Navigation Buttons */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+              className="flex justify-center gap-4"
+            >
+              <button
+                type="button"
+                onClick={handleBack}
+                className="w-[120px] px-6 py-3 text-[#F7971D] font-semibold rounded-lg border-2 border-[#F7971D] transition-all duration-300 hover:bg-[#F7971D] hover:text-white"
+              >
+                Back
+              </button>
+              
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!placeOfBirth.trim() || !isValidCity}
+                className={`w-[203px] px-8 py-4 text-white font-semibold rounded-lg h-[72px] text-[25px] transition-all duration-300 ${
+                  placeOfBirth.trim() && isValidCity
+                    ? "bg-[#F7971D] hover:bg-[#E88A1A]"
+                    : "bg-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Next
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+
+

@@ -4,7 +4,9 @@ import { motion } from "framer-motion";
 
 const HoroscopeInsights: React.FC = () => {
   return (
-    <section className="py-10 sm:py-12 relative overflow-hidden">
+    <section className="min-h-[300px] py-20 sm:py-28 relative overflow-hidden">
+
+
       <div className="container mx-auto px-4 relative z-10 max-w-screen-xl">
         <h2
           className="mb-4 text-[#745802] text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center font-extrabold tracking-tight"

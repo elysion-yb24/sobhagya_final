@@ -278,6 +278,56 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     }
   };
 
+  const openChatRoom = (currentUserId: string, currentUserName: string) => {
+    // Deterministic room id so both sides join the same room regardless of who starts
+    const a = currentUserId;
+    const b = _id;
+    const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
+
+    // Prepare auto message with any captured details
+    const userDetails = getUserDetails();
+    const autoMessageLines = [
+      `👋 Hi! I'm ${currentUserName}.`,
+      userDetails?.phoneNumber ? `📱 Phone: ${userDetails.phoneNumber}` : null,
+      userDetails?.email ? `📧 Email: ${userDetails.email}` : null,
+      `🆔 User ID: ${currentUserId}`,
+      `🧑‍⚕️ Astrologer: ${name}`,
+      `⏰ Joined at: ${new Date().toLocaleString()}`,
+    ].filter(Boolean) as string[];
+    const autoMessage = autoMessageLines.join("\n");
+
+    try {
+      sessionStorage.setItem('chatAutoMessage', autoMessage);
+    } catch { }
+
+    const url = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(_id)}&astroName=${encodeURIComponent(name || '')}`;
+    window.open(url, '_blank');
+  };
+
+  const handleChatClick = () => {
+    // If authenticated, open chat directly
+    const isAuthValid = isAuthenticated();
+    if (isAuthValid) {
+      const profile = getUserDetails();
+      const currentUserId = profile?.id || profile?._id;
+      const currentUserName = profile?.displayName || profile?.name || 'User';
+      if (!currentUserId) {
+        // Fallback to login if user id missing
+        localStorage.setItem('initiateChatWithAstrologerId', _id);
+        window.location.href = '/login';
+        return;
+      }
+      openChatRoom(currentUserId, currentUserName);
+      return;
+    }
+
+    // Not authenticated: set intent and go through details + OTP flow
+    localStorage.setItem('selectedAstrologerId', _id);
+    localStorage.setItem('chatIntent', '1');
+    // Reuse the existing call details flow to capture user details
+    window.location.href = `/calls/call1?astrologerId=${_id}`;
+  };
+
   const handleVideoCall = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
 
@@ -334,7 +384,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
       // Store navigation source and astrologer ID for proper back navigation
       localStorage.setItem('lastAstrologerId', partner._id);
       localStorage.setItem('callSource', 'astrologerCard');
-      
+
       // Redirect to /video-call with token and room
       const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(partner.name)}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
       router.push(videoCallUrl);
@@ -349,7 +399,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
   const handleCardClick = () => {
     // Check if user is authenticated
     const isAuthValid = isAuthenticated();
-    
+
     if (isAuthValid) {
       // If authenticated, go directly to astrologer profile
       router.push(`/astrologers/${_id}`);
@@ -359,120 +409,165 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     }
   };
 
-    return (
+  return (
     <>
       <div
         onClick={handleCardClick}
-        className="group relative bg-white rounded border border-orange-300 p-1.5 sm:p-2 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.01] flex flex-col w-full max-w-[390px] mx-auto h-full"
+        className="relative bg-white rounded-md border p-3 cursor-pointer transition-all duration-300 hover:shadow-lg flex flex-col w-full max-w-[520px] mx-auto"
         style={{
+          borderColor: '#F7971E',
           boxShadow: '0 2px 8px 0 rgba(247,151,30,0.07)',
         }}
       >
-        <div className="flex gap-2 sm:gap-2 items-center mb-1 sm:mb-1.5 flex-1">
-          <div className="relative flex flex-col items-center">
+        {/* Main Content Area */}
+        <div className="flex gap-4 mb-2.5">
+          {/* Left Column - Avatar, Online Status, Rating, Orders */}
+          <div className="flex flex-col items-center">
+            {/* Avatar */}
             <img
-              src={partner.avatar || partner.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`}
+              src={partner.avatar || partner.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F7971E&color=fff&size=70`}
               alt={name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2"
-              style={{ borderColor: partner.status === 'online' ? '#56AE50' : '#ff0000' }}
+              className="w-[70px] h-[70px] rounded-full object-cover border-2 mb-1.5"
+              style={{ 
+                borderColor: partner.status === 'online' ? '#10B981' : '#F7971E',
+                borderWidth: '2px'
+              }}
               onError={(e) => {
-                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f97316&color=fff&size=64`;
+                (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F7971E&color=fff&size=70`;
               }}
             />
+            
+            {/* Online Status */}
             {partner.status === 'online' && (
-              <span className="text-xs text-green-600 font-medium mt-0.5 sm:mt-1">Online</span>
+              <span className="text-xs text-green-600 font-medium mb-1">Online</span>
             )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 mb-0.5">
-              <span className="text-xl sm:text-2xl font-extrabold text-gray-800 truncate">{name}</span>
-              <span className="text-orange-400" title="Verified">
-                <img src="/orange_tick.png" alt="Orange Tick" className="w-3 h-3 sm:w-4 sm:h-4" />
-              </span>
+            
+            {/* Rating Stars */}
+            <div className="flex items-center gap-0.5 mb-0.5">
+              {[...Array(5)].map((_, i) => {
+                const value = typeof rating === 'number' ? rating : rating?.avg || 4.5;
+                return (
+                  <span
+                    key={i}
+                    style={{ 
+                      fontSize: '13px',
+                      color: i < Math.floor(value) ? '#F7971E' : '#D1D5DB'
+                    }}
+                  >
+                    ★
+                  </span>
+                );
+              })}
             </div>
-            <div className="text-gray-700 text-base font-medium leading-tight truncate mb-0.5">
-              {partner.talksAbout && partner.talksAbout.length > 0 
+            
+            {/* Orders Count */}
+            <div className="text-center">
+              <span className="text-xs font-semibold block italic" style={{ color: '#636161' }}>{calls || callsCount || '64987'}</span>
+              <span className="text-[10px] italic" style={{ color: '#636161' }}>orders</span>
+            </div>
+          </div>
+
+          {/* Right Column - Details */}
+          <div className="flex-1 min-w-0">
+            {/* Name with Verified Badge */}
+            <div className="flex items-center gap-1.5 mb-1">
+              <h3 className="text-base font-semibold text-gray-900 truncate" style={{
+                fontFamily: "Poppins"
+              }}>
+                {name.startsWith('Pt.') ? name : name}
+              </h3>
+              <img src="/orange_tick.png" alt="Verified" className="w-4 h-4 flex-shrink-0" />
+            </div>
+            
+            {/* Specializations */}
+            <div className="text-gray-700 text-xs mb-1">
+              {partner.talksAbout && partner.talksAbout.length > 0
                 ? partner.talksAbout.slice(0, 3).join(', ')
-                : specializations?.join(', ')
+                : specializations?.join(', ') || 'Kp, Vedic, Vastu'
               }
             </div>
-            <div className="text-gray-500 text-base truncate mb-0.5">
-             <span className="font-semibold">{(languages || partner.language)?.join(', ')}</span>
+            
+            {/* Languages */}
+            <div className="text-gray-600 text-xs mb-1">
+              {(languages || partner.language)?.join(', ') || 'Hindi, Gujarati'}
             </div>
-            <div className="text-gray-500 text-base mb-0.5">
-              Exp:- <span className="font-semibold">{age || experience} years</span>
+            
+            {/* Experience */}
+            <div className="text-gray-600 text-xs mb-1.5">
+              Exp- {age || experience || '8'} years
             </div>
-
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-lg font-extrabold text-gray-900">₹ {rpm || 15}/<span className="text-base font-medium">min.</span></span>
-              {/* Show video call indicator */}
-              {(astrologer.isVideoCallAllowed) && (
-                <div className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-1 rounded-full text-xs">
-                  <Video className="w-3 h-3" />
-                  <span className="font-medium">Video</span>
-                </div>
-              )}
+            
+            {/* Price */}
+            <div className="text-gray-900 font-semibold text-base">
+              ₹ {rpm || 79}/min.
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1 mb-1">
-          <span className="flex items-center text-orange-400 text-base ml-1 sm:ml-2">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const value = typeof rating === 'number' ? rating : rating?.avg || 0;
-              const isHalf = value - i >= 0.5 && value - i < 1;
-              return (
-                <span key={i} className="relative">
-                  <svg width="10" height="10" className="sm:w-3 sm:h-3" fill={i < Math.floor(value) ? '#F7971D' : '#E5E7EB'} viewBox="0 0 20 20">
-                    <polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 " />
-                  </svg>
-                  {isHalf && (
-                    <svg className="absolute left-0 top-0" width="10" height="10" viewBox="0 0 20 20">
-                      <defs>
-                        <linearGradient id={`half-star-${i}`}> <stop offset="50%" stopColor="#F7971D" /><stop offset="50%" stopColor="#E5E7EB" /></linearGradient>
-                      </defs>
-                      <polygon points="9.9,1.1 7.6,6.6 1.6,7.3 6.1,11.2 4.8,17.1 9.9,14.1 15,17.1 13.7,11.2 18.2,7.3 12.2,6.6 " fill={`url(#half-star-${i})`} />
-                    </svg>
-                  )}
-                </span>
-              );
-            })}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 mb-1">
-          <span className="flex flex-col ml-1 sm:ml-2 items-center justify-center mx-auto">
-            <span className="text-gray-400 italic text-base gap-2">{calls || callsCount}&nbsp;orders</span>
-            
-          </span>
-        </div>
-        <div className="flex gap-1.5 sm:gap-2 md:gap-3 mt-auto justify-end w-full">
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
           <button
-            className={`${compactButtons ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'} flex items-center justify-center gap-1 border-2 border-[#F7971D] text-[#F7971D] font-semibold rounded-lg bg-white hover:bg-orange-50 transition-all duration-200 text-xs sm:text-sm w-[80px] sm:w-[100px]`}
-            onClick={e => { e.stopPropagation(); /* handleChatClick() */ }}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChatClick();
+            }}
+            className="flex-1 py-1.5 px-3 border rounded-full font-semibold transition-colors flex items-center justify-center gap-1 text-xs"
+            style={{
+              borderColor: '#F7971E',
+              color: '#F7971E'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#FFF5F0';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
-            {/* <MessageCircle className={compactButtons ? "w-4 h-4" : "w-5 h-5"} /> */}
-            <img src="/message.png" alt="Chat" className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Chat</span>
-            <span className="sm:hidden">Chat</span>
+            <img src="/message.png" alt="Chat" className="w-3.5 h-3.5" />
+            Chat
           </button>
-          {/* Show video button only if astrologer has isVideoCallAllowed as true */}
-          {(showVideoButton || astrologer.isVideoCallAllowed) && (
+          
+          {/* Video Call Button - In the middle if allowed */}
+          {astrologer?.isVideoCallAllowed && (
             <button
-              className={`${compactButtons ? 'px-2 py-1.5' : 'px-3 sm:px-4 py-1.5 sm:py-2'} flex items-center justify-center gap-1 sm:gap-2 bg-[#F7971D] text-white font-semibold rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs sm:text-base w-[80px] sm:w-auto`}
-              onClick={handleVideoCall}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleVideoCall(e);
+              }}
+              className="flex-1 py-1.5 px-3 text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-1 text-xs"
+              style={{
+                backgroundColor: '#F7971E'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#E6871B';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F7971E';
+              }}
             >
-              <Video className={compactButtons ? "w-3 h-3 sm:w-4 sm:h-4" : "w-4 h-4 sm:w-5 sm:h-5"} fill="#fff" />
-              <span className="hidden sm:inline">Video</span>
-              <span className="sm:hidden">Video</span>
+              <Video size={14} color="white" />
+              Video
             </button>
           )}
+          
           <button
-            className={`${compactButtons ? 'px-2 py-1' : 'px-2 sm:px-3 py-1 sm:py-1.5'} flex items-center justify-center gap-1 bg-[#F7971D] text-white font-medium rounded-lg shadow-sm hover:bg-orange-600 transition-all duration-200 text-xs sm:text-sm w-[80px] sm:w-[100px]`}
-            onClick={handleCallButtonClick}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCallButtonClick(e);
+            }}
+            className="flex-1 py-1.5 px-3 text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-1 text-xs"
+            style={{
+              backgroundColor: '#F7971E'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E6871B';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F7971E';
+            }}
           >
-            {/* <Phone className={compactButtons ? "w-4 h-4" : "w-5 h-5"} /> */}
-            <img src="/Vector.png" alt="Call" className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Call</span>
-            <span className="sm:hidden">Call</span>
+            <img src="/Vector.png" alt="Call" className="w-3.5 h-3.5 brightness-0 invert" />
+            Call
           </button>
         </div>
       </div>

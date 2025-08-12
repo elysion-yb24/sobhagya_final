@@ -222,9 +222,15 @@ export default function AudioCallPage() {
 
   const handleDisconnect = () => {
     console.log('🎵 Audio call page: handleDisconnect called');
+    console.log('🎵 Current state:', {
+      hasSocket: !!socketRef.current,
+      roomName,
+      socketConnected: socketRef.current?.connected,
+      socketId: socketRef.current?.id
+    });
     
     // Emit end call event via socket
-    if (socketRef.current && roomName) {
+    if (socketRef.current && roomName && roomName.trim() !== '') {
       const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
       const userId = userDetails?.id || userDetails?._id;
       
@@ -236,9 +242,21 @@ export default function AudioCallPage() {
           userId,
           reason: 'USER_ENDED_CALL'
         });
-      } catch (error) {
+        console.log('🎵 End call event emitted successfully');
+      } catch (error: any) {
         console.warn('🎵 Failed to emit end_call event:', error);
+        console.warn('🎵 Error details:', {
+          message: error?.message || 'Unknown error',
+          stack: error?.stack || 'No stack trace'
+        });
       }
+    } else {
+      console.warn('🎵 No socket or roomName available for end call event');
+      console.warn('🎵 Details:', {
+        hasSocket: !!socketRef.current,
+        roomName: roomName || 'undefined',
+        roomNameTrimmed: roomName?.trim() || 'undefined'
+      });
     }
     
     // Add a small delay to ensure socket events are sent

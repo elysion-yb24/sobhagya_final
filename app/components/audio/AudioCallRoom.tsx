@@ -22,7 +22,10 @@ import {
   MicOff,
   PhoneOff,
   Volume2,
-  VolumeX
+  VolumeX,
+  Gift,
+  ChevronDown,
+  Wifi
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { socketManager } from "../../utils/socket";
@@ -52,9 +55,7 @@ interface CallStats {
   isConnected: boolean;
 }
 
-// Audio Display Component
-
-// Audio Display Component
+// Audio Display Component - Completely redesigned for mobile
 function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; partner?: { _id: string; name: string } }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
@@ -64,14 +65,13 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
   const displayName = astrologerName || partner?.name || 'Astrologer';
   const avatarInitial = displayName.charAt(0).toUpperCase();
 
-  // Debug logging
-  console.log('🎵 AudioDisplay props:', { astrologerName, partner, displayName, avatarInitial });
+  // Check if astrologer has joined
+  useEffect(() => {
+    const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
+    setIsConnecting(remoteParticipants.length === 0);
+  }, [participants, localParticipant]);
 
-  // Add a fallback avatar with a default icon
   const renderAvatar = () => {
-    console.log('🎵 Rendering avatar for:', displayName, 'initial:', avatarInitial);
-    
-    // Try to get astrologer image from localStorage or use a default
     const astrologerImage = localStorage.getItem(`astrologer_image_${partner?._id}`) || null;
     
     if (astrologerImage) {
@@ -79,9 +79,8 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
         <img 
           src={astrologerImage} 
           alt={displayName}
-          className="w-full h-full rounded-full object-cover border-2 sm:border-4 border-white/20"
+          className="w-full h-full rounded-full object-cover"
           onError={(e) => {
-            // If image fails to load, fall back to initial
             e.currentTarget.style.display = 'none';
             e.currentTarget.nextElementSibling?.classList.remove('hidden');
           }}
@@ -89,10 +88,9 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
       );
     }
     
-    // Fallback to initial with better styling
     if (displayName && displayName !== 'Astrologer') {
       return (
-        <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center border-2 sm:border-4 border-white/20 shadow-2xl">
+        <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center shadow-xl">
           <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
             {avatarInitial}
           </span>
@@ -100,8 +98,8 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
       );
     } else {
       return (
-        <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-2 sm:border-4 border-white/20 shadow-2xl">
-          <svg className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12 lg:w-16 lg:h-16 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+        <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-xl">
+          <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
           </svg>
         </div>
@@ -109,84 +107,104 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
     }
   };
 
-  // Check if astrologer has joined
-  useEffect(() => {
-    const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
-    setIsConnecting(remoteParticipants.length === 0);
-  }, [participants, localParticipant]);
-
   return (
-    <div className="flex-1 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 relative overflow-hidden">
-      {/* Animated background elements - reduced for mobile */}
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative overflow-hidden min-h-screen">
+      {/* Enhanced background with better mobile optimization */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 -right-20 sm:-top-40 sm:-right-40 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-        <div className="absolute -bottom-20 -left-20 sm:-bottom-40 sm:-left-40 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-20 left-20 sm:top-40 sm:left-40 w-40 h-40 sm:w-60 sm:h-60 md:w-80 md:h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style={{ animationDelay: '4s' }}></div>
-        {/* Additional background elements to fill the bottom area */}
-        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-purple-900/50 to-transparent"></div>
-        <div className="absolute bottom-0 left-1/4 w-32 h-32 bg-purple-600 rounded-full mix-blend-multiply filter blur-xl opacity-10"></div>
-        <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-indigo-600 rounded-full mix-blend-multiply filter blur-xl opacity-10"></div>
+        <div className="absolute top-0 left-0 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+        <div className="absolute top-0 right-0 w-72 h-72 bg-yellow-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+        
+        {/* Subtle gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/20"></div>
       </div>
       
-      <div className="text-center text-white w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg relative z-10 px-2 sm:px-0">
+      <div className="text-center text-white w-full max-w-sm relative z-10 flex-1 flex flex-col justify-center">
         {isConnecting ? (
-          // Connecting State
-          <div className="space-y-4 sm:space-y-6 md:space-y-8">
+          // Connecting State - Better mobile design
+          <div className="space-y-6">
             <div className="relative">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-gradient-to-br from-white/20 to-white/5 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 md:mb-8 border border-white/30 backdrop-blur-sm shadow-2xl">
-                {renderAvatar()}
-              </div>
-              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 md:-top-4 md:-right-4 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 bg-white rounded-full animate-pulse"></div>
+              {/* Main avatar with improved sizing */}
+              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 mx-auto relative">
+                <div className="w-full h-full rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/20 shadow-2xl flex items-center justify-center">
+                  {renderAvatar()}
+                </div>
+                
+                {/* Pulsing connection indicator */}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                </div>
+                
+                {/* Animated rings */}
+                <div className="absolute inset-0 rounded-full border-2 border-yellow-400/30 animate-ping"></div>
+                <div className="absolute inset-2 rounded-full border-2 border-yellow-400/20 animate-ping animation-delay-1000"></div>
               </div>
             </div>
             
-            <div className="space-y-3 sm:space-y-4 md:space-y-6">
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+            <div className="space-y-4">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                 Connecting...
               </h2>
-              <p className="text-gray-300 text-base sm:text-lg md:text-xl">Waiting for {displayName} to join</p>
+              <p className="text-gray-300 text-lg">Waiting for {displayName} to join</p>
               
-              <div className="flex items-center justify-center space-x-3">
+              {/* Loading animation */}
+              <div className="flex items-center justify-center space-x-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce animation-delay-200"></div>
+                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce animation-delay-400"></div>
+              </div>
+              
+              {/* Connection tip */}
+              <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+                <p className="text-sm text-gray-300 flex items-center justify-center gap-2">
+                  <Wifi className="w-4 h-4" />
+                  Establishing secure connection...
+                </p>
               </div>
             </div>
           </div>
         ) : (
-          // Connected State
-          <div className="space-y-4 sm:space-y-6 md:space-y-8">
+          // Connected State - Enhanced design
+          <div className="space-y-6">
             <div className="relative">
-              <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-gradient-to-br from-white/20 to-white/5 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 md:mb-8 border border-green-400/50 backdrop-blur-sm shadow-2xl">
-                {renderAvatar()}
-              </div>
-              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 md:-top-4 md:-right-4 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 bg-white rounded-full"></div>
+              {/* Main avatar with success state */}
+              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 mx-auto relative">
+                <div className="w-full h-full rounded-full bg-white/10 backdrop-blur-sm border-2 border-green-400/50 shadow-2xl flex items-center justify-center">
+                  {renderAvatar()}
+                </div>
+                
+                {/* Success indicator */}
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                  <div className="w-3 h-3 bg-white rounded-full"></div>
+                </div>
               </div>
             </div>
             
-            <div className="space-y-3 sm:space-y-4 md:space-y-6">
-              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+            <div className="space-y-4">
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
                 Connected!
               </h2>
-              <p className="text-gray-300 text-base sm:text-lg md:text-xl">Audio call with {displayName}</p>
+              <p className="text-gray-300 text-lg">Audio call with {displayName}</p>
               
-              <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 backdrop-blur-md border border-white/20 shadow-xl">
-                <h3 className="font-bold mb-3 sm:mb-4 md:mb-6 text-base sm:text-lg md:text-xl text-white">Call Status</h3>
-                <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                  <div className="flex items-center justify-between p-2 sm:p-3 bg-white/5 rounded-lg">
-                    <span className="text-gray-300 font-medium text-xs sm:text-sm md:text-base">You</span>
-                    <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-lg"></div>
-                      <span className="text-xs sm:text-sm text-green-400 font-medium">Connected</span>
+              {/* Enhanced call status */}
+              <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-5 backdrop-blur-md border border-white/20 shadow-xl">
+                <h3 className="font-bold mb-3 text-white flex items-center justify-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  Live Call
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-white/10 rounded-xl">
+                    <span className="text-gray-300 font-medium">You</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="text-green-400 font-medium text-sm">Connected</span>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between p-2 sm:p-3 bg-white/5 rounded-lg">
-                    <span className="text-gray-300 font-medium text-xs sm:text-sm md:text-base truncate max-w-20 sm:max-w-none">{displayName}</span>
-                    <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full shadow-lg"></div>
-                      <span className="text-xs sm:text-sm text-green-400 font-medium">Connected</span>
+                  <div className="flex items-center justify-between p-3 bg-white/10 rounded-xl">
+                    <span className="text-gray-300 font-medium truncate">{displayName}</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                      <span className="text-green-400 font-medium text-sm">Connected</span>
                     </div>
                   </div>
                 </div>
@@ -199,7 +217,7 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
   );
 }
 
-// Custom Control Bar - Matching Video Call Room Design
+// Enhanced Control Bar - Better mobile UX
 const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift: () => void }) => {
   const { localParticipant } = useLocalParticipant();
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -218,84 +236,94 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
   }, [localParticipant, isAudioEnabled]);
 
   return (
-    <div className="absolute bottom-3 sm:bottom-4 md:bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 bg-opacity-90 rounded-full px-3 sm:px-4 md:px-6 py-2 sm:py-3 flex items-center gap-1 sm:gap-2 md:gap-4 z-[60]">
-      <button
-        onClick={toggleAudio}
-        className={`p-2 sm:p-3 rounded-full transition-all ${
-          isAudioEnabled 
-            ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-            : 'bg-red-500 hover:bg-red-600 text-white'
-        }`}
-        title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
-      >
-        {isAudioEnabled ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-      </button>
+    <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="bg-black/80 backdrop-blur-xl rounded-full px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3 sm:gap-4 border border-white/20 shadow-2xl">
+        {/* Microphone Toggle */}
+        <button
+          onClick={toggleAudio}
+          className={`p-4 rounded-full transition-all duration-200 ${
+            isAudioEnabled 
+              ? 'bg-gray-700/80 hover:bg-gray-600 text-white shadow-lg' 
+              : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25'
+          }`}
+          title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
+        >
+          {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
+        </button>
 
-      <button
-        onClick={onGift}
-        className="p-2 sm:p-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white transition-all"
-        title="Send Gift"
-      >
-        <span className="text-sm sm:text-base">🎁</span>
-      </button>
+        {/* Gift Button */}
+        <button
+          onClick={onGift}
+          className="p-4 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white transition-all duration-200 shadow-lg shadow-yellow-500/25"
+          title="Send Gift"
+        >
+          <Gift className="w-6 h-6" />
+        </button>
 
-      <button
-        onClick={onEndCall}
-        className="p-2 sm:p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all"
-        title="End call"
-      >
-        <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
+        {/* End Call Button */}
+        <button
+          onClick={onEndCall}
+          className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-lg shadow-red-500/25"
+          title="End call"
+        >
+          <PhoneOff className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   );
 };
 
-// Settings Panel Component
-function SettingsPanel() {
-  const [isOpen, setIsOpen] = useState(false);
-  const { localParticipant } = useLocalParticipant();
-
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="absolute top-4 right-4 z-50 p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors"
-      >
-        <Settings size={20} className="text-white" />
-      </button>
-    );
-  }
+// Enhanced Settings Panel - Better mobile interface
+function SettingsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  if (!isOpen) return null;
 
   return (
-    <div className="absolute top-0 right-0 z-50 bg-black bg-opacity-90 text-white p-6 rounded-bl-lg min-w-80">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Audio Settings</h3>
-        <button
-          onClick={() => setIsOpen(false)}
-          className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
-        >
-          <X size={16} />
-        </button>
-      </div>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onClose}></div>
       
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-2">Microphone</label>
-          <TrackToggle
-            source={Track.Source.Microphone}
-            className="w-full p-2 bg-white bg-opacity-20 rounded"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium mb-2">Audio Output</label>
-          <select className="w-full p-2 bg-white bg-opacity-20 rounded text-white">
-            <option value="default">Default Speaker</option>
-            <option value="headphones">Headphones</option>
-          </select>
+      {/* Panel */}
+      <div className="fixed top-4 right-4 z-50 bg-black/90 backdrop-blur-xl text-white rounded-2xl border border-white/20 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold">Audio Settings</h3>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-3">Microphone</label>
+              <TrackToggle
+                source={Track.Source.Microphone}
+                className="w-full p-3 bg-white/20 rounded-xl hover:bg-white/25 transition-colors"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-3">Audio Output</label>
+              <select className="w-full p-3 bg-white/20 rounded-xl text-white border-0 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                <option value="default">Default Speaker</option>
+                <option value="headphones">Headphones</option>
+              </select>
+            </div>
+            
+            <div className="pt-4 border-t border-white/20">
+              <button 
+                onClick={onClose}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-xl transition-all duration-200"
+              >
+                Done
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -323,24 +351,59 @@ export default function AudioCallRoom({
   const [giftRequest, setGiftRequest] = useState<any>(null);
   const [pendingGift, setPendingGift] = useState<any | null>(null);
   const [showGiftConfirm, setShowGiftConfirm] = useState(false);
+  const [giftSuccessMessage, setGiftSuccessMessage] = useState<string | null>(null);
 
-  // Call Header Component - Matching Video Call Room Design
+  // Enhanced Call Header Component
   const CallHeader = React.memo(() => {
     const [callDuration, setCallDuration] = useState(0);
     const [participantCount, setParticipantCount] = useState(0);
+    const [isTimerRunning, setIsTimerRunning] = useState(false);
     const participants = useParticipants();
+    const { localParticipant } = useLocalParticipant();
 
     useEffect(() => {
       setParticipantCount(participants.length);
-    }, [participants]);
+      
+      // Check if both user and broadcaster are in the room
+      const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
+      const hasBroadcaster = remoteParticipants.length > 0;
+      const hasUser = localParticipant && localParticipant.identity;
+      
+      // Start timer only when both user and broadcaster are present
+      if (hasBroadcaster && hasUser && !isTimerRunning) {
+        setIsTimerRunning(true);
+        console.log('🎵 Timer started - both user and broadcaster joined');
+        console.log('🎵 Participants:', {
+          user: localParticipant?.identity,
+          broadcaster: remoteParticipants.map(p => p.identity),
+          total: participants.length
+        });
+      } else if ((!hasBroadcaster || !hasUser) && isTimerRunning) {
+        setIsTimerRunning(false);
+        console.log('🎵 Timer stopped - missing participant');
+        console.log('🎵 Current participants:', {
+          user: localParticipant?.identity,
+          broadcaster: remoteParticipants.map(p => p.identity),
+          total: participants.length
+        });
+      }
+    }, [participants, localParticipant, isTimerRunning]);
 
     useEffect(() => {
-      const interval = setInterval(() => {
-        setCallDuration(prev => prev + 1);
-      }, 1000);
+      let interval: NodeJS.Timeout | null = null;
+      
+      if (isTimerRunning) {
+        interval = setInterval(() => {
+          setCallDuration(prev => prev + 1);
+        }, 1000);
+      }
 
-      return () => clearInterval(interval);
-    }, []);
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    }, [isTimerRunning]);
 
     const formatDuration = (seconds: number) => {
       const mins = Math.floor(seconds / 60);
@@ -349,46 +412,46 @@ export default function AudioCallRoom({
     };
 
     return (
-      <div className="absolute top-1 sm:top-2 md:top-4 left-1 sm:left-2 md:left-4 right-1 sm:right-2 md:right-4 flex justify-between items-center z-[60] pointer-events-none">
-        <div className="bg-black bg-opacity-70 rounded-lg px-2 sm:px-3 md:px-4 py-1 sm:py-2 text-white pointer-events-auto">
-          <div className="flex items-center gap-1 sm:gap-2 md:gap-4 text-xs sm:text-sm">
-            <div className="flex items-center gap-1 sm:gap-2">
-              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="font-medium truncate max-w-20 sm:max-w-none">
-                {astrologerName ? `Call with ${astrologerName}` : 'Audio Call'}
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{formatDuration(callDuration)}</span>
-            </div>
+      <div className="fixed top-0 left-0 right-0 z-40 p-2 sm:p-4">
+        <div className="flex justify-between items-center">
+          {/* Left side - Call info */}
+          <div className="bg-black/80 backdrop-blur-xl rounded-2xl px-4 py-3 text-white border border-white/20 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="font-semibold text-sm">
+                  {astrologerName ? `${astrologerName}` : 'Audio Call'}
+                </span>
+              </div>
+              
+                             <div className="flex items-center gap-2 text-sm text-gray-300">
+                 <Clock className={`w-4 h-4 ${isTimerRunning ? 'text-green-400' : 'text-gray-400'}`} />
+                 <span className={isTimerRunning ? 'text-white' : 'text-gray-400'}>
+                   {formatDuration(callDuration)}
+                 </span>
+                 {!isTimerRunning && (
+                   <span className="text-xs text-gray-500">(paused)</span>
+                 )}
+               </div>
 
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>{participantCount} participants</span>
+              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-300">
+                <Users className="w-4 h-4" />
+                <span>{participantCount}</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex gap-1 sm:gap-2 pointer-events-auto">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="bg-black bg-opacity-70 rounded-lg p-1.5 sm:p-2 text-white hover:bg-opacity-90 transition-all"
-            title="Settings"
-            disabled={isDisconnectingRef.current}
-          >
-            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          
-          <button
-            onClick={handleLeaveCall}
-            className="bg-red-500 bg-opacity-80 rounded-lg p-1.5 sm:p-2 text-white hover:bg-opacity-100 transition-all disabled:opacity-50"
-            title="Leave call"
-            disabled={isDisconnectingRef.current}
-          >
-            <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
+          {/* Right side - Controls */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 text-white hover:bg-black/90 transition-all border border-white/20 shadow-xl"
+              title="Settings"
+              disabled={isDisconnectingRef.current}
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -453,7 +516,14 @@ export default function AudioCallRoom({
         }
 
         if (gifts.length > 0) {
-          setGifts(gifts);
+          // Process gifts to ensure proper icon display
+          const processedGifts = gifts.map((gift: any) => ({
+            ...gift,
+            icon: gift.icon || '🎁',
+            name: gift.name || 'Gift',
+            price: gift.price || 10
+          }));
+          setGifts(processedGifts);
         } else {
           console.error('🎁 All gift API endpoints failed. Last error:', lastError);
           // Set some default gifts as fallback
@@ -506,6 +576,13 @@ export default function AudioCallRoom({
 
   const handleLeaveCall = useCallback(async () => {
     console.log('🎵 Leaving audio call - START');
+    console.log('🎵 Current state:', { 
+      roomName, 
+      roomState: room?.state, 
+      socketConnected: socketManager.isSocketConnected(),
+      shouldConnect,
+      isDisconnecting: isDisconnectingRef.current 
+    });
     
     // Prevent multiple calls to handleLeaveCall
     if (isDisconnectingRef.current) {
@@ -519,86 +596,143 @@ export default function AudioCallRoom({
     console.log('🎵 Set shouldConnect to false');
     
     try {
-      // First emit end_call event via socket if available
-      if (roomName) {
+      // Step 1: Emit end_call event via socket if available
+      if (roomName && roomName.trim() !== '') {
         try {
-          console.log('🎵 Emitting end_call event...');
+          console.log('🎵 Step 1: Emitting end_call event for room:', roomName);
+          
           // Check if socket is connected before trying to emit
           if (socketManager.isSocketConnected()) {
+            console.log('🎵 Socket is connected, using endCall method');
             await socketManager.endCall(roomName, 'USER_ENDED_CALL');
+            console.log('🎵 endCall method completed successfully');
           } else {
-            // If socket is not connected, just emit the event directly
+            console.log('🎵 Socket not connected, using emitCallEnd method');
             socketManager.emitCallEnd(roomName, 'USER_ENDED_CALL');
+            console.log('🎵 emitCallEnd method completed');
           }
           console.log('🎵 End call event emitted successfully');
-        } catch (error) {
-          console.error('❌ Error ending call via socket:', error);
-          // Fallback to emitCallEnd if endCall fails
-          try {
-            socketManager.emitCallEnd(roomName, 'USER_ENDED_CALL');
-          } catch (fallbackError) {
-            console.warn('🎵 Fallback emitCallEnd also failed:', fallbackError);
+                  } catch (error: any) {
+            console.error('❌ Error ending call via socket:', error);
+            console.error('❌ Error details:', {
+              message: error?.message || 'Unknown error',
+              stack: error?.stack || 'No stack trace',
+              roomName,
+              socketConnected: socketManager.isSocketConnected()
+            });
+            
+            // Fallback to emitCallEnd if endCall fails
+            try {
+              console.log('🎵 Trying fallback emitCallEnd...');
+              socketManager.emitCallEnd(roomName, 'USER_ENDED_CALL');
+              console.log('🎵 Fallback emitCallEnd completed');
+            } catch (fallbackError: any) {
+              console.warn('🎵 Fallback emitCallEnd also failed:', fallbackError);
+              console.warn('🎵 Fallback error details:', {
+                message: fallbackError?.message || 'Unknown fallback error',
+                stack: fallbackError?.stack || 'No stack trace'
+              });
+            }
           }
-        }
+      } else {
+        console.warn('🎵 No roomName available for end call event');
       }
       
-      // Add a small delay to ensure socket events are sent
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Step 2: Add a small delay to ensure socket events are sent
+      console.log('🎵 Step 2: Waiting for socket events to be sent...');
+      await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Force disconnect socket manager
+      // Step 3: Force disconnect socket manager
       try {
-        console.log('🎵 Disconnecting socket manager...');
+        console.log('🎵 Step 3: Disconnecting socket manager...');
         socketManager.disconnect();
-        console.log('🎵 Socket manager disconnected');
-      } catch (socketError) {
-        console.warn('🎵 Socket manager disconnect error:', socketError);
-      }
+        console.log('🎵 Socket manager disconnected successfully');
+              } catch (socketError: any) {
+          console.warn('🎵 Socket manager disconnect error:', socketError);
+          console.warn('🎵 Socket error details:', {
+            message: socketError?.message || 'Unknown socket error',
+            stack: socketError?.stack || 'No stack trace'
+          });
+        }
       
-      // Then disconnect from LiveKit room with error handling
+      // Step 4: Disconnect from LiveKit room with error handling
       if (room) {
         try {
-          console.log('🎵 Disconnecting LiveKit room...');
+          console.log('🎵 Step 4: Disconnecting LiveKit room...');
+          console.log('🎵 Room state before disconnect:', room.state);
+          
           // Use a more graceful disconnect approach
           if (room.state === 'connected') {
+            console.log('🎵 Room is connected, performing graceful disconnect...');
             await room.disconnect();
+            console.log('🎵 Room graceful disconnect completed');
           } else {
+            console.log('🎵 Room is not connected, cleaning up listeners...');
             // If room is not connected, just clean up
             room.removeAllListeners();
+            console.log('🎵 Room listeners cleaned up');
           }
           console.log('🎵 Room disconnected successfully');
-        } catch (roomError) {
-          console.warn('🎵 Room disconnect error (usually harmless):', roomError);
+        } catch (roomError: any) {
+          console.warn('🎵 Room disconnect error:', roomError);
+          console.warn('🎵 Room error details:', {
+            message: roomError?.message || 'Unknown room error',
+            stack: roomError?.stack || 'No stack trace',
+            roomState: room.state
+          });
+          
           // Even if disconnect fails, clean up listeners
           try {
+            console.log('🎵 Cleaning up room listeners after error...');
             room.removeAllListeners();
-          } catch (listenerError) {
+            console.log('🎵 Room listeners cleaned up after error');
+          } catch (listenerError: any) {
             console.warn('🎵 Error removing room listeners:', listenerError);
           }
         }
+      } else {
+        console.log('🎵 No room instance to disconnect');
       }
       
-      // Force cleanup by setting room to null
+      // Step 5: Force cleanup by setting room to null
+      console.log('🎵 Step 5: Setting room to null...');
       setRoom(null);
       console.log('🎵 Room state set to null');
       
-      // Add a small delay before calling onDisconnect to ensure cleanup is complete
+      // Step 6: Add a small delay before calling onDisconnect to ensure cleanup is complete
+      console.log('🎵 Step 6: Waiting before calling onDisconnect...');
       setTimeout(() => {
         // Finally call the onDisconnect callback
         if (onDisconnect) {
           console.log('🎵 Calling onDisconnect callback');
           try {
             onDisconnect();
-          } catch (callbackError) {
+            console.log('🎵 onDisconnect callback completed successfully');
+          } catch (callbackError: any) {
             console.error('❌ Error in onDisconnect callback:', callbackError);
+            console.error('❌ Callback error details:', {
+              message: callbackError?.message || 'Unknown callback error',
+              stack: callbackError?.stack || 'No stack trace'
+            });
           }
+        } else {
+          console.log('🎵 No onDisconnect callback provided');
         }
-      }, 300); // Reduced delay to minimize error modal flash
+      }, 500); // Increased delay to ensure all cleanup is complete
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error during call disconnect:', error);
+      console.error('❌ Main error details:', {
+        message: error?.message || 'Unknown main error',
+        stack: error?.stack || 'No stack trace',
+        roomName,
+        roomState: room?.state,
+        socketConnected: socketManager.isSocketConnected()
+      });
       
       // Force cleanup even on error
       try {
+        console.log('🎵 Force disconnecting socket manager due to error...');
         socketManager.disconnect();
       } catch (socketError) {
         console.warn('🎵 Force socket disconnect error:', socketError);
@@ -610,6 +744,7 @@ export default function AudioCallRoom({
       // Still call onDisconnect even if there's an error
       if (onDisconnect) {
         try {
+          console.log('🎵 Calling onDisconnect callback after error...');
           onDisconnect();
         } catch (callbackError) {
           console.error('❌ Error in onDisconnect callback (error path):', callbackError);
@@ -621,6 +756,30 @@ export default function AudioCallRoom({
   const handleGift = useCallback(() => {
     setShowGiftPanel(true);
   }, []);
+
+  // Function to handle gift requests from astrologer
+  const handleGiftRequestFromAstrologer = useCallback((data: any) => {
+    console.log('🎁 Processing gift request from astrologer:', data);
+    
+    // Show gift request notification
+    setGiftRequest({
+      from: data.astrologerId || data.from || partner?._id,
+      fromName: data.astrologerName || data.fromName || astrologerName || partner?.name || 'Astrologer',
+      message: data.message || 'Would love to receive a gift from you!',
+      giftType: data.giftType || 'any',
+      timestamp: Date.now()
+    });
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+      setGiftRequest((prev: any) => {
+        if (prev && prev.timestamp === data.timestamp) {
+          return null;
+        }
+        return prev;
+      });
+    }, 10000);
+  }, [astrologerName, partner]);
 
   // Send gift handler
   const handleSendGift = async (gift: any) => {
@@ -646,9 +805,18 @@ export default function AudioCallRoom({
         toName: partner?.name || 'Astrologer'
       });
       
-      setShowGiftPanel(false);
+      // Don't close the gift panel automatically - let user choose when to close
       setShowGiftConfirm(false);
       setPendingGift(null);
+      
+      // Show success message in the panel
+      setGiftSuccessMessage(`Gift "${gift.name}" sent successfully!`);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setGiftSuccessMessage(null);
+      }, 3000);
+      
     } catch (err) {
       console.error("Gift send error:", err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to send gift';
@@ -707,10 +875,11 @@ export default function AudioCallRoom({
     }
   }, [handleLeaveCall]);
 
-  // Listen for gift events
+  // Listen for gift events and socket connections
   useEffect(() => {
     // Handle receiving gifts
     function handleReceiveGift(data: any) {
+      console.log('🎁 Gift received:', data);
       setGiftNotification(data);
       setTimeout(() => setGiftNotification(null), 4000);
     }
@@ -725,11 +894,41 @@ export default function AudioCallRoom({
     }
     socketManager.onGiftRequest(handleGiftRequest);
 
+    // Listen for socket connection status
+    function handleSocketConnect() {
+      console.log('🎵 Socket connected for gift events');
+    }
+
+    function handleSocketDisconnect() {
+      console.log('🎵 Socket disconnected from gift events');
+    }
+
+    // Set up socket event listeners
+    const socket = socketManager.getSocket();
+    if (socket) {
+      socket.on('connect', handleSocketConnect);
+      socket.on('disconnect', handleSocketDisconnect);
+      socket.on('gift_request', handleGiftRequest);
+      socket.on('receive_gift', handleReceiveGift);
+      
+      // Listen for custom gift request events
+      socket.on('astrologer_gift_request', handleGiftRequestFromAstrologer);
+
+      // Listen for gift request notifications
+      socket.on('gift_request_notification', handleGiftRequestFromAstrologer);
+    }
+
     return () => {
-      socketManager.getSocket()?.off('receive_gift', handleReceiveGift);
-      socketManager.getSocket()?.off('gift_request', handleGiftRequest);
+      if (socket) {
+        socket.off('connect', handleSocketConnect);
+        socket.off('disconnect', handleSocketDisconnect);
+        socket.off('gift_request', handleGiftRequest);
+        socket.off('receive_gift', handleReceiveGift);
+        socket.off('astrologer_gift_request');
+        socket.off('gift_request_notification');
+      }
     };
-  }, []);
+  }, [astrologerName]);
 
   // Ensure socket is connected for gifts
   useEffect(() => {
@@ -819,7 +1018,7 @@ export default function AudioCallRoom({
   }, [room]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 z-50">
+    <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 z-50 overflow-hidden">
       {shouldConnect ? (
         <LiveKitRoom
           video={false}
@@ -827,7 +1026,7 @@ export default function AudioCallRoom({
           token={token}
           serverUrl={wsURL}
           
-          style={{ height: '100vh', width: '100vw' }}
+          style={{ height: '100vh', width: '100vw', position: 'relative' }}
           onConnected={handleRoomConnected}
           onDisconnected={handleRoomDisconnected}
           onError={handleError}
@@ -844,13 +1043,13 @@ export default function AudioCallRoom({
             },
           }}
         >
-          {/* Call Header */}
+          {/* Enhanced Call Header */}
           <CallHeader />
 
-                  {/* Audio Display */}
-        <AudioDisplay astrologerName={astrologerName} partner={partner} />
+          {/* Enhanced Audio Display */}
+          <AudioDisplay astrologerName={astrologerName} partner={partner} />
 
-          {/* Control Bar */}
+          {/* Enhanced Control Bar */}
           <CustomControlBar onEndCall={handleLeaveCall} onGift={handleGift} />
 
           {/* Audio Renderer */}
@@ -859,66 +1058,126 @@ export default function AudioCallRoom({
           {/* Connection Status Toast */}
           <ConnectionStateToast />
 
-          {/* Settings Panel */}
-          <SettingsPanel />
+          {/* Enhanced Settings Panel */}
+          <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
-                    {/* Gift Panel */}
-          {showGiftPanel && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                <h3 className="text-lg font-bold mb-4">Send a Gift</h3>
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  {gifts.map(gift => (
-                    <button
-                      key={gift._id}
-                      onClick={() => {
-                        setPendingGift(gift);
-                        setShowGiftConfirm(true);
-                      }}
-                      disabled={sendingGift}
-                      className="flex flex-col items-center p-3 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                    >
-                      <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-1" />
-                      <span className="text-xs">{gift.name}</span>
-                      <span className="text-xs text-gray-500">₹{gift.price}</span>
-                    </button>
-                  ))}
+                     {/* Enhanced Gift Panel - Fixed Layout */}
+           {showGiftPanel && (
+             <>
+               {/* Backdrop */}
+               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                 {/* Gift Panel */}
+                 <div className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-2xl max-h-[80vh] overflow-y-auto">
+                   <div className="flex items-center justify-between mb-4 sm:mb-6">
+                     <h3 className="text-lg sm:text-xl font-bold text-gray-800">Send a Gift</h3>
+                     <button 
+                       onClick={() => setShowGiftPanel(false)}
+                       className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                     >
+                       <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
+                     </button>
+                   </div>
+                   
+                   {/* Success Message */}
+                   {giftSuccessMessage && (
+                     <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-xl text-green-700 text-sm text-center">
+                       {giftSuccessMessage}
+                     </div>
+                   )}
+                   
+                   <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                     {gifts.map(gift => (
+                       <button
+                         key={gift._id}
+                         onClick={() => {
+                           setPendingGift(gift);
+                           setShowGiftConfirm(true);
+                         }}
+                         disabled={sendingGift}
+                         className="flex flex-col items-center p-3 sm:p-4 border-2 border-gray-200 rounded-xl sm:rounded-2xl hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 disabled:opacity-50"
+                       >
+                         {/* Handle both emoji and image URLs */}
+                         {gift.icon && typeof gift.icon === 'string' && gift.icon.startsWith('http') ? (
+                           <img 
+                             src={gift.icon} 
+                             alt={gift.name}
+                             className="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2 object-contain"
+                             onError={(e) => {
+                               // Fallback to emoji if image fails to load
+                               e.currentTarget.style.display = 'none';
+                               e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                             }}
+                           />
+                         ) : null}
+                         <span className={`text-2xl sm:text-3xl mb-1 sm:mb-2 ${gift.icon && typeof gift.icon === 'string' && gift.icon.startsWith('http') ? 'hidden' : ''}`}>
+                           {typeof gift.icon === 'string' ? gift.icon : '🎁'}
+                         </span>
+                         <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center">{gift.name}</span>
+                         <span className="text-xs text-gray-500 mt-1">₹{gift.price}</span>
+                       </button>
+                     ))}
+                   </div>
+                   
+                   <button 
+                     onClick={() => setShowGiftPanel(false)} 
+                     className="w-full py-2 sm:py-3 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl text-gray-700 font-medium transition-colors text-sm sm:text-base"
+                   >
+                     Cancel
+                   </button>
+                 </div>
+               </div>
+             </>
+           )}
+
+          {/* Enhanced Gift Notification */}
+          {giftNotification && (
+            <div className="fixed top-20 right-4 z-60">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-4 rounded-2xl shadow-2xl border border-white/20 backdrop-blur-xl">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{giftNotification.giftIcon}</div>
+                  <div>
+                    <p className="font-semibold">Gift Received!</p>
+                    <p className="text-sm opacity-90">
+                      {giftNotification.fromName} sent {giftNotification.giftName}
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setShowGiftPanel(false)} className="mt-4 px-4 py-2 bg-gray-200 rounded">Close</button>
               </div>
             </div>
           )}
 
-          {/* Gift Notification */}
-          {giftNotification && (
-            <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
-              🎁 {giftNotification.fromName} sent {giftNotification.giftName}!
-            </div>
-          )}
-
-          {/* Gift Request Notification */}
+          {/* Enhanced Gift Request Notification */}
           {giftRequest && (
-            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
-              <div className="text-center">
-                <p className="font-semibold">
-                  {astrologerName || 'Astrologer'} is requesting a gift!
-                </p>
-                <div className="mt-2 space-x-2">
-                  <button
-                    onClick={() => {
-                      setShowGiftPanel(true);
-                      setGiftRequest(null);
-                    }}
-                    className="bg-white text-yellow-600 px-3 py-1 rounded text-sm font-medium"
-                  >
-                    Send Gift
-                  </button>
-                  <button
-                    onClick={() => setGiftRequest(null)}
-                    className="bg-yellow-600 text-white px-3 py-1 rounded text-sm font-medium"
-                  >
-                    Dismiss
-                  </button>
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-60 max-w-sm mx-4">
+              <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-2xl shadow-2xl border border-white/20 backdrop-blur-xl overflow-hidden">
+                <div className="p-6">
+                  <div className="text-center mb-4">
+                    <div className="text-3xl mb-2">🎁</div>
+                    <p className="font-bold text-lg">
+                      Gift Request!
+                    </p>
+                    <p className="text-sm opacity-90">
+                      {astrologerName || 'Astrologer'} would love to receive a gift
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        setShowGiftPanel(true);
+                        setGiftRequest(null);
+                      }}
+                      className="flex-1 bg-white text-orange-600 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                    >
+                      Send Gift
+                    </button>
+                    <button
+                      onClick={() => setGiftRequest(null)}
+                      className="flex-1 bg-orange-600/20 text-white py-3 rounded-xl font-semibold hover:bg-orange-600/30 transition-colors"
+                    >
+                      Later
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -943,11 +1202,58 @@ export default function AudioCallRoom({
       ) : (
         <div className="h-full w-full flex items-center justify-center text-white">
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Call Ended</h2>
-            <p className="text-lg">Disconnecting from audio room...</p>
+            <div className="mb-6">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PhoneOff className="w-8 h-8 text-red-400" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold mb-2">Call Ended</h2>
+            <p className="text-lg text-gray-300">Disconnecting from audio room...</p>
           </div>
         </div>
       )}
+      
+      {/* Custom CSS for animations */}
+      <style jsx>{`
+        @keyframes blob {
+          0% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+          100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+        }
+        
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        
+        .animation-delay-200 {
+          animation-delay: 0.2s;
+        }
+        
+        .animation-delay-400 {
+          animation-delay: 0.4s;
+        }
+        
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+      `}</style>
     </div>
   );
-} 
+}

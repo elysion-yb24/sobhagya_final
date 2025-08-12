@@ -28,12 +28,12 @@ const DownloadAppSection = () => {
           {/* Text & Download Section - Full width on mobile, half on desktop */}
           <div className="w-full lg:w-1/2 max-w-xl mx-auto lg:mx-0">
             {/* Title - Responsive text sizing */}
-            <h2 className="text-white text-3xl sm:text-4xl lg:text-5xl font-bold font-ebgaramond leading-tight text-center lg:text-left">
+            <h2 className="text-white text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight text-center lg:text-left" style={{ fontFamily: 'EB Garamond' }}>
               Download Our Mobile App
             </h2>
 
             {/* Description - Adjust padding on different screens */}
-            <p className="mt-3 sm:mt-4 text-white text-sm sm:text-base font-poppins font-medium leading-relaxed px-4 sm:px-6 md:px-0 text-center lg:text-left">
+            <p className="mt-3 sm:mt-4 text-white text-sm sm:text-base font-medium leading-relaxed px-4 sm:px-6 md:px-0 text-center lg:text-left" style={{ fontFamily: 'Poppins' }}>
               Get daily horoscope updates, personalized astrological insights, and expert guidance anytime, anywhere. 
               Explore zodiac predictions, remedies, and live consultations—all at your fingertips in a click! Download now and unlock the wisdom of the stars.
             </p>
@@ -61,7 +61,7 @@ const DownloadAppSection = () => {
             </div>
 
             {/* Tagline */}
-            <p className="mt-4 italic text-white text-xs sm:text-sm font-medium font-poppins text-center lg:text-left">
+            <p className="mt-4 italic text-white text-xs sm:text-sm font-medium text-center lg:text-left" style={{ fontFamily: 'Poppins' }}>
               Stay Connected with Astrology!
             </p>
           </div>

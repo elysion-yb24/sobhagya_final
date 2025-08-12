@@ -6,7 +6,8 @@ import Head from "next/head";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Call6() {
-  const [timeOfBirth, setTimeOfBirth] = useState("");
+  const [hour, setHour] = useState("");
+  const [minute, setMinute] = useState("");
   const [isExiting, setIsExiting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,12 +22,10 @@ export default function Call6() {
     }
   }, []);
 
-  const handleTimeChange = (e) => {
-    setTimeOfBirth(e.target.value);
-  };
-
   const handleNext = () => {
-    if (timeOfBirth) {
+    if (hour && minute) {
+      // Combine hour and minute into time format
+      const timeOfBirth = `${hour}:${minute}`;
       // Store the time of birth in localStorage for the next step
       localStorage.setItem('userTimeOfBirth', timeOfBirth);
       setIsExiting(true);
@@ -50,7 +49,7 @@ export default function Call6() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] h-[600px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
+            className="w-full max-w-[1141px] h-[500px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
           >
             <Head>
               <title>Guidance Form</title>
@@ -63,20 +62,20 @@ export default function Call6() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-medium font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[50px]"
+              className="font-semibold font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[20px]"
             >
               Enter Your Details
             </motion.h1>
 
             {/* Progress Bar with 8 steps */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-10"
+              className="relative mb-8"
             >
               <div className="h-1 bg-gray-300 w-full rounded-full">
-                <motion.div 
+                <motion.div
                   className="h-1 bg-[#F7971D] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: "75%" }}
@@ -100,31 +99,68 @@ export default function Call6() {
             </motion.div>
 
             {/* Main Question */}
-            <motion.h2 
+            <motion.h2
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-xl font-normal text-center text-[#373737] mb-10 mt-16"
+              className="text-xl font-normal text-center text-[#373737] mb-8 mt-8"
             >
               What is your time of birth?
             </motion.h2>
 
-            {/* Time Input Field */}
+            {/* Time Input Blocks */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="w-full max-w-md mx-auto mb-24 mt-8"
+              className="flex justify-center gap-6 mb-16 mt-8"
             >
-              <input
-                type="time"
-                value={timeOfBirth}
-                onChange={handleTimeChange}
-                className="w-full h-16 px-6 py-4 bg-white rounded-xl border-2 border-gray-200 
-                         focus:border-[#F7971D] focus:ring-4 focus:ring-orange-100 focus:outline-none 
-                         text-lg font-medium text-gray-700
-                         transition-all duration-300 shadow-sm hover:shadow-md"
-              />
+              {/* Hour Dropdown */}
+              <div className="relative">
+                <select 
+                  value={hour} 
+                  onChange={(e) => setHour(e.target.value)}
+                  className="w-24 h-16 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-[#F7971D] text-lg font-medium text-gray-700 transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
+                >
+                  <option value="" disabled>Hour</option>
+                  {[...Array(24)].map((_, i) => (
+                    <option key={`hour-${i}`} value={i.toString().padStart(2, '0')}>
+                      {i.toString().padStart(2, '0')}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-6 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Separator */}
+              <div className="flex items-center text-2xl font-bold text-gray-400">
+                :
+              </div>
+
+              {/* Minute Dropdown */}
+              <div className="relative">
+                <select 
+                  value={minute} 
+                  onChange={(e) => setMinute(e.target.value)}
+                  className="w-24 h-16 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-[#F7971D] text-lg font-medium text-gray-700 transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
+                >
+                  <option value="" disabled>Minute</option>
+                  {[...Array(60)].map((_, i) => (
+                    <option key={`minute-${i}`} value={i.toString().padStart(2, '0')}>
+                      {i.toString().padStart(2, '0')}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-6 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </motion.div>
 
             {/* Navigation Buttons */}
@@ -132,22 +168,14 @@ export default function Call6() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex justify-center gap-4"
+              className="flex justify-center"
             >
               <button
                 type="button"
-                onClick={handleBack}
-                className="w-[120px] px-6 py-3 text-[#F7971D] font-semibold rounded-lg border-2 border-[#F7971D] transition-all duration-300 hover:bg-[#F7971D] hover:text-white"
-              >
-                Back
-              </button>
-              
-              <button
-                type="button"
                 onClick={handleNext}
-                disabled={!timeOfBirth}
+                disabled={!hour || !minute}
                 className={`w-[203px] px-8 py-4 text-white font-semibold rounded-lg h-[72px] text-[25px] transition-all duration-300 ${
-                  timeOfBirth
+                  hour && minute
                     ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                     : "bg-gray-400 cursor-not-allowed"
                 }`}

@@ -216,7 +216,7 @@ const Header = () => {
               </div>
             </Link>
             {/* Center: Navigation, flex-1, centered */}
-            <nav className="flex-1 flex items-center justify-center gap-4 lg:gap-6">
+            <nav className="flex-1 flex items-center justify-center gap-6 lg:gap-8">
               {[
                 { href: "/call-with-astrologer", label: "Call with Astrologer" },
                 { href: "/about", label: "About" },
@@ -227,10 +227,10 @@ const Header = () => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative text-base font-semibold text-gray-700 px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[180px] truncate text-center"
+                  className="relative text-base font-semibold text-gray-700 px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[200px] text-center"
                   style={{ lineHeight: '1.2' }}
                 >
-                  <span className="block w-full overflow-hidden text-ellipsis">{item.label}</span>
+                  <span className="block w-full">{item.label}</span>
                   <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
                 </Link>
               ))}
@@ -285,7 +285,7 @@ const Header = () => {
               </div>
             </Link>
             {/* Center: Navigation */}
-            <nav className="flex-1 flex items-center justify-center gap-3">
+            <nav className="flex-1 flex items-center justify-center gap-4">
               {[
                 { href: "/call-with-astrologer", label: "Call with Astrologer" },
                 { href: "/about", label: "About" },
@@ -295,10 +295,10 @@ const Header = () => {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative text-sm font-semibold text-gray-700 px-2 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[140px] truncate text-center"
+                  className="relative text-sm font-semibold text-gray-700 px-2 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[160px] text-center"
                   style={{ lineHeight: '1.2' }}
                 >
-                  <span className="block w-full overflow-hidden text-ellipsis">{item.label}</span>
+                  <span className="block w-full">{item.label}</span>
                   <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
                 </Link>
               ))}

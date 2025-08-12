@@ -1,4 +1,4 @@
-import { Inter } from "next/font/google";
+import { Poppins, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
@@ -9,7 +9,17 @@ import ClientPathname from "./components/ClientPathname"; // Import the client c
 import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
 import AuthErrorHandler from "@/app/components/AuthErrorHandler";
 
-const inter = Inter({ subsets: ["latin"] });
+const poppins = Poppins({ 
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap"
+});
+
+const ebGaramond = EB_Garamond({ 
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap"
+});
 
 export const metadata = {
   title: "Sobhagya",
@@ -25,7 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
-      <body className={inter.className}>
+      <body className={`${poppins.className} ${ebGaramond.variable}`}>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
             <AuthErrorHandler />

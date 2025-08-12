@@ -50,7 +50,7 @@ export default function Call3() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] h-[600px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
+            className="w-full max-w-[1141px] h-[500px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
           >
             <Head>
               <title>Guidance Form</title>
@@ -63,20 +63,20 @@ export default function Call3() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-medium font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[50px]"
+              className="font-semibold font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[20px]"
             >
               Enter Your Details
             </motion.h1>
 
             {/* Progress Bar with 8 steps */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-10"
+              className="relative mb-8"
             >
               <div className="h-1 bg-gray-300 w-full rounded-full">
-                <motion.div 
+                <motion.div
                   className="h-1 bg-[#F7971D] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: "37.5%" }}
@@ -100,11 +100,11 @@ export default function Call3() {
             </motion.div>
 
             {/* Main Question */}
-            <motion.h2 
+            <motion.h2
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-xl font-normal text-center text-[#373737] mb-10 mt-16"
+              className="text-xl font-normal text-center text-[#373737] mb-8 mt-8"
             >
               What is your name?
             </motion.h2>
@@ -133,16 +133,8 @@ export default function Call3() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex justify-center gap-4"
+              className="flex justify-center"
             >
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-[120px] px-6 py-3 text-[#F7971D] font-semibold rounded-lg border-2 border-[#F7971D] transition-all duration-300 hover:bg-[#F7971D] hover:text-white"
-              >
-                Back
-              </button>
-              
               <button
                 type="button"
                 onClick={handleNext}

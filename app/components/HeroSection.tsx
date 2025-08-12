@@ -113,7 +113,7 @@ const HeroSection: React.FC = () => {
 
           {/* Mobile: Astrologer image first, then text */}
           {/* Desktop: Left: text */}
-          <div className="w-full md:w-5/6 text-center md:text-left order-2 md:order-1 -mt-12 md:-mt-6">
+          <div className="w-full md:w-5/6 text-center md:text-left order-2 md:order-1 -mt-28 md:-mt-6">
             <h1 className="font-bold leading-tight mb-2 whitespace-nowrap" style={{
               fontFamily: "EB Garamond",
               fontSize: '55px',
@@ -129,28 +129,29 @@ const HeroSection: React.FC = () => {
               Your's might be waiting
             </p>
             <Link href="/call-with-astrologer">
-              <button className="bg-white text-orange-600 px-5 py-3 font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#F7971D] hover:text-white transition-all duration-300 flex items-center justify-center mx-auto md:mx-0" style={{
-                fontFamily: "Poppins"
+              <button className="bg-white text-orange-600 px-6 py-4 font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#F7971D] hover:text-white transition-all duration-300 flex items-center justify-center mx-auto md:mx-0 mt-6" style={{
+                fontFamily: "Poppins",
+                fontSize: "22px"
               }}>
-                <PhoneIcon className="w-5 h-5 mr-2" />
+                <PhoneIcon className="w-6 h-6 mr-3" />
                 Get a call now
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <ArrowRight className="w-5 h-5 ml-3" />
               </button>
             </Link>
           </div>
 
           {/* Mobile: Right: astrologer image first */}
           {/* Desktop: Right: astrologer image - positioned to touch orange background edge */}
-          <div className="w-full md:w-1/2 flex justify-center md:justify-end relative order-1 md:order-2">
+          <div className="w-full md:w-1/2 flex justify-center md:justify-end relative order-1 md:order-2 min-h-[400px] sm:min-h-[450px]">
             <div className="relative">
-              {/* Big zodiac sign behind astrologer - full visible */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0">
+              {/* Big zodiac sign behind astrologer - lifted up and smaller width */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-30 z-0 -translate-y-12 sm:-translate-y-16 -left-10 sm:-left-20">
                 <Image
                   src="/zodiac-right.png"
                   alt="Background Zodiac"
                   width={300}
                   height={300}
-                  className="w-[300px] h-[300px] sm:w-[420px] sm:h-[420px] md:w-[470px] md:h-[470px] object-contain"
+                  className="w-[180px] h-[220px] sm:w-[350px] sm:h-[350px] md:w-[400px] md:h-[400px] object-contain"
                 />
               </div>
 
@@ -159,23 +160,23 @@ const HeroSection: React.FC = () => {
                 alt="Astrologer"
                 width={600}
                 height={600}
-                className="object-contain max-w-[280px] sm:max-w-[400px] md:max-w-[650px] translate-y-[10px] sm:translate-y-[20px] relative z-10"
+                className="object-contain max-w-[320px] sm:max-w-[400px] md:max-w-[650px] translate-y-[5px] sm:translate-y-[20px] relative z-10"
                 priority
               />
               {/* Three zodiac signs around astrologer image */}
               <motion.div
-                className="absolute left-3 bottom-8 md:bottom-20 md:left-[-50px] z-20"
+                className="absolute left-2 sm:left-3 bottom-4 sm:bottom-8 md:bottom-20 md:left-[-50px] z-20"
                 animate={{ rotate: [0, 10, -10, 0], y: [0, -6, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
-                <Image src="/Group (1) 5.png" alt="Bottom Left Zodiac" width={70} height={70} />
+                <Image src="/Group (1) 5.png" alt="Bottom Left Zodiac" width={60} height={60} className="sm:w-[70px] sm:h-[70px]" />
               </motion.div>
               <motion.div
-                className="absolute right-5 md:right-[-50px] top-1/2 -translate-y-1/2  z-20"
+                className="absolute right-3 sm:right-5 md:right-[-50px] top-1/2 -translate-y-1/2  z-20"
                 animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
               >
-                <Image src="/Group (1) 4.png" alt="Right Middle Zodiac" width={100} height={100} />
+                <Image src="/Group (1) 4.png" alt="Right Middle Zodiac" width={80} height={80} className="sm:w-[100px] sm:h-[100px]" />
               </motion.div>
             </div>
           </div>
@@ -188,23 +189,25 @@ const HeroSection: React.FC = () => {
         <div className="relative z-20 -mt-1 sm:-mt-28 md:-mt-9 lg:-mt-16">
           <div className="w-[100vw] mx-auto px-4 sm:px-6 md:px-8">
             {/* Mobile: Horizontal small buttons */}
-            <div className="flex flex-row justify-center gap-2 sm:hidden mb-6">
+            <div className="flex flex-row justify-center gap-3 sm:hidden mb-6">
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className="rounded-lg px-3 py-2.5 flex items-center text-center shadow-md transition-all duration-300 hover:shadow-lg bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white group"
+                    className="rounded-lg px-4 py-3 flex items-center text-center shadow-md transition-all duration-300 hover:shadow-lg bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white group"
                   >
-                    <div className="mr-1.5 flex items-center justify-center">
+                    <div className="mr-2 flex items-center justify-center">
                       <Image
                         src={card.icon}
                         alt={card.title}
-                        width={20}
-                        height={20}
+                        width={24}
+                        height={24}
                         className="block transition-all duration-300 group-hover:brightness-0 group-hover:invert"
                         style={{ display: 'block' }}
                       />
                     </div>
-                    <span className="text-xs font-medium">{card.title}</span>
+                    <span className="text-sm font-medium" style={{
+                      fontFamily:"Poppins"
+                    }}>{card.title}</span>
                   </div>
                 </Link>
               ))}
@@ -215,19 +218,19 @@ const HeroSection: React.FC = () => {
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className="rounded-xl p-6 py-8 flex flex-col items-center text-center shadow-md transition-all duration-300 hover:shadow-lg group bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white"
+                    className="rounded-xl p-8 py-10 flex flex-col items-center text-center shadow-md transition-all duration-300 hover:shadow-lg group bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white"
                   >
                     <div className="flex items-center justify-center">
                       <Image
                         src={card.icon}
                         alt={card.title}
-                        width={48}
-                        height={48}
+                        width={56}
+                        height={56}
                         className="block transition-all duration-300 group-hover:brightness-0 group-hover:invert"
                         style={{ display: 'block' }}
                       />
                     </div>
-                    <h3 className="font-semibold mt-2">{card.title}</h3>
+                    <h3 className="font-normal mt-3 text-lg" style={{ fontFamily: "Poppins" }}>{card.title}</h3>
                   </div>
                 </Link>
               ))}
@@ -299,7 +302,7 @@ const HeroSection: React.FC = () => {
                 <img
                   src={img}
                   alt={alt}
-                  className="w-full h-56 sm:h-64 lg:h-96 xl:h-[500px] object-cover object-center"
+                  className="w-full h-48 sm:h-56 lg:h-80 xl:h-96 object-cover object-center"
                 />
 
                 {/* Overlay */}

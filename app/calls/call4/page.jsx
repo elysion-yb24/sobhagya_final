@@ -49,7 +49,7 @@ export default function Call4() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-9">
+    <div className="min-h-screen bg-white flex items-center justify-center p-4 sm:p-6 md:p-9">
       <AnimatePresence mode="wait">
         {!isExiting && (
           <motion.div
@@ -58,7 +58,7 @@ export default function Call4() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] h-[500px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
+            className="w-full max-w-[1141px] min-h-[400px] sm:h-[450px] md:h-[500px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg"
           >
             <Head>
               <title>Guidance Form</title>
@@ -71,7 +71,7 @@ export default function Call4() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-semibold font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[20px]"
+              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
             >
               Enter Your Details
             </motion.h1>
@@ -81,7 +81,7 @@ export default function Call4() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-8"
+              className="relative mb-6 sm:mb-8"
             >
               <div className="h-1 bg-gray-300 w-full rounded-full">
                 <motion.div
@@ -99,7 +99,7 @@ export default function Call4() {
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-                    className={`w-3 h-3 rounded-full ${
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
                       index < 4 ? "bg-[#F7971D]" : "bg-gray-300"
                     }`}
                   ></motion.div>
@@ -112,7 +112,7 @@ export default function Call4() {
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-xl font-normal text-center text-[#373737] mb-8 mt-8"
+              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-6 sm:mb-8 mt-6 sm:mt-8 px-2"
             >
               Select Your Birth Date
             </motion.h2>
@@ -122,16 +122,16 @@ export default function Call4() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="flex justify-center gap-6 mb-24 mt-8"
+              className="flex justify-center gap-4 sm:gap-6 mb-16 sm:mb-20 md:mb-24 mt-6 sm:mt-8"
             >
               {/* Date Dropdown */}
               <div className="relative">
                 <select
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-24 h-16 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 
+                  className="w-20 sm:w-24 h-14 sm:h-16 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border-2 border-gray-200 
                            cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 
-                           focus:border-[#F7971D] text-lg font-medium text-gray-700
+                           focus:border-[#F7971D] text-base sm:text-lg font-medium text-gray-700
                            transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
                 >
                   <option value="" disabled>Date</option>
@@ -153,9 +153,9 @@ export default function Call4() {
                 <select
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="w-24 h-16 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 
+                  className="w-20 sm:w-24 h-14 sm:h-16 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border-2 border-gray-200 
                            cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 
-                           focus:border-[#F7971D] text-lg font-medium text-gray-700
+                           focus:border-[#F7971D] text-base sm:text-lg font-medium text-gray-700
                            transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
                 >
                   <option value="" disabled>Month</option>
@@ -177,9 +177,9 @@ export default function Call4() {
                 <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="w-24 h-16 px-4 py-3 bg-white rounded-xl border-2 border-gray-200 
+                  className="w-20 sm:w-24 h-14 sm:h-16 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border-2 border-gray-200 
                            cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 
-                           focus:border-[#F7971D] text-lg font-medium text-gray-700
+                           focus:border-[#F7971D] text-base sm:text-lg font-medium text-gray-700
                            transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
                 >
                   <option value="" disabled>Year</option>
@@ -202,13 +202,13 @@ export default function Call4() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex justify-center"
+              className="flex justify-center mt-6 sm:mt-8"
             >
               <button
                 type="button"
                 onClick={handleNext}
                 disabled={!date || !month || !year}
-                className={`w-[203px] px-8 py-4 text-white font-semibold rounded-lg h-[72px] text-[25px] transition-all duration-300 ${
+                className={`w-full sm:w-[203px] px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-lg h-[60px] sm:h-[72px] text-lg sm:text-xl md:text-[25px] transition-all duration-300 ${
                   date && month && year
                     ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                     : "bg-gray-400 cursor-not-allowed"

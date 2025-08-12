@@ -312,7 +312,7 @@ const AstrologerCarousel = () => {
                 key={index}
                 onClick={() => setCurrentIndex(index)}
                 className={`rounded-full transition-colors ${index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'}`}
-                style={{ width: 6, height: 6 }}
+                
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}

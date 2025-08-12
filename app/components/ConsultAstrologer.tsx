@@ -251,13 +251,13 @@ const AstrologerCarousel = () => {
                   onClick={() => handleAstrologerClick(astrologer._id)}
                   style={{ minHeight: '256px' }}
                 >
-                  <div className="relative w-24 h-24 mb-3 shadow-md rounded-full overflow-hidden border-4 border-[#F7971E]">
+                  <div className="relative w-20 h-20 mb-3  rounded-full overflow-hidden border-2 border-[#F7971E]">
                     <Image
                       src={
                         astrologer.avatar ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
                           astrologer.name
-                        )}&background=f97316&color=fff&size=96`
+                        )}`
                       }
                       alt={astrologer.name}
                       width={96}
@@ -267,7 +267,7 @@ const AstrologerCarousel = () => {
                   </div>
 
 
-                  <h3 className="font-bold text-base text-center text-gray-800 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
+                  <h3 className="font-semibold text-base text-center text-gray-800 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
                     {astrologer.name.split(' ').length > 2
                       ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
                       : astrologer.name

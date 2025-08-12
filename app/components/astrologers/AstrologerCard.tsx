@@ -463,7 +463,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             {/* Orders Count */}
             <div className="text-center">
               <span className="text-xs font-semibold block italic" style={{ color: '#636161' }}>{calls || callsCount || '64987'}</span>
-              <span className="text-[10px] italic" style={{ color: '#636161' }}>orders</span>
+              <span className="text-[10px] italic -mt-1 block" style={{ color: '#636161' }}>orders</span>
             </div>
           </div>
 
@@ -472,7 +472,8 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             {/* Name with Verified Badge */}
             <div className="flex items-center gap-1.5 mb-1">
               <h3 className="text-base font-semibold text-gray-900 truncate" style={{
-                fontFamily: "Poppins"
+                fontFamily: "Poppins",
+                fontSize: "18px"
               }}>
                 {name.startsWith('Pt.') ? name : name}
               </h3>
@@ -480,7 +481,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             </div>
             
             {/* Specializations */}
-            <div className="text-gray-700 text-xs mb-1">
+            <div className="text-gray-700 text-xs mb-1" style={{ fontSize: "13px" }}>
               {partner.talksAbout && partner.talksAbout.length > 0
                 ? partner.talksAbout.slice(0, 3).join(', ')
                 : specializations?.join(', ') || 'Kp, Vedic, Vastu'
@@ -488,12 +489,12 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             </div>
             
             {/* Languages */}
-            <div className="text-gray-600 text-xs mb-1">
+            <div className="text-gray-600 text-xs mb-1" style={{ fontSize: "13px" }}>
               {(languages || partner.language)?.join(', ') || 'Hindi, Gujarati'}
             </div>
             
             {/* Experience */}
-            <div className="text-gray-600 text-xs mb-1.5">
+            <div className="text-gray-600 text-xs mb-1.5" style={{ fontSize: "13px" }}>
               Exp- {age || experience || '8'} years
             </div>
             
@@ -511,7 +512,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
               e.stopPropagation();
               handleChatClick();
             }}
-            className="flex-1 py-1.5 px-3 border rounded-full font-semibold transition-colors flex items-center justify-center gap-1 text-xs"
+            className="flex-1 py-1.5 px-3 border rounded-full font-semibold transition-colors flex items-center justify-center gap-1"
             style={{
               borderColor: '#F7971E',
               color: '#F7971E'
@@ -534,7 +535,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
                 e.stopPropagation();
                 handleVideoCall(e);
               }}
-              className="flex-1 py-1.5 px-3 text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-1 text-xs"
+              className="flex-1 py-1.5 px-3 text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-1"
               style={{
                 backgroundColor: '#F7971E'
               }}

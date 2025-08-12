@@ -11,11 +11,11 @@ export default function Call8() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Language options as shown in the design
+  // Language options as shown in the design - 12 languages in 3x4 grid
   const languageOptions = [
     "Hindi", "English", "Telugu", "Marathi",
-    "Tamil", "Gujarati", "Urdu", "Punjabi",
-    "Malayalam", "Kannada", "Bengali"
+    "Tamil", "Gujarati", "Urdu", "Punjabi", 
+    "Malayalam", "Kannada", "Bengali", "Odia"
   ];
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function Call8() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] h-[600px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
+            className="w-full max-w-[1141px] h-[500px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
           >
             <Head>
               <title>Guidance Form</title>
@@ -80,20 +80,20 @@ export default function Call8() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-medium font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[50px]"
+              className="font-semibold font-['Poppins'] text-center text-gray-800 text-2xl mb-8 mt-[20px]"
             >
               Enter Your Details
             </motion.h1>
 
-            {/* Progress Bar with 8 steps - 6th step (75%) */}
-            <motion.div 
+            {/* Progress Bar with 8 steps */}
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-10"
+              className="relative mb-8"
             >
               <div className="h-1 bg-gray-300 w-full rounded-full">
-                <motion.div 
+                <motion.div
                   className="h-1 bg-[#F7971D] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: "75%" }}
@@ -117,11 +117,11 @@ export default function Call8() {
             </motion.div>
 
             {/* Main Question */}
-            <motion.h2 
+            <motion.h2
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-xl font-normal text-center text-[#373737] mb-10 mt-16"
+              className="text-xl font-normal text-center text-[#373737] mb-8 mt-8"
             >
               Select your Language
             </motion.h2>
@@ -131,7 +131,7 @@ export default function Call8() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="grid grid-cols-4 gap-4 mb-3 mt-4 max-w-5xl mx-auto"
+              className="grid grid-cols-4 gap-3 mb-8 mt-8 max-w-xl mx-auto"
             >
               {languageOptions.map((language, index) => (
                 <motion.button
@@ -140,7 +140,7 @@ export default function Call8() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.9 + index * 0.05 }}
                   onClick={() => handleLanguageToggle(language)}
-                  className={`px-6 py-4 rounded-xl font-medium text-gray-700 transition-all duration-300 hover:shadow-md ${
+                  className={`px-4 py-3 rounded-full font-medium text-gray-700 transition-all duration-300 hover:shadow-md text-sm ${
                     selectedLanguages.includes(language)
                       ? "bg-[#F7971D] text-white shadow-lg scale-105"
                       : "bg-white hover:bg-orange-50 border-2 border-gray-200"
@@ -155,17 +155,9 @@ export default function Call8() {
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 1 }}
-              className="flex justify-center gap-4 mt-8"
+              transition={{ duration: 0.6, delay: 0.9 }}
+              className="flex justify-center mt-8"
             >
-              <button
-                type="button"
-                onClick={handleBack}
-                className="w-[120px] px-6 py-3 text-[#F7971D] font-semibold rounded-lg border-2 border-[#F7971D] transition-all duration-300 hover:bg-[#F7971D] hover:text-white"
-              >
-                Back
-              </button>
-              
               <button
                 type="button"
                 onClick={handleNext}

@@ -45,7 +45,7 @@ export default function Call1() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] h-[600px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
+            className="w-full max-w-[1141px] h-[500px] bg-[#FCF4E9] rounded-lg p-8 shadow-lg"
           >
             <Head>
               <title>Guidance Form</title>
@@ -105,7 +105,7 @@ export default function Call1() {
             </motion.h2>
 
             {/* Radio Button Options */}
-            <div className="flex justify-center gap-16 mb-24 mt-8">
+            <div className="flex justify-center gap-16 mb-16 mt-8">
               {["myself", "someone_else"].map((option, index) => (
                 <motion.label
                   key={option}
@@ -130,7 +130,7 @@ export default function Call1() {
                     }`}
                   >
                     {selectedOption === option && (
-                      <motion.div 
+                      <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         className="w-3 h-3 rounded-full bg-[#F7971D]"
@@ -143,9 +143,7 @@ export default function Call1() {
                 </motion.label>
               ))}
             </div>
-
-            {/* Next Button */}
-            <motion.div 
+            <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 1 }}
@@ -155,7 +153,7 @@ export default function Call1() {
                 type="button"
                 onClick={handleNext}
                 disabled={!selectedOption}
-                className={`w-[203px] px-8 py-4 text-white font-semibold rounded-lg h-[72px] text-[25px] transition-all duration-300 mt-11 ${
+                className={`w-[203px] px-8 py-4 text-white font-semibold rounded-lg h-[72px] text-[25px] transition-all duration-300 ${
                   selectedOption
                     ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                     : "bg-gray-400 cursor-not-allowed"

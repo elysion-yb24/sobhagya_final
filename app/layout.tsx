@@ -12,13 +12,15 @@ import AuthErrorHandler from "@/app/components/AuthErrorHandler";
 const poppins = Poppins({ 
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  display: "swap"
+  display: "swap",
+  variable: "--font-poppins"
 });
 
 const ebGaramond = EB_Garamond({ 
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
-  display: "swap"
+  display: "swap",
+  variable: "--font-eb-garamond"
 });
 
 export const metadata = {
@@ -35,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
-      <body className={`${poppins.className} ${ebGaramond.variable}`}>
+      <body className={`${poppins.variable} ${ebGaramond.variable}`}>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
             <AuthErrorHandler />

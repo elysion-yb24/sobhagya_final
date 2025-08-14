@@ -378,7 +378,8 @@ export default function VideoCallRoom({
 }: VideoCallRoomProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const astrologerId = searchParams?.get('astrologerId') || partner?._id;
+  // Ensure astrologerId is always a string
+  const astrologerId: string = (searchParams?.get('astrologerId') || partner?._id || '') as string;
   
   const [callStats, setCallStats] = useState<CallStats>({
     duration: 0,
@@ -816,6 +817,11 @@ export default function VideoCallRoom({
     setSendingGift(true);
     const user = getUserDetails();
     try {
+      // Make sure astrologerId is a string
+      if (!astrologerId) {
+        throw new Error("Astrologer ID is missing");
+      }
+
       await socketManager.sendGift({
         channelId: roomName, 
         giftId: gift._id,

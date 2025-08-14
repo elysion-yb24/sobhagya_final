@@ -92,16 +92,16 @@ const Contact = () => {
             Get In Touch
           </motion.h2>
           <motion.p 
-            className="text-[#373737] leading-relaxed text-lg md:w-[80%]"
+            className="text-[#373737] leading-relaxed text-lg md:w-[80%] mt-8"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.8 }}
           >
-            <span className="font-medium">
+            <span className="font-medium text-xl">
               Have questions or need astrological guidance?
             </span>
             <br />
-            <span className="text-sm">
+            <span className="text-base mt-4 block">
               Our experts are here to help! Reach out for consultations,
               inquiries, or support, and let us assist you on your journey.
             </span>
@@ -109,35 +109,12 @@ const Contact = () => {
 
           {/* Enhanced Contact Details with Animations */}
           <div className="space-y-4">
-            {/* Phone */}
-            <motion.div 
-              className="flex items-center space-x-4"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.9 }}
-              whileHover={{ x: 5 }}
-            >
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <img
-                  src="/Ellipse 879.png"
-                  alt="Ellipse"
-                  className="w-full h-full absolute z-0"
-                />
-                <img
-                  src="/Vector (30).png"
-                  alt="Phone"
-                  className="w-6 h-6 z-10"
-                />
-              </div>
-              <div>
-                <p className="text-gray-700 font-medium text-sm sm:text-base">Contact Us:</p>
-                <p className="text-gray-700 text-sm sm:text-base">+91 98765 43201, +91 89765 43201</p>
-              </div>
-            </motion.div>
+            {/* Contact Us */}
+            
 
             {/* Email */}
             <motion.div 
-              className="flex items-center space-x-4"
+              className="flex items-center space-x-4 mt-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 1.0 }}
@@ -156,15 +133,15 @@ const Contact = () => {
                 />
               </div>
               <div>
-                <p className="text-gray-700 font-medium text-sm sm:text-base">Email:</p>
-                <p className="text-gray-700 text-sm sm:text-base">SobhagyaApp@gmail.com</p>
+                <p className="text-gray-700 font-medium text-lg">Email</p>
+                <p className="text-gray-700 text-base">support@sobhagya.in</p>
               </div>
             </motion.div>
           </div>
 
           {/* Separator Line */}
           <motion.div 
-            className="w-full h-px bg-orange-500 my-6"
+            className="w-full h-px bg-orange-500 my-10"
             initial={{ opacity: 0, scaleX: 0 }}
             animate={{ opacity: 1, scaleX: 1 }}
             transition={{ duration: 0.5, delay: 1.1 }}
@@ -172,7 +149,7 @@ const Contact = () => {
 
           {/* Enhanced Call to Action with Animation */}
           <motion.p 
-            className="mt-6 text-gray-700 leading-relaxed"
+            className="mt-8 text-gray-700 leading-relaxed text-lg font-medium"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 1.2 }}
@@ -182,7 +159,7 @@ const Contact = () => {
 
           {/* Enhanced Social Media Links with Animations */}
           <motion.div 
-            className="flex flex-wrap gap-4 mt-6"
+            className="flex flex-wrap gap-6 mt-10"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 1.3 }}
@@ -264,7 +241,7 @@ const Contact = () => {
               <input
                 type="text"
                 placeholder="Full Name"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
+                className="w-full px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
               />
             </motion.div>
             <motion.div
@@ -275,7 +252,7 @@ const Contact = () => {
               <input
                 type="text"
                 placeholder="Phone No./ Email"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
+                className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
               />
             </motion.div>
             <motion.div
@@ -285,7 +262,7 @@ const Contact = () => {
             >
               <textarea
                 placeholder="Message"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] h-28 sm:h-32 text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
+                className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] h-28 sm:h-32 text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
               />
             </motion.div>
             <motion.div 

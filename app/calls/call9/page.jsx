@@ -79,7 +79,7 @@ export default function Call9() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] min-h-[400px] sm:h-[450px] md:h-[500px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg"
+            className="w-full max-w-[1141px] min-h-[400px] sm:h-[450px] md:h-[500px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg flex flex-col"
           >
             <Head>
               <title>Guidance Form</title>
@@ -92,7 +92,7 @@ export default function Call9() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
+              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-3 sm:mb-5 md:mb-6 mt-2 sm:mt-3 md:mt-4"
             >
               Enter Your Details
             </motion.h1>
@@ -102,7 +102,7 @@ export default function Call9() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-6 sm:mb-8"
+              className="relative mb-5 sm:mb-7"
             >
               <div className="h-1 bg-gray-300 w-full rounded-full">
                 <motion.div 
@@ -133,7 +133,7 @@ export default function Call9() {
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-6 sm:mb-8 mt-6 sm:mt-8 px-2"
+              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-5 sm:mb-6 mt-4 sm:mt-6 px-2"
             >
               What Life Challenge Are You Facing?
             </motion.h2>
@@ -143,7 +143,7 @@ export default function Call9() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="grid grid-cols-3 gap-3 sm:gap-4 mb-12 sm:mb-16 mt-6 sm:mt-8 max-w-3xl mx-auto px-4 sm:px-0"
+              className="grid grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-10 mt-2 sm:mt-4 max-w-3xl mx-auto px-4 sm:px-0 flex-1"
             >
               {challengeOptions.map((challenge, index) => (
                 <motion.button
@@ -168,7 +168,7 @@ export default function Call9() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 1 }}
-              className="flex justify-center mt-6 sm:mt-8"
+              className="flex justify-center mt-auto pt-2"
             >
               <button
                 type="button"

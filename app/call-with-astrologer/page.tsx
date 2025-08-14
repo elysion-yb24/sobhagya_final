@@ -282,6 +282,7 @@ const AstrologerCallPage = () => {
                 hasError={!!error}
                 compactButtons={false}
                 showVideoButton={true}
+                source="callWithAstrologer"
               />
             </motion.div>
           )}

@@ -195,6 +195,45 @@ export default function AstrologersPage() {
     fetchAstrologers(1, false);
   }, []);
 
+  // Handle immediate call intent after login
+  useEffect(() => {
+    const immediateCallIntent = localStorage.getItem('immediateCallIntent');
+    const immediateCallAstrologerId = localStorage.getItem('immediateCallAstrologerId');
+    
+    console.log('🔍 Checking immediate call intent:', { immediateCallIntent, immediateCallAstrologerId, allAstrologersLength: allAstrologers.length });
+    
+    if (immediateCallIntent && immediateCallAstrologerId) {
+      console.log('🚀 Found immediate call intent:', immediateCallIntent, 'for astrologer:', immediateCallAstrologerId);
+      
+      // Find the astrologer in the loaded list
+      const targetAstrologer = allAstrologers.find(ast => ast._id === immediateCallAstrologerId);
+      
+      if (targetAstrologer) {
+        console.log('✅ Found target astrologer:', targetAstrologer.name);
+        
+        // Clear the immediate call intent
+        localStorage.removeItem('immediateCallIntent');
+        localStorage.removeItem('immediateCallAstrologerId');
+        
+        // Initiate the call immediately
+        if (immediateCallIntent === 'audio') {
+          console.log('🎯 Initiating audio call...');
+          initiateAudioCall(targetAstrologer);
+        } else if (immediateCallIntent === 'video') {
+          console.log('🎯 Initiating video call...');
+          initiateVideoCall(targetAstrologer);
+        }
+      } else if (allAstrologers.length > 0) {
+        // If astrologers are loaded but target not found, try to fetch the specific astrologer
+        console.log('🔍 Target astrologer not in loaded list, fetching specific astrologer...');
+        console.log('📋 Loaded astrologers IDs:', allAstrologers.map(ast => ast._id));
+        fetchSpecificAstrologerAndCall(immediateCallAstrologerId, immediateCallIntent);
+      } else {
+        console.log('⏳ Waiting for astrologers to load...');
+      }
+    }
+  }, [allAstrologers]);
+
   // Infinite scroll handler
   useEffect(() => {
     const handleScroll = () => {
@@ -474,6 +513,174 @@ export default function AstrologersPage() {
   };
 
   const { walletBalance, isFetching } = useWalletBalance();
+
+  // Function to initiate audio call
+  const initiateAudioCall = async (astrologer: Astrologer) => {
+    try {
+      console.log('🎯 Initiating audio call with:', astrologer.name);
+      
+      const token = getAuthToken();
+      const userDetails = getUserDetails();
+      
+      if (!token || !userDetails?.id) {
+        throw new Error('Authentication required');
+      }
+
+      // Request LiveKit token and channel from backend for audio call
+      const requestBody = {
+        receiverUserId: astrologer._id,
+        type: 'call',
+        appVersion: '1.0.0'
+      };
+      const channelId = Date.now().toString();
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to initiate audio call');
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data?.token || !data.data?.channel) {
+        throw new Error(data.message || 'Failed to get audio call token');
+      }
+
+      // Store navigation source and astrologer ID for proper back navigation
+      localStorage.setItem('lastAstrologerId', astrologer._id);
+      localStorage.setItem('callSource', 'astrologerCard');
+
+      // Redirect to audio call page with token and room
+      const audioCallUrl = `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      router.push(audioCallUrl);
+
+    } catch (error) {
+      console.error('❌ Audio call error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to initiate audio call');
+    }
+  };
+
+  // Function to fetch specific astrologer and initiate call
+  const fetchSpecificAstrologerAndCall = async (astrologerId: string, callType: string) => {
+    try {
+      console.log('🔍 Fetching specific astrologer:', astrologerId);
+      
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+
+      // Fetch the specific astrologer
+      const response = await fetch(
+        `${getApiBaseUrl()}/user/api/users/${astrologerId}`,
+        {
+          method: "GET",
+          credentials: 'include',
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch astrologer details');
+      }
+
+      const data = await response.json();
+      const astrologer = data.data || data;
+
+      if (astrologer) {
+        console.log('✅ Found specific astrologer:', astrologer.name);
+        
+        // Clear the immediate call intent
+        localStorage.removeItem('immediateCallIntent');
+        localStorage.removeItem('immediateCallAstrologerId');
+        
+        // Initiate the call
+        if (callType === 'audio') {
+          initiateAudioCall(astrologer);
+        } else if (callType === 'video') {
+          initiateVideoCall(astrologer);
+        }
+      } else {
+        throw new Error('Astrologer not found');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching specific astrologer:', error);
+      alert('Failed to initiate call. Please try again.');
+      
+      // Clear the intent on error
+      localStorage.removeItem('immediateCallIntent');
+      localStorage.removeItem('immediateCallAstrologerId');
+    }
+  };
+
+  // Function to initiate video call
+  const initiateVideoCall = async (astrologer: Astrologer) => {
+    try {
+      console.log('🎯 Initiating video call with:', astrologer.name);
+      
+      const token = getAuthToken();
+      const userDetails = getUserDetails();
+      
+      if (!token || !userDetails?.id) {
+        throw new Error('Authentication required');
+      }
+
+      // Request LiveKit token and channel from backend for video call
+      const requestBody = {
+        receiverUserId: astrologer._id,
+        type: 'video',
+        appVersion: '1.0.0'
+      };
+      const channelId = Date.now().toString();
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to initiate video call');
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.data?.token || !data.data?.channel) {
+        throw new Error(data.message || 'Failed to get video call token');
+      }
+
+      // Store navigation source and astrologer ID for proper back navigation
+      localStorage.setItem('lastAstrologerId', astrologer._id);
+      localStorage.setItem('callSource', 'astrologerCard');
+
+      // Redirect to video call page with token and room
+      const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      router.push(videoCallUrl);
+
+    } catch (error) {
+      console.error('❌ Video call error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to initiate video call');
+    }
+  };
 
   if (!mounted) {
     return null; // Return null on server-side and first render

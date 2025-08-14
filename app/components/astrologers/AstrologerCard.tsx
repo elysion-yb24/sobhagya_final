@@ -1,11 +1,11 @@
 "use client"; // Because we'll use onClick for navigation in a client component
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { getAuthToken, getUserDetails, isAuthenticated } from "../../utils/auth-utils";
-import { Phone, Video, Star, Users, Award, Loader2, CheckCircle, MessageCircle } from "lucide-react";
+import { Phone, Video, Star, Users, Award, Loader2, CheckCircle, MessageCircle, ChevronDown } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
 import { buildApiUrl } from "../../config/api";
@@ -58,12 +58,16 @@ interface Props {
   astrologer: Astrologer;
   compactButtons?: boolean;
   showVideoButton?: boolean;
+  source?: string;
 }
 
-const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactButtons = false, showVideoButton = false }: Props) {
+const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactButtons = false, showVideoButton = false, source }: Props) {
   const router = useRouter();
   const [isCallRequested, setIsCallRequested] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
+  const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
+  const callMenuRef = useRef<HTMLDivElement | null>(null);
+  const callButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Insufficient balance modal state
   const [showInsufficientBalanceModal, setShowInsufficientBalanceModal] = useState(false);
@@ -189,6 +193,19 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     }
   };
 
+  // Close the call menu if clicking outside
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      if (!isCallMenuOpen) return;
+      const target = e.target as Node;
+      if (callMenuRef.current && callMenuRef.current.contains(target)) return;
+      if (callButtonRef.current && callButtonRef.current.contains(target)) return;
+      setIsCallMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [isCallMenuOpen]);
+
   const handleCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
     handleAudioCall();
@@ -196,7 +213,25 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
 
   const handleAudioCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
-    handleAudioCall();
+    setIsCallMenuOpen(false);
+    
+    // Check if user is authenticated
+    if (isAuthenticated()) {
+      // If authenticated, go directly to astrologer profile with call type
+      router.push(`/astrologers/${_id}?callType=audio`);
+    } else {
+      // If not authenticated, redirect to login with call intent
+      console.log('🔍 Setting audio call intent for astrologer:', _id);
+      localStorage.setItem('callIntent', 'audio');
+      localStorage.setItem('selectedAstrologerId', _id);
+      localStorage.setItem('callSource', source || 'astrologerCard');
+      console.log('✅ Stored in localStorage:', {
+        callIntent: 'audio',
+        selectedAstrologerId: _id,
+        callSource: source || 'astrologerCard'
+      });
+      router.push('/login');
+    }
   };
 
   const handleAudioCall = async () => {
@@ -331,65 +366,22 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
   const handleVideoCall = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click navigation
 
-    try {
-      const userDetails = getUserDetails();
-      if (!userDetails?.id) {
-        alert('Please log in to start a video call');
-        return;
-      }
-
-      // Use cached walletBalance
-      const videoCost = (videoRpm || 25) * 2; // Estimate 2 minutes minimum cost for video
-      if (walletBalance < videoCost) {
-        setInsufficientBalanceData({
-          requiredAmount: videoCost,
-          serviceType: 'call'
-        });
-        setShowInsufficientBalanceModal(true);
-        return;
-      }
-
-      // Request LiveKit token and channel from backend
-      const token = getAuthToken();
-      const requestBody = {
-        receiverUserId: partner._id, // use partner._id for receiverUserId
-        type: 'video',
-        appVersion: '1.0.0'
-      };
-      const channelId = Date.now().toString();
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-        credentials: 'include',
+    // Check if user is authenticated
+    if (isAuthenticated()) {
+      // If authenticated, go directly to astrologer profile with call type
+      router.push(`/astrologers/${_id}?callType=video`);
+    } else {
+      // If not authenticated, redirect to login with video call intent
+      console.log('🔍 Setting video call intent for astrologer:', _id);
+      localStorage.setItem('callIntent', 'video');
+      localStorage.setItem('selectedAstrologerId', _id);
+      localStorage.setItem('callSource', source || 'astrologerCard');
+      console.log('✅ Stored in localStorage:', {
+        callIntent: 'video',
+        selectedAstrologerId: _id,
+        callSource: source || 'astrologerCard'
       });
-
-      if (!response.ok) {
-        alert('Failed to initiate video call');
-        return;
-      }
-
-      const data = await response.json();
-      if (!data.success || !data.data?.token || !data.data?.channel) {
-        alert(data.message || 'Failed to get video call token');
-        return;
-      }
-
-      // Store navigation source and astrologer ID for proper back navigation
-      localStorage.setItem('lastAstrologerId', partner._id);
-      localStorage.setItem('callSource', 'astrologerCard');
-
-      // Redirect to /video-call with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(partner.name)}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
-      router.push(videoCallUrl);
-    } catch (err) {
-      alert('Failed to initiate video call');
+      router.push('/login');
     }
   };
 
@@ -413,10 +405,11 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
     <>
       <div
         onClick={handleCardClick}
-        className="relative bg-white rounded-md border p-3 cursor-pointer transition-all duration-300 hover:shadow-lg flex flex-col w-full max-w-[520px] mx-auto"
+        className={`relative ${isCallMenuOpen ? 'z-[9998]' : 'z-0 hover:z-50'} bg-white rounded-md border p-3 cursor-pointer transition-all duration-300 hover:shadow-lg flex flex-col w-full max-w-[520px] mx-auto`}
         style={{
           borderColor: '#F7971E',
           boxShadow: '0 2px 8px 0 rgba(247,151,30,0.07)',
+          overflow: 'visible'
         }}
       >
         {/* Main Content Area */}
@@ -525,51 +518,45 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             }}
           >
             <img src="/message.png" alt="Chat" className="w-3.5 h-3.5" />
-            Chat
+            Free 1st chat
           </button>
           
-          {/* Video Call Button - In the middle if allowed */}
-          {astrologer?.isVideoCallAllowed && (
+          {/* Unified Call button with hover dropdown for Audio/Video */}
+          <div className="relative flex-1 z-10" ref={callMenuRef}>
             <button
+              ref={callButtonRef}
               onClick={(e) => {
                 e.stopPropagation();
-                handleVideoCall(e);
+                setIsCallMenuOpen((prev) => !prev);
               }}
-              className="flex-1 py-1.5 px-3 text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-1"
-              style={{
-                backgroundColor: '#F7971E'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#E6871B';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#F7971E';
-              }}
+              className="w-full py-2 px-4 text-white rounded-full font-semibold flex items-center justify-center gap-2 text-sm shadow-md transition-all"
+              style={{ background: 'linear-gradient(180deg, #F9A43A 0%, #F7971E 100%)' }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(0.95)'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.filter = 'none'; }}
             >
-              <Video size={14} color="white" />
-              Video
+              <img src="/Vector.png" alt="Call" className="w-4 h-4 brightness-0 invert" />
+              Call
+              <ChevronDown size={16} className="opacity-90" />
             </button>
-          )}
-          
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCallButtonClick(e);
-            }}
-            className="flex-1 py-1.5 px-3 text-white rounded-full font-semibold transition-colors flex items-center justify-center gap-1 text-xs"
-            style={{
-              backgroundColor: '#F7971E'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#E6871B';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#F7971E';
-            }}
-          >
-            <img src="/Vector.png" alt="Call" className="w-3.5 h-3.5 brightness-0 invert" />
-            Call
-          </button>
+            {/* Dropdown */}
+            <div
+              className={`absolute bottom-full left-7 -translate-x-1/2 mb-2 flex-col rounded-2xl overflow-hidden shadow-2xl z-[9999] transition-all duration-200 w-56 sm:w-64 ${isCallMenuOpen ? 'flex opacity-100 translate-y-0 pointer-events-auto' : 'hidden opacity-0 translate-y-1 pointer-events-none'}`}
+              style={{ background: 'white', border: '1px solid #FBE3C9' }}
+                 onClick={(e) => e.stopPropagation()}>
+              <button
+                className="w-full text-[15px] py-3 px-4 text-gray-800 hover:bg-orange-50 flex items-center justify-center gap-3"
+                onClick={handleAudioCallButtonClick}
+              >
+                <Phone size={18} /> Audio call
+              </button>
+              <button
+                className="w-full text-[15px] py-3 px-4 text-gray-800 hover:bg-orange-50 border-t border-orange-100 flex items-center justify-center gap-3"
+                onClick={handleVideoCall}
+              >
+                <Video size={18} /> Video call
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

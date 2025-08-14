@@ -67,7 +67,7 @@ export default function Call8() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] min-h-[400px] sm:h-[450px] md:h-[500px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg"
+            className="w-full max-w-[1141px] min-h-[500px] sm:h-[550px] md:h-[600px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg flex flex-col"
           >
             <Head>
               <title>Guidance Form</title>
@@ -80,7 +80,7 @@ export default function Call8() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
+              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-3 sm:mb-5 md:mb-6 mt-2 sm:mt-3 md:mt-4"
             >
               Enter Your Details
             </motion.h1>
@@ -90,7 +90,7 @@ export default function Call8() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-6 sm:mb-8"
+              className="relative mb-5 sm:mb-7"
             >
               <div className="h-1 bg-gray-300 w-full rounded-full">
                 <motion.div
@@ -121,7 +121,7 @@ export default function Call8() {
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-6 sm:mb-8 mt-6 sm:mt-8 px-2"
+              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-5 sm:mb-6 mt-4 sm:mt-6 px-2"
             >
               Select your Language
             </motion.h2>
@@ -131,7 +131,7 @@ export default function Call8() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="grid grid-cols-4 gap-2 sm:gap-3 mb-6 sm:mb-8 mt-6 sm:mt-8 max-w-xl mx-auto px-4 sm:px-0"
+              className="grid grid-cols-4 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-5 mb-8 sm:mb-10 mt-2 sm:mt-4 max-w-3xl mx-auto px-4 sm:px-0 flex-1 justify-items-center"
             >
               {languageOptions.map((language, index) => (
                 <motion.button
@@ -140,7 +140,7 @@ export default function Call8() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.9 + index * 0.05 }}
                   onClick={() => handleLanguageToggle(language)}
-                  className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full font-medium text-gray-700 transition-all duration-300 hover:shadow-md text-xs sm:text-sm flex items-center justify-center ${
+                  className={`w-[20px] h-[20px] sm:w-24 sm:h-14 rounded-lg font-medium text-gray-700 transition-all duration-300 hover:shadow-md text-xs sm:text-sm flex items-center justify-center ${
                     selectedLanguages.includes(language)
                       ? "bg-[#F7971D] text-white shadow-lg scale-105"
                       : "bg-white hover:bg-orange-50 border-2 border-gray-200"
@@ -156,7 +156,7 @@ export default function Call8() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex justify-center mt-6 sm:mt-8"
+              className="flex justify-center mt-auto pt-4 pb-2"
             >
               <button
                 type="button"

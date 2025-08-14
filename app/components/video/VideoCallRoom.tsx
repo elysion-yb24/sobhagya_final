@@ -23,14 +23,19 @@ import {
   MicOff,
   Video,
   VideoOff,
-  PhoneOff
+  PhoneOff,
+  Gift,
+  ChevronUp,
+  ChevronDown,
+  Maximize2,
+  Minimize2,
+  RotateCcw
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { socketManager } from "../../utils/socket";
 import { getUserDetails, getAuthToken } from "../../utils/auth-utils";
 import { buildApiUrl, getApiBaseUrl } from "../../config/api";
 import GiftConfirmationDialog from '../ui/GiftConfirmationDialog';
-
 
 // Import LiveKit styles
 import '@livekit/components-styles';
@@ -54,10 +59,12 @@ interface CallStats {
   isConnected: boolean;
 }
 
-// Custom video component to show actual video tracks
+// Enhanced mobile-optimized video display component
 const CustomVideoDisplay = () => {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
+  const [isLocalVideoMinimized, setIsLocalVideoMinimized] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Get video tracks
   const localVideoTracks = useTracks([Track.Source.Camera], { onlySubscribed: false })
@@ -101,84 +108,149 @@ const CustomVideoDisplay = () => {
     });
   }, [participants.length, localVideoTracks.length, remoteVideoTracks.length, localParticipant?.identity, remoteVideoTracks, localVideoTracks, participants]);
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   return (
-    <div className="h-full w-full bg-gray-900 relative">
-      {/* Remote participants video */}
+    <div className="h-full w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black relative overflow-hidden">
+      {/* Remote participants video - Main view */}
       {remoteVideoTracks.length > 0 ? (
-        <div className="h-full w-full">
+        <div className="h-full w-full relative">
           {remoteVideoTracks.map((track, index) => (
             <div key={track.participant.identity} className="h-full w-full">
               <VideoTrack
                 trackRef={track}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: 'cover',
+                  borderRadius: '0px'
+                }}
               />
-              {/* Participant name overlay */}
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-70 rounded-lg px-3 py-1 text-white text-sm">
-                {track.participant.name || 'Astrologer'}
+              
+              {/* Enhanced participant name overlay */}
+              <div className="absolute top-4 left-4 bg-black bg-opacity-80 backdrop-blur-sm rounded-xl px-4 py-2 text-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="font-semibold text-sm sm:text-base">
+                    {track.participant.name || 'Astrologer'}
+                  </span>
+                </div>
               </div>
-              {/* Debug info overlay */}
-              <div className="absolute top-4 left-4 bg-black bg-opacity-70 rounded-lg px-3 py-1 text-white text-xs">
-                Track: {track.publication?.trackSid?.slice(0, 8) || 'unknown'}
-              </div>
+
+              {/* Fullscreen toggle button */}
+              <button
+                onClick={toggleFullscreen}
+                className="absolute top-4 right-4 bg-black bg-opacity-80 backdrop-blur-sm rounded-xl p-2 text-white hover:bg-opacity-90 transition-all"
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
             </div>
           ))}
         </div>
       ) : (
         <div className="h-full w-full flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="w-32 h-32 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="w-16 h-16 text-gray-400" />
+          <div className="text-center text-white px-4">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+              <Users className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
             </div>
-            <p className="text-xl font-semibold">Waiting for astrologer...</p>
-            <p className="text-gray-400 mt-2">The astrologer will join shortly</p>
-            <p className="text-xs text-gray-500 mt-4">
-              Remote tracks: {remoteVideoTracks.length} | Participants: {participants.length}
-            </p>
-            <p className="text-xs text-gray-500 mt-2">
-              Participant IDs: {participants.map(p => p.identity).join(', ')}
-            </p>
-            <p className="text-xs text-gray-500 mt-2">
-              Participant Names: {participants.map(p => p.name).join(', ')}
-            </p>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">Waiting for Astrologer</h2>
+            <p className="text-gray-300 text-sm sm:text-base mb-4">The astrologer will join shortly</p>
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+              <span>Connecting...</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Local video - picture in picture */}
-      <div className="absolute top-4 right-4 w-48 h-36 bg-black rounded-lg overflow-hidden z-10 border-2 border-gray-600">
+      {/* Enhanced Local video - Picture in Picture */}
+      <div className={`absolute transition-all duration-300 ease-in-out ${
+        isLocalVideoMinimized 
+          ? 'top-4 right-4 w-24 h-32 sm:w-32 sm:h-40' 
+          : 'top-4 right-4 w-32 h-24 sm:w-40 sm:h-32'
+      } bg-black rounded-2xl overflow-hidden z-20 border-2 border-white/20 shadow-2xl`}>
         {localVideoTracks.length > 0 ? (
-          <VideoTrack
-            trackRef={localVideoTracks[0]}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-white bg-gray-800">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Users className="w-6 h-6" />
+          <div className="relative w-full h-full">
+            <VideoTrack
+              trackRef={localVideoTracks[0]}
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'cover',
+                borderRadius: '12px'
+              }}
+            />
+            
+            {/* Local video controls overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
+              <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
+                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 text-white text-xs font-medium">
+                  You
+                </div>
+                <button
+                  onClick={() => setIsLocalVideoMinimized(!isLocalVideoMinimized)}
+                  className="bg-black/70 backdrop-blur-sm rounded-lg p-1 text-white hover:bg-black/90 transition-colors"
+                >
+                  {isLocalVideoMinimized ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
               </div>
-              <p className="text-xs">You</p>
+            </div>
+          </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-white bg-gradient-to-br from-gray-800 to-gray-900">
+            <div className="text-center">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Users className="w-4 h-4 sm:w-6 sm:h-6" />
+              </div>
+              <p className="text-xs sm:text-sm font-medium">You</p>
               <p className="text-xs text-gray-400">Camera off</p>
-              <p className="text-xs text-gray-500">Tracks: {localVideoTracks.length}</p>
             </div>
           </div>
         )}
-        
-        {/* Local video label */}
-        <div className="absolute bottom-1 left-1 bg-black bg-opacity-70 rounded px-2 py-1 text-white text-xs">
-          You
-        </div>
       </div>
     </div>
   );
 };
 
-// Custom control bar with mic, camera, gift, and end call buttons
+// Enhanced mobile-optimized control bar
 const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift: () => void }) => {
   const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [showControls, setShowControls] = useState(true);
+
+  // Auto-hide controls on mobile
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const resetTimeout = () => {
+      clearTimeout(timeout);
+      setShowControls(true);
+      timeout = setTimeout(() => setShowControls(false), 3000);
+    };
+
+    const handleTouch = () => resetTimeout();
+    const handleMouse = () => resetTimeout();
+
+    document.addEventListener('touchstart', handleTouch);
+    document.addEventListener('mousemove', handleMouse);
+    resetTimeout();
+
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener('touchstart', handleTouch);
+      document.removeEventListener('mousemove', handleMouse);
+    };
+  }, []);
 
   // Toggle local video
   const toggleVideo = useCallback(async () => {
@@ -207,60 +279,90 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
     }
   }, [localParticipant, isAudioEnabled]);
 
-  // Get remote participant camera status (show for first remote participant if present)
+  // Get remote participant camera status
   const remoteCameraStatus = remoteParticipants.length > 0
     ? remoteParticipants[0].isCameraEnabled
     : null;
 
   return (
-    <div className="absolute bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 bg-opacity-90 rounded-full px-4 sm:px-6 py-2 sm:py-3 flex items-center gap-2 sm:gap-4 z-[60]">
-      <button
-        onClick={toggleAudio}
-        className={`p-2 sm:p-3 rounded-full transition-all ${
-          isAudioEnabled 
-            ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-            : 'bg-red-500 hover:bg-red-600 text-white'
-        }`}
-        title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
-      >
-        {isAudioEnabled ? <Mic className="w-4 h-4 sm:w-5 sm:h-5" /> : <MicOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-      </button>
+    <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ease-in-out ${
+      showControls ? 'translate-y-0' : 'translate-y-full'
+    }`}>
+      {/* Main control bar */}
+      <div className="bg-gradient-to-t from-black/90 via-black/80 to-transparent backdrop-blur-sm px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex justify-center items-center gap-3 sm:gap-6">
+          {/* Audio toggle */}
+          <button
+            onClick={toggleAudio}
+            className={`p-4 sm:p-5 rounded-full transition-all duration-200 shadow-lg ${
+              isAudioEnabled 
+                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30' 
+                : 'bg-red-500 hover:bg-red-600 text-white border border-red-400'
+            }`}
+            title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
+          >
+            {isAudioEnabled ? <Mic className="w-5 h-5 sm:w-6 sm:h-6" /> : <MicOff className="w-5 h-5 sm:w-6 sm:h-6" />}
+          </button>
 
-      <button
-        onClick={toggleVideo}
-        className={`p-2 sm:p-3 rounded-full transition-all ${
-          isVideoEnabled 
-            ? 'bg-gray-700 hover:bg-gray-600 text-white' 
-            : 'bg-red-500 hover:bg-red-600 text-white'
-        }`}
-        title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
-      >
-        {isVideoEnabled ? <Video className="w-4 h-4 sm:w-5 sm:h-5" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" />}
-      </button>
+          {/* Video toggle */}
+          <button
+            onClick={toggleVideo}
+            className={`p-4 sm:p-5 rounded-full transition-all duration-200 shadow-lg ${
+              isVideoEnabled 
+                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30' 
+                : 'bg-red-500 hover:bg-red-600 text-white border border-red-400'
+            }`}
+            title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
+          >
+            {isVideoEnabled ? <Video className="w-5 h-5 sm:w-6 sm:h-6" /> : <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" />}
+          </button>
 
-      {/* Show remote participant camera status if present */}
-      {remoteCameraStatus !== null && (
-        <div className="hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-gray-800 rounded text-white text-xs sm:text-sm">
-          <span>Astrologer Camera:</span>
-          {remoteCameraStatus ? <Video className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" /> : <VideoOff className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />}
+          {/* Gift button */}
+          <button
+            onClick={onGift}
+            className="p-4 sm:p-5 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white transition-all duration-200 shadow-lg border border-yellow-300"
+            title="Send Gift"
+          >
+            <Gift className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* End call button */}
+          <button
+            onClick={onEndCall}
+            className="p-4 sm:p-5 rounded-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transition-all duration-200 shadow-lg border border-red-400"
+            title="End call"
+          >
+            <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
         </div>
-      )}
 
-      <button
-        onClick={onGift}
-        className="p-2 sm:p-3 rounded-full bg-yellow-400 hover:bg-yellow-500 text-white transition-all"
-        title="Send Gift"
-      >
-        <span className="text-sm sm:text-base">🎁</span>
-      </button>
+        {/* Remote participant status indicator */}
+        {remoteCameraStatus !== null && (
+          <div className="flex justify-center mt-4">
+            <div className="bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">Astrologer:</span>
+                {remoteCameraStatus ? (
+                  <div className="flex items-center gap-1 text-green-400">
+                    <Video className="w-4 h-4" />
+                    <span>Camera On</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-red-400">
+                    <VideoOff className="w-4 h-4" />
+                    <span>Camera Off</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-      <button
-        onClick={onEndCall}
-        className="p-2 sm:p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all"
-        title="End call"
-      >
-        <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
-      </button>
+      {/* Touch indicator for mobile */}
+      <div className="flex justify-center pb-2">
+        <div className="w-12 h-1 bg-white/30 rounded-full"></div>
+      </div>
     </div>
   );
 };
@@ -275,128 +377,47 @@ export default function VideoCallRoom({
   onDisconnect,
 }: VideoCallRoomProps) {
   const router = useRouter();
-  const roomRef = useRef<Room | null>(null);
-  const isDisconnectingRef = useRef(false);
-  
-  const astrologerId = partner?._id || '';
+  const searchParams = useSearchParams();
+  const astrologerId = searchParams?.get('astrologerId') || partner?._id;
   
   const [callStats, setCallStats] = useState<CallStats>({
     duration: 0,
     isConnected: false,
   });
+  
   const [showSettings, setShowSettings] = useState(false);
-
-  // Gift state
-  const [gifts, setGifts] = useState<any[]>([]);
   const [showGiftPanel, setShowGiftPanel] = useState(false);
+  const [showGiftConfirm, setShowGiftConfirm] = useState(false);
+  const [pendingGift, setPendingGift] = useState<any>(null);
   const [sendingGift, setSendingGift] = useState(false);
   const [giftNotification, setGiftNotification] = useState<any>(null);
   const [giftRequest, setGiftRequest] = useState<any>(null);
-
-  // Add state for gift confirmation
-  const [pendingGift, setPendingGift] = useState<any | null>(null);
-  const [showGiftConfirm, setShowGiftConfirm] = useState(false);
-
-
-  const [callId, setCallId] = useState<string | null>(null);
-
-  // useEffect(() => {
-    // const fetchCallId = async () => {
-    //   try {
-    //     const token = getAuthToken();
-
-    //     if(!partner || !partner._id) {
-    //       console.error('Partner not found');
-    //       return;
-    //     }
-
-    //     const astrologerId = partner._id;
-      
-    //     const response = await fetch(`${buildApiUrl('/calling/api/call/call-token-livekit')}`, {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //         "Authorization": `Bearer ${token}`,
-    //       },
-    //       body: JSON.stringify({
-    //         receiverUserId: astrologerId,
-    //         type: 'video',
-    //         appVersion: '1.0.0',
-    //       }),
-    //       credentials: "include",
-    //     });
-    //     if (response.ok) {
-    //       const data = await response.json();
-    //       if (data.success && data.data && data.data.callId) {
-    //         setCallId(data.data.callId);
-    //       }
-    //     }
-    //   } catch (err) {
-    //     console.error("Failed to fetch callId for room:", err);
-    //   }
-    // };
-    // fetchCallId();
-  // }, [roomName]);
-
-
   
+  const roomRef = useRef<Room | null>(null);
+  const isDisconnectingRef = useRef(false);
 
-  // const sendCallEndToBackend = async () => {
-  //   try {
-  //     const token = getAuthToken();
-  //     const user = getUserDetails();
-  //     if (!callId) return;
-  //     await fetch(`${getApiBaseUrl()}/calling/api/call/call-token-livekit`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "Authorization": `Bearer ${token}`,
-  //       },
-       
-  //       body: JSON.stringify({
-  //         action: "end_call",
-  //         callId,
-  //         userId: user.id || user._id,
-  //       }),
-  //       credentials: "include",
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to send call end to backend:", err);
-  //   }
-  // };
+  // Gift data
+  const gifts = [
+    { _id: '1', name: 'Rose', icon: '🌹', price: 10 },
+    { _id: '2', name: 'Heart', icon: '❤️', price: 20 },
+    { _id: '3', name: 'Star', icon: '⭐', price: 50 },
+    { _id: '4', name: 'Crown', icon: '👑', price: 100 },
+    { _id: '5', name: 'Diamond', icon: '💎', price: 200 },
+    { _id: '6', name: 'Gift', icon: '🎁', price: 500 },
+  ];
 
-  
+  // Listen for gift notifications
   useEffect(() => {
-    const token = getAuthToken();
-    fetch(`${getApiBaseUrl()}/calling/api/gift/get-gifts`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      credentials: "include"
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`Gift API error: ${res.status} ${res.statusText}`);
-        }
-        return res.json();
-      })
-      .then(data => setGifts(data.data || []))
-      .catch(err => {
-        console.error('Failed to fetch gifts:', err);
-        setGifts([]);
-      });
-  }, []);
-
-  useEffect(() => {
-    function handleReceiveGift(data: any) {
+    function handleGiftNotification(data: any) {
+      console.log('🎁 Gift notification received:', data);
       setGiftNotification(data);
-      setTimeout(() => setGiftNotification(null), 4000);
+      // Auto-hide gift notification after 5 seconds
+      setTimeout(() => setGiftNotification(null), 5000);
     }
-    socketManager.onReceiveGift(handleReceiveGift);
+    socketManager.onReceiveGift(handleGiftNotification);
     return () => {
       if (socketManager.getSocket()) {
-        socketManager.getSocket()?.off('receive_gift', handleReceiveGift);
+        socketManager.getSocket()?.off('receive_gift', handleGiftNotification);
       }
     };
   }, []);
@@ -435,7 +456,6 @@ export default function VideoCallRoom({
     })();
     return () => { didCancel = true; };
   }, [roomName]);
-
 
   const handleLeaveCall = useCallback(async () => {
     if (isDisconnectingRef.current) return;
@@ -700,91 +720,91 @@ export default function VideoCallRoom({
     };
   }, []);
 
-  // Call info header
+  // Enhanced mobile-optimized call header
   const CallHeader = React.memo(() => (
-    <div className="absolute top-2 sm:top-4 left-2 sm:left-4 right-2 sm:right-4 flex justify-between items-center z-[60] pointer-events-none">
-      <div className="bg-black bg-opacity-70 rounded-lg px-2 sm:px-4 py-1 sm:py-2 text-white pointer-events-auto">
-        <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm">
-          <div className="flex items-center gap-1 sm:gap-2">
-            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="font-medium truncate max-w-20 sm:max-w-none">
+    <div className="absolute top-0 left-0 right-0 flex justify-between items-center z-[60] pointer-events-none px-4 py-4">
+      <div className="bg-black/80 backdrop-blur-sm rounded-2xl px-4 py-3 text-white pointer-events-auto">
+        <div className="flex items-center gap-3 text-sm sm:text-base">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="font-semibold truncate max-w-32 sm:max-w-none">
               {astrologerName ? `Call with ${astrologerName}` : 'Video Call'}
             </span>
           </div>
           
-          <div className="flex items-center gap-1 sm:gap-2">
-            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span>{formatDuration(callStats.duration)}</span>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span className="font-mono">{formatDuration(callStats.duration)}</span>
           </div>
 
           {callStats.isConnected && (
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>Connected</span>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span className="text-green-400 font-medium">Connected</span>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex gap-1 sm:gap-2 pointer-events-auto">
+      <div className="flex gap-2 pointer-events-auto">
         <button
           onClick={() => setShowSettings(!showSettings)}
-          className="bg-black bg-opacity-70 rounded-lg p-1.5 sm:p-2 text-white hover:bg-opacity-90 transition-all"
+          className="bg-black/80 backdrop-blur-sm rounded-2xl p-3 text-white hover:bg-black/90 transition-all"
           title="Settings"
           disabled={isDisconnectingRef.current}
         >
-          <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+          <Settings className="w-5 h-5" />
         </button>
         
         <button
           onClick={handleLeaveCall}
-          className="bg-red-500 bg-opacity-80 rounded-lg p-1.5 sm:p-2 text-white hover:bg-opacity-100 transition-all disabled:opacity-50"
+          className="bg-red-500/90 backdrop-blur-sm rounded-2xl p-3 text-white hover:bg-red-600 transition-all disabled:opacity-50"
           title="Leave call"
           disabled={isDisconnectingRef.current}
         >
-          <PhoneOff className="w-4 h-4 sm:w-5 sm:h-5" />
+          <PhoneOff className="w-5 h-5" />
         </button>
       </div>
     </div>
   ));
 
-  // Settings panel
+  // Enhanced mobile-optimized settings panel
   const SettingsPanel = React.memo(() => {
     if (!showSettings) return null;
 
     return (
-      <div className="absolute top-16 right-4 bg-white rounded-lg shadow-xl p-4 z-[60] w-80 pointer-events-auto">
+      <div className="absolute top-20 right-4 bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 z-[60] w-80 pointer-events-auto border border-white/20">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Call Settings</h3>
+          <h3 className="text-lg font-bold text-gray-800">Call Settings</h3>
           <button
             onClick={() => setShowSettings(false)}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
         
-        <div className="space-y-3 text-sm">
-          <div>
-            <span className="font-medium text-gray-700">Room:</span>
-            <span className="ml-2 text-gray-600">{roomName}</span>
+        <div className="space-y-4 text-sm">
+          <div className="bg-gray-50 rounded-xl p-3">
+            <span className="font-semibold text-gray-700">Room:</span>
+            <span className="ml-2 text-gray-600 font-mono">{roomName}</span>
           </div>
           
-          <div>
-            <span className="font-medium text-gray-700">Participant:</span>
+          <div className="bg-gray-50 rounded-xl p-3">
+            <span className="font-semibold text-gray-700">Participant:</span>
             <span className="ml-2 text-gray-600">{participantName}</span>
           </div>
           
-          <div>
-            <span className="font-medium text-gray-700">Status:</span>
-            <span className={`ml-2 ${callStats.isConnected ? 'text-green-600' : 'text-red-600'}`}>
+          <div className="bg-gray-50 rounded-xl p-3">
+            <span className="font-semibold text-gray-700">Status:</span>
+            <span className={`ml-2 font-semibold ${callStats.isConnected ? 'text-green-600' : 'text-red-600'}`}>
               {callStats.isConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
 
-          <div>
-            <span className="font-medium text-gray-700">Duration:</span>
-            <span className="ml-2 text-gray-600">{formatDuration(callStats.duration)}</span>
+          <div className="bg-gray-50 rounded-xl p-3">
+            <span className="font-semibold text-gray-700">Duration:</span>
+            <span className="ml-2 text-gray-600 font-mono">{formatDuration(callStats.duration)}</span>
           </div>
         </div>
       </div>
@@ -829,9 +849,7 @@ export default function VideoCallRoom({
         onError={handleError}
         connect={true}
         options={{
-     
           adaptiveStream: true,
-        
           dynacast: true,
           // Audio settings
           audioCaptureDefaults: {
@@ -867,64 +885,80 @@ export default function VideoCallRoom({
         {/* Settings Panel */}
         <SettingsPanel />
 
-        {/* Gift Panel */}
+        {/* Enhanced mobile-optimized gift panel */}
         {showGiftPanel && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3 className="text-lg font-bold mb-4">Send a Gift</h3>
-              <div className="grid grid-cols-3 gap-4">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Send a Gift</h3>
+                <button 
+                  onClick={() => setShowGiftPanel(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 {gifts.map(gift => (
                   <button
                     key={gift._id}
-                    className="flex flex-col items-center p-2 border rounded hover:bg-orange-50"
+                    className="flex flex-col items-center p-4 border-2 border-gray-200 rounded-2xl hover:border-orange-300 hover:bg-orange-50 transition-all"
                     onClick={() => {
                       setPendingGift(gift);
                       setShowGiftConfirm(true);
                     }}
                     disabled={sendingGift}
                   >
-                    <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-1" />
-                    <span className="text-xs">{gift.name}</span>
-                    <span className="text-xs text-gray-500">₹{gift.price}</span>
+                    <span className="text-3xl mb-2">{gift.icon}</span>
+                    <span className="font-semibold text-gray-800 mb-1">{gift.name}</span>
+                    <span className="text-sm text-orange-600 font-bold">₹{gift.price}</span>
                   </button>
                 ))}
               </div>
-              <button onClick={() => setShowGiftPanel(false)} className="mt-4 px-4 py-2 bg-gray-200 rounded">Close</button>
             </div>
           </div>
         )}
 
-        {/* Gift Notification */}
+        {/* Enhanced gift notification */}
         {giftNotification && (
-          <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-800 px-6 py-3 rounded shadow-lg z-50">
-            🎁 {giftNotification.fromName} sent {giftNotification.giftName}!
-          </div>
-        )}
-
-        {/* Gift Request Notification */}
-        {giftRequest && (
-          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-orange-100 border border-orange-400 text-orange-800 px-6 py-3 rounded shadow-lg z-50 flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🎁</span>
-              <span className="font-medium">
-                {astrologerName || 'Astrologer'} is requesting a gift!
+          <div className="fixed top-8 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 animate-bounce">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎁</span>
+              <span className="font-semibold">
+                {giftNotification.fromName} sent {giftNotification.giftName}!
               </span>
             </div>
-            <button
-              onClick={() => {
-                setShowGiftPanel(true);
-                setGiftRequest(null);
-              }}
-              className="bg-orange-500 text-white px-3 py-1 rounded text-sm hover:bg-orange-600 transition-colors"
-            >
-              Send Gift
-            </button>
-            <button
-              onClick={() => setGiftRequest(null)}
-              className="text-orange-600 hover:text-orange-800 text-sm"
-            >
-              ✕
-            </button>
+          </div>
+        )}
+
+        {/* Enhanced gift request notification */}
+        {giftRequest && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-orange-400 to-red-500 text-white px-6 py-4 rounded-2xl shadow-2xl z-50">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🎁</span>
+                <span className="font-semibold">
+                  {astrologerName || 'Astrologer'} is requesting a gift!
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowGiftPanel(true);
+                    setGiftRequest(null);
+                  }}
+                  className="bg-white text-orange-600 px-4 py-2 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                >
+                  Send Gift
+                </button>
+                <button
+                  onClick={() => setGiftRequest(null)}
+                  className="bg-white/20 text-white px-3 py-2 rounded-xl hover:bg-white/30 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

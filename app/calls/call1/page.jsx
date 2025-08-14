@@ -20,7 +20,18 @@ export default function Call1() {
       localStorage.setItem('selectedAstrologerId', astrologerId);
       console.log('Stored astrologer ID for call flow:', astrologerId);
     }
-  }, [astrologerId]);
+    
+    // Check if we're coming from astrologers page (callSource is 'astrologerCard')
+    const callSource = localStorage.getItem('callSource');
+    if (callSource === 'astrologerCard') {
+      console.log('Coming from astrologers page, bypassing call form');
+      // Clear the call source to prevent future bypasses
+      localStorage.removeItem('callSource');
+      // Redirect to login page
+      router.push('/login');
+      return;
+    }
+  }, [astrologerId, router]);
 
   const handleOptionChange = (option) => {
     setSelectedOption(option);

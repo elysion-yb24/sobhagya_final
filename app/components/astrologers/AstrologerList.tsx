@@ -56,6 +56,7 @@ interface AstrologerListProps {
   onRetry?: () => void;
   compactButtons?: boolean;
   showVideoButton?: boolean;
+  source?: string;
 }
 
 const AstrologerList: React.FC<AstrologerListProps> = ({
@@ -65,7 +66,8 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   hasError = false,
   onRetry,
   compactButtons = false,
-  showVideoButton = false
+  showVideoButton = false,
+  source
 }) => {
   const [mounted, setMounted] = useState(false);
 
@@ -139,6 +141,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
               astrologer={astrologer}
               compactButtons={compactButtons}
               showVideoButton={showVideoButton || astrologer.isVideoCallAllowed}
+              source={source}
             />
           </div>
         ))}

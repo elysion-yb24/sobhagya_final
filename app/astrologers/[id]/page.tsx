@@ -285,20 +285,26 @@ export default function AstrologerProfilePage() {
   // Handle callType query parameter for direct call initiation
   useEffect(() => {
     const callType = searchParams?.get('callType');
+    console.log('🔍 Astrologer profile: Checking for callType in query params:', callType);
+    console.log('🔍 Astrologer profile: astrologer loaded:', !!astrologer);
+    
     if (callType && astrologer) {
-      console.log('Found callType in query params:', callType);
+      console.log('✅ Found callType in query params:', callType, 'for astrologer:', astrologer.name);
       
       // Small delay to ensure page is fully loaded
       setTimeout(() => {
         if (callType === 'audio') {
+          console.log('🎯 Showing audio call confirmation dialog');
           setShowAudioCallConfirm(true);
         } else if (callType === 'video') {
+          console.log('🎯 Showing video call confirmation dialog');
           setShowVideoCallConfirm(true);
         }
         
         // Clear the query parameter from URL
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);
+        console.log('🧹 Cleared callType from URL');
       }, 1000);
     }
   }, [searchParams, astrologer]);
@@ -1612,8 +1618,14 @@ export default function AstrologerProfilePage() {
 
       <ConfirmationDialog
         isOpen={showAudioCallConfirm}
-        onClose={() => setShowAudioCallConfirm(false)}
-        onConfirm={handleAudioCall}
+        onClose={() => {
+          console.log('❌ Audio call confirmation dialog closed');
+          setShowAudioCallConfirm(false);
+        }}
+        onConfirm={() => {
+          console.log('✅ Audio call confirmation dialog confirmed - initiating call');
+          handleAudioCall();
+        }}
         title="Start Audio Call"
         message={`Start an audio consultation with ${astrologer.name} at ₹${astrologer.rpm || 15}/minute? Charges will be deducted from your wallet.`}
         confirmText="Start Call"

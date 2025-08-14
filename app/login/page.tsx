@@ -21,6 +21,7 @@ import {
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from '../utils/auth-utils';
 import { buildApiUrl, API_CONFIG } from '../config/api';
+import { getApiBaseUrl } from '../config/api';
 
 // Define types for country and authentication data
 interface Country {
@@ -59,9 +60,10 @@ export default function LoginPage() {
   useEffect(() => {
     setMounted(true);
     
-    try {
-      const isAuthValid = isAuthenticated();
-      if (isAuthValid) {
+    const checkAuthAndRedirect = async () => {
+      try {
+        const isAuthValid = isAuthenticated();
+        if (isAuthValid) {
         console.log('✅ User already authenticated, checking for stored astrologer ID');
         
         // Check user role first
@@ -74,21 +76,39 @@ export default function LoginPage() {
         
         // Check if there's a stored astrologer ID from the call flow
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-        const callType = localStorage.getItem('callType');
+        const callIntent = localStorage.getItem('callIntent');
+        const callSource = localStorage.getItem('callSource');
         
-        if (storedAstrologerId) {
-          console.log('Found stored astrologer ID:', storedAstrologerId, 'call type:', callType);
-          
-          if (callType === 'audio' || callType === 'video') {
-            // Redirect to astrologer profile with call type for direct call initiation
-            console.log('Redirecting to astrologer profile for direct call initiation');
-            router.push(`/astrologers/${storedAstrologerId}?callType=${callType}`);
-          } else {
-            // Redirect to the specific astrologer profile
-            router.push(`/astrologers/${storedAstrologerId}`);
-          }
+        console.log('🔍 Checking stored data:', { storedAstrologerId, callIntent, callSource });
+        
+        if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
+          console.log('✅ Found call intent from call-with-astrologer:', callIntent, 'for astrologer:', storedAstrologerId);
+          // Clear the original intent data
+          localStorage.removeItem('selectedAstrologerId');
+          localStorage.removeItem('callIntent');
+          localStorage.removeItem('callSource');
+          // Directly initiate call and navigate to call page
+          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+          return;
+        } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
+          console.log('✅ Found call intent from astrologer card:', callIntent, 'for astrologer:', storedAstrologerId);
+          // Store the call intent for immediate call initiation
+          localStorage.setItem('immediateCallIntent', callIntent);
+          localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
+          // Clear the original intent data
+          localStorage.removeItem('selectedAstrologerId');
+          localStorage.removeItem('callIntent');
+          localStorage.removeItem('callSource');
+          // Redirect to astrologers page for immediate call initiation
+          console.log('🚀 Redirecting to astrologers page for immediate call');
+          router.push('/astrologers');
+        } else if (storedAstrologerId) {
+          console.log('📞 Found stored astrologer ID:', storedAstrologerId);
+          localStorage.removeItem('selectedAstrologerId');
+          // Redirect to the specific astrologer profile
+          router.push(`/astrologers/${storedAstrologerId}`);
         } else {
-          console.log('No stored astrologer ID, redirecting to astrologers page');
+          console.log('🏠 No stored astrologer ID, redirecting to astrologers page');
           router.push('/astrologers');
         }
       }
@@ -96,6 +116,9 @@ export default function LoginPage() {
       console.log('❌ Authentication check failed on login page:', error);
       
     }
+    };
+    
+    checkAuthAndRedirect();
   }, [router]);
   
   const filteredCountries = searchTerm 
@@ -150,6 +173,78 @@ export default function LoginPage() {
     }
   };
 
+  // Helper to fetch astrologer name for URL display
+  const fetchAstrologerName = async (astrologerId: string, token: string): Promise<string> => {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+      if (!response.ok) return 'Astrologer';
+      const data = await response.json();
+      return data?.data?.name || data?.name || 'Astrologer';
+    } catch {
+      return 'Astrologer';
+    }
+  };
+
+  // Helper to directly initiate call and navigate to call page
+  const initiateDirectCall = async (astrologerId: string, callType: 'audio' | 'video') => {
+    try {
+      const token = getAuthToken();
+      const user = getUserDetails();
+      if (!token || !user?.id) {
+        router.replace('/astrologers');
+        return;
+      }
+
+      const channelId = Date.now().toString();
+      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+      const body = {
+        receiverUserId: astrologerId,
+        type: callType === 'audio' ? 'call' : 'video',
+        appVersion: '1.0.0'
+      };
+
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
+        throw new Error(data?.message || 'Failed to initiate call');
+      }
+
+      const astrologerName = await fetchAstrologerName(astrologerId, token);
+
+      // Keep source for back nav, drop intent keys
+      localStorage.setItem('lastAstrologerId', astrologerId);
+      localStorage.setItem('callSource', 'callWithAstrologer');
+      localStorage.removeItem('selectedAstrologerId');
+      localStorage.removeItem('callIntent');
+
+      const dest = callType === 'audio'
+        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
+        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+
+      router.replace(dest);
+    } catch (err) {
+      console.error('❌ Direct call initiation failed:', err);
+      router.replace('/astrologers');
+    }
+  };
+
   const handleVerifyOtp = async (data: any) => {
     // If this is just a success notification from OtpVerificationScreen, don't re-verify
     if (data && data.verified === true) {
@@ -175,7 +270,16 @@ export default function LoginPage() {
           return;
         }
       }
-      // Default redirect
+      // Default redirect based on source
+      const callIntent = localStorage.getItem('callIntent');
+      const callSource = localStorage.getItem('callSource');
+
+      if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
+        await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+        return;
+      }
+
+      // Otherwise go to astrologers as before
       router.push('/astrologers');
       return;
     }
@@ -218,18 +322,24 @@ export default function LoginPage() {
           setError("Authentication succeeded but no token was received.");
         }
         
-        // Post-OTP: handle chat intent first
+        // Post-OTP: handle call intent and chat intent
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-        const callType = localStorage.getItem('callType');
+        const callIntent = localStorage.getItem('callIntent');
         const chatIntent = localStorage.getItem('chatIntent');
+        const callSource = localStorage.getItem('callSource');
+
+        console.log('🔍 Post-OTP: Checking stored data:', { storedAstrologerId, callIntent, chatIntent, callSource });
 
         const user = getUserDetails();
         if (user && user.role === 'friend') {
+          console.log('👥 User is a friend, redirecting to partner info');
           router.push('/partner-info');
           return;
         }
 
+        // Handle chat intent first
         if (storedAstrologerId && chatIntent === '1') {
+          console.log('💬 Handling chat intent');
           const profile = getUserDetails();
           const currentUserId = profile?.id || profile?._id || '';
           const currentUserName = profile?.displayName || profile?.name || 'User';
@@ -244,16 +354,47 @@ export default function LoginPage() {
           }
         }
 
-        if (storedAstrologerId) {
-          console.log('Found stored astrologer ID:', storedAstrologerId, 'call type:', callType);
+        // Handle call intent from astrologer card or Call with Astrologer page
+        if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
+          console.log('📞 Found call intent from call-with-astrologer:', callIntent, 'for astrologer:', storedAstrologerId);
+          
+          // Clear the original intent data
           localStorage.removeItem('selectedAstrologerId');
-          localStorage.removeItem('callType');
-          if (callType === 'audio' || callType === 'video') {
-            router.push(`/astrologers/${storedAstrologerId}?callType=${callType}`);
-          } else {
-            router.push(`/astrologers/${storedAstrologerId}`);
-          }
+          localStorage.removeItem('callIntent');
+          localStorage.removeItem('callSource');
+          
+          // Directly initiate call and navigate to call page
+          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+          return;
+        } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
+          console.log('📞 Found call intent from astrologer card:', callIntent, 'for astrologer:', storedAstrologerId);
+          
+          // Store the call intent for immediate call initiation
+          localStorage.setItem('immediateCallIntent', callIntent);
+          localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
+          
+          // Clear the original intent data
+          localStorage.removeItem('selectedAstrologerId');
+          localStorage.removeItem('callIntent');
+          localStorage.removeItem('callSource');
+          
+          // Redirect to astrologers page where immediate call will be initiated
+          console.log('🚀 Post-OTP: Redirecting to astrologers page for immediate call');
+          console.log('🔍 Stored immediate call data:', {
+            immediateCallIntent: callIntent,
+            immediateCallAstrologerId: storedAstrologerId
+          });
+          router.push('/astrologers');
+          return;
+        }
+
+        // Handle regular astrologer navigation
+        if (storedAstrologerId) {
+          console.log('📞 Post-OTP: Found stored astrologer ID:', storedAstrologerId);
+          localStorage.removeItem('selectedAstrologerId');
+          router.push(`/astrologers/${storedAstrologerId}`);
         } else {
+          console.log('🏠 Post-OTP: No stored astrologer ID, redirecting to astrologers page');
           router.push('/astrologers');
         }
       } else {

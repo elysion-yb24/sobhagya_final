@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Bottom Right Zodiac Background Image */}
-      <div className="absolute bottom-[-100px] right-[20px] w-[340px] h-[240px] sm:w-[460px] sm:h-[360px] lg:w-[560px] lg:h-[420px] opacity-10">
+      <div className="absolute bottom-[-200px] right-[20px] w-[340px] h-[240px] sm:w-[460px] sm:h-[360px] lg:w-[560px] lg:h-[420px] opacity-10">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
@@ -52,7 +52,7 @@ const Footer: React.FC = () => {
                 className="object-contain"
               />
             </div>
-            <span className="text-white text-xl font-bold">SOBHAGYA</span>
+            <span className={`text-white text-sm font-medium ${eagleLake.className}`}>SOBHAGYA</span>
           </div>
 
           {/* Desktop: Logo and GET IN TOUCH */}
@@ -67,7 +67,7 @@ const Footer: React.FC = () => {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-2xl sm:text-4xl lg:text-5xl font-bold">SOBHAGYA</span>
+                <span className={`text-white text-2xl sm:text-3xl lg:text-4xl font-bold ${eagleLake.className}`}>SOBHAGYA</span>
               </div>
 
               <div className="space-y-4">
@@ -258,7 +258,7 @@ const Footer: React.FC = () => {
         {/* Footer Bottom - Simple divider */}
         <div className="border-t border-gray-700 mt-8 sm:mt-10 pt-6 sm:pt-8">
           <div className="text-center">
-            <p className="text-white text-sm opacity-80">
+            <p className="text-white text-sm opacity-80 tracking-tighter">
               © 2025 Sobhagya. All rights reserved.
             </p>
           </div>

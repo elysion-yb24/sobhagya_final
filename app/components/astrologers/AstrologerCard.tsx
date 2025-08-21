@@ -474,7 +474,7 @@ const AstrologerCard = React.memo(function AstrologerCard({ astrologer, compactB
             </div>
             
             {/* Specializations */}
-            <div className="text-gray-700 text-xs mb-1" style={{ fontSize: "13px" }}>
+            <div className="text-gray-700 text-xs mb-1" style={{ fontSize: "16px" }}>
               {partner.talksAbout && partner.talksAbout.length > 0
                 ? partner.talksAbout.slice(0, 3).join(', ')
                 : specializations?.join(', ') || 'Kp, Vedic, Vastu'

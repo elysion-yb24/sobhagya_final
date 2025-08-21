@@ -122,7 +122,7 @@ export default function Call3() {
                 onChange={handleNameChange}
                 className="w-full h-14 sm:h-16 px-4 sm:px-6 py-3 sm:py-4 bg-white rounded-xl border-2 border-gray-200 
                          focus:border-[#F7971D] focus:ring-4 focus:ring-orange-100 focus:outline-none 
-                         text-base sm:text-lg font-medium text-gray-700 placeholder-gray-400
+                         text-base sm:text-lg font-normal text-gray-700 placeholder-gray-400
                          transition-all duration-300 shadow-sm hover:shadow-md"
                 placeholder="Enter your full name"
               />
@@ -139,7 +139,7 @@ export default function Call3() {
                 type="button"
                 onClick={handleNext}
                 disabled={!name.trim()}
-                className={`w-full sm:w-[203px] px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-lg h-[60px] sm:h-[72px] text-lg sm:text-xl md:text-[25px] transition-all duration-300 ${
+                className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${
                   name.trim()
                     ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                     : "bg-gray-400 cursor-not-allowed"

@@ -202,12 +202,14 @@ const Header = () => {
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
-                width={36}
-                height={36}
+                width={56}
+                height={56}
                 className="w-14 h-14 object-contain"
+                priority
+                quality={100}
               />
               <div className="flex flex-col justify-center">
-                <span className="text-2xl font-extrabold text-orange-500 tracking-tight" style={{ fontFamily: 'EB Garamond', letterSpacing: '0.01em' }}>
+                <span className={`text-2xl font-extrabold text-orange-500 tracking-tight ${eagleLake.className}`} style={{ letterSpacing: '0.01em' }}>
                   Sobhagya
                 </span>
                 <span className="text-xs text-gray-400 font-medium tracking-wide mt-0.5" style={{ letterSpacing: '0.02em' }}>
@@ -274,12 +276,14 @@ const Header = () => {
               <Image
                 src="/sobhagya_logo.avif"
                 alt="Sobhagya"
-                width={36}
-                height={36}
+                width={48}
+                height={48}
                 className="w-12 h-12 object-contain"
+                priority
+                quality={100}
               />
               <div className="flex flex-col justify-center">
-                <span className="text-xl font-extrabold text-orange-500 tracking-tight" style={{ fontFamily: 'EB Garamond', letterSpacing: '0.01em' }}>
+                <span className={`text-xl font-extrabold text-orange-500 tracking-tight ${eagleLake.className}`} style={{ letterSpacing: '0.01em' }}>
                   Sobhagya
                 </span>
               </div>
@@ -344,8 +348,10 @@ const Header = () => {
               width={40}
               height={40}
               className="w-10 h-10 object-contain"
+              priority
+              quality={100}
             />
-            <span className="text-xl font-bold text-orange-500" style={{ fontFamily: 'EB Garamond' }}>
+            <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
               Sobhagya
             </span>
         </Link>
@@ -409,8 +415,8 @@ const Header = () => {
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
-                <Image src="/sobhagya_logo.avif" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" />
-                <span className="text-xl font-bold text-orange-500" style={{ fontFamily: 'EB Garamond' }}>
+                <Image src="/sobhagya_logo.avif" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
+                <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
                   Sobhagya
                 </span>
               </Link>

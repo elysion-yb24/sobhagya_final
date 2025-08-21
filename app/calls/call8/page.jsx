@@ -162,7 +162,7 @@ export default function Call8() {
                 type="button"
                 onClick={handleNext}
                 disabled={selectedLanguages.length === 0}
-                className={`w-full sm:w-[203px] px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-lg h-[60px] sm:h-[72px] text-lg sm:text-xl md:text-[25px] transition-all duration-300 ${
+                className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${
                   selectedLanguages.length > 0
                     ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                     : "bg-gray-400 cursor-not-allowed"

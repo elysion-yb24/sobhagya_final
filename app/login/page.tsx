@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import { 
   Phone, 
   ChevronDown, 
@@ -22,6 +23,7 @@ import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from '../utils/auth-utils';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import { getApiBaseUrl } from '../config/api';
+
 
 // Define types for country and authentication data
 interface Country {
@@ -486,12 +488,14 @@ export default function LoginPage() {
               width={80} 
               height={80} 
               className="object-cover w-full h-full rounded-full" 
+              priority
+              quality={100}
             />
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-1 text-center leading-tight">
+          <h1 className={`text-2xl sm:text-3xl md:text-4xl font-extrabold text-gray-900 mb-1 text-center leading-tight`}>
             Sign in to Sobhagya
           </h1>
-          <p className="text-orange-700 text-sm sm:text-base md:text-lg font-medium text-center mb-2 px-2">
+          <p className="text-[#F7971D] text-sm sm:text-base md:text-lg font-medium text-center mb-2 px-2">
             Connect instantly with expert astrologers
           </p>
         </div>

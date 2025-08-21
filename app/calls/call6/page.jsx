@@ -4,11 +4,13 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Head from "next/head";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function Call6() {
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("");
   const [isExiting, setIsExiting] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState(null); // 'hour', 'minute', or null
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -21,6 +23,20 @@ export default function Call6() {
       console.log('Call6: No stored astrologer ID found');
     }
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openDropdown && !event.target.closest('.dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   const handleNext = () => {
     if (hour && minute) {
@@ -37,6 +53,16 @@ export default function Call6() {
 
   const handleBack = () => {
     router.push("/calls/call5");
+  };
+
+  const toggleDropdown = (dropdownType) => {
+    setOpenDropdown(openDropdown === dropdownType ? null : dropdownType);
+  };
+
+  const selectOption = (dropdownType, value) => {
+    if (dropdownType === 'hour') setHour(value);
+    if (dropdownType === 'minute') setMinute(value);
+    setOpenDropdown(null);
   };
 
   return (
@@ -116,24 +142,43 @@ export default function Call6() {
               className="flex justify-center gap-4 sm:gap-6 mb-12 sm:mb-16 mt-6 sm:mt-8"
             >
               {/* Hour Dropdown */}
-              <div className="relative">
-                                <select
-                  value={hour}
-                  onChange={(e) => setHour(e.target.value)}
-                  className="w-20 sm:w-24 h-14 sm:h-16 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border-2 border-gray-200 cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-[#F7971D] text-base sm:text-lg font-medium text-gray-700 transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
+              <div className="relative dropdown-container">
+                <button
+                  type="button"
+                  onClick={() => toggleDropdown('hour')}
+                  className={`w-24 h-14 sm:h-16 px-4 py-2 sm:py-3 bg-white rounded-xl border-2 transition-all duration-300 shadow-sm hover:shadow-md text-base sm:text-lg font-medium flex items-center justify-between ${
+                    hour ? 'border-[#F7971D] text-gray-700' : 'border-gray-200 text-gray-400'
+                  }`}
                 >
-                  <option value="" disabled>Hour</option>
-                  {[...Array(24)].map((_, i) => (
-                    <option key={`hour-${i}`} value={i.toString().padStart(2, '0')}>
-                      {i.toString().padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-6 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  <span>{hour || 'Hour'}</span>
+                  {openDropdown === 'hour' ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+                
+                <AnimatePresence>
+                  {openDropdown === 'hour' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto"
+                    >
+                      {[...Array(24)].map((_, i) => (
+                        <button
+                          key={`hour-${i}`}
+                          onClick={() => selectOption('hour', i.toString().padStart(2, '0'))}
+                          className="w-full px-4 py-3 text-left hover:bg-orange-50 hover:text-orange-600 transition-colors duration-200 border-b border-gray-100 last:border-b-0 text-base sm:text-lg font-medium"
+                        >
+                          {i.toString().padStart(2, '0')}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Separator */}
@@ -142,24 +187,43 @@ export default function Call6() {
               </div>
 
               {/* Minute Dropdown */}
-              <div className="relative">
-                                <select
-                  value={minute}
-                  onChange={(e) => setMinute(e.target.value)}
-                  className="w-20 sm:w-24 h-14 sm:h-16 px-3 sm:px-4 py-2 sm:py-3 bg-white rounded-xl border-2 border-gray-200 cursor-pointer focus:outline-none focus:ring-4 focus:ring-orange-100 focus:border-[#F7971D] text-base sm:text-lg font-medium text-gray-700 transition-all duration-300 shadow-sm hover:shadow-md appearance-none"
+              <div className="relative dropdown-container">
+                <button
+                  type="button"
+                  onClick={() => toggleDropdown('minute')}
+                  className={`w-24 h-14 sm:h-16 px-4 py-2 sm:py-3 bg-white rounded-xl border-2 transition-all duration-300 shadow-sm hover:shadow-md text-base sm:text-lg font-medium flex items-center justify-between ${
+                    minute ? 'border-[#F7971D] text-gray-700' : 'border-gray-200 text-gray-400'
+                  }`}
                 >
-                  <option value="" disabled>Minute</option>
-                  {[...Array(60)].map((_, i) => (
-                    <option key={`minute-${i}`} value={i.toString().padStart(2, '0')}>
-                      {i.toString().padStart(2, '0')}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-6 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+                  <span>{minute || 'Minute'}</span>
+                  {openDropdown === 'minute' ? (
+                    <ChevronUp className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+                
+                <AnimatePresence>
+                  {openDropdown === 'minute' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto"
+                    >
+                      {[...Array(60)].map((_, i) => (
+                        <button
+                          key={`minute-${i}`}
+                          onClick={() => selectOption('minute', i.toString().padStart(2, '0'))}
+                          className="w-full px-4 py-3 text-left hover:bg-orange-50 hover:text-orange-600 transition-colors duration-200 border-b border-gray-100 last:border-b-0 text-base sm:text-lg font-medium"
+                        >
+                          {i.toString().padStart(2, '0')}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
 
@@ -174,7 +238,7 @@ export default function Call6() {
                 type="button"
                 onClick={handleNext}
                 disabled={!hour || !minute}
-                className={`w-full sm:w-[203px] px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-lg h-[60px] sm:h-[72px] text-lg sm:text-xl md:text-[25px] transition-all duration-300 ${
+                className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${
                   hour && minute
                     ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                     : "bg-gray-400 cursor-not-allowed"

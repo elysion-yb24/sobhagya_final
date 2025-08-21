@@ -160,7 +160,7 @@ export default function Call2() {
                        type="button"
                        onClick={handleNext}
                        disabled={!selectedGender}
-                       className={`w-full sm:w-[203px] px-6 sm:px-8 py-3 sm:py-4 text-white font-semibold rounded-lg h-[60px] sm:h-[72px] text-lg sm:text-xl md:text-[25px] transition-all duration-300 ${
+                       className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${
                          selectedGender
                            ? "bg-[#F7971D] hover:bg-[#E88A1A]"
                            : "bg-gray-400 cursor-not-allowed"

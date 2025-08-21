@@ -16,7 +16,7 @@ const WhyConsult: React.FC = () => {
         <p className="text-center mb-12 sm:mb-16 text-[#745802] text-base sm:text-lg md:text-xl font-medium max-w-3xl mx-auto px-4">
           Unlock the Secrets of Your Destiny!
         </p>
-        <div className="max-w-5xl mx-auto bg-white/95 rounded-2xl sm:rounded-3xl shadow-2xl border-t-8 border-orange-200 p-4 sm:p-6 md:p-8 lg:p-12 animate-fade-in-up">
+        <div className="max-w-5xl mx-auto bg-white/95 rounded-2xl sm:rounded-3xl border-t-8 border-orange-200 p-4 sm:p-6 md:p-8 lg:p-12 shadow-lg animate-fade-in-up">
           <div className="space-y-6 sm:space-y-8 md:space-y-10">
             {/* Understanding Life's Journey */}
             <div className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border-l-4 border-orange-400">

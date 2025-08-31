@@ -67,6 +67,11 @@ export function getUserDetails(): any {
     return null;
   }
 }
+export const getAuthenticatedUser = () => {
+  if (typeof window === "undefined") return null;
+  const user = localStorage.getItem("user"); // or decode from JWT
+  return user ? JSON.parse(user) : null;
+};
 
 /**
  * Captures user name from various sources and integrates with auth system

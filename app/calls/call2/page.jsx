@@ -12,12 +12,11 @@ export default function Call2() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Log the stored astrologer ID for debugging
-    const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+    const storedAstrologerId = localStorage.getItem("selectedAstrologerId");
     if (storedAstrologerId) {
-      console.log('Call2: Found stored astrologer ID:', storedAstrologerId);
+      console.log("Call2: Found stored astrologer ID:", storedAstrologerId);
     } else {
-      console.log('Call2: No stored astrologer ID found');
+      console.log("Call2: No stored astrologer ID found");
     }
   }, []);
 
@@ -27,8 +26,7 @@ export default function Call2() {
 
   const handleNext = () => {
     if (selectedGender) {
-      // Store the gender in localStorage for the next step
-      localStorage.setItem('userGender', selectedGender);
+      localStorage.setItem("userGender", selectedGender);
       setIsExiting(true);
       setTimeout(() => {
         router.push("/calls/call3");
@@ -59,7 +57,7 @@ export default function Call2() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
+              className="font-medium font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
             >
               Enter Your Details
             </motion.h1>
@@ -69,27 +67,29 @@ export default function Call2() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-6 sm:mb-8"
+              className="relative mb-6 sm:mb-8 w-[70%] mx-auto"
             >
-              <div className="h-1 bg-gray-300 w-full rounded-full">
+              {/* Background Bar */}
+              <div className="h-[1px] bg-gray-300 w-[110%] -ml-[5%] rounded-full relative">
+                {/* Animated Filled Part */}
                 <motion.div
-                  className="h-1 bg-[#F7971D] rounded-full"
+                  className="h-[1px] bg-[#F7971D] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: "25%" }}
                   transition={{ duration: 1, delay: 0.5 }}
                 ></motion.div>
               </div>
 
-              <div className="flex justify-between absolute w-full top-0 transform -translate-y-1/2">
+              {/* Dots */}
+              <div className="flex justify-between absolute w-full top-0 -translate-y-1/2 px-[2%]">
                 {[...Array(8)].map((_, index) => (
                   <motion.div
                     key={index}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-                      index < 2 ? "bg-[#F7971D]" : "bg-gray-300"
-                    }`}
+                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${index < 2 ? "bg-[#F7971D]" : "bg-gray-300"
+                      }`}
                   ></motion.div>
                 ))}
               </div>
@@ -105,12 +105,13 @@ export default function Call2() {
               Choose Your Gender
             </motion.h2>
 
+
             {/* Gender Selection Options */}
             <div className="flex justify-center gap-8 sm:gap-16 md:gap-56 mb-6 sm:mb-8 mt-4 sm:mt-6 md:mt-8">
               {[
-                { value: "female", label: "Female", icon: "/Vector 92.png", color: "text-[#F7971D]" },
-                { value: "male", label: "Male", icon: "/Vector 93.png", color: "text-gray-700" },
-                { value: "other", label: "Other", icon: "/Group 13400.png", color: "text-gray-700" }
+                { value: "female", label: "Female", icon: "/Vector 92.png",activeIcon:"/Vector 92 (1).png" },
+                { value: "male", label: "Male", icon: "/Vector 93.png",activeIcon:"/image (16).png" },
+                { value: "other", label: "Other", icon: "/Group 13400.png",activeIcon:"/image (15).png" },
               ].map((option, index) => (
                 <motion.div
                   key={option.value}
@@ -120,55 +121,64 @@ export default function Call2() {
                   className="flex flex-col items-center cursor-pointer"
                   onClick={() => handleGenderChange(option.value)}
                 >
-                  <div className={`mb-2 ${option.color}`}>
+                  {/* Icon */}
+                  <div className="mb-2">
                     <img
-                      src={option.icon}
+                      src={selectedGender === option.value ? option.activeIcon : option.icon}
                       alt={option.label}
-                      className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain"
+                      className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain transition-all duration-300
+            ${selectedGender === option.value ? "grayscale-0" : "grayscale"}`}
                     />
                   </div>
-                  <span className="text-base sm:text-lg font-medium text-gray-700 mb-2">
+
+                  {/* Label */}
+                  <span
+                    className={`text-base sm:text-lg font-medium mb-2 transition-colors duration-300 ${selectedGender === option.value ? "text-[#F7971D]" : "text-gray-700"
+                      }`}
+                  >
                     {option.label}
                   </span>
+
+                  {/* Radio Button */}
                   <div
-                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-                      selectedGender === option.value
-                        ? "border-[#F7971D]"
-                        : "border-gray-400"
-                    }`}
+                    className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${selectedGender === option.value
+                      ? "border-[#F7971D]"
+                      : "border-gray-400"
+                      }`}
                   >
                     {selectedGender === option.value && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#F7971D]"
-                      ></motion.div>
+                      />
                     )}
                   </div>
                 </motion.div>
               ))}
             </div>
 
-                               {/* Navigation Buttons */}
-                   <motion.div
-                     initial={{ y: 20, opacity: 0 }}
-                     animate={{ y: 0, opacity: 1 }}
-                     transition={{ duration: 0.6, delay: 0.9 }}
-                     className="flex justify-center mt-6 sm:mt-8"
-                   >
-                     <button
-                       type="button"
-                       onClick={handleNext}
-                       disabled={!selectedGender}
-                       className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${
-                         selectedGender
-                           ? "bg-[#F7971D] hover:bg-[#E88A1A]"
-                           : "bg-gray-400 cursor-not-allowed"
-                       }`}
-                     >
-                       Next
-                     </button>
-                   </motion.div>
+
+
+            {/* Navigation Buttons */}
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.9 }}
+              className="flex justify-center mt-6 sm:mt-8"
+            >
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!selectedGender}
+                className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${selectedGender
+                  ? "bg-[#F7971D] hover:bg-[#E88A1A]"
+                  : "bg-gray-400 cursor-not-allowed"
+                  }`}
+              >
+                Next
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

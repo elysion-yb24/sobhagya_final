@@ -166,7 +166,7 @@ export default function TermsAndConditions() {
                   No refund shall be processed once the Order has been placed and executed. However, if the User intends to cancel a successfully placed order before execution, the User is required to contact the customer care team within 1 (one) hour of making the payment.
                 </p>
                 <p className="mb-4">
-                  <strong>Note:</strong> All refunds will be credited to user's Astrotalk wallet.
+                  <strong>Note:</strong> All refunds will be credited to user's Sobhagya wallet.
                 </p>
                 <p className="mb-4">
                   Refunds will only be considered in the following cases:
@@ -178,7 +178,7 @@ export default function TermsAndConditions() {
                   <li>Consultant has responded back in irrelevant or inappropriate response to the query asked by the user</li>
                 </ul>
                 <p className="mb-4">
-                  <strong>Please Note:</strong> No refund will be given in case of lack of accuracy of any consultation. Astrotalk takes no responsibility for factual accuracy on any consultations.
+                  <strong>Please Note:</strong> No refund will be given in case of lack of accuracy of any consultation. Sobhagya takes no responsibility for factual accuracy on any consultations.
                 </p>
               </section>
 

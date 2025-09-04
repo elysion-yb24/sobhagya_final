@@ -182,7 +182,7 @@ export default function Services() {
               transition={{ duration: 0.1, delay: 0.8 }}
             >
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="Daily Horoscope (1).svg" alt="Daily Horoscope" className="w-12 h-12" />
+                <img src="daily-horoscope-.svg" alt="Daily Horoscope" className="w-12 h-12" />
               </div>
               <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
                 Daily Horoscope
@@ -254,8 +254,8 @@ export default function Services() {
                   <Image 
                     src={service.image || "/default-image.png"} 
                     alt={service.name} 
-                    width={61} 
-                    height={61}
+                    width={service.name === "Palm Reading" ? 45 : 61} 
+                    height={service.name === "Palm Reading" ? 45 : 61}
                     className="transition-opacity duration-200"
                   />
                 </div>

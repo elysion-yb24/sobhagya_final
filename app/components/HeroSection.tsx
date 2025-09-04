@@ -78,7 +78,7 @@ const HeroSection: React.FC = () => {
         transition={{ duration: 0.6 }}
       >
         {/* Background zodiac sign */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none z-0">
+        {/* <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none z-0">
           <Image
             src="/sobhagya-logo.svg"
             alt="Zodiac Sign"
@@ -86,7 +86,7 @@ const HeroSection: React.FC = () => {
             height={600}
             className="w-[400px] h-[400px] md:w-[600px] md:h-[600px] object-contain"
           />
-        </div>
+        </div> */}
 
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent z-0" />

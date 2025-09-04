@@ -3,9 +3,9 @@ import Link from 'next/link';
 
 export default function RefundPolicy() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white" style={{ userSelect: 'text' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200" style={{ userSelect: 'none' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center space-x-2">
@@ -23,7 +23,7 @@ export default function RefundPolicy() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white">
+        <div className="bg-white" style={{ userSelect: 'text' }}>
           {/* Page Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -36,7 +36,7 @@ export default function RefundPolicy() {
 
           {/* Refund Policy Content */}
           <div className="prose prose-lg max-w-none">
-            <div className="space-y-8 text-gray-700 leading-relaxed">
+            <div className="space-y-8 text-gray-700 leading-relaxed select-text">
               
               {/* Introduction */}
               <section>

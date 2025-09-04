@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 import Head from 'next/head';
-import { ArrowLeft, Calendar, Clock, MapPin, User, Download, Share2, Star, ChevronDown, AlertTriangle, CheckCircle, Zap, Shield, Globe } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, User, Download, Share2, ChevronDown, AlertTriangle, CheckCircle, Zap, Shield, Globe } from 'lucide-react';
 import KundliChart from '../components/KundliChart';
 
 export default function FreeKundliPage() {
@@ -31,6 +32,7 @@ export default function FreeKundliPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [kundliData, setKundliData] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [language, setLanguage] = useState<'english' | 'hindi'>('english');
   const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
@@ -85,12 +87,14 @@ export default function FreeKundliPage() {
     today.setHours(23, 59, 59, 999);
     
     if (birthDate > today) {
-      alert('Birth date cannot be in the future. Please enter a valid birth date.');
+      setErrorMessage('🌟 Birth date cannot be in the future. Please enter a valid birth date.');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
 
     if (!formData.name || !formData.dateOfBirth || !formData.timeOfBirth || !formData.placeOfBirth) {
-      alert('Please fill in all required fields.');
+      setErrorMessage('✨ Please fill in all required fields to generate your Kundli');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
 
@@ -120,11 +124,13 @@ export default function FreeKundliPage() {
           }
         }, 100);
       } else {
-        alert('Failed to generate Kundli. Please try again.');
+        setErrorMessage('💫 Failed to generate Kundli. Please try again.');
+        setTimeout(() => setErrorMessage(null), 5000);
       }
     } catch (error) {
       console.error('Error generating Kundli:', error);
-      alert('Failed to generate Kundli. Please try again.');
+      setErrorMessage('💫 Failed to generate Kundli. Please try again.');
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setIsLoading(false);
     }
@@ -597,7 +603,8 @@ export default function FreeKundliPage() {
       }
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      alert('Failed to download PDF. Please try again.');
+      setErrorMessage('📄 Failed to download PDF. Please try again.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
@@ -613,11 +620,13 @@ export default function FreeKundliPage() {
         });
       } else {
         await navigator.clipboard.writeText(shareText);
-        alert('Kundli details copied to clipboard!');
+        setErrorMessage('📋 Kundli details copied to clipboard!');
+        setTimeout(() => setErrorMessage(null), 3000);
       }
     } catch (error) {
       console.error('Error sharing Kundli:', error);
-      alert('Failed to share Kundli. Please try again.');
+      setErrorMessage('💫 Failed to share Kundli. Please try again.');
+      setTimeout(() => setErrorMessage(null), 5000);
     }
   };
 
@@ -656,6 +665,25 @@ export default function FreeKundliPage() {
       </Head>
       
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+      {/* Beautiful Error Notification */}
+      {errorMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
+        >
+          <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-6 py-4 rounded-xl shadow-lg border border-orange-200 max-w-md mx-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5" />
+              </div>
+              <p className="font-medium">{errorMessage}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-orange-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -723,7 +751,7 @@ export default function FreeKundliPage() {
                     value={formData.name}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
-                    placeholder="Enter your full name"
+                    placeholder="🌟 Enter your full name as per birth certificate"
                     required
                   />
                 </div>
@@ -798,7 +826,7 @@ export default function FreeKundliPage() {
                       <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
                         <input
                           type="text"
-                          placeholder="Search country..."
+                          placeholder="🌍 Search for your birth country..."
                           value={countrySearch}
                           onChange={(e) => setCountrySearch(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
@@ -843,7 +871,7 @@ export default function FreeKundliPage() {
                       <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
                         <input
                           type="text"
-                          placeholder="Search state..."
+                          placeholder="🏛️ Search for your birth state..."
                           value={stateSearch}
                           onChange={(e) => setStateSearch(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"

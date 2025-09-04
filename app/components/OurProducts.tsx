@@ -18,14 +18,14 @@ const OurProducts = () => {
       id: 1,
       name: "Authentic Gemstones",
       description: "Authentic Gemstones for Meditation & Well-being",
-      image: "/authentic-gemstoness.png",
+      image: "/authentic-gemstones.svg",
       link: "https://store.sobhagya.in/collections/gemstone"
     },
     {
       id: 2,
       name: "Rudraksh Collection",
       description: "Most loved astrology services for trusted guidance",
-      image: "/rudraksha-collection.png",
+      image: "/rudraksh-collection.svg",
       link: "https://store.sobhagya.in/collections/rudraksh-collection"
     },
     {
@@ -39,21 +39,21 @@ const OurProducts = () => {
       id: 4,
       name: "Bracelets",
       description: "Crafted to Resonate with Your Inner Self",
-      image: "/spiritual-bracelets.png",
+      image: "/spiritual-bracelets.svg",
       link: "https://store.sobhagya.in/collections/bracelets"
     },
     {
       id: 5,
       name: "Spiritual Products",
       description: "Elevate Your Spirit: Tools for a Deeper Spiritual Journey",
-      image: "/spiritual-products.png",
+      image: "/spiritual-products.svg",
       link: "https://store.sobhagya.in/collections/spiritual-jewellery-collection"
     },
     {
       id: 6,
       name: "Pooja Items",
       description: "Create a Divine Atmosphere for Your Daily Puja",
-      image: "/pooja-items.png",
+      image: "/pooja-items.svg",
       link: "https://store.sobhagya.in/collections/pooja-items"
     }
   ];
@@ -76,7 +76,7 @@ const OurProducts = () => {
           {/* Previous button */}
           <button
             onClick={() => setProductIndex(prev => prev === 0 ? 1 : 0)}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
             aria-label="Previous products"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,7 +153,9 @@ const OurProducts = () => {
                         <img 
                           src={product.image}
                           alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${
+                            product.name === "Spiritual Products" ? "object-bottom" : ""
+                          }`}
                         />
                         
                         {/* Hover Overlay with Visit Collection Text */}
@@ -195,7 +197,7 @@ const OurProducts = () => {
           {/* Next button */}
           <button
             onClick={() => setProductIndex(prev => prev === 0 ? 1 : 0)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
             aria-label="Next products"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -204,15 +206,15 @@ const OurProducts = () => {
           </button>
 
           {/* Enhanced Dots indicator */}
-          <div className="flex justify-center mt-12 mb-6 space-x-4">
+          <div className="flex justify-center mt-12 mb-6 space-x-3">
             <button
               onClick={() => setProductIndex(0)}
-              className={`w-4 h-4 rounded-full transition-all duration-300 ${productIndex === 0 ? 'bg-[#F7971E] scale-125' : 'bg-gray-300 hover:bg-gray-400'}`}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${productIndex === 0 ? 'bg-[#F7971E] scale-125' : 'bg-gray-300 hover:bg-gray-400'}`}
               aria-label="Go to first set of products"
             />
             <button
               onClick={() => setProductIndex(1)}
-              className={`w-4 h-4 rounded-full transition-all duration-300 ${productIndex === 1 ? 'bg-[#F7971E] scale-125' : 'bg-gray-300 hover:bg-gray-400'}`}
+              className={`w-3 h-3 rounded-full transition-all duration-300 ${productIndex === 1 ? 'bg-[#F7971E] scale-125' : 'bg-gray-300 hover:bg-gray-400'}`}
               aria-label="Go to second set of products"
             />
           </div>

@@ -17,11 +17,11 @@ export default function Home() {
       <HeroSection />
       <div className="h-16 bg-white"></div>
       <ConsultingSection />
+      <StatsBar />
       <OurProducts />
       <AstrologerCarousel />
       <BlogSection />
       <RashiSection />
-      <StatsBar />
       <HoroscopeInsights />
       <AppDownload />
       <WhyConsult />

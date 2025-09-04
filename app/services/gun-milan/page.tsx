@@ -72,6 +72,7 @@ export default function MatchmakingPage() {
     state: ''
   });
   const [gunMilanResult, setGunMilanResult] = useState<GunMilanResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showBoyStateDropdown, setShowBoyStateDropdown] = useState(false);
   const [showGirlStateDropdown, setShowGirlStateDropdown] = useState(false);
   const [boyStateSearch, setBoyStateSearch] = useState('');
@@ -109,7 +110,8 @@ export default function MatchmakingPage() {
   const calculateGunMilan = async () => {
     if (!boyData.name || !boyData.dateOfBirth || !boyData.timeOfBirth || !boyData.state ||
         !girlData.name || !girlData.dateOfBirth || !girlData.timeOfBirth || !girlData.state) {
-      alert('Please fill in all required fields');
+      setErrorMessage('✨ Please fill in all required fields to calculate your compatibility');
+      setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
 
@@ -161,7 +163,8 @@ export default function MatchmakingPage() {
       console.log('Birth Charts in Final Result:', gunMilanResult.birthCharts);
     } catch (error) {
       console.error('Error calculating Gun Milan:', error);
-      alert('Failed to calculate Gun Milan. Please try again.');
+      setErrorMessage('💫 Failed to calculate Gun Milan. Please try again.');
+      setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setIsCalculating(false);
     }
@@ -1027,6 +1030,25 @@ export default function MatchmakingPage() {
         </div>
       </div>
 
+      {/* Beautiful Error Notification */}
+      {errorMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50"
+        >
+          <div className="bg-gradient-to-r from-pink-500 to-orange-500 text-white px-6 py-4 rounded-xl shadow-lg border border-pink-200 max-w-md mx-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <Star className="w-5 h-5" />
+              </div>
+              <p className="font-medium">{errorMessage}</p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Form Section */}
       <div className="py-16 lg:py-24">
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -1070,7 +1092,7 @@ export default function MatchmakingPage() {
                       value={boyData.name}
                       onChange={handleBoyInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter full name"
+                      placeholder="✨ Enter the groom's full name"
                     />
                   </div>
 
@@ -1123,7 +1145,7 @@ export default function MatchmakingPage() {
                           <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
                             <input
                               type="text"
-                              placeholder="Search state..."
+                              placeholder="🔍 Search for your state..."
                               value={boyStateSearch}
                               onChange={(e) => setBoyStateSearch(e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
@@ -1168,7 +1190,7 @@ export default function MatchmakingPage() {
                       value={girlData.name}
                       onChange={handleGirlInputChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-200"
-                      placeholder="Enter full name"
+                      placeholder="💕 Enter the bride's full name"
                     />
                   </div>
 
@@ -1221,7 +1243,7 @@ export default function MatchmakingPage() {
                           <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
                             <input
                               type="text"
-                              placeholder="Search state..."
+                              placeholder="🔍 Search for your state..."
                               value={girlStateSearch}
                               onChange={(e) => setGirlStateSearch(e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"

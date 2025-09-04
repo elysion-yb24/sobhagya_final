@@ -21,7 +21,7 @@ const rashiSigns: RashiSign[] = [
   { name: "Pisces", hindiName: "मीन", image: "/pisces.json" },
 ];
 
-// Component to handle Lottie animation loading
+// Component to handle Lottie animations
 const LottieAnimation: React.FC<{ src: string; alt: string }> = ({ src, alt }) => {
   const [animationData, setAnimationData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -29,11 +29,12 @@ const LottieAnimation: React.FC<{ src: string; alt: string }> = ({ src, alt }) =
   useEffect(() => {
     const loadAnimation = async () => {
       try {
+        // Load as JSON for Lottie animation
         const response = await fetch(src);
         const data = await response.json();
         setAnimationData(data);
       } catch (error) {
-        console.error('Error loading Lottie animation:', error);
+        console.error('Error loading animation:', error);
       } finally {
         setLoading(false);
       }
@@ -58,6 +59,7 @@ const LottieAnimation: React.FC<{ src: string; alt: string }> = ({ src, alt }) =
     );
   }
 
+  // Render Lottie animation
   return (
     <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
       <Lottie

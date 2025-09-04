@@ -8,9 +8,9 @@ export const metadata = {
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white" style={{ userSelect: 'text' }}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200" style={{ userSelect: 'none' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center space-x-2">
@@ -28,7 +28,7 @@ export default function PrivacyPolicy() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white">
+        <div className="bg-white" style={{ userSelect: 'text' }}>
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -41,15 +41,15 @@ export default function PrivacyPolicy() {
 
           {/* Privacy Policy Content */}
           <div className="prose prose-lg max-w-none">
-            <div className="space-y-8 text-gray-700 leading-relaxed">
+            <div className="space-y-8 text-gray-700 leading-relaxed select-text">
               
               {/* Introduction */}
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Introduction</h2>
-                <p>
+              <div className="select-text">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4 select-text">Introduction</h2>
+                <p className="select-text">
                   www.sobhagya.in ("we", "Elysion Softwares Services Private Limited", "Sobhagya" (web and application) hereinafter referred as "website") is committed to protect the privacy of the users of the website (including astrologers and buyers/customers whether registered or not registered). Please read this privacy policy carefully to understand how the website is going to use your information supplied by you to the Website.
                 </p>
-                <p>
+                <p className="select-text">
                   This Privacy Policy is published in accordance with Rule 3(1) of the Information Technology (Intermediaries Guidelines) Rules, 2011 and Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011 which requires publishing of the Privacy policy for collection, use, storage and transfer of sensitive personal data or information.
                 </p>
               </div>

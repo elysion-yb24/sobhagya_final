@@ -181,7 +181,7 @@ const AstrologerCallPage = () => {
         >
           <div className="absolute inset-0 w-full h-[200px]">
             <Image 
-              src="/call.png" 
+              src="/Call with Astrologer.svg" 
               alt="call-image" 
               fill
               className="brightness-75 object-cover"

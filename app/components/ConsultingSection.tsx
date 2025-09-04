@@ -7,17 +7,17 @@ const consultingTopics: ConsultingTopic[] = [
   {
     title: 'Love & Relationship Issues',
     description: 'Struggling with love, marriage, or compatibility problems? Astrology helps resolve conflicts and find harmony in relationships.',
-    image: '/Group 13367 (1).png',
+    image: '/love-issue-bullet.svg',
   },
   {
     title: 'Career & Financial Struggles',
     description: 'Facing job instability, business losses, or financial hurdles? Get guidance on the right career path and remedies for success.',
-    image: '/Group 13368.png',
+    image: '/career-struggle-bullet.svg',
   },
   {
     title: 'Health & Well-being Concerns',
     description: 'Experiencing ongoing health issues or emotional stress? Astrology identifies planetary influences affecting your well-being.',
-    image: '/Group 13369.png',
+    image: '/health-well-being-bullet.svg',
   },
 ];
 
@@ -26,7 +26,7 @@ const ConsultingSection: React.FC = () => {
     <section className="py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
       {/* Faded astrology icon background (optional) */}
       <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
-        <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={400} height={400} className="object-contain" />
+        <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={400} height={400} className="object-contain" />
       </div>
       <div className="container mx-auto px-4 relative z-10">
         <h2 className="text-center mb-6 text-[#745802] text-5xl font-extrabold tracking-tight" style={{ fontFamily: 'EB Garamond' }}>
@@ -40,11 +40,11 @@ const ConsultingSection: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-16 items-start max-w-8xl mx-auto">
           <div className="relative flex justify-center items-center">
             <Image
-              src="/palm-reading-Photoroom.png"
+              src="/palm-reading.svg"
               alt="Palm Reading"
-              width={220}
-              height={220}
-              className="w-full mix-blend-multiply"
+              width={400}
+              height={400}
+              className="w-full max-w-lg mix-blend-multiply"
               priority
             />
           </div>
@@ -60,14 +60,13 @@ const ConsultingSection: React.FC = () => {
                     <div className="absolute left-6 top-4 w-4 h-4 bg-[#E69126] rounded-full -translate-x-1/2 z-10"></div>
                     
                     {/* Icon */}
-                    <div className="flex items-center justify-center w-20 h-20 ml-12">
-                                            <Image
+                    <div className="flex items-center justify-center w-20 h-20 ml-10 -mt-4">
+                      <Image
                         src={topic.image}
                         alt={topic.title}
                         width={40}
                         height={40}
                         className="object-contain"
-                        
                       />
                     </div>
                   

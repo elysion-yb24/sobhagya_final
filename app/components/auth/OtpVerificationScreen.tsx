@@ -310,7 +310,7 @@ export default function OtpVerificationScreen({
         <div className="flex flex-col items-center">
           <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2">
             <img 
-              src="/sobhagya_logo.avif" 
+              src="/sobhagya-logo.svg" 
               alt="Astrology Logo" 
               className="object-cover w-full h-full rounded-full" 
             />

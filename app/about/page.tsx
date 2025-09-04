@@ -34,7 +34,7 @@ const AboutUs = () => {
         {/* Background Image */}
         <div className="absolute inset-0">
           <Image 
-            src="/about2.png" 
+            src="/abour-hero-bg.svg" 
             alt="About Background" 
             fill 
             className="object-cover"
@@ -131,12 +131,12 @@ const AboutUs = () => {
               <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80">
                 {/* Using the zodiac wheel image that appears to be in the screenshot */}
                 <img 
-                  src="/sobhagya-logo.png" 
+                  src="/sobhagya-logo.svg" 
                   alt="Sobhagya Logo" 
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     // Fallback to sobhagya logo if zodiac wheel not found
-                    (e.target as HTMLImageElement).src = "/sobhagya-logo.png";
+                    (e.target as HTMLImageElement).src = "/sobhagya-logo.svg";
                   }}
                 />
               </div>

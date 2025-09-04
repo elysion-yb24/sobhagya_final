@@ -1,0 +1,484 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// Gun Milan calculation class
+class GunMilanCalculator {
+  // Nakshatra data with their lords
+  private nakshatras = [
+    { name: 'Ashwini', lord: 'Ketu', number: 1 },
+    { name: 'Bharani', lord: 'Venus', number: 2 },
+    { name: 'Krittika', lord: 'Sun', number: 3 },
+    { name: 'Rohini', lord: 'Moon', number: 4 },
+    { name: 'Mrigashira', lord: 'Mars', number: 5 },
+    { name: 'Ardra', lord: 'Rahu', number: 6 },
+    { name: 'Punarvasu', lord: 'Jupiter', number: 7 },
+    { name: 'Pushya', lord: 'Saturn', number: 8 },
+    { name: 'Ashlesha', lord: 'Mercury', number: 9 },
+    { name: 'Magha', lord: 'Ketu', number: 10 },
+    { name: 'Purva Phalguni', lord: 'Venus', number: 11 },
+    { name: 'Uttara Phalguni', lord: 'Sun', number: 12 },
+    { name: 'Hasta', lord: 'Moon', number: 13 },
+    { name: 'Chitra', lord: 'Mars', number: 14 },
+    { name: 'Swati', lord: 'Rahu', number: 15 },
+    { name: 'Vishakha', lord: 'Jupiter', number: 16 },
+    { name: 'Anuradha', lord: 'Saturn', number: 17 },
+    { name: 'Jyeshtha', lord: 'Mercury', number: 18 },
+    { name: 'Mula', lord: 'Ketu', number: 19 },
+    { name: 'Purva Ashadha', lord: 'Venus', number: 20 },
+    { name: 'Uttara Ashadha', lord: 'Sun', number: 21 },
+    { name: 'Shravana', lord: 'Moon', number: 22 },
+    { name: 'Dhanishta', lord: 'Mars', number: 23 },
+    { name: 'Shatabhisha', lord: 'Rahu', number: 24 },
+    { name: 'Purva Bhadrapada', lord: 'Jupiter', number: 25 },
+    { name: 'Uttara Bhadrapada', lord: 'Saturn', number: 26 },
+    { name: 'Revati', lord: 'Mercury', number: 27 }
+  ];
+
+  // Rashi (Zodiac) data
+  private rashis = [
+    { name: 'Aries', element: 'Fire', number: 1 },
+    { name: 'Taurus', element: 'Earth', number: 2 },
+    { name: 'Gemini', element: 'Air', number: 3 },
+    { name: 'Cancer', element: 'Water', number: 4 },
+    { name: 'Leo', element: 'Fire', number: 5 },
+    { name: 'Virgo', element: 'Earth', number: 6 },
+    { name: 'Libra', element: 'Air', number: 7 },
+    { name: 'Scorpio', element: 'Water', number: 8 },
+    { name: 'Sagittarius', element: 'Fire', number: 9 },
+    { name: 'Capricorn', element: 'Earth', number: 10 },
+    { name: 'Aquarius', element: 'Air', number: 11 },
+    { name: 'Pisces', element: 'Water', number: 12 }
+  ];
+
+  // Calculate Nakshatra from birth details (accurate calculation)
+  private calculateNakshatra(dateOfBirth: string, timeOfBirth: string): any {
+    const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
+    
+    // Calculate Julian Day Number
+    const year = birthDate.getFullYear();
+    const month = birthDate.getMonth() + 1;
+    const day = birthDate.getDate();
+    const hour = birthDate.getHours();
+    const minute = birthDate.getMinutes();
+    
+    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) + 
+             Math.floor(275 * month / 9) + day + 1721013.5 + 
+             (hour + minute / 60) / 24;
+    
+    // Calculate Ayanamsa (precession of equinoxes) - Lahiri Ayanamsa
+    const t = (jd - 2451545.0) / 36525;
+    const ayanamsa = 23.85 + 0.3812 * t + 0.0012 * t * t;
+    
+    // Calculate Sun's position
+    const sunLongitude = this.calculateSunLongitude(jd);
+    
+    // Calculate Moon's position (simplified)
+    const moonLongitude = this.calculateMoonLongitude(jd);
+    
+    // Use Moon's position for Nakshatra (as per Vedic tradition)
+    let siderealLongitude = moonLongitude - ayanamsa;
+    if (siderealLongitude < 0) siderealLongitude += 360;
+    
+    // Calculate Nakshatra (27 nakshatras, each 13°20' = 13.3333°)
+    const nakshatraIndex = Math.floor(siderealLongitude / 13.3333);
+    return this.nakshatras[nakshatraIndex % 27];
+  }
+
+  // Calculate Sun's longitude (simplified)
+  private calculateSunLongitude(jd: number): number {
+    const t = (jd - 2451545.0) / 36525;
+    const L0 = 280.46645 + 36000.76983 * t + 0.0003032 * t * t;
+    const M = 357.52910 + 35999.05030 * t - 0.0001559 * t * t - 0.00000048 * t * t * t;
+    const C = (1.914600 - 0.004817 * t - 0.000014 * t * t) * Math.sin(M * Math.PI / 180) +
+              (0.019993 - 0.000101 * t) * Math.sin(2 * M * Math.PI / 180) +
+              0.000290 * Math.sin(3 * M * Math.PI / 180);
+    return L0 + C;
+  }
+
+  // Calculate Moon's longitude (simplified)
+  private calculateMoonLongitude(jd: number): number {
+    const t = (jd - 2451545.0) / 36525;
+    const L = 218.3164477 + 481267.88123421 * t - 0.0015786 * t * t + t * t * t / 538841 - t * t * t * t / 65194000;
+    return L % 360;
+  }
+
+  // Calculate Rashi from birth details (accurate calculation)
+  private calculateRashi(dateOfBirth: string, timeOfBirth: string): any {
+    const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
+    
+    // Calculate Julian Day Number
+    const year = birthDate.getFullYear();
+    const month = birthDate.getMonth() + 1;
+    const day = birthDate.getDate();
+    const hour = birthDate.getHours();
+    const minute = birthDate.getMinutes();
+    
+    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) + 
+             Math.floor(275 * month / 9) + day + 1721013.5 + 
+             (hour + minute / 60) / 24;
+    
+    // Calculate Ayanamsa (precession of equinoxes) - Lahiri Ayanamsa
+    const t = (jd - 2451545.0) / 36525;
+    const ayanamsa = 23.85 + 0.3812 * t + 0.0012 * t * t;
+    
+    // Calculate Sun's position
+    const sunLongitude = this.calculateSunLongitude(jd);
+    
+    // Calculate sidereal longitude
+    let siderealLongitude = sunLongitude - ayanamsa;
+    if (siderealLongitude < 0) siderealLongitude += 360;
+    
+    // Calculate Rashi (12 rashis, each 30°)
+    const rashiIndex = Math.floor(siderealLongitude / 30);
+    return this.rashis[rashiIndex % 12];
+  }
+
+  // Calculate Varna (1 point)
+  private calculateVarna(boyNakshatra: any, girlNakshatra: any): number {
+    const boyLord = boyNakshatra.lord;
+    const girlLord = girlNakshatra.lord;
+    
+    // Varna compatibility based on nakshatra lords
+    const varnaCompatibility = {
+      'Sun': { 'Sun': 1, 'Moon': 1, 'Mars': 1, 'Mercury': 0, 'Jupiter': 0, 'Venus': 0, 'Saturn': 0, 'Rahu': 0, 'Ketu': 0 },
+      'Moon': { 'Sun': 1, 'Moon': 1, 'Mars': 1, 'Mercury': 0, 'Jupiter': 0, 'Venus': 0, 'Saturn': 0, 'Rahu': 0, 'Ketu': 0 },
+      'Mars': { 'Sun': 1, 'Moon': 1, 'Mars': 1, 'Mercury': 0, 'Jupiter': 0, 'Venus': 0, 'Saturn': 0, 'Rahu': 0, 'Ketu': 0 },
+      'Mercury': { 'Sun': 0, 'Moon': 0, 'Mars': 0, 'Mercury': 1, 'Jupiter': 1, 'Venus': 1, 'Saturn': 0, 'Rahu': 0, 'Ketu': 0 },
+      'Jupiter': { 'Sun': 0, 'Moon': 0, 'Mars': 0, 'Mercury': 1, 'Jupiter': 1, 'Venus': 1, 'Saturn': 0, 'Rahu': 0, 'Ketu': 0 },
+      'Venus': { 'Sun': 0, 'Moon': 0, 'Mars': 0, 'Mercury': 1, 'Jupiter': 1, 'Venus': 1, 'Saturn': 0, 'Rahu': 0, 'Ketu': 0 },
+      'Saturn': { 'Sun': 0, 'Moon': 0, 'Mars': 0, 'Mercury': 0, 'Jupiter': 0, 'Venus': 0, 'Saturn': 1, 'Rahu': 1, 'Ketu': 1 },
+      'Rahu': { 'Sun': 0, 'Moon': 0, 'Mars': 0, 'Mercury': 0, 'Jupiter': 0, 'Venus': 0, 'Saturn': 1, 'Rahu': 1, 'Ketu': 1 },
+      'Ketu': { 'Sun': 0, 'Moon': 0, 'Mars': 0, 'Mercury': 0, 'Jupiter': 0, 'Venus': 0, 'Saturn': 1, 'Rahu': 1, 'Ketu': 1 }
+    };
+    
+    return varnaCompatibility[boyLord as keyof typeof varnaCompatibility]?.[girlLord as keyof typeof varnaCompatibility[typeof boyLord]] || 0;
+  }
+
+  // Calculate Vashya (2 points)
+  private calculateVashya(boyRashi: any, girlRashi: any): number {
+    const boyElement = boyRashi.element;
+    const girlElement = girlRashi.element;
+    
+    // Vashya compatibility based on elements
+    const vashyaCompatibility = {
+      'Fire': { 'Fire': 2, 'Earth': 1, 'Air': 2, 'Water': 0 },
+      'Earth': { 'Fire': 1, 'Earth': 2, 'Air': 0, 'Water': 2 },
+      'Air': { 'Fire': 2, 'Earth': 0, 'Air': 2, 'Water': 1 },
+      'Water': { 'Fire': 0, 'Earth': 2, 'Air': 1, 'Water': 2 }
+    };
+    
+    return vashyaCompatibility[boyElement as keyof typeof vashyaCompatibility]?.[girlElement as keyof typeof vashyaCompatibility[typeof boyElement]] || 0;
+  }
+
+  // Calculate Tara (3 points) - Accurate Tara calculation
+  private calculateTara(boyNakshatra: any, girlNakshatra: any): number {
+    const boyNumber = boyNakshatra.number;
+    const girlNumber = girlNakshatra.number;
+    
+    // Tara compatibility based on nakshatra numbers (1-27)
+    const difference = Math.abs(boyNumber - girlNumber);
+    
+    if (difference === 0) return 0; // Same nakshatra - not compatible
+    
+    // Tara calculation: Count from boy's nakshatra to girl's nakshatra
+    let taraCount = 0;
+    if (boyNumber <= girlNumber) {
+      taraCount = girlNumber - boyNumber + 1;
+    } else {
+      taraCount = (27 - boyNumber) + girlNumber + 1;
+    }
+    
+    // Tara compatibility rules
+    if (taraCount === 1 || taraCount === 3 || taraCount === 5 || taraCount === 7 || taraCount === 9) return 3; // Best
+    if (taraCount === 2 || taraCount === 4 || taraCount === 6 || taraCount === 8) return 1.5; // Medium
+    if (taraCount === 10 || taraCount === 11 || taraCount === 12 || taraCount === 13) return 1; // Good
+    if (taraCount === 14 || taraCount === 15 || taraCount === 16 || taraCount === 17) return 0.5; // Poor
+    if (taraCount === 18 || taraCount === 19 || taraCount === 20 || taraCount === 21) return 0; // Bad
+    if (taraCount === 22 || taraCount === 23 || taraCount === 24 || taraCount === 25) return 0.5; // Poor
+    if (taraCount === 26 || taraCount === 27) return 1; // Good
+    
+    return 0;
+  }
+
+  // Calculate Yoni (4 points) - Accurate Yoni calculation
+  private calculateYoni(boyNakshatra: any, girlNakshatra: any): number {
+    // Yoni compatibility based on nakshatra pairs
+    const yoniGroups = {
+      'Ashwini': 'Horse', 'Bharani': 'Elephant', 'Krittika': 'Ram', 'Rohini': 'Snake',
+      'Mrigashira': 'Snake', 'Ardra': 'Dog', 'Punarvasu': 'Cat', 'Pushya': 'Ram',
+      'Ashlesha': 'Cat', 'Magha': 'Rat', 'Purva Phalguni': 'Rat', 'Uttara Phalguni': 'Bull',
+      'Hasta': 'Buffalo', 'Chitra': 'Tiger', 'Swati': 'Buffalo', 'Vishakha': 'Tiger',
+      'Anuradha': 'Deer', 'Jyeshtha': 'Deer', 'Mula': 'Dog', 'Purva Ashadha': 'Monkey',
+      'Uttara Ashadha': 'Mongoose', 'Shravana': 'Monkey', 'Dhanishta': 'Lion', 'Shatabhisha': 'Horse',
+      'Purva Bhadrapada': 'Lion', 'Uttara Bhadrapada': 'Cow', 'Revati': 'Elephant'
+    };
+    
+    const boyYoni = yoniGroups[boyNakshatra.name as keyof typeof yoniGroups];
+    const girlYoni = yoniGroups[girlNakshatra.name as keyof typeof yoniGroups];
+    
+    if (boyYoni === girlYoni) return 4;
+    
+    // Yoni compatibility matrix (accurate as per Vedic texts)
+    const yoniCompatibility = {
+      'Horse': { 'Horse': 4, 'Elephant': 3, 'Lion': 2, 'Monkey': 1, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Elephant': { 'Horse': 3, 'Elephant': 4, 'Lion': 2, 'Monkey': 1, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Lion': { 'Horse': 2, 'Elephant': 2, 'Lion': 4, 'Monkey': 1, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Monkey': { 'Horse': 1, 'Elephant': 1, 'Lion': 1, 'Monkey': 4, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Rat': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 4, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Bull': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 4, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Buffalo': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 4, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Tiger': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 4, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Deer': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 4, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Dog': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 4, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Mongoose': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 4, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Cow': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 4, 'Snake': 0, 'Cat': 0, 'Ram': 0 },
+      'Snake': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 4, 'Cat': 0, 'Ram': 0 },
+      'Cat': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 4, 'Ram': 0 },
+      'Ram': { 'Horse': 0, 'Elephant': 0, 'Lion': 0, 'Monkey': 0, 'Rat': 0, 'Bull': 0, 'Buffalo': 0, 'Tiger': 0, 'Deer': 0, 'Dog': 0, 'Mongoose': 0, 'Cow': 0, 'Snake': 0, 'Cat': 0, 'Ram': 4 }
+    };
+    
+    return yoniCompatibility[boyYoni as keyof typeof yoniCompatibility]?.[girlYoni as keyof typeof yoniCompatibility[typeof boyYoni]] || 0;
+  }
+
+  // Calculate Graha Maitri (5 points)
+  private calculateGrahaMaitri(boyNakshatra: any, girlNakshatra: any): number {
+    const boyLord = boyNakshatra.lord;
+    const girlLord = girlNakshatra.lord;
+    
+    // Graha Maitri compatibility based on planetary friendships
+    const grahaMaitri = {
+      'Sun': { 'Sun': 5, 'Moon': 5, 'Mars': 5, 'Mercury': 4, 'Jupiter': 4, 'Venus': 2, 'Saturn': 1, 'Rahu': 1, 'Ketu': 1 },
+      'Moon': { 'Sun': 5, 'Moon': 5, 'Mars': 5, 'Mercury': 4, 'Jupiter': 4, 'Venus': 2, 'Saturn': 1, 'Rahu': 1, 'Ketu': 1 },
+      'Mars': { 'Sun': 5, 'Moon': 5, 'Mars': 5, 'Mercury': 4, 'Jupiter': 4, 'Venus': 2, 'Saturn': 1, 'Rahu': 1, 'Ketu': 1 },
+      'Mercury': { 'Sun': 4, 'Moon': 4, 'Mars': 4, 'Mercury': 5, 'Jupiter': 5, 'Venus': 5, 'Saturn': 2, 'Rahu': 2, 'Ketu': 2 },
+      'Jupiter': { 'Sun': 4, 'Moon': 4, 'Mars': 4, 'Mercury': 5, 'Jupiter': 5, 'Venus': 5, 'Saturn': 2, 'Rahu': 2, 'Ketu': 2 },
+      'Venus': { 'Sun': 2, 'Moon': 2, 'Mars': 2, 'Mercury': 5, 'Jupiter': 5, 'Venus': 5, 'Saturn': 4, 'Rahu': 4, 'Ketu': 4 },
+      'Saturn': { 'Sun': 1, 'Moon': 1, 'Mars': 1, 'Mercury': 2, 'Jupiter': 2, 'Venus': 4, 'Saturn': 5, 'Rahu': 5, 'Ketu': 5 },
+      'Rahu': { 'Sun': 1, 'Moon': 1, 'Mars': 1, 'Mercury': 2, 'Jupiter': 2, 'Venus': 4, 'Saturn': 5, 'Rahu': 5, 'Ketu': 5 },
+      'Ketu': { 'Sun': 1, 'Moon': 1, 'Mars': 1, 'Mercury': 2, 'Jupiter': 2, 'Venus': 4, 'Saturn': 5, 'Rahu': 5, 'Ketu': 5 }
+    };
+    
+    return grahaMaitri[boyLord as keyof typeof grahaMaitri]?.[girlLord as keyof typeof grahaMaitri[typeof boyLord]] || 0;
+  }
+
+  // Calculate Gana (6 points)
+  private calculateGana(boyNakshatra: any, girlNakshatra: any): number {
+    // Gana compatibility based on nakshatra groups
+    const ganaGroups = {
+      'Ashwini': 'Deva', 'Bharani': 'Manushya', 'Krittika': 'Rakshasa', 'Rohini': 'Manushya',
+      'Mrigashira': 'Deva', 'Ardra': 'Manushya', 'Punarvasu': 'Deva', 'Pushya': 'Deva',
+      'Ashlesha': 'Rakshasa', 'Magha': 'Rakshasa', 'Purva Phalguni': 'Manushya', 'Uttara Phalguni': 'Manushya',
+      'Hasta': 'Deva', 'Chitra': 'Rakshasa', 'Swati': 'Deva', 'Vishakha': 'Rakshasa',
+      'Anuradha': 'Deva', 'Jyeshtha': 'Rakshasa', 'Mula': 'Rakshasa', 'Purva Ashadha': 'Manushya',
+      'Uttara Ashadha': 'Manushya', 'Shravana': 'Deva', 'Dhanishta': 'Rakshasa', 'Shatabhisha': 'Rakshasa',
+      'Purva Bhadrapada': 'Manushya', 'Uttara Bhadrapada': 'Manushya', 'Revati': 'Deva'
+    };
+    
+    const boyGana = ganaGroups[boyNakshatra.name as keyof typeof ganaGroups];
+    const girlGana = ganaGroups[girlNakshatra.name as keyof typeof ganaGroups];
+    
+    if (boyGana === girlGana) return 6;
+    if ((boyGana === 'Deva' && girlGana === 'Manushya') || (boyGana === 'Manushya' && girlGana === 'Deva')) return 5;
+    if ((boyGana === 'Deva' && girlGana === 'Rakshasa') || (boyGana === 'Rakshasa' && girlGana === 'Deva')) return 1;
+    if ((boyGana === 'Manushya' && girlGana === 'Rakshasa') || (boyGana === 'Rakshasa' && girlGana === 'Manushya')) return 3;
+    
+    return 0;
+  }
+
+  // Calculate Bhakoot (7 points)
+  private calculateBhakoot(boyRashi: any, girlRashi: any): number {
+    const boyNumber = boyRashi.number;
+    const girlNumber = girlRashi.number;
+    
+    // Bhakoot compatibility based on rashi numbers
+    const bhakootCompatibility = {
+      1: { 1: 0, 2: 7, 3: 7, 4: 0, 5: 7, 6: 0, 7: 0, 8: 7, 9: 7, 10: 0, 11: 7, 12: 0 },
+      2: { 1: 7, 2: 0, 3: 0, 4: 7, 5: 0, 6: 7, 7: 7, 8: 0, 9: 0, 10: 7, 11: 0, 12: 7 },
+      3: { 1: 7, 2: 0, 3: 0, 4: 7, 5: 0, 6: 7, 7: 7, 8: 0, 9: 0, 10: 7, 11: 0, 12: 7 },
+      4: { 1: 0, 2: 7, 3: 7, 4: 0, 5: 7, 6: 0, 7: 0, 8: 7, 9: 7, 10: 0, 11: 7, 12: 0 },
+      5: { 1: 7, 2: 0, 3: 0, 4: 7, 5: 0, 6: 7, 7: 7, 8: 0, 9: 0, 10: 7, 11: 0, 12: 7 },
+      6: { 1: 0, 2: 7, 3: 7, 4: 0, 5: 7, 6: 0, 7: 0, 8: 7, 9: 7, 10: 0, 11: 7, 12: 0 },
+      7: { 1: 0, 2: 7, 3: 7, 4: 0, 5: 7, 6: 0, 7: 0, 8: 7, 9: 7, 10: 0, 11: 7, 12: 0 },
+      8: { 1: 7, 2: 0, 3: 0, 4: 7, 5: 0, 6: 7, 7: 7, 8: 0, 9: 0, 10: 7, 11: 0, 12: 7 },
+      9: { 1: 7, 2: 0, 3: 0, 4: 7, 5: 0, 6: 7, 7: 7, 8: 0, 9: 0, 10: 7, 11: 0, 12: 7 },
+      10: { 1: 0, 2: 7, 3: 7, 4: 0, 5: 7, 6: 0, 7: 0, 8: 7, 9: 7, 10: 0, 11: 7, 12: 0 },
+      11: { 1: 7, 2: 0, 3: 0, 4: 7, 5: 0, 6: 7, 7: 7, 8: 0, 9: 0, 10: 7, 11: 0, 12: 7 },
+      12: { 1: 0, 2: 7, 3: 7, 4: 0, 5: 7, 6: 0, 7: 0, 8: 7, 9: 7, 10: 0, 11: 7, 12: 0 }
+    };
+    
+    return bhakootCompatibility[boyNumber as keyof typeof bhakootCompatibility]?.[girlNumber as keyof typeof bhakootCompatibility[typeof boyNumber]] || 0;
+  }
+
+  // Calculate Nadi (8 points)
+  private calculateNadi(boyNakshatra: any, girlNakshatra: any): number {
+    // Nadi compatibility based on nakshatra groups
+    const nadiGroups = {
+      'Ashwini': 'Vata', 'Bharani': 'Pitta', 'Krittika': 'Kapha', 'Rohini': 'Vata',
+      'Mrigashira': 'Pitta', 'Ardra': 'Kapha', 'Punarvasu': 'Vata', 'Pushya': 'Pitta',
+      'Ashlesha': 'Kapha', 'Magha': 'Vata', 'Purva Phalguni': 'Pitta', 'Uttara Phalguni': 'Kapha',
+      'Hasta': 'Vata', 'Chitra': 'Pitta', 'Swati': 'Kapha', 'Vishakha': 'Vata',
+      'Anuradha': 'Pitta', 'Jyeshtha': 'Kapha', 'Mula': 'Vata', 'Purva Ashadha': 'Pitta',
+      'Uttara Ashadha': 'Kapha', 'Shravana': 'Vata', 'Dhanishta': 'Pitta', 'Shatabhisha': 'Kapha',
+      'Purva Bhadrapada': 'Vata', 'Uttara Bhadrapada': 'Pitta', 'Revati': 'Kapha'
+    };
+    
+    const boyNadi = nadiGroups[boyNakshatra.name as keyof typeof nadiGroups];
+    const girlNadi = nadiGroups[girlNakshatra.name as keyof typeof nadiGroups];
+    
+    if (boyNadi === girlNadi) return 0; // Same Nadi - not compatible
+    return 8; // Different Nadi - compatible
+  }
+
+  // Main Gun Milan calculation
+  public calculateGunMilan(boyData: any, girlData: any) {
+    const boyNakshatra = this.calculateNakshatra(boyData.dateOfBirth, boyData.timeOfBirth);
+    const girlNakshatra = this.calculateNakshatra(girlData.dateOfBirth, girlData.timeOfBirth);
+    const boyRashi = this.calculateRashi(boyData.dateOfBirth, boyData.timeOfBirth);
+    const girlRashi = this.calculateRashi(girlData.dateOfBirth, girlData.timeOfBirth);
+
+    const varna = this.calculateVarna(boyNakshatra, girlNakshatra);
+    const vashya = this.calculateVashya(boyRashi, girlRashi);
+    const tara = this.calculateTara(boyNakshatra, girlNakshatra);
+    const yoni = this.calculateYoni(boyNakshatra, girlNakshatra);
+    const grahaMaitri = this.calculateGrahaMaitri(boyNakshatra, girlNakshatra);
+    const gana = this.calculateGana(boyNakshatra, girlNakshatra);
+    const bhakoot = this.calculateBhakoot(boyRashi, girlRashi);
+    const nadi = this.calculateNadi(boyNakshatra, girlNakshatra);
+
+    const totalScore = varna + vashya + tara + yoni + grahaMaitri + gana + bhakoot + nadi;
+
+    // Determine compatibility level
+    let compatibilityLevel = '';
+    let compatibilityDescription = '';
+    
+    if (totalScore >= 25) {
+      compatibilityLevel = 'Excellent Compatibility';
+      compatibilityDescription = 'This is an excellent match with high compatibility. The couple is likely to have a harmonious and successful marriage.';
+    } else if (totalScore >= 18) {
+      compatibilityLevel = 'Good Compatibility';
+      compatibilityDescription = 'This is a good match with moderate compatibility. The couple can have a successful marriage with some understanding and effort.';
+    } else {
+      compatibilityLevel = 'Needs Attention';
+      compatibilityDescription = 'This match needs attention and may require remedies. Consider consulting an expert astrologer for guidance.';
+    }
+
+    // Generate recommendations and remedies
+    const recommendations = [
+      'Focus on open communication and understanding',
+      'Respect each other\'s differences and work on compromises',
+      'Consider performing recommended remedies for better harmony',
+      'Seek guidance from experienced astrologers if needed'
+    ];
+
+    const remedies = [
+      'Perform regular prayers and meditation together',
+      'Wear recommended gemstones for planetary harmony',
+      'Follow auspicious timing for important decisions',
+      'Consider performing specific pujas for marital harmony'
+    ];
+
+    return {
+      totalScore,
+      compatibilityLevel,
+      compatibilityDescription,
+      gunDetails: [
+        {
+          name: 'Varna (1 point)',
+          score: varna,
+          description: 'Compatibility based on spiritual and intellectual compatibility'
+        },
+        {
+          name: 'Vashya (2 points)',
+          score: vashya,
+          description: 'Compatibility based on mutual attraction and control'
+        },
+        {
+          name: 'Tara (3 points)',
+          score: tara,
+          description: 'Compatibility based on birth star compatibility'
+        },
+        {
+          name: 'Yoni (4 points)',
+          score: yoni,
+          description: 'Compatibility based on sexual and physical compatibility'
+        },
+        {
+          name: 'Graha Maitri (5 points)',
+          score: grahaMaitri,
+          description: 'Compatibility based on planetary friendship'
+        },
+        {
+          name: 'Gana (6 points)',
+          score: gana,
+          description: 'Compatibility based on temperament and nature'
+        },
+        {
+          name: 'Bhakoot (7 points)',
+          score: bhakoot,
+          description: 'Compatibility based on zodiac sign compatibility'
+        },
+        {
+          name: 'Nadi (8 points)',
+          score: nadi,
+          description: 'Compatibility based on genetic compatibility'
+        }
+      ],
+      recommendations,
+      remedies,
+      boyDetails: {
+        nakshatra: boyNakshatra.name,
+        rashi: boyRashi.name,
+        lord: boyNakshatra.lord
+      },
+      girlDetails: {
+        nakshatra: girlNakshatra.name,
+        rashi: girlRashi.name,
+        lord: girlNakshatra.lord
+      }
+    };
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { boy, girl } = body;
+
+    // Validate required fields
+    if (!boy.name || !boy.dateOfBirth || !boy.timeOfBirth || !boy.placeOfBirth ||
+        !girl.name || !girl.dateOfBirth || !girl.timeOfBirth || !girl.placeOfBirth) {
+      return NextResponse.json(
+        { success: false, error: 'All fields are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate birth dates
+    const boyBirthDate = new Date(boy.dateOfBirth);
+    const girlBirthDate = new Date(girl.dateOfBirth);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    if (boyBirthDate > today || girlBirthDate > today) {
+      return NextResponse.json(
+        { success: false, error: 'Birth dates cannot be in the future' },
+        { status: 400 }
+      );
+    }
+
+    // Calculate Gun Milan
+    const calculator = new GunMilanCalculator();
+    const result = calculator.calculateGunMilan(boy, girl);
+
+    return NextResponse.json({
+      success: true,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Error calculating Gun Milan:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to calculate Gun Milan' },
+      { status: 500 }
+    );
+  }
+}

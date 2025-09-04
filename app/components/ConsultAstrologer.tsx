@@ -184,7 +184,7 @@ const AstrologerCarousel = () => {
   if (loading) {
     return (
       <div className="w-full py-12 relative" style={{
-        backgroundImage: "url('/image.png')",
+        backgroundImage: "url('bg-image.svg')",
       }}>
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-center text-white text-5xl md:text-4xl font-bold mb-10" style={{
@@ -210,7 +210,7 @@ const AstrologerCarousel = () => {
     <div
       className="w-full py-12"
       style={{
-        backgroundImage: "url('/image.png')",
+        backgroundImage: "url('bg-image.svg')",
         position: "relative",
       }}
     >

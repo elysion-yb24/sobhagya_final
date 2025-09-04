@@ -23,14 +23,14 @@ const RashiSection: React.FC = () => {
   const router = useRouter();
 
   const handleClick = (rashiName: string) => {
-    router.push(`/rashi/${rashiName.toLowerCase()}`);
+    router.push(`/services/horoscope/${rashiName.toLowerCase()}`);
   };
 
   return (
     <>
       <motion.section className="bg-[#E691261A] py-10 sm:py-12 relative overflow-hidden">
         <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
-          <Image src="/sobhagya_logo.avif" alt="Astrology Icon" width={300} height={300} className="object-contain" />
+          <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={300} height={300} className="object-contain" />
         </div>
         <div className="container mx-auto px-4 relative z-10 max-w-screen-xl">
           <h2 className="text-center mb-4 sm:mb-6 text-[#373737] text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight" style={{ fontFamily: "EB Garamond" }}>

@@ -52,7 +52,7 @@ const HeroSection: React.FC = () => {
     },
     {
       id: "shop",
-      title: "Astromall Shop",
+      title: "Sobhagya Shop",
       icon: "/astromall.png",
       iconComponent: ShoppingBag,
       href: "https://store.sobhagya.in",
@@ -69,7 +69,7 @@ const HeroSection: React.FC = () => {
       <motion.section
         className="text-white relative w-full flex flex-col justify-start pt-0 md:pt-0 pb-4 sm:pb-6"
         style={{
-          backgroundImage: "url(/image.png)",
+          backgroundImage: "url(/bg-image1111.svg)",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -80,7 +80,7 @@ const HeroSection: React.FC = () => {
         {/* Background zodiac sign */}
         <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none select-none z-0">
           <Image
-            src="/sobhagya_logo.avif"
+            src="/sobhagya-logo.svg"
             alt="Zodiac Sign"
             width={600}
             height={600}
@@ -156,21 +156,14 @@ const HeroSection: React.FC = () => {
               </div>
 
               <Image
-                src="/astrologer.png"
+                src="/astrologer.svg"
                 alt="Astrologer"
-                width={600}
-                height={600}
+                width={450}
+                height={400}
                 className="object-contain max-w-[280px] sm:max-w-[350px] md:max-w-[400px] lg:max-w-[650px] translate-y-[52px] sm:translate-y-[10px] md:translate-y-[20px] relative z-10"
                 priority
               />
-              {/* Three zodiac signs around astrologer image */}
-              <motion.div
-                className="absolute left-2 sm:left-3 bottom-4 sm:bottom-8 md:bottom-20 md:left-[-50px] z-20"
-                animate={{ rotate: [0, 10, -10, 0], y: [0, -6, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <Image src="/Group (1) 5.png" alt="Bottom Left Zodiac" width={60} height={60} className="sm:w-[70px] sm:h-[70px]" />
-              </motion.div>
+              {/* Two zodiac signs around astrologer image */}
               <motion.div
                 className="absolute right-3 sm:right-5 md:right-[-50px] top-1/2 -translate-y-1/2  z-20"
                 animate={{ rotate: [0, -12, 12, 0], y: [0, -6, 0] }}
@@ -186,26 +179,24 @@ const HeroSection: React.FC = () => {
       {/* Orange background section for cards */}
       <div className="relative">
         {/* Navigation cards: positioned half on orange background */}
-        <div className="relative z-20 -mt-1 sm:-mt-28 md:-mt-9 lg:-mt-16">
+        <div className="relative z-20 -mt-1 sm:-mt-28 md:-mt-9 lg:-mt-16 mb-12">
           <div className="w-[100vw] mx-auto px-4 sm:px-6 md:px-8">
             {/* Mobile: Horizontal small buttons */}
             <div className="flex flex-row justify-center gap-2 sm:hidden mb-6 px-2">
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className="rounded-lg px-3 py-2.5 flex items-center text-center shadow-md transition-all duration-300 hover:shadow-lg bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white group flex-1 max-w-[120px]"
+                    className="rounded-lg px-3 py-2.5 flex items-center justify-center shadow-lg transition-all duration-300 bg-white text-gray-800 hover:bg-orange-50 hover:text-orange-600 group flex-1 max-w-[120px]"
                   >
-                    <div className="mr-1.5 flex items-center justify-center">
-                      <Image
-                        src={card.icon}
-                        alt={card.title}
-                        width={20}
-                        height={20}
-                        className="block transition-all duration-300 group-hover:brightness-0 group-hover:invert"
-                        style={{ display: 'block' }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium" style={{
+                    <Image
+                      src={card.icon}
+                      alt={card.title}
+                      width={20}
+                      height={20}
+                      className="mr-1.5 block transition-all duration-300"
+                      style={{ display: 'block' }}
+                    />
+                    <span className="text-xs font-medium leading-tight" style={{
                       fontFamily:"Poppins"
                     }}>{card.title}</span>
                   </div>
@@ -218,7 +209,7 @@ const HeroSection: React.FC = () => {
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className="rounded-xl p-6 sm:p-8 py-8 sm:py-10 flex flex-col items-center text-center shadow-md transition-all duration-300 hover:shadow-lg group bg-white text-gray-800 hover:bg-[#F7971D] hover:text-white"
+                    className="rounded-xl p-6 sm:p-8 py-8 sm:py-10 flex flex-col items-center text-center shadow-xl transition-all duration-300 group bg-white text-gray-800 hover:bg-orange-50 hover:text-orange-600 hover:shadow-2xl hover:-translate-y-1"
                   >
                     <div className="flex items-center justify-center">
                       <Image
@@ -226,7 +217,7 @@ const HeroSection: React.FC = () => {
                         alt={card.title}
                         width={48}
                         height={48}
-                        className="sm:w-[56px] sm:h-[56px] block transition-all duration-300 group-hover:brightness-0 group-hover:invert"
+                        className="sm:w-[56px] sm:h-[56px] block transition-all duration-300"
                         style={{ display: 'block' }}
                       />
                     </div>
@@ -240,7 +231,8 @@ const HeroSection: React.FC = () => {
       </div>
 
 
-      {/* NEW: Live Session Section - Enhanced for Mobile */}
+      {/* NEW: Live Session Section - Enhanced for Mobile - COMMENTED OUT FOR NOW */}
+      {/*
       <section className="bg-white pt-6 sm:pt-12 md:pt-28 pb-12 sm:pb-16 md:pb-32">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h2
@@ -258,7 +250,6 @@ const HeroSection: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 xl:gap-12 max-w-7xl mx-auto">
 
-            {/* Card Component - Reusable */}
             {[
               {
                 img: "/image (11).png",
@@ -267,13 +258,13 @@ const HeroSection: React.FC = () => {
                 subtitle: "Marriage problems expert"
               },
               {
-                img: "/image (12).png",
+                img: "live-astrology-insights.svg",
                 alt: "Live Astrological Insights",
                 name: "Live Astrological Insights:",
                 subtitle: "Get clarity on love, career & more"
               },
               {
-                img: "/image (13).png",
+                img: "/rama-krishna.svg",
                 alt: "Pt. Rama Krishna",
                 name: "Pt. Rama Krishna",
                 subtitle: "Today horoscope"
@@ -281,9 +272,8 @@ const HeroSection: React.FC = () => {
             ].map(({ img, alt, name, subtitle }) => (
               <div
                 key={name}
-                className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                className="w-full rounded-xl overflow-hidden relative cursor-pointer shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border-2 border-orange-100 hover:border-orange-200"
               >
-                {/* Live Badge */}
                 <div className="absolute top-3 sm:top-4 left-3 sm:left-4 text-[#F51010] px-3 sm:px-4 py-1.5 sm:py-2 text-base flex items-center z-10">
                   <span className="h-2 w-2 sm:h-3 sm:w-3 bg-[#F51010] rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
                   <span
@@ -298,23 +288,26 @@ const HeroSection: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Image */}
-                <img
-                  src={img}
-                  alt={alt}
-                  className="object-cover object-center"
-                />
+                <div className="relative w-full aspect-[3/4] overflow-hidden bg-gradient-to-br from-orange-50 to-yellow-50">
+                  <Image
+                    src={img}
+                    alt={alt}
+                    fill
+                    className="object-contain object-center"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                </div>
 
-                {/* Overlay */}
-                <div className="p-3 sm:p-4 lg:p-6 bg-gradient-to-b from-transparent to-black absolute bottom-0 w-full">
+                <div className="p-3 sm:p-4 lg:p-6 bg-gradient-to-b from-transparent via-black/60 to-black/90 absolute bottom-0 w-full">
                   <h3
-                    className="text-white font-bold text-base sm:text-lg lg:text-xl mb-1"
+                    className="text-white font-bold text-base sm:text-lg lg:text-xl mb-1 drop-shadow-lg"
                     style={{ fontFamily: "Poppins" }}
                   >
                     {name}
                   </h3>
                   <p
-                    className="text-white font-medium text-xs sm:text-sm lg:text-base"
+                    className="text-white/90 font-medium text-xs sm:text-sm lg:text-base drop-shadow-md"
                     style={{ fontFamily: "Poppins" }}
                   >
                     {subtitle}
@@ -325,6 +318,7 @@ const HeroSection: React.FC = () => {
           </div>
         </div>
       </section>
+      */}
 
     </div>
   );

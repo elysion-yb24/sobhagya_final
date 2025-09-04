@@ -164,10 +164,6 @@ const WhyConsult: React.FC = () => {
               <p className="text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
                 Through careful analysis of planetary positions, astrologers can provide insights that help you make informed decisions, understand your relationships better, and navigate life's challenges with confidence.
               </p>
-              <div className="flex items-center text-[#F7971D] font-semibold">
-       
-                <ArrowRight className="w-4 h-4" />
-              </div>
             </motion.div>
             
             <motion.div
@@ -177,13 +173,19 @@ const WhyConsult: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
             >
-              <div className="relative w-full h-80 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl flex items-center justify-center">
+              <div className="relative w-full h-80 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl overflow-hidden">
                 <motion.div
                   className="absolute inset-0 bg-[#F7971D] opacity-10 rounded-2xl"
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
-                <Star className="w-24 h-24 text-[#F7971D]" />
+                <Image 
+                  src="/the-power-of-astrological-wisdom.svg" 
+                  alt="The Power of Astrological Wisdom" 
+                  width={400} 
+                  height={320} 
+                  className="w-full h-full object-cover" 
+                />
               </div>
             </motion.div>
           </div>
@@ -215,11 +217,11 @@ const WhyConsult: React.FC = () => {
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 bg-[#F7971D] rounded-2xl flex items-center justify-center flex-shrink-0"
+                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.3 }}
               >
-                <Users className="w-8 h-8 text-white" />
+                <Image src="/relationship-harmony.svg" alt="Relationship Harmony" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
                 <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
@@ -239,11 +241,11 @@ const WhyConsult: React.FC = () => {
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 bg-[#F7971D] rounded-2xl flex items-center justify-center flex-shrink-0"
+                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 transition={{ duration: 0.3 }}
               >
-                <Target className="w-8 h-8 text-white" />
+                <Image src="/career-excellence.svg" alt="Career Excellence" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
                 <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
@@ -263,11 +265,11 @@ const WhyConsult: React.FC = () => {
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 bg-[#F7971D] rounded-2xl flex items-center justify-center flex-shrink-0"
+                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.3 }}
               >
-                <Shield className="w-8 h-8 text-white" />
+                <Image src="/health-and-wellness.svg" alt="Health & Wellness" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
                 <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
@@ -287,11 +289,11 @@ const WhyConsult: React.FC = () => {
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 bg-[#F7971D] rounded-2xl flex items-center justify-center flex-shrink-0"
+                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 transition={{ duration: 0.3 }}
               >
-                <Zap className="w-8 h-8 text-white" />
+                <Image src="/effective-remedies.svg" alt="Effective Remedies" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
                 <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>

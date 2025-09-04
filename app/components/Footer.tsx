@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
       className={`bg-[#373737] text-white py-6 sm:py-8 lg:py-12 relative overflow-hidden ${poppins.className}`}
     >
       {/* Top Left Zodiac Background Image */}
-      <div className="absolute top-[-50px] left-[-150px] w-[300px] h-[200px] sm:w-[400px] sm:h-[300px] opacity-10">
+      <div className="absolute top-[-50px] left-[-150px] w-[300px] h-[200px] sm:w-[400px] sm:h-[300px] opacity-10 pointer-events-none">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"
@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
       </div>
 
       {/* Bottom Right Zodiac Background Image */}
-      <div className="absolute bottom-[-200px] right-[20px] w-[340px] h-[240px] sm:w-[460px] sm:h-[360px] lg:w-[560px] lg:h-[420px] opacity-10">
+      <div className="absolute bottom-[-200px] right-[20px] w-[340px] h-[240px] sm:w-[460px] sm:h-[360px] lg:w-[560px] lg:h-[420px] opacity-10 pointer-events-none">
         <Image
           src="/zodiac-right.png"
           alt="Zodiac Signs"

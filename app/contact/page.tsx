@@ -4,6 +4,13 @@ import { motion } from "framer-motion";
 
 const Contact = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -11,6 +18,45 @@ const Contact = () => {
     }, 200);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitMessage('✨ Message sent successfully! We will get back to you soon.');
+        setFormData({ name: '', email: '', message: '' });
+      } else {
+        setSubmitMessage('💫 Failed to send message. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setSubmitMessage('💫 Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setSubmitMessage(null), 5000);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -248,7 +294,8 @@ const Contact = () => {
           >
             Send a Message
           </motion.h2>
-          <form className="space-y-4">
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
@@ -256,8 +303,12 @@ const Contact = () => {
             >
               <input
                 type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
                 placeholder="Full Name"
                 className="w-full px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
+                required
               />
             </motion.div>
             <motion.div
@@ -267,8 +318,12 @@ const Contact = () => {
             >
               <input
                 type="text"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
                 placeholder="Phone No./ Email"
                 className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
+                required
               />
             </motion.div>
             <motion.div
@@ -277,8 +332,12 @@ const Contact = () => {
               transition={{ duration: 0.5, delay: 1.2 }}
             >
               <textarea
+                name="message"
+                value={formData.message}
+                onChange={handleInputChange}
                 placeholder="Message"
                 className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] h-28 sm:h-32 text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
+                required
               />
             </motion.div>
             <motion.div 
@@ -288,6 +347,8 @@ const Contact = () => {
               transition={{ duration: 0.5, delay: 1.3 }}
             >
               <motion.button 
+                type="submit"
+                disabled={isSubmitting}
                 className="w-full sm:w-[214px] bg-[#fff] text-[#F7971D] py-3 rounded-md font-semibold hover:bg-[#e09e3c] hover:text-white transition"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

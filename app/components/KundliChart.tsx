@@ -181,12 +181,11 @@ const KundliChart = ({ planetaryPositions, personalInfo, language }: KundliChart
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Fixed size for better consistency - increased for better spacing
+    // Fixed 500x500 square canvas
     const size = 500;
     
     // Set canvas size with high DPI for crisp rendering
     const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
     
     canvas.width = size * dpr;
     canvas.height = size * dpr;
@@ -198,165 +197,94 @@ const KundliChart = ({ planetaryPositions, personalInfo, language }: KundliChart
     // Clear canvas
     ctx.clearRect(0, 0, size, size);
 
-    // Enable text smoothing for crisp rendering
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-
     // Set background
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, size, size);
 
-    // Draw main square
-    ctx.strokeStyle = '#374151';
+    // Set line style
+    ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.lineCap = 'square';
     ctx.lineJoin = 'miter';
+
+    // Draw outer square
     ctx.strokeRect(0, 0, size, size);
 
-    // Draw diagonals (to form North Indian diamond chart)
+    // Draw inner diamond (connecting midpoints)
     ctx.beginPath();
-    ctx.moveTo(0, size/2);
-    ctx.lineTo(size/2, 0);
-    ctx.lineTo(size, size/2);
-    ctx.lineTo(size/2, size);
+    ctx.moveTo(250, 0);    // Top
+    ctx.lineTo(500, 250);  // Right
+    ctx.lineTo(250, 500);  // Bottom
+    ctx.lineTo(0, 250);    // Left
     ctx.closePath();
     ctx.stroke();
 
-    // Draw center cross
+    // Draw diagonal lines connecting opposite corners to create 12 compartments
     ctx.beginPath();
-    ctx.moveTo(size/2, 0);
-    ctx.lineTo(size/2, size);
-    ctx.moveTo(0, size/2);
-    ctx.lineTo(size, size/2);
-    ctx.stroke();
-
-    // Draw diagonal lines
-    ctx.beginPath();
+    // Top-left corner to bottom-right corner
     ctx.moveTo(0, 0);
-    ctx.lineTo(size, size);
-    ctx.moveTo(size, 0);
-    ctx.lineTo(0, size);
+    ctx.lineTo(500, 500);
+    // Top-right corner to bottom-left corner
+    ctx.moveTo(500, 0);
+    ctx.lineTo(0, 500);
     ctx.stroke();
 
-    // House positions (center points for each house) - Proper Kundli layout
-    const housePositions = [
-      { x: size/2, y: 70 },      // House 1 - Top
-      { x: size-90, y: 90 },     // House 2 - Top Right
-      { x: size-70, y: size/2 }, // House 3 - Right
-      { x: size-90, y: size-90 }, // House 4 - Bottom Right
-      { x: size/2, y: size-70 }, // House 5 - Bottom
-      { x: 90, y: size-90 },     // House 6 - Bottom Left
-      { x: 70, y: size/2 },      // House 7 - Left
-      { x: 90, y: 90 },          // House 8 - Top Left
-      { x: size/2, y: 150 },     // House 9 - Center Top
-      { x: size-150, y: size/2 }, // House 10 - Center Right
-      { x: size/2, y: size-150 }, // House 11 - Center Bottom
-      { x: 150, y: size/2 }      // House 12 - Center Left
+    // Calculate exact centers of each of the 12 compartments created by the lines
+    // The structure creates: 4 corner triangles, 4 side triangles, and 4 inner rectangles
+    const houseCenters = [
+      { x: 250, y: 80, house: 1 },     // House 1 - Top center triangle
+      { x: 350, y: 80, house: 2 },     // House 2 - Top right triangle
+      { x: 420, y: 200, house: 3 },    // House 3 - Right triangle
+      { x: 350, y: 320, house: 4 },    // House 4 - Bottom right triangle
+      { x: 250, y: 370, house: 5 },    // House 5 - Bottom triangle
+      { x: 150, y: 320, house: 6 },    // House 6 - Bottom left triangle
+      { x: 80, y: 200, house: 7 },     // House 7 - Left triangle
+      { x: 150, y: 80, house: 8 },     // House 8 - Top left triangle
+      { x: 200, y: 150, house: 9 },    // House 9 - Inner top left box
+      { x: 300, y: 150, house: 10 },   // House 10 - Inner top right box
+      { x: 300, y: 250, house: 11 },   // House 11 - Inner bottom right box
+      { x: 200, y: 250, house: 12 }    // House 12 - Inner bottom left box
     ];
 
-    // Draw house numbers - positioned in corners to avoid cutting lines
-    ctx.fillStyle = '#374151';
-    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    // Draw house numbers
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    housePositions.forEach((pos, index) => {
-      // Position house numbers in proper corners of each house - avoiding diagonal lines
-      let numberX = pos.x;
-      let numberY = pos.y;
-      
-      // Adjust house number positions based on house location - proper Kundli layout
-      if (index === 0) { // House 1 - Top (top-left corner, away from top line)
-        numberX = pos.x - 60;
-        numberY = pos.y - 60;
-      } else if (index === 1) { // House 2 - Top Right (top-right corner, away from top line)
-        numberX = pos.x + 60;
-        numberY = pos.y - 60;
-      } else if (index === 2) { // House 3 - Right (bottom-right corner, away from right line)
-        numberX = pos.x + 60;
-        numberY = pos.y + 60;
-      } else if (index === 3) { // House 4 - Bottom Right (bottom-right corner, away from bottom line)
-        numberX = pos.x + 60;
-        numberY = pos.y + 60;
-      } else if (index === 4) { // House 5 - Bottom (bottom-left corner, away from bottom line)
-        numberX = pos.x - 60;
-        numberY = pos.y + 60;
-      } else if (index === 5) { // House 6 - Bottom Left (bottom-left corner, away from bottom line)
-        numberX = pos.x - 60;
-        numberY = pos.y + 60;
-      } else if (index === 6) { // House 7 - Left (top-left corner, away from left line)
-        numberX = pos.x - 60;
-        numberY = pos.y - 60;
-      } else if (index === 7) { // House 8 - Top Left (top-left corner, away from top line)
-        numberX = pos.x - 60;
-        numberY = pos.y - 60;
-      } else if (index === 8) { // House 9 - Center Top (top-left corner, away from diagonal)
-        numberX = pos.x - 80;
-        numberY = pos.y - 80;
-      } else if (index === 9) { // House 10 - Center Right (bottom-right corner, away from diagonal)
-        numberX = pos.x + 80;
-        numberY = pos.y + 80;
-      } else if (index === 10) { // House 11 - Center Bottom (bottom-left corner, away from diagonal)
-        numberX = pos.x - 80;
-        numberY = pos.y + 80;
-      } else if (index === 11) { // House 12 - Center Left (top-left corner, away from diagonal)
-        numberX = pos.x - 80;
-        numberY = pos.y - 80;
-      }
-      
-      ctx.fillText((index + 1).toString(), numberX, numberY);
+    houseCenters.forEach((house) => {
+      ctx.fillText(house.house.toString(), house.x, house.y);
     });
 
-    // Place planets in houses - positioned to avoid overlap with house numbers and lines
-    ctx.font = '13px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif';
+    // Place planets in houses
+    ctx.font = 'bold 10px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
+    const planetPositions: { [key: number]: { x: number; y: number }[] } = {};
+    
     planetaryPositions.forEach((planet, index) => {
       const houseIndex = planet.house - 1;
-      if (houseIndex >= 0 && houseIndex < housePositions.length) {
-        const pos = housePositions[houseIndex];
+      if (houseIndex >= 0 && houseIndex < houseCenters.length) {
+        const house = houseCenters[houseIndex];
         
-        // Set planet color
+        if (!planetPositions[houseIndex]) {
+          planetPositions[houseIndex] = [];
+        }
+        
         ctx.fillStyle = getPlanetColor(planet.planet);
         
-        // Create planet text
         const planetAbbr = getPlanetAbbr(planet.planet);
         const planetText = `${planetAbbr}-${planet.degree}°`;
-        
-        // Add retrograde indicator
         const fullText = planet.isRetrograde ? `${planetText}(R)` : planetText;
         
-        // Draw planet text - positioned to avoid house numbers and chart lines
-        // Use different positioning based on house location to avoid overlap
-        let textY = pos.y;
-        let textX = pos.x;
+        const planetCount = planetPositions[houseIndex].length;
+        const offsetY = (planetCount - 1) * 12;
         
-        if (houseIndex === 0) { // House 1 - Top (center, below number)
-          textY = pos.y + 40;
-        } else if (houseIndex === 1) { // House 2 - Top Right (center, below number)
-          textY = pos.y + 40;
-        } else if (houseIndex === 2) { // House 3 - Right (center, below number)
-          textY = pos.y + 40;
-        } else if (houseIndex === 3) { // House 4 - Bottom Right (center, below number)
-          textY = pos.y + 40;
-        } else if (houseIndex === 4) { // House 5 - Bottom (center, above number)
-          textY = pos.y - 40;
-        } else if (houseIndex === 5) { // House 6 - Bottom Left (center, above number)
-          textY = pos.y - 40;
-        } else if (houseIndex === 6) { // House 7 - Left (center, below number)
-          textY = pos.y + 40;
-        } else if (houseIndex === 7) { // House 8 - Top Left (center, below number)
-          textY = pos.y + 40;
-        } else if (houseIndex === 8) { // House 9 - Center Top (center, below number)
-          textY = pos.y + 50;
-        } else if (houseIndex === 9) { // House 10 - Center Right (center, below number)
-          textY = pos.y + 50;
-        } else if (houseIndex === 10) { // House 11 - Center Bottom (center, above number)
-          textY = pos.y - 50;
-        } else if (houseIndex === 11) { // House 12 - Center Left (center, below number)
-          textY = pos.y + 50;
-        }
+        const textX = house.x;
+        const textY = house.y + 20 + offsetY;
+        
+        planetPositions[houseIndex].push({ x: textX, y: textY });
         
         ctx.fillText(fullText, textX, textY);
       }

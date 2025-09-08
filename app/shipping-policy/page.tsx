@@ -1,120 +1,156 @@
-'use client'
+import React from 'react';
+import Link from 'next/link';
 
 export default function ShippingPolicy() {
-    return (
-      <section className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-white/80 py-0">
-        <div className="relative max-w-5xl mx-auto p-6 sm:p-10 bg-white/90 shadow-2xl rounded-3xl border-t-8 border-orange-200 animate-fade-in-up mt-10 mb-10 z-30 backdrop-blur-md">
-          {/* Faded Monk Logo */}
-          <div className="absolute inset-0 flex justify-center items-center opacity-10 z-0 pointer-events-none select-none">
-            <div style={{width: '320px', height: '320px', background: "url('/monk logo.png') center/contain no-repeat"}} />
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <Link href="/" className="flex items-center space-x-2">
+              <span className="text-2xl font-bold text-[#745802]"></span>
+            </Link>
+            <Link 
+              href="/"
+              className="text-[#F7971E] hover:text-[#E68A19] transition-colors duration-200"
+            >
+              ← Back to Home
+            </Link>
           </div>
-          {/* Content */}
-          <div className="relative z-10">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-[#745802] text-center mb-6 tracking-tight">
-              Shipping Policy
-              <span className="block w-24 h-1 bg-orange-400 mx-auto mt-4 rounded-full"></span>
-            </h1>
-            <p className="text-lg md:text-xl mb-6 leading-relaxed font-normal text-gray-700">
-              At Sobhagya, your trust in us is paramount, and we're committed to delivering your treasures with the utmost care and reliability. Here's everything you need to know about our shipping process to ensure a smooth and secure experience:
-            </p>
-            {/* Dynamic Sections */}
-            {sections.map(({ title, content }, index) => (
-              <div key={index} className="mb-10">
-                <h2 className="text-xl md:text-2xl font-semibold text-orange-700 border-l-4 border-orange-400 pl-3 mb-2">{title}</h2>
-                {Array.isArray(content) ? (
-                  <ul className="mt-3 space-y-3 text-gray-700 text-lg md:text-xl">
-                    {content.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2 bg-orange-50 rounded-xl px-4 py-2 shadow-sm font-medium text-gray-800">
-                        <span className="text-orange-500 text-lg">•</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-1 text-lg md:text-xl font-normal text-gray-700 leading-relaxed">{content}</p>
-                )}
-              </div>
-            ))}
-          </div>
-          {/* Fade-in animation keyframes */}
-          <style jsx>{`
-            .animate-fade-in-up {
-              animation: fadeInUp 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-            }
-            @keyframes fadeInUp {
-              0% {
-                opacity: 0;
-                transform: translateY(40px);
-              }
-              100% {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
         </div>
-      </section>
-    );
-  }
-  
-  const sections = [
-    {
-      title: "Safe & Secure Delivery Packaging",
-      content: [
-        "Every order is carefully packaged to ensure safe delivery.",
-        "Orders are fully insured during transit.",
-        "We use trusted couriers like Shiprocket, Bluedart, and Aftership.",
-      ],
-    },
-    {
-      title: "Shipping Timeline",
-      content: [
-        "Orders are processed within 4 business days.",
-        "Delivery takes 7-10 days for domestic orders, longer for international shipments.",
-      ],
-    },
-    {
-      title: "Order Tracking",
-      content: "Once your order is shipped, you'll receive tracking details via email.",
-    },
-    {
-      title: "Delivery Timelines",
-      content: [
-        "Metro Cities in India: 2-3 days from dispatch.",
-        "Other regions: 3-7 days.",
-        "International: 30-35 days.",
-      ],
-    },
-    {
-      title: "Shipping Costs",
-      content: "Shipping charges depend on destination and weight. Free shipping may be available for certain orders.",
-    },
-    {
-      title: "Delivery Location",
-      content: "Ensure accurate address details for smooth delivery. Address changes should be communicated promptly.",
-    },
-    {
-      title: "What to Expect at Delivery",
-      content: [
-        "ID verification may be required for high-value orders.",
-        "Courier partners attempt delivery three times before returning the package.",
-      ],
-    },
-    {
-      title: "Handling Delays",
-      content: "Delays due to unforeseen circumstances (e.g., natural disasters) may occur. Updates will be provided.",
-    },
-    {
-      title: "Non-Delivery & Returns",
-      content: "For delivery issues, contact support within 30 days of purchase. Damaged or missing items should be reported immediately.",
-    },
-    {
-      title: "Cancellation Policy",
-      content: "Once an order is placed, cancellations are not permitted.",
-    },
-    {
-      title: "Our Commitment to You",
-      content: "We strive to make your shopping experience seamless. For any queries, contact our support team.",
-    },
-  ];
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-white">
+          {/* Page Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Shipping Policy
+            </h1>
+            <p className="text-gray-600 text-lg">
+              Last updated: December 2024
+            </p>
+          </div>
+
+          {/* Shipping Policy Content */}
+          <div className="prose prose-lg max-w-none">
+            <div className="space-y-8 text-gray-700 leading-relaxed">
+              
+              {/* Introduction */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Safe & Secure Delivery</h2>
+                <p className="mb-4">
+                  At Sobhagya, your trust in us is paramount, and we're committed to delivering your treasures with the utmost care and reliability. Here's everything you need to know about our shipping process to ensure a smooth and secure experience.
+                </p>
+                <p className="mb-4">
+                  We partner with reliable courier services including Shiprocket, Bluedart and Aftership to guarantee timely and safe delivery of your precious items. Every order is carefully packaged to withstand the journey, ensuring that your ordered products including gemstones, rudraksha, crystals, etc. arrive in pristine condition.
+                </p>
+              </section>
+
+              {/* Shipping Timeline */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Shipping Timeline</h2>
+                <p className="mb-4">
+                  Orders are processed and dispatched within <strong>4 business days</strong> of confirmation. For customized or personalized items, please allow extra time.
+                </p>
+                <p className="mb-4">
+                  Standard delivery time is typically <strong>7-10 days</strong> from dispatch. International orders may take longer due to customs procedures.
+                </p>
+              </section>
+
+              {/* Delivery Timelines */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. Delivery Timelines</h2>
+                <p className="mb-4">
+                  <strong>India:</strong> Delivery within Metro Cities typically takes 2 to 3 days from dispatch. For other regions, delivery may take 3 to 7 days from dispatch.
+                </p>
+                <p className="mb-4">
+                  <strong>International:</strong> For orders placed from outside India, delivery is typically expected to take 30 to 35 days from dispatch. We currently offer delivery to over 150 countries worldwide.
+                </p>
+                <p className="mb-4">
+                  Please note that these timeframes are estimates and may vary based on factors such as location, customs clearance, and other circumstances beyond our control.
+                </p>
+              </section>
+
+              {/* Order Tracking */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Order Tracking</h2>
+                <p className="mb-4">
+                  Once your order is on its way, you'll receive a confirmation email with tracking details. Follow your package's journey with ease through the provided link.
+                </p>
+                <p className="mb-4">
+                  We'll keep you informed throughout the shipping process with regular updates via email or SMS.
+                </p>
+              </section>
+
+              {/* Shipping Costs */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Shipping Costs</h2>
+                <p className="mb-4">
+                  Shipping charges are calculated based on the destination and weight of your order. Free shipping may be available on orders above a certain value, and we'll communicate any such promotions on our website.
+                </p>
+                <p className="mb-4">
+                  You can also contact us at <a href="mailto:support@sobhagya.com" className="text-[#F7971D] hover:text-orange-600 underline">support@sobhagya.com</a> to enquire about shipping offers and we'll be happy to assist you.
+                </p>
+              </section>
+
+              {/* Delivery Location */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Delivery Location</h2>
+                <p className="mb-4">
+                  Please ensure your delivery information is complete and accurate at checkout. We deliver to residential or business addresses only, not to PO Boxes or public places.
+                </p>
+                <p className="mb-4">
+                  If you need to update your delivery address, contact our customer support promptly.
+                </p>
+              </section>
+
+              {/* What to Expect at Delivery */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. What to Expect at Delivery</h2>
+                <p className="mb-4">
+                  For high-value orders, we may require a signature and ID verification upon delivery to ensure the package reaches you safely.
+                </p>
+                <p className="mb-4">
+                  Our courier partner will make up to three attempts to deliver your package. If delivery fails, contact us at <a href="mailto:support@sobhagya.com" className="text-[#F7971D] hover:text-orange-600 underline">support@sobhagya.com</a>.
+                </p>
+              </section>
+
+              {/* Cancellation Policy */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">8. Cancellation Policy</h2>
+                <p className="mb-4">
+                  Once an order is placed, cancellations are not permitted under any circumstances. Please review your order carefully before confirming.
+                </p>
+              </section>
+
+              {/* Our Commitment */}
+              <section>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">9. Our Commitment to You</h2>
+                <p className="mb-4">
+                  We aim to make your shopping experience as seamless and delightful as the gemstones we offer. If you have any questions or concerns, please don't hesitate to reach out to our dedicated customer support team.
+                </p>
+              </section>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="mt-16 pt-8 border-t border-gray-200 text-center">
+            <p className="text-gray-600 mb-4">
+              If you have any questions about this Shipping Policy, please contact us at{' '}
+              <a href="mailto:info@sobhagya.in" className="text-[#F7971D] hover:text-orange-600 underline font-medium">
+                info@sobhagya.in
+              </a>
+            </p>
+            <p className="text-sm text-gray-500">
+              Happy shopping! - The Sobhagya Team
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
   

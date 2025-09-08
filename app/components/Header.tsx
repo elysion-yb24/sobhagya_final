@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Eagle_Lake } from "next/font/google";
 import { Menu, X, Phone, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../utils/production-api';
 
@@ -15,6 +16,7 @@ const texts = ["Sobhagya", "सौभाग्य"];
 const delayBetween = 5000;
 
 const Header = () => {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [textIndex, setTextIndex] = useState(0);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -22,6 +24,17 @@ const Header = () => {
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+
+
+  // Helper function to check if a link is active
+  const isActiveLink = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname?.startsWith(href) || false;
+  };
+  
+
   
   useEffect(() => {
     const interval = setInterval(() => {
@@ -198,9 +211,11 @@ const Header = () => {
         <div className="max-w-8xl mx-auto px-4 lg:px-8">
           <div className="flex items-center h-20 justify-between">
             {/* Left: Logo/Brand, responsive width */}
-            <Link href="/" className="flex items-center gap-3 flex-shrink-0 min-w-[170px] justify-start hover:scale-105 transition-transform duration-200 cursor-pointer">
+            <Link href="/" className={`flex items-center gap-3 flex-shrink-0 min-w-[170px] justify-start transition-all duration-200 cursor-pointer ${
+              isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
+            }`}>
               <Image
-                src="/sobhagya_logo.avif"
+                src="/sobhagya-logo.svg"
                 alt="Sobhagya"
                 width={56}
                 height={56}
@@ -219,23 +234,71 @@ const Header = () => {
             </Link>
             {/* Center: Navigation, flex-1, centered */}
             <nav className="flex-1 flex items-center justify-center gap-6 lg:gap-8">
-              {[
-                { href: "/call-with-astrologer", label: "Call with Astrologer" },
-                { href: "/about", label: "About" },
-                { href: "/services", label: "Services" },
-                { href: "/contact", label: "Contact" },
-                { href: "/blog", label: "Blog" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="relative text-base font-semibold text-gray-700 px-3 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[200px] text-center"
-                  style={{ lineHeight: '1.2' }}
-                >
-                  <span className="block w-full">{item.label}</span>
-                  <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
-                </Link>
-              ))}
+              <Link
+                href="/call-with-astrologer"
+                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
+                  isActiveLink('/call-with-astrologer') 
+                    ? 'text-orange-600 font-bold' 
+                    : 'text-gray-700 hover:text-orange-600'
+                }`}
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">Call with Astrologer</span>
+                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
+                  isActiveLink('/call-with-astrologer') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                }`} />
+              </Link>
+              
+              <Link
+                href="/about"
+                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
+                  isActiveLink('/about') 
+                    ? 'text-orange-600 font-bold' 
+                    : 'text-gray-700 hover:text-orange-600'
+                }`}
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">About</span>
+                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
+                  isActiveLink('/about') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                }`} />
+              </Link>
+              
+              <Link
+                href="/services"
+                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
+                  isActiveLink('/services') 
+                    ? 'text-orange-600 font-bold' 
+                    : 'text-gray-700 hover:text-orange-600'
+                }`}
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">Services</span>
+                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
+                  isActiveLink('/services') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                }`} />
+              </Link>
+              
+
+              
+
+              
+              <Link
+                href="/blog"
+                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
+                  isActiveLink('/blog') 
+                    ? 'text-orange-600 font-bold' 
+                    : 'text-gray-700 hover:text-orange-600'
+                }`}
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">Blog</span>
+                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
+                  isActiveLink('/blog') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                }`} />
+              </Link>
+              
+
             </nav>
             {/* Right: User/Login, responsive width */}
             <div className="flex items-center gap-2 flex-shrink-0 min-w-[210px] justify-end">
@@ -272,9 +335,11 @@ const Header = () => {
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center h-16 justify-between">
             {/* Left: Logo/Brand */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0 min-w-[140px] justify-start hover:scale-105 transition-transform duration-200 cursor-pointer">
+            <Link href="/" className={`flex items-center gap-2 flex-shrink-0 min-w-[140px] justify-start transition-all duration-200 cursor-pointer ${
+              isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
+            }`}>
               <Image
-                src="/sobhagya_logo.avif"
+                src="/sobhagya-logo.svg"
                 alt="Sobhagya"
                 width={48}
                 height={48}
@@ -290,22 +355,40 @@ const Header = () => {
             </Link>
             {/* Center: Navigation */}
             <nav className="flex-1 flex items-center justify-center gap-4">
-              {[
-                { href: "/call-with-astrologer", label: "Call with Astrologer" },
-                { href: "/about", label: "About" },
-                { href: "/services", label: "Services" },
-                { href: "/contact", label: "Contact" },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="relative text-sm font-semibold text-gray-700 px-2 py-1 rounded transition-colors duration-200 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-200 group whitespace-nowrap max-w-[160px] text-center"
-                  style={{ lineHeight: '1.2' }}
-                >
-                  <span className="block w-full">{item.label}</span>
-                  <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
-                </Link>
-              ))}
+              <Link
+                href="/call-with-astrologer"
+                className={`relative text-sm font-semibold px-2 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[160px] text-center ${
+                  isActiveLink('/call-with-astrologer') 
+                    ? 'text-orange-600 font-bold' 
+                    : 'text-gray-700 hover:text-orange-600'
+                }`}
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">Call with Astrologer</span>
+                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
+                  isActiveLink('/call-with-astrologer') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                }`} />
+              </Link>
+              
+              <Link
+                href="/about"
+                className="relative text-sm font-semibold text-gray-700 px-2 py-1 transition-colors duration-200 hover:text-orange-600 focus:outline-none group whitespace-nowrap max-w-[160px] text-center"
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">About</span>
+                <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
+              </Link>
+              
+              <Link
+                href="/services"
+                className="relative text-sm font-semibold text-gray-700 px-2 py-1 transition-colors duration-200 hover:text-orange-600 focus:outline-none group whitespace-nowrap max-w-[160px] text-center"
+                style={{ lineHeight: '1.2' }}
+              >
+                <span className="block w-full">Services</span>
+                <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
+              </Link>
+              
+
             </nav>
             {/* Right: User/Login */}
             <div className="flex items-center gap-2 flex-shrink-0 min-w-[160px] justify-end">
@@ -341,9 +424,11 @@ const Header = () => {
       <div className="md:hidden">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Mobile Logo */}
-          <Link href="/" className="group flex items-center gap-2 transition-all duration-300 hover:scale-105">
+          <Link href="/" className={`group flex items-center gap-2 transition-all duration-300 ${
+            isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
+          }`}>
           <Image
-              src="/sobhagya_logo.avif"
+              src="/sobhagya-logo.svg"
             alt="Sobhagya"
               width={40}
               height={40}
@@ -389,7 +474,7 @@ const Header = () => {
           
           <button 
             onClick={() => setIsOpen(!isOpen)} 
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300 hover:scale-110 focus:outline-none"
             aria-label="Toggle menu"
           >
               {isOpen ? <X size={18} /> : <Menu size={18} />}
@@ -414,8 +499,8 @@ const Header = () => {
           >
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
-                <Image src="/sobhagya_logo.avif" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
+              <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={() => setIsOpen(false)}>
+                <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
                 <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
                   Sobhagya
                 </span>
@@ -534,13 +619,16 @@ const Header = () => {
                     { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
                     { href: "/about", label: "About", icon: "✨", bgColor: "bg-indigo-100" },
                     { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
-                    { href: "/contact", label: "Contact", icon: "📧", bgColor: "bg-teal-100" },
                     { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
                   ].map((item, index) => (
                     <Link 
                       key={item.href}
                       href={item.href}
-                      className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                      className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border transition-all duration-300 ${
+                        isActiveLink(item.href)
+                          ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
+                          : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
+                      }`}
                       onClick={() => setIsOpen(false)}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
@@ -548,11 +636,15 @@ const Header = () => {
                         <span className="text-lg">{item.icon}</span>
                       </div>
                       <span className="flex-1">{item.label}</span>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                      <div className={`transition-opacity duration-300 ${
+                        isActiveLink(item.href) ? 'opacity-100 text-orange-500' : 'opacity-0 group-hover:opacity-100 text-orange-500'
+                      }`}>
                         →
                       </div>
                     </Link>
                   ))}
+                  
+
                 </nav>
               </div>
 

@@ -483,7 +483,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 sm:mb-3">
             <Image 
-              src="/sobhagya_logo.avif" 
+              src="/sobhagya-logo.svg" 
               alt="Astrology Logo" 
               width={80} 
               height={80} 

@@ -1,8 +1,15 @@
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 const HoroscopeInsights: React.FC = () => {
+  const router = useRouter();
+  
+  const handleHoroscopeClick = (type: string) => {
+    router.push('/services/horoscope');
+  };
+  
   return (
     <section className="min-h-[300px] py-20 sm:py-28 relative overflow-hidden">
 
@@ -23,17 +30,18 @@ const HoroscopeInsights: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8 max-w-5xl mx-auto">
           {[
-            { img: "/Group 13373.png", label: "Today's Horoscope" },
-            { img: "/Group 13374.png", label: "Tomorrow Horoscope" },
-            { img: "/Group 13375.png", label: "Weekly Horoscope" },
-            { img: "/Group 13376.png", label: "Monthly Horoscope" },
-            { img: "/Group 13377.png", label: "Yearly Horoscope" },
+            { img: "/daily-horoscope.svg", label: "Today's Horoscope" },
+            { img: "/tomorrows-horoscope.svg", label: "Tomorrow Horoscope" },
+            { img: "/weekly-horoscope.svg", label: "Weekly Horoscope" },
+            { img: "/monthly-horoscope.svg", label: "Monthly Horoscope" },
+            { img: "/yearly-horoscope.svg", label: "Yearly Horoscope" },
           ].map((item) => (
             <motion.div 
               key={item.label} 
-              className="flex flex-col items-center animate-fade-in-up"
+              className="flex flex-col items-center animate-fade-in-up cursor-pointer"
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.2 }}
+              onClick={() => handleHoroscopeClick(item.label)}
             >
               <div className="w-16 sm:w-20 h-16 sm:h-20 mb-3 flex items-center justify-center">
                 <Image 

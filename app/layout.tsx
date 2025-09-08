@@ -27,7 +27,7 @@ export const metadata = {
   title: "Sobhagya",
   description: "Your trusted astrology consultation platform",
   icons: {
-    icon: "/sobhagya_logo.avif",
+    icon: "/sobhagya-logo.svg",
   },
 };
 

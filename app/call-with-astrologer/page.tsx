@@ -50,28 +50,28 @@ async function fetchAllAstrologers(): Promise<Astrologer[]> {
   try {
     const baseUrl = getApiBaseUrl();
     let skip = 0;
-    const limit = 10; 
+    const limit = 10;
     let allData: Astrologer[] = [];
     let hasMore = true;
 
     while (hasMore) {
       const apiUrl = `${baseUrl}/user/api/users-list?skip=${skip}&limit=${limit}`;
-      console.log('Fetching astrologers from:', apiUrl);
+      console.log("Fetching astrologers from:", apiUrl);
 
       const response = await fetch(apiUrl, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
         // Add cache options for better performance
-        next: { revalidate: 300 } // Revalidate every 5 minutes
+        next: { revalidate: 300 }, // Revalidate every 5 minutes
       });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      console.log('API Response:', data);
+      console.log("API Response:", data);
 
       if (data.success && data.data?.list) {
         const batch = data.data.list;
@@ -85,7 +85,7 @@ async function fetchAllAstrologers(): Promise<Astrologer[]> {
 
     return allData;
   } catch (err) {
-    console.error('Error fetching astrologers:', err);
+    console.error("Error fetching astrologers:", err);
     throw new Error("Failed to fetch astrologers");
   }
 }
@@ -101,8 +101,16 @@ const AstrologerCallPage = async () => {
     error = err instanceof Error ? err.message : "Failed to fetch astrologers";
   }
 
-  // Pass data to client component
-  return <CallWithAstrologerClient astrologers={allAstrologers} error={error} />;
+  // ✅ You can safely put your header/banner JSX here
+  return (
+    <div className="w-full bg-white min-h-screen">
+      {/* Enhanced Header banner */}
+      {/* (your <motion.div> block goes here if you want the banner visible on the page) */}
+
+      {/* Client component */}
+      <CallWithAstrologerClient astrologers={allAstrologers} error={error} />
+    </div>
+  );
 };
 
 export default AstrologerCallPage;

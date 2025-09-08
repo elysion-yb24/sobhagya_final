@@ -641,7 +641,7 @@ export default function ChatRoom() {
         {/* Sobhagya Logo Background */}
         <div className="absolute inset-0 opacity-5 pointer-events-none">
           <div className="absolute top-10 right-10 w-64 h-64 bg-contain bg-no-repeat bg-center"
-               style={{ backgroundImage: 'url(/sobhagya-logo.png)' }}></div>
+               style={{ backgroundImage: 'url(/sobhagya-logo.svg)' }}></div>
         </div>
 
         {/* Left Sidebar */}

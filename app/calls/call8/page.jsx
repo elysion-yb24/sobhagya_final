@@ -11,15 +11,14 @@ export default function Call8() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Language options as shown in the design - 12 languages in 3x4 grid
+  // Language options
   const languageOptions = [
     "Hindi", "English", "Telugu", "Marathi",
-    "Tamil", "Gujarati", "Urdu", "Punjabi", 
-    "Malayalam", "Kannada", "Bengali", "Odia"
+    "Tamil", "Gujarati", "Urdu", "Punjabi",
+    "Malayalam", "Kannada", "Bengali",
   ];
 
   useEffect(() => {
-    // Log the stored astrologer ID for debugging
     const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
     if (storedAstrologerId) {
       console.log('Call8: Found stored astrologer ID:', storedAstrologerId);
@@ -29,27 +28,20 @@ export default function Call8() {
   }, []);
 
   const handleLanguageToggle = (language) => {
-    console.log('Toggling language:', language);
-    setSelectedLanguages(prev => {
-      const newSelection = prev.includes(language) 
+    setSelectedLanguages(prev =>
+      prev.includes(language)
         ? prev.filter(lang => lang !== language)
-        : [...prev, language];
-      console.log('New selection:', newSelection);
-      return newSelection;
-    });
+        : [...prev, language]
+    );
   };
 
   const handleNext = () => {
-    console.log('Next clicked, selected languages:', selectedLanguages);
     if (selectedLanguages.length > 0) {
-      // Store the selected languages in localStorage for the next step
       localStorage.setItem('userLanguages', JSON.stringify(selectedLanguages));
       setIsExiting(true);
       setTimeout(() => {
         router.push("/calls/call9");
       }, 100);
-    } else {
-      console.log('No languages selected, cannot proceed');
     }
   };
 
@@ -67,7 +59,7 @@ export default function Call8() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95, x: "-100%" }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
-            className="w-full max-w-[1141px] min-h-[500px] sm:h-[550px] md:h-[600px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg flex flex-col"
+            className="relative w-full max-w-[1141px] min-h-[600px] sm:h-[550px] md:h-[400px] bg-[#FCF4E9] rounded-lg p-4 sm:p-6 md:p-8 shadow-lg flex flex-col"
           >
             <Head>
               <title>Guidance Form</title>
@@ -80,58 +72,61 @@ export default function Call8() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-3 sm:mb-5 md:mb-6 mt-2 sm:mt-3 md:mt-4"
+              className="font-medium font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
             >
               Enter Your Details
             </motion.h1>
 
-            {/* Progress Bar with 8 steps */}
+            {/* Progress Bar */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-5 sm:mb-7"
+              className="relative mb-10 sm:mb-12 w-[70%] mx-auto"
             >
-              <div className="h-1 bg-gray-300 w-full rounded-full">
+              <div className="h-[1px] bg-gray-300 w-[110%] -ml-[5%] rounded-full relative">
                 <motion.div
-                  className="h-1 bg-[#F7971D] rounded-full"
+                  className="h-[1px] bg-[#F7971D] rounded-full"
                   initial={{ width: "0%" }}
-                  animate={{ width: "75%" }}
+                  animate={{ width: "100%" }}
                   transition={{ duration: 1, delay: 0.5 }}
-                ></motion.div>
+                />
               </div>
 
-              <div className="flex justify-between absolute w-full top-0 transform -translate-y-1/2">
+              <div className="flex justify-between absolute w-full left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
                 {[...Array(8)].map((_, index) => (
                   <motion.div
                     key={index}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-                      index < 8 ? "bg-[#F7971D]" : "bg-gray-300"
-                    }`}
-                  ></motion.div>
+                    className={`w-3 h-3 rounded-full ${index < 8 ? "bg-[#F7971D]" : "bg-gray-300"
+                      }`}
+                  />
                 ))}
               </div>
             </motion.div>
 
-            {/* Main Question */}
+            {/* Question */}
             <motion.h2
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-5 sm:mb-6 mt-4 sm:mt-6 px-2"
+              className="text-lg sm:text-xl font-normal text-center text-[#373737] mb-6 sm:mb-8 mt-6 sm:mt-8 px-2"
             >
               Select your Language
             </motion.h2>
 
+            
             {/* Language Selection Grid */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="grid grid-cols-4 gap-x-3 gap-y-4 sm:gap-x-4 sm:gap-y-5 mb-8 sm:mb-10 mt-2 sm:mt-4 max-w-3xl mx-auto px-4 sm:px-0 flex-1 justify-items-center"
+              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6 
+             px-4 sm:px-6 md:px-8 
+             max-w-4xl mx-auto 
+             overflow-y-auto flex-grow pb-24"
             >
               {languageOptions.map((language, index) => (
                 <motion.button
@@ -140,37 +135,36 @@ export default function Call8() {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.9 + index * 0.05 }}
                   onClick={() => handleLanguageToggle(language)}
-                  className={`w-[20px] h-[20px] sm:w-24 sm:h-14 rounded-lg font-medium text-gray-700 transition-all duration-300 hover:shadow-md text-xs sm:text-sm flex items-center justify-center ${
-                    selectedLanguages.includes(language)
+                  className={`px-3 py-3 sm:px-6 sm:py-4 
+                  rounded-full font-medium text-[#757474] 
+                  transition-all duration-300 hover:shadow-md 
+                  text-sm sm:text-base 
+                  flex items-center justify-center
+                  ${selectedLanguages.includes(language)
                       ? "bg-[#F7971D] text-white shadow-lg scale-105"
-                      : "bg-white hover:bg-orange-50 border-2 border-gray-200"
-                  }`}
+                      : "bg-white hover:bg-orange-50 border"
+                    }`}
                 >
                   {language}
                 </motion.button>
               ))}
             </motion.div>
 
-            {/* Navigation Buttons */}
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex justify-center mt-auto pt-4 pb-2"
-            >
+
+            {/* Next Button - fixed bottom inside card */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
               <button
                 type="button"
                 onClick={handleNext}
                 disabled={selectedLanguages.length === 0}
-                className={`w-[185px] h-[62px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${
-                  selectedLanguages.length > 0
-                    ? "bg-[#F7971D] hover:bg-[#E88A1A]"
-                    : "bg-gray-400 cursor-not-allowed"
-                }`}
+                className={`w-[185px] h-[50px] text-white font-semibold rounded-lg text-lg transition-all duration-300 ${selectedLanguages.length > 0
+                  ? "bg-[#F7971D] hover:bg-[#E88A1A]"
+                  : "bg-gray-400 cursor-not-allowed"
+                  }`}
               >
                 Next
               </button>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

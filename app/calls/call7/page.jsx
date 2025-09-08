@@ -125,43 +125,42 @@ export default function Call7() {
               initial={{ y: -10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="font-semibold font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
+              className="font-medium font-['Poppins'] text-center text-gray-800 text-xl sm:text-2xl mb-4 sm:mb-6 md:mb-8 mt-[20px] sm:mt-[30px] md:mt-[50px]"
             >
               Enter Your Details
             </motion.h1>
 
-            {/* Progress Bar with 8 steps */}
+            {/* Progress Bar */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="relative mb-6 sm:mb-8"
+              className="relative mb-10 sm:mb-12 w-[70%] mx-auto"
             >
-              <div className="h-1 bg-gray-300 w-full rounded-full">
+              <div className="h-[1px] bg-gray-300 w-[110%] -ml-[5%] rounded-full relative">
                 <motion.div
-                  className="h-1 bg-[#F7971D] rounded-full"
+                  className="h-[1px] bg-[#F7971D] rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: "87.5%" }}
                   transition={{ duration: 1, delay: 0.5 }}
-                ></motion.div>
+                />
               </div>
 
-              <div className="flex justify-between absolute w-full top-0 transform -translate-y-1/2">
+              <div className="flex justify-between absolute w-full left-1/2 top-0 -translate-x-1/2 -translate-y-1/2">
                 {[...Array(8)].map((_, index) => (
                   <motion.div
                     key={index}
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ duration: 0.3, delay: 0.6 + index * 0.1 }}
-                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-                      index < 7 ? "bg-[#F7971D]" : "bg-gray-300"
-                    }`}
-                  ></motion.div>
+                    className={`w-3 h-3 rounded-full ${index < 7 ? "bg-[#F7971D]" : "bg-gray-300"
+                      }`}
+                  />
                 ))}
               </div>
             </motion.div>
 
-            {/* Main Question */}
+            {/* Question */}
             <motion.h2
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -176,7 +175,7 @@ export default function Call7() {
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
-              className="w-full max-w-md mx-auto mb-16 sm:mb-20 md:mb-24 mt-6 sm:mt-8 relative px-4 sm:px-0"
+              className="w-full max-w-md mx-auto mb-12 sm:mb-16 md:mb-20 mt-6 sm:mt-8 relative px-4 sm:px-0"
             >
                               <input
                   type="text"
@@ -230,12 +229,12 @@ export default function Call7() {
               {/* Success Message - REMOVED */}
             </motion.div>
 
-            {/* Navigation Buttons */}
+            {/* Next Button */}
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex justify-center mt-6 sm:mt-8"
+              className="flex justify-center mt-2 sm:mt-4"
             >
               <button
                 type="button"

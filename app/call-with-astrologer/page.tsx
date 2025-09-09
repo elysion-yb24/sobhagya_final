@@ -44,11 +44,10 @@ interface Astrologer {
   videoRpm?: number;
 }
 
-// ✅ Fetch only first page server-side
+// ✅ Fetch astrologers (with pagination loop for full data)
 async function fetchInitialAstrologers(): Promise<Astrologer[]> {
   try {
     const baseUrl = getApiBaseUrl();
-<<<<<<< HEAD
     let skip = 0;
     const limit = 10;
     let allData: Astrologer[] = [];
@@ -84,24 +83,6 @@ async function fetchInitialAstrologers(): Promise<Astrologer[]> {
     }
 
     return allData;
-=======
-    const limit = 10;
-    const apiUrl = `${baseUrl}/user/api/users-list?skip=0&limit=${limit}`;
-
-    const response = await fetch(apiUrl, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      next: { revalidate: 300 }, // Revalidate every 5 minutes
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    const data = await response.json();
-    return data.success && data.data?.list ? data.data.list : [];
->>>>>>> 700e6bc (new changes sobhagya)
   } catch (err) {
     console.error("Error fetching astrologers:", err);
     throw new Error("Failed to fetch astrologers");
@@ -119,24 +100,19 @@ const AstrologerCallPage = async () => {
     error = err instanceof Error ? err.message : "Failed to fetch astrologers";
   }
 
-<<<<<<< HEAD
-  // ✅ You can safely put your header/banner JSX here
   return (
     <div className="w-full bg-white min-h-screen">
-      {/* Enhanced Header banner */}
-      {/* (your <motion.div> block goes here if you want the banner visible on the page) */}
+      {/* 🔮 Header / Banner */}
+    
 
       {/* Client component */}
-      <CallWithAstrologerClient astrologers={allAstrologers} error={error} />
+      <CallWithAstrologerClient
+        initialAstrologers={initialAstrologers}
+        error={error}
+      />
     </div>
-=======
-  return (
-    <CallWithAstrologerClient
-      initialAstrologers={initialAstrologers}
-      error={error}
-    />
->>>>>>> 700e6bc (new changes sobhagya)
   );
+
 };
 
 export default AstrologerCallPage;

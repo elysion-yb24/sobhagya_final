@@ -29,9 +29,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 items-center w-full">
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-center w-full">
       {/* 🔎 Search */}
-      <div className="flex w-full sm:w-auto items-center gap-2 border border-gray-300 rounded-full px-4 py-2 bg-white shadow-sm">
+      <div className="flex w-full lg:w-auto items-center gap-2 border border-gray-300 rounded-full px-4 py-2.5 bg-white shadow-sm">
         <Search className="w-5 h-5 text-gray-400" />
         <input
           type="text"
@@ -44,43 +44,43 @@ const FilterBar: React.FC<FilterBarProps> = ({
         <button
           onClick={handleSearch}
           disabled={isLoading}
-          className="ml-2 px-4 py-1.5 text-sm rounded-full bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:bg-gray-400"
+          className="ml-2 p-2 rounded-full bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-400 flex items-center justify-center"
         >
-          Search
+          <Search className="w-4 h-4" />
         </button>
       </div>
 
       {/* 🎧 Audio & 🎥 Video Buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-3">
         <button
           onClick={() => onSortChange({ type: "audio" })}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+          className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
             selectedSort === "audio"
-              ? "bg-orange-500 text-white"
-              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+              ? "bg-orange-500 text-white shadow-md"
+              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-orange-300"
           }`}
         >
           Audio
         </button>
         <button
           onClick={() => onSortChange({ type: "video" })}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+          className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
             selectedSort === "video"
-              ? "bg-orange-500 text-white"
-              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+              ? "bg-orange-500 text-white shadow-md"
+              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-orange-300"
           }`}
         >
           Video
         </button>
       </div>
 
-      {/* 🌍 Language Dropdown on Hover */}
+      {/* 🌍 Language Dropdown */}
       <div className="relative group">
         <button
-          className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition ${
+          className={`flex items-center gap-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
             selectedSort === "language"
-              ? "bg-orange-500 text-white"
-              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+              ? "bg-orange-500 text-white shadow-md"
+              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-orange-300"
           }`}
         >
           Language <ChevronDown className="w-4 h-4" />
@@ -88,14 +88,14 @@ const FilterBar: React.FC<FilterBarProps> = ({
 
         {/* Hover dropdown */}
         <div className="absolute hidden group-hover:flex flex-col mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-          {["All", "Hindi", "English", "Marathi"].map((lang) => (
+          {["All", "Hindi", "English", "Marathi", "Punjabi", "Gujarati"].map((lang) => (
             <button
               key={lang}
               onClick={() =>
                 onSortChange({ type: "language", language: lang })
               }
-              className={`px-4 py-2 text-left text-sm hover:bg-orange-100 ${
-                selectedLanguage === lang ? "font-semibold text-orange-600" : ""
+              className={`px-4 py-2 text-left text-sm hover:bg-orange-100 transition-colors ${
+                selectedLanguage === lang ? "font-semibold text-orange-600 bg-orange-50" : ""
               }`}
             >
               {lang}
@@ -107,7 +107,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       {/* ❌ Clear Filters */}
       <button
         onClick={onClearFilters}
-        className="flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
+        className="flex items-center gap-1 px-4 py-2.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300 transition-all"
       >
         <XCircle className="w-4 h-4" />
         Clear

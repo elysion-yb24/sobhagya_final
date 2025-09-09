@@ -1,4 +1,3 @@
-import React from "react";
 import { getApiBaseUrl } from "../config/api";
 import CallWithAstrologerClient from "./CallWithAstrologerClient";
 
@@ -45,10 +44,11 @@ interface Astrologer {
   videoRpm?: number;
 }
 
-// Server-side function to fetch astrologers
-async function fetchAllAstrologers(): Promise<Astrologer[]> {
+// ✅ Fetch only first page server-side
+async function fetchInitialAstrologers(): Promise<Astrologer[]> {
   try {
     const baseUrl = getApiBaseUrl();
+<<<<<<< HEAD
     let skip = 0;
     const limit = 10;
     let allData: Astrologer[] = [];
@@ -84,23 +84,42 @@ async function fetchAllAstrologers(): Promise<Astrologer[]> {
     }
 
     return allData;
+=======
+    const limit = 10;
+    const apiUrl = `${baseUrl}/user/api/users-list?skip=0&limit=${limit}`;
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      next: { revalidate: 300 }, // Revalidate every 5 minutes
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    const data = await response.json();
+    return data.success && data.data?.list ? data.data.list : [];
+>>>>>>> 700e6bc (new changes sobhagya)
   } catch (err) {
     console.error("Error fetching astrologers:", err);
     throw new Error("Failed to fetch astrologers");
   }
 }
 
-// Main page component - server component that fetches data
+// ✅ Main page component - server component
 const AstrologerCallPage = async () => {
-  let allAstrologers: Astrologer[] = [];
+  let initialAstrologers: Astrologer[] = [];
   let error: string | null = null;
 
   try {
-    allAstrologers = await fetchAllAstrologers();
+    initialAstrologers = await fetchInitialAstrologers();
   } catch (err) {
     error = err instanceof Error ? err.message : "Failed to fetch astrologers";
   }
 
+<<<<<<< HEAD
   // ✅ You can safely put your header/banner JSX here
   return (
     <div className="w-full bg-white min-h-screen">
@@ -110,6 +129,13 @@ const AstrologerCallPage = async () => {
       {/* Client component */}
       <CallWithAstrologerClient astrologers={allAstrologers} error={error} />
     </div>
+=======
+  return (
+    <CallWithAstrologerClient
+      initialAstrologers={initialAstrologers}
+      error={error}
+    />
+>>>>>>> 700e6bc (new changes sobhagya)
   );
 };
 

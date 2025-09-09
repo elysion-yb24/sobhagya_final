@@ -1,208 +1,118 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, X } from 'lucide-react';
-import { FilterBarSkeleton } from '../ui/SkeletonLoader';
-import { motion } from 'framer-motion';
-
-interface FilterOptions {
-  languages: string[];
-  specializations: string[];
-  experience: string[];
-  rating: number[];
-}
+import React, { useState } from "react";
+import { Search, ChevronDown, XCircle } from "lucide-react";
 
 interface FilterBarProps {
-  onSearch: (value: string) => void;
-  onSortChange: (sort: { type: 'audio' | 'video' | 'language' | '' , language?: string }) => void;
-  isLoading?: boolean;
-  totalResults?: number;
   searchQuery: string;
-  selectedSort: 'audio' | 'video' | 'language' | '';
-  selectedLanguage?: string;
-  videoCallCount?: number;
+  selectedSort: string;
+  selectedLanguage: string;
+  onSearchClick: (query: string) => void;
+  onSortChange: (sort: { type: string; language?: string }) => void;
+  onClearFilters: () => void;
+  isLoading: boolean;
 }
 
 const FilterBar: React.FC<FilterBarProps> = ({
-  onSearch,
+  searchQuery,
+  selectedSort,
+  selectedLanguage,
+  onSearchClick,
   onSortChange,
-  isLoading = false,
-  totalResults = 0,
-  searchQuery = '',
-  selectedSort = '',
-  selectedLanguage = '',
-  videoCallCount = 0,
+  onClearFilters,
+  isLoading
 }) => {
-  const [searchTerm, setSearchTerm] = useState(searchQuery);
-  const [sortBy, setSortBy] = useState<'audio' | 'video' | 'language' | ''>(selectedSort);
-  const [currentLanguage, setCurrentLanguage] = useState<string>(selectedLanguage);
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-  const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const [localQuery, setLocalQuery] = useState(searchQuery);
 
-  // Typewriter effect for placeholder
-  const [placeholder, setPlaceholder] = useState('');
-  const fullPlaceholder = 'Search for Astrologer';
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    if (placeholder.length < fullPlaceholder.length) {
-      timeout = setTimeout(() => {
-        setPlaceholder(fullPlaceholder.slice(0, placeholder.length + 1));
-      }, 60);
-    }
-    return () => clearTimeout(timeout);
-  }, [placeholder]);
-  useEffect(() => {
-    setPlaceholder('');
-  }, []);
-
-  // Local state for search input
-  const [localSearch, setLocalSearch] = useState(searchQuery || '');
-  useEffect(() => {
-    setLocalSearch(searchQuery || '');
-  }, [searchQuery]);
-
-  // Close dropdowns on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (sortDropdownRef.current && !sortDropdownRef.current.contains(event.target as Node)) {
-        setSortDropdownOpen(false);
-        setLanguageMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Handle sort selection
-  const handleSortSelect = (type: 'audio' | 'video' | 'language') => {
-    setSortBy(type);
-    setCurrentLanguage('');
-    setSortDropdownOpen(false);
-    setLanguageMenuOpen(false);
-    onSortChange({ type });
+  const handleSearch = () => {
+    onSearchClick(localQuery);
   };
-
-  // Handle language selection
-  const handleLanguageSelect = (lang: string) => {
-    setSortBy('language');
-    setCurrentLanguage(lang);
-    setSortDropdownOpen(false);
-    setLanguageMenuOpen(false);
-    onSortChange({ type: 'language', language: lang });
-  };
-
-  useEffect(() => {
-    setSearchTerm(searchQuery);
-  }, [searchQuery]);
-
-  // Sync sortBy and currentLanguage with props
-  useEffect(() => {
-    setSortBy(selectedSort);
-    setCurrentLanguage(selectedLanguage || '');
-  }, [selectedSort, selectedLanguage]);
-
-  // Filter options
-  const filterOptions: FilterOptions = {
-    languages: ['Hindi', 'English', 'Bengali', 'Telugu', 'Marathi', 'Tamil', 'Gujarati', 'Kannada', 'Malayalam', 'Punjabi'],
-    specializations: ['Love & Relationships', 'Career & Business', 'Health & Wellness', 'Finance & Money', 'Marriage & Family', 'Education', 'Spirituality', 'Numerology', 'Tarot Reading', 'Vastu Shastra'],
-    experience: ['1-3 years', '3-5 years', '5-10 years', '10+ years'],
-    rating: [4, 4.5, 5]
-  };
-
-  const statusOptions = [
-    { value: 'online', label: 'Online', color: 'green' },
-    { value: 'busy', label: 'Busy', color: 'amber' },
-    { value: 'offline', label: 'Offline', color: 'gray' }
-  ];
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    onSearch(value);
-  };
-
-  if (isLoading) {
-    return <FilterBarSkeleton />;
-  }
-
-  // Determine sort button label - always show "Sort by" unless a language is selected
-  let sortLabel = 'Sort by';
-  if (sortBy === 'language' && currentLanguage) {
-    sortLabel = currentLanguage;
-  }
-  // Keep "Sort by" for audio, video, and empty cases
 
   return (
-    <motion.div
-      initial={{ x: -80, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 60, damping: 14, delay: 0.1 }}
-      className="w-full"
-    >
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 lg:gap-6 w-full">
-        {/* Search Bar */}
-        <div className="relative flex-1 min-w-0">
-          <input
-            type="text"
-            className="w-full px-4 lg:px-5 py-3 rounded-full border border-orange-200 focus:border-orange-400 focus:ring-0 text-sm lg:text-base shadow-none transition-all duration-200 placeholder-gray-400 outline-none"
-            value={localSearch}
-            onChange={e => setLocalSearch(e.target.value)}
-            placeholder={placeholder}
-            autoFocus
-          />
-          {localSearch && (
+    <div className="flex flex-col sm:flex-row gap-3 sm:gap-6 items-center w-full">
+      {/* 🔎 Search */}
+      <div className="flex w-full sm:w-auto items-center gap-2 border border-gray-300 rounded-full px-4 py-2 bg-white shadow-sm">
+        <Search className="w-5 h-5 text-gray-400" />
+        <input
+          type="text"
+          value={localQuery}
+          onChange={(e) => setLocalQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          placeholder="Search astrologers..."
+          className="flex-1 outline-none bg-transparent text-sm"
+        />
+        <button
+          onClick={handleSearch}
+          disabled={isLoading}
+          className="ml-2 px-4 py-1.5 text-sm rounded-full bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:bg-gray-400"
+        >
+          Search
+        </button>
+      </div>
+
+      {/* 🎧 Audio & 🎥 Video Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => onSortChange({ type: "audio" })}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+            selectedSort === "audio"
+              ? "bg-orange-500 text-white"
+              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Audio
+        </button>
+        <button
+          onClick={() => onSortChange({ type: "video" })}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+            selectedSort === "video"
+              ? "bg-orange-500 text-white"
+              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Video
+        </button>
+      </div>
+
+      {/* 🌍 Language Dropdown on Hover */}
+      <div className="relative group">
+        <button
+          className={`flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium transition ${
+            selectedSort === "language"
+              ? "bg-orange-500 text-white"
+              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          Language <ChevronDown className="w-4 h-4" />
+        </button>
+
+        {/* Hover dropdown */}
+        <div className="absolute hidden group-hover:flex flex-col mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+          {["All", "Hindi", "English", "Marathi"].map((lang) => (
             <button
-              onClick={() => setLocalSearch('')}
-              className="absolute right-10 lg:right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              key={lang}
+              onClick={() =>
+                onSortChange({ type: "language", language: lang })
+              }
+              className={`px-4 py-2 text-left text-sm hover:bg-orange-100 ${
+                selectedLanguage === lang ? "font-semibold text-orange-600" : ""
+              }`}
             >
-              <X className="w-4 h-4 lg:w-5 lg:h-5" />
+              {lang}
             </button>
-          )}
-        </div>
-        
-        {/* Search Icon and Sort By */}
-        <div className="flex items-center justify-center lg:justify-start gap-11 lg:gap-10 flex-shrink-0">
-          {/* Search Icon */}
-          <button
-            className="flex items-center justify-center h-12 w-12 lg:h-14 lg:w-14 rounded-full bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-colors flex-shrink-0"
-            onClick={() => onSearch(localSearch)}
-            aria-label="Search Astrologers"
-          >
-            <Search className="w-6 h-6 lg:w-7 lg:h-7 text-orange-400" />
-          </button>
-          
-          {/* Sort By Dropdown */}
-          <div className="relative min-w-[180px] lg:min-w-[200px] xl:min-w-[220px]">
-            <select
-              value={selectedSort}
-              onChange={e => {
-                const value = e.target.value;
-                if (value === 'audio' || value === 'video') {
-                  onSortChange({ type: value });
-                } else if (value === '') {
-                  onSortChange({ type: '' });
-                } else {
-                  onSortChange({ type: 'language', language: value });
-                }
-              }}
-              className="w-full pl-4 lg:pl-5 pr-10 py-3 lg:py-4 rounded-full font-medium text-gray-700 border border-gray-200 shadow-md focus:outline-none focus:ring-0 focus:border-orange-300 transition-all duration-300 text-sm lg:text-base appearance-none"
-            >
-              <option value="">Sort By</option>
-              <option value="audio">Audio Calls</option>
-              <option value="video">Video Calls ({videoCallCount})</option>
-              <optgroup label="Languages">
-                <option value="Hindi">Hindi</option>
-                <option value="English">English</option>
-                <option value="Tamil">Tamil</option>
-                <option value="Telugu">Telugu</option>
-              </optgroup>
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 lg:w-6 lg:h-6 text-gray-400 pointer-events-none" />
-          </div>
+          ))}
         </div>
       </div>
-    </motion.div>
+
+      {/* ❌ Clear Filters */}
+      <button
+        onClick={onClearFilters}
+        className="flex items-center gap-1 px-4 py-2 rounded-full text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
+      >
+        <XCircle className="w-4 h-4" />
+        Clear
+      </button>
+    </div>
   );
 };
 

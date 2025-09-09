@@ -27,9 +27,10 @@ const AstrologerCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
 
-  // Test API accessibility
+ 
 
 
   // Fetch astrologers from API
@@ -37,6 +38,7 @@ const AstrologerCarousel = () => {
     const fetchAstrologers = async () => {
       try {
         setLoading(true);
+        setHasError(false);
         const baseUrl = getApiBaseUrl();
         const apiUrl = `${baseUrl}/user/api/users-list`;
 
@@ -77,57 +79,8 @@ const AstrologerCarousel = () => {
         }
       } catch (error) {
         console.error('Error fetching astrologers:', error);
-        // Fallback to static data if API fails
-        setAstrologers([
-          {
-            _id: "1",
-            name: "Pt. Shashtri Ji",
-            avatar: "/image (11).png",
-            talksAbout: ["KP", "Vedic", "Vastu"],
-            rating: { avg: 4.5, count: 10 },
-            calls: 50,
-            callMinutes: 1200,
-            rpm: 20,
-            status: "online",
-            isLive: false
-          },
-          {
-            _id: "2",
-            name: "Sahil Mehta",
-            avatar: "/Sahil-Mehta.png",
-            talksAbout: ["Tarot reading", "Pranic healing"],
-            rating: { avg: 4.8, count: 15 },
-            calls: 75,
-            callMinutes: 1800,
-            rpm: 25,
-            status: "online",
-            isLive: false
-          },
-          {
-            _id: "3",
-            name: "Acharaya Ravi",
-            avatar: "/Acharya-Ravi.png",
-            talksAbout: ["Vedic", "Vastu"],
-            rating: { avg: 4.6, count: 12 },
-            calls: 60,
-            callMinutes: 1500,
-            rpm: 22,
-            status: "online",
-            isLive: false
-          },
-          {
-            _id: "4",
-            name: "Naresh",
-            avatar: "/Naresh.png",
-            talksAbout: ["Tarot reading", "Vedic", "KP", "Psychics"],
-            rating: { avg: 4.7, count: 18 },
-            calls: 80,
-            callMinutes: 2000,
-            rpm: 28,
-            status: "online",
-            isLive: false
-          }
-        ]);
+        setHasError(true);
+        setAstrologers([]);
       } finally {
         setLoading(false);
       }
@@ -180,6 +133,11 @@ const AstrologerCarousel = () => {
       router.push(`/calls/call1?astrologerId=${astrologerId}`);
     }
   };
+
+  // Don't render anything if there's an error
+  if (hasError) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -254,10 +212,11 @@ const AstrologerCarousel = () => {
                   <div className="relative w-20 h-20 mb-3  rounded-full overflow-hidden border-2 border-[#F7971E]">
                     <Image
                       src={
-                        astrologer.avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          astrologer.name
-                        )}`
+                        astrologer.avatar && astrologer.avatar.startsWith('http')
+                          ? astrologer.avatar
+                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                              astrologer.name
+                            )}`
                       }
                       alt={astrologer.name}
                       width={96}

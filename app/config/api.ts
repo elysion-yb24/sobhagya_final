@@ -17,7 +17,12 @@ export const API_CONFIG = {
     USER: {
       USERS: 'user/api/users',
       ASTROLOGERS: 'user/api/astrologers',
-      WALLET_BALANCE: 'payment/api/transaction/wallet-balance'
+      WALLET_BALANCE: 'payment/api/transaction/wallet-balance',
+      SEARCH: 'user/api/search',
+    },
+    BLOG: {
+      GET_BLOGS: '/api/blog/admin/get-blogs',
+      GET_BLOG: '/api/blog/admin/get-blog'
     }
   }
 };

@@ -1,52 +1,16 @@
 "use client";
 
-
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import FilterBar from "../components/astrologers/FilterBar";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../utils/auth-utils";
+import { getAuthToken, getUserDetails } from "../utils/auth-utils";
 import TransactionHistory from "../components/history/TransactionHistory";
 import CallHistory from "../components/history/CallHistory";
-import { 
-  RefreshCw, 
-  Wallet, 
-  Receipt, 
-  Phone, 
-  History, 
-  TrendingUp,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Users,
-  Star,
-  Menu,
-  Home,
-  Search, 
-  Filter, 
-  Video, 
-  Clock, 
-  Award, 
-  MapPin, 
-  Languages,
-  Heart,
-  Gift,
-  MessageCircle,
-  Calendar,
-  Shield,
-  Verified,
-  PhoneCall,
-  VideoIcon,
-  CheckCircle,
-  Loader2,
-  CreditCard
-} from "lucide-react";
+import { Wallet, Phone, X, CreditCard } from "lucide-react";
 import { getApiBaseUrl } from "../config/api";
-import { useDebounce } from "../hooks/useDebounce";
-import { useWalletBalance, WalletBalanceProvider } from '../components/astrologers/WalletBalanceContext';
-
+import { useWalletBalance, WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
+import { API_CONFIG } from "../config/api";
 
 interface Astrologer {
   _id: string;
@@ -58,894 +22,310 @@ interface Astrologer {
   rating: number | { avg: number; count: number; max: number; min: number };
   profileImage: string;
   hasVideo?: boolean;
-  // Additional fields from API response
-  about?: string;
-  age?: number;
-  avatar?: string;
-  blockReason?: string;
-  blockedReason?: string;
-  callMinutes?: number;
-  callType?: string;
-  calls?: number;
-  createdAt?: string;
-  hasBlocked?: boolean;
-  isBlocked?: boolean;
-  isLive?: boolean;
-  isLiveBlocked?: boolean;
-  isRecommended?: boolean;
-  isVideoCallAllowed?: boolean;
-  isVideoCallAllowedAdmin?: boolean;
-  language?: string[];
-  numericId?: number;
-  offerRpm?: number;
-  payoutAudioRpm?: number;
-  payoutVideoRpm?: number;
-  phone?: string;
-  priority?: number;
-  reportCount?: number;
-  role?: string;
-  rpm?: number;
-  sample?: string;
   status?: string;
-  talksAbout?: string[];
-  upi?: string;
+  rpm?: number;
   videoRpm?: number;
 }
 
-export default function AstrologersPage() {
+function AstrologersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
+
   const [allAstrologers, setAllAstrologers] = useState<Astrologer[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<'audio' | 'video' | 'language' | ''>("");
-  const [languageFilter, setLanguageFilter] = useState<string>("All");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get("search") || "");
+  const [sortBy, setSortBy] = useState<"audio" | "video" | "language" | "">(
+    (searchParams?.get("sortBy") as "audio" | "video" | "language") || ""
+  );
+  const [languageFilter, setLanguageFilter] = useState(searchParams?.get("language") || "All");
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState<'none' | 'transactions' | 'calls'>('none');
-  const [showBestAstrologerLoader, setShowBestAstrologerLoader] = useState(false);
-  const [searching, setSearching] = useState(false);
+  const [showHistory, setShowHistory] = useState<"none" | "transactions" | "calls">("none");
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Check user role on component mount
+  const { walletBalance } = useWalletBalance();
+
+  
+  const updateURL = useCallback(
+    (
+      page: number = 1,
+      query: string = searchQuery,
+      sort: string = sortBy,
+      language: string = languageFilter
+    ) => {
+      const skip = (page - 1) * 10;
+  
+      const queryParts = [
+        `skip=${skip}`,
+        `limit=10`,
+        query ? `search=${encodeURIComponent(query)}` : "",
+        language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
+        sort ? `sortBy=${encodeURIComponent(sort)}` : ""
+      ];
+  
+      const queryString = queryParts.filter(Boolean).join("&");
+  
+      router.push(`${window.location.pathname}?${queryString}`, { scroll: false });
+    },
+    [router, searchQuery, sortBy, languageFilter]
+  );
+  
+
+
+  // 🔒 Redirect if "friend" role
   useEffect(() => {
     const user = getUserDetails();
-    if (user && user.role === 'friend') {
-      console.log('User is a friend, redirecting to partner info page');
-      router.push('/partner-info');
-      return;
-    }
+    if (user?.role === "friend") router.push("/partner-info");
   }, [router]);
 
-  // When searchQuery changes (from FilterBar), show loader for 700ms
-  useEffect(() => {
-    if (searchQuery) {
-      setSearching(true);
-      const timeout = setTimeout(() => setSearching(false), 700);
-      return () => clearTimeout(timeout);
-    } else {
-      setSearching(false);
-    }
-  }, [searchQuery]);
+  
+ const fetchAstrologers = useCallback(
+  async (
+    page: number = 1,
+    append: boolean = false,
+    query: string = searchQuery,
+    language: string = languageFilter,
+    sort: string = sortBy
+  ) => {
+    if (page === 1) setIsLoading(true);
+    else setIsLoadingMore(true);
 
-  // Fetch astrologers with pagination
-  const fetchAstrologers = async (page: number = 1, append: boolean = false) => {
-    if (page === 1) {
-      setIsLoading(true);
-    } else {
-      setIsLoadingMore(true);
-    }
     setError(null);
-    
+
     try {
       const token = getAuthToken();
       if (!token) {
         setError("Authentication required. Please log in.");
-        setIsLoading(false);
-        setIsLoadingMore(false);
         return;
       }
-      
+
       const skip = (page - 1) * 10;
-      const response = await fetch(
-        `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=10`,
-        {
-          method: "GET",
-          credentials: 'include',
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          cache: "no-store",
-        }
-      );
-      
-      if (!response.ok) {
-        setError("Failed to fetch astrologers");
-        setIsLoading(false);
-        setIsLoadingMore(false);
-        return;
-      }
-      
-      const data = await response.json();
-      const newAstrologers = data.data?.list || data.list || [];
-      
-      if (append) {
-        setAllAstrologers(prev => [...prev, ...newAstrologers]);
+
+      let endpoint = "";
+      if (query) {
+        // 👈 use search API
+        endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?skip=${skip}&limit=10&name=${encodeURIComponent(query)}`;
       } else {
-        setAllAstrologers(newAstrologers);
+        // 👈 use users API
+        const queryParts = [
+          `skip=${skip}`,
+          `limit=10`,
+          language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
+          sort ? `sortBy=${encodeURIComponent(sort)}` : ""
+        ];
+        const queryString = queryParts.filter(Boolean).join("&");
+
+        endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.USERS}?${queryString}`;
       }
-      
-      // Check if there are more astrologers to load
+
+      const res = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        credentials: "include",
+        cache: "no-store"
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch astrologers");
+
+      const data = await res.json();
+
+      // ✅ FIX: different API response structures
+      const newAstrologers: Astrologer[] = query
+        ? data.data?.list || data.users || data.data || []
+        : data.data?.list || [];
+
+      setAllAstrologers(prev =>
+        append ? [...prev, ...newAstrologers] : newAstrologers
+      );
+
       setHasMore(newAstrologers.length === 10);
-      
+      if (append) setCurrentPage(page);
     } catch (err) {
+      console.error(err);
       setError("Failed to fetch astrologers");
     } finally {
       setIsLoading(false);
       setIsLoadingMore(false);
     }
+  },
+  [searchQuery, languageFilter, sortBy]
+);
+
+
+
+
+
+  // 🔹 Handle search input change
+  const handleSearchInputChange = (query: string) => {
+    setSearchQuery(query);
   };
 
-  // Fetch initial astrologers on mount
-  useEffect(() => {
-    setMounted(true);
-    fetchAstrologers(1, false);
-  }, []);
-
-  // Handle immediate call intent after login
-  useEffect(() => {
-    const immediateCallIntent = localStorage.getItem('immediateCallIntent');
-    const immediateCallAstrologerId = localStorage.getItem('immediateCallAstrologerId');
-    
-    console.log('🔍 Checking immediate call intent:', { immediateCallIntent, immediateCallAstrologerId, allAstrologersLength: allAstrologers.length });
-    
-    if (immediateCallIntent && immediateCallAstrologerId) {
-      console.log('🚀 Found immediate call intent:', immediateCallIntent, 'for astrologer:', immediateCallAstrologerId);
-      
-      // Find the astrologer in the loaded list
-      const targetAstrologer = allAstrologers.find(ast => ast._id === immediateCallAstrologerId);
-      
-      if (targetAstrologer) {
-        console.log('✅ Found target astrologer:', targetAstrologer.name);
-        
-        // Clear the immediate call intent
-        localStorage.removeItem('immediateCallIntent');
-        localStorage.removeItem('immediateCallAstrologerId');
-        
-        // Initiate the call immediately
-        if (immediateCallIntent === 'audio') {
-          console.log('🎯 Initiating audio call...');
-          initiateAudioCall(targetAstrologer);
-        } else if (immediateCallIntent === 'video') {
-          console.log('🎯 Initiating video call...');
-          initiateVideoCall(targetAstrologer);
-        }
-      } else if (allAstrologers.length > 0) {
-        // If astrologers are loaded but target not found, try to fetch the specific astrologer
-        console.log('🔍 Target astrologer not in loaded list, fetching specific astrologer...');
-        console.log('📋 Loaded astrologers IDs:', allAstrologers.map(ast => ast._id));
-        fetchSpecificAstrologerAndCall(immediateCallAstrologerId, immediateCallIntent);
-      } else {
-        console.log('⏳ Waiting for astrologers to load...');
-      }
-    }
-  }, [allAstrologers]);
-
-  // Infinite scroll handler
-  useEffect(() => {
-    const handleScroll = () => {
-      if (isLoadingMore || !hasMore) return;
-      
-      const scrollTop = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-      
-      // Load more when user is near bottom (100px from bottom)
-      if (scrollTop + windowHeight >= documentHeight - 100) {
-        const nextPage = currentPage + 1;
-        setCurrentPage(nextPage);
-        fetchAstrologers(nextPage, true);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isLoadingMore, hasMore, currentPage]);
-
-  // Client-side search and filter
-  const filteredAstrologers = allAstrologers.filter(ast => {
-    const matchesSearch =
-      !searchQuery ||
-      ast.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (ast.specializations && ast.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())));
-    const matchesLanguage =
-      languageFilter === "All" ||
-      (ast.languages && ast.languages.some(lang => lang.toLowerCase() === languageFilter.toLowerCase()));
-    const matchesSort =
-      sortBy === '' ||
-      (sortBy === 'audio') ||
-      (sortBy === 'video' && ast.hasVideo);
-    return matchesSearch && matchesLanguage && matchesSort;
-  });
-
-  // Handler for sort change from FilterBar
-  const handleSortChange = (sort: { type: 'audio' | 'video' | 'language' | '', language?: string }) => {
-    // Show loader only when switching to audio from a different sort
-    if (sort.type === 'audio' && sort.type !== sortBy) {
-      setShowBestAstrologerLoader(true);
-      setTimeout(() => setShowBestAstrologerLoader(false), 1800); // 1.8s loader
-    }
-    setSortBy(sort.type);
-    setLanguageFilter(sort.language || '');
-  };
-
-  // Function to load all astrologers
-  const loadAllAstrologers = useCallback(async () => {
-    console.log('🚀 Loading all astrologers...');
-    setIsLoading(true);
-    
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        setError("Authentication required. Please log in.");
-        return;
-      }
-
-      const allAstrologersData: Astrologer[] = [];
-      let currentPage = 1;
-      let hasMore = true;
-
-      while (hasMore) {
-        console.log(`📄 Fetching page ${currentPage}...`);
-        const skip = (currentPage - 1) * 10; // Assuming itemsPerPage is 10
-        
-        const response = await fetch(
-          `${getApiBaseUrl()}/user/api/users?skip=${skip}&limit=10`,
-          {
-            method: "GET",
-            credentials: 'include',
-            headers: {
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            cache: "no-store",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status} - ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        let astrologers: any[] = [];
-        
-        // Handle the response structure
-        if (result?.data?.list && Array.isArray(result.data.list)) {
-          astrologers = result.data.list;
-        } else if (result?.list && Array.isArray(result.list)) {
-          astrologers = result.list;
-        } else if (Array.isArray(result)) {
-          astrologers = result;
-        }
-
-        if (astrologers.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        // Normalize the data
-        const normalizedData: Astrologer[] = astrologers.map((ast: any) => ({
-          _id: ast._id || ast.id || ast.numericId?.toString() || '',
-          name: ast.name || "Unknown Astrologer",
-          languages: (() => {
-            if (Array.isArray(ast.language)) {
-              return ast.language.map((lang: string) => lang.trim());
-            }
-            if (typeof ast.language === 'string') {
-              return ast.language.split(',').map((lang: string) => lang.trim());
-            }
-            if (Array.isArray(ast.languages)) {
-              return ast.languages.map((lang: string) => lang.trim());
-            }
-            return ["Hindi"];
-          })(),
-          specializations: ast.talksAbout || [],
-          experience: ast.age?.toString() || "0",
-          callsCount: ast.calls || 0,
-          rating: ast.rating?.avg || 5,
-          profileImage: ast.avatar || "",
-          hasVideo: ast.isVideoCallAllowed || false,
-          status: ast.status || "offline",
-          talksAbout: ast.talksAbout || [],
-          isVideoCallAllowed: ast.isVideoCallAllowed || false,
-          rpm: ast.rpm || "",
-          videoRpm: ast.videoRpm || "",
-          offerRpm: ast.offerRpm,
-          about: ast.about,
-          age: ast.age,
-          avatar: ast.avatar,
-          calls: ast.calls,
-          createdAt: ast.createdAt,
-          isLive: ast.isLive,
-          isRecommended: ast.isRecommended,
-          numericId: ast.numericId,
-          payoutAudioRpm: ast.payoutAudioRpm,
-          payoutVideoRpm: ast.payoutVideoRpm,
-          phone: ast.phone,
-          priority: ast.priority,
-          role: ast.role,
-          sample: ast.sample,
-          upi: ast.upi
-        }));
-
-        allAstrologersData.push(...normalizedData);
-        
-        // Check if we should continue
-        if (astrologers.length < 10) { // Assuming itemsPerPage is 10
-          hasMore = false;
-        } else {
-          currentPage++;
-        }
-      }
-
-      console.log(`✅ Loaded ${allAstrologersData.length} total astrologers`);
-      setAllAstrologers(allAstrologersData);
-      
-    } catch (error) {
-      console.error("❌ Error loading all astrologers:", error);
-      setError("Failed to load all astrologers. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Handle URL parameters to open history drawers
-  useEffect(() => {
-    if (mounted && searchParams) {
-      const openHistory = searchParams.get('openHistory');
-      if (openHistory === 'transactions') {
-        setShowHistory('transactions');
-      } else if (openHistory === 'calls') {
-        setShowHistory('calls');
-      }
-    }
-  }, [mounted, searchParams]);
-
-  // Ensure proper pagination initialization
-  useEffect(() => {
-    if (mounted && !isLoading && allAstrologers.length !== 0) {
-      console.log(`📊 Pagination initialized: ${allAstrologers.length} astrologers on page 1, total: ${allAstrologers.length}, pages: 1`);
-    }
-  }, [mounted, isLoading, allAstrologers.length]);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Initialize authentication on mount
-    console.log('🔍 Astrologers page mounted - initializing authentication...');
-    
-    // Check if returning from video call
-    const returningFromVideoCall = typeof window !== 'undefined' && 
-      sessionStorage.getItem('returning_from_video_call') === 'true';
-    
-    if (returningFromVideoCall) {
-      console.log('🎥 Returning from video call - clearing flag');
-      sessionStorage.removeItem('returning_from_video_call');
-    }
-    
-    // Check authentication immediately without delay
-    const isAuthValid = isAuthenticated();
-    
-    if (!isAuthValid) {
-      console.log('❌ Authentication initialization failed - redirecting to login');
-      clearAuthData();
-      router.push("/");
-      return;
-    }
-
-    console.log('✅ Authentication validated, initializing data fetch...');
-    loadAllAstrologers(); // This function is no longer needed
-  }, [mounted, router, loadAllAstrologers]);
-
-  // Prevent background scrolling when drawer is open
-  useEffect(() => {
-    if (showHistory !== 'none') {
-      // Store current scroll position
-      const scrollY = window.scrollY;
-      
-      // Prevent scrolling
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      
-      return () => {
-        // Restore scrolling
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = '';
-        
-        // Restore scroll position
-        window.scrollTo(0, scrollY);
-      };
-    }
-  }, [showHistory]);
-
-  // Handle refresh button click
-  const handleRefresh = async () => {
-    console.log('🔄 Refresh requested');
+  // 🔹 Handle search button click
+  const handleSearchClick = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
-    setHasMore(true);
-    await fetchAstrologers(1, false);
+    setAllAstrologers([])
+    fetchAstrologers(1, false,query,languageFilter,sortBy);
+    updateURL(1, query,sortBy,languageFilter); 
   };
+  
+  // 🔹 Sort change
+  const handleSortChange = useCallback(
+    (sort: { type: string; language?: string }) => {
+      setSortBy(sort.type as any);
+      setLanguageFilter(sort.language || "All");
+      setCurrentPage(1);
+      setAllAstrologers([])
+  
+      fetchAstrologers(1, false, searchQuery, sort.language || "All", sort.type);
+      updateURL(1, searchQuery, sort.type, sort.language || "All");
+    },
+    [fetchAstrologers, searchQuery, updateURL]
+  );
+  
+  
 
-  // Generate page numbers for pagination
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-    
-    if (allAstrologers.length === 0) {
-      return [1]; // Show only one page if no data
-    }
+  // 🔹 Clear filters
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setLanguageFilter("All");
+    setSortBy("");
+    setCurrentPage(1);
 
-    if (allAstrologers.length <= maxVisiblePages) {
-      for (let i = 1; i <= allAstrologers.length; i++) {
-        pages.push(i);
-      }
-    } else {
-      const startPage = Math.max(1, 1); // Always start from 1
-      const endPage = Math.min(allAstrologers.length, startPage + maxVisiblePages - 1);
-      
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-    }
-    
-    return pages;
-  };
+    fetchAstrologers(1, false);
+    router.push(window.location.pathname, { scroll: false });
+  }, [router, fetchAstrologers]);
 
-  const { walletBalance, isFetching } = useWalletBalance();
-
-  // Function to initiate audio call
-  const initiateAudioCall = async (astrologer: Astrologer) => {
-    try {
-      console.log('🎯 Initiating audio call with:', astrologer.name);
-      
-      const token = getAuthToken();
-      const userDetails = getUserDetails();
-      
-      if (!token || !userDetails?.id) {
-        throw new Error('Authentication required');
-      }
-
-      // Request LiveKit token and channel from backend for audio call
-      const requestBody = {
-        receiverUserId: astrologer._id,
-        type: 'call',
-        appVersion: '1.0.0'
-      };
-      const channelId = Date.now().toString();
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to initiate audio call');
-      }
-
-      const data = await response.json();
-      if (!data.success || !data.data?.token || !data.data?.channel) {
-        throw new Error(data.message || 'Failed to get audio call token');
-      }
-
-      // Store navigation source and astrologer ID for proper back navigation
-      localStorage.setItem('lastAstrologerId', astrologer._id);
-      localStorage.setItem('callSource', 'astrologerCard');
-
-      // Redirect to audio call page with token and room
-      const audioCallUrl = `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
-      router.push(audioCallUrl);
-
-    } catch (error) {
-      console.error('❌ Audio call error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to initiate audio call');
-    }
-  };
-
-  // Function to fetch specific astrologer and initiate call
-  const fetchSpecificAstrologerAndCall = async (astrologerId: string, callType: string) => {
-    try {
-      console.log('🔍 Fetching specific astrologer:', astrologerId);
-      
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error('Authentication required');
-      }
-
-      // Fetch the specific astrologer
-      const response = await fetch(
-        `${getApiBaseUrl()}/user/api/users/${astrologerId}`,
-        {
-          method: "GET",
-          credentials: 'include',
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch astrologer details');
-      }
-
-      const data = await response.json();
-      const astrologer = data.data || data;
-
-      if (astrologer) {
-        console.log('✅ Found specific astrologer:', astrologer.name);
-        
-        // Clear the immediate call intent
-        localStorage.removeItem('immediateCallIntent');
-        localStorage.removeItem('immediateCallAstrologerId');
-        
-        // Initiate the call
-        if (callType === 'audio') {
-          initiateAudioCall(astrologer);
-        } else if (callType === 'video') {
-          initiateVideoCall(astrologer);
-        }
-      } else {
-        throw new Error('Astrologer not found');
-      }
-    } catch (error) {
-      console.error('❌ Error fetching specific astrologer:', error);
-      alert('Failed to initiate call. Please try again.');
-      
-      // Clear the intent on error
-      localStorage.removeItem('immediateCallIntent');
-      localStorage.removeItem('immediateCallAstrologerId');
-    }
-  };
-
-  // Function to initiate video call
-  const initiateVideoCall = async (astrologer: Astrologer) => {
-    try {
-      console.log('🎯 Initiating video call with:', astrologer.name);
-      
-      const token = getAuthToken();
-      const userDetails = getUserDetails();
-      
-      if (!token || !userDetails?.id) {
-        throw new Error('Authentication required');
-      }
-
-      // Request LiveKit token and channel from backend for video call
-      const requestBody = {
-        receiverUserId: astrologer._id,
-        type: 'video',
-        appVersion: '1.0.0'
-      };
-      const channelId = Date.now().toString();
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to initiate video call');
-      }
-
-      const data = await response.json();
-      if (!data.success || !data.data?.token || !data.data?.channel) {
-        throw new Error(data.message || 'Failed to get video call token');
-      }
-
-      // Store navigation source and astrologer ID for proper back navigation
-      localStorage.setItem('lastAstrologerId', astrologer._id);
-      localStorage.setItem('callSource', 'astrologerCard');
-
-      // Redirect to video call page with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
-      router.push(videoCallUrl);
-
-    } catch (error) {
-      console.error('❌ Video call error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to initiate video call');
-    }
-  };
-
-  if (!mounted) {
-    return null; // Return null on server-side and first render
-  }
+  // 🔹 Initial fetch on mount
+  useEffect(() => {
+    fetchAstrologers(1, false);
+  }, [fetchAstrologers]);
 
   return (
-    <WalletBalanceProvider>
-      {/* FilterBar and Top Controls */}
-      <section className="w-full flex justify-center py-3 ">
-        <div className="w-full max-w-7xl mx-auto px-10 py-3 transition-all duration-300 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8">
-          {/* FilterBar (search + sort by) */}
+    <>
+      <section className="w-full flex justify-center py-3">
+        <div className="w-full max-w-7xl mx-auto px-10 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8">
           <div className="flex-1 min-w-0">
             <FilterBar
-              onSearch={setSearchQuery}
-              onSortChange={handleSortChange}
-              isLoading={isLoading}
-              totalResults={allAstrologers.length}
               searchQuery={searchQuery}
               selectedSort={sortBy}
               selectedLanguage={languageFilter}
+              onClearFilters={clearFilters}
+              onSearchClick={handleSearchClick}        // triggers fetch + URL
+              onSortChange={handleSortChange}
+              isLoading={isLoading}
+              
             />
           </div>
 
-          {/* Desktop Buttons (hidden on mobile) */}
           <div className="hidden sm:flex gap-4 items-center md:ml-8 flex-shrink-0">
             <button
-              onClick={() => setShowHistory(showHistory === 'transactions' ? 'none' : 'transactions')}
-              className={`flex items-center justify-center gap-2 px-6 py-2.5 h-14 rounded-full text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-300 shadow-sm ${showHistory === 'transactions' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-orange-500 border-orange-200 hover:bg-orange-100'}`}
-              aria-label="Transaction History"
+              onClick={() =>
+                setShowHistory(showHistory === "transactions" ? "none" : "transactions")
+              }
+              className={`flex items-center gap-2 px-6 py-2.5 h-14 rounded-full font-semibold border transition-all ${showHistory === "transactions"
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "bg-white text-orange-500 border-orange-200 hover:bg-orange-100"
+                }`}
             >
-              <CreditCard className="w-5 h-5" /> 
-              <span className="whitespace-nowrap">Transactions</span>
+              <CreditCard className="w-5 h-5" />
+              <span>Transactions</span>
             </button>
+
             <button
-              onClick={() => setShowHistory(showHistory === 'calls' ? 'none' : 'calls')}
-              className={`flex items-center justify-center gap-2 px-6 py-2.5 h-14 rounded-full text-base font-semibold border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 shadow-sm ${showHistory === 'calls' ? 'bg-green-500 text-white border-green-500' : 'bg-white text-green-600 border-green-200 hover:bg-green-100'}`}
-              aria-label="Call History"
+              onClick={() =>
+                setShowHistory(showHistory === "calls" ? "none" : "calls")
+              }
+              className={`flex items-center gap-2 px-6 py-2.5 h-14 rounded-full font-semibold border transition-all ${showHistory === "calls"
+                  ? "bg-green-500 text-white border-green-500"
+                  : "bg-white text-green-600 border-green-200 hover:bg-green-100"
+                }`}
             >
-              <Phone className="w-5 h-5" /> 
-              <span className="whitespace-nowrap">Calls</span>
+              <Phone className="w-5 h-5" />
+              <span>Calls</span>
             </button>
-            <div className="flex items-center justify-center gap-2 px-6 py-2.5 h-14 rounded-full border border-green-200 bg-gradient-to-r from-green-50 to-green-100 text-green-700 font-bold text-base shadow-md select-none transition-all duration-200">
+
+            <div className="flex items-center gap-2 px-6 py-2.5 h-14 rounded-full border border-green-200 bg-gradient-to-r from-green-50 to-green-100 text-green-700 font-bold">
               <Wallet className="w-5 h-5 text-green-500" />
-              <span className="whitespace-nowrap">₹{walletBalance?.toFixed(2) || '0.00'}</span>
+              <span>₹{walletBalance?.toFixed(2) || "0.00"}</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-4">
-        {searching && (
-          <div className="flex justify-center mb-6">
-            <div className="w-8 h-8 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+        {isLoading ? (
+          <div className="flex flex-col items-center py-12">
+            <div className="w-16 h-16 border-4 border-orange-400 border-t-transparent rounded-full animate-spin" />
+            <p className="mt-4 text-gray-600">Loading Astrologers...</p>
           </div>
-        )}
-                {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
-            <div className="relative mb-6 sm:mb-8">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 border-4 sm:border-6 rounded-full animate-spin" style={{ borderColor: '#FFB366' }}></div>
-              <div className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 border-4 sm:border-6 border-t-transparent rounded-full animate-spin absolute top-0 left-0" style={{ borderColor: '#F7971E' }}></div>
-            </div>
-            <div className="text-center max-w-md">
-              <p className="text-gray-600 font-medium text-lg sm:text-xl lg:text-2xl mb-2">Loading Astrologers...</p>
-              <p className="text-gray-500 text-sm sm:text-base">Please wait while we connect you with expert astrologers</p>
-            </div>
+        ) : error ? (
+          <div className="flex flex-col items-center py-12 text-center">
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => fetchAstrologers(1, false)}
+              className="px-6 py-3 rounded-lg bg-orange-500 text-white"
+            >
+              Retry
+            </button>
           </div>
         ) : allAstrologers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 px-4">
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200 rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-lg">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                <svg className="h-6 w-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">No astrologers found</h3>
-              <p className="text-gray-600 mb-4 text-sm">Try adjusting your search criteria</p>
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setLanguageFilter("");
-                  setSortBy("");
-                }}
-                className="w-full text-white px-6 py-3 rounded-lg font-medium transition-colors"
-                style={{ backgroundColor: '#6B7280' }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#4B5563')}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#6B7280')}
-              >
-                Clear Filters
-              </button>
-    </div>
-  </div>
-) : (
-  <AstrologerList 
-    astrologers={filteredAstrologers} 
-    isLoading={isLoading}
-    isLoadingMore={isLoadingMore}
-    hasError={!!error}
-    onRetry={() => fetchAstrologers(1, false)}
-    compactButtons={sortBy === 'audio' || sortBy === 'video'} 
-    showVideoButton={sortBy === 'video'} 
-  />
+          <div className="flex flex-col items-center py-16">
+            <p className="text-gray-600">No astrologers found. Try adjusting your search.</p>
+            <button
+              onClick={clearFilters}
+              className="mt-4 px-6 py-3 rounded-lg bg-gray-600 text-white"
+            >
+              Clear Filters
+            </button>
+          </div>
+        ) : (
+          <AstrologerList
+            astrologers={allAstrologers}
+            isLoading={isLoading}
+            isLoadingMore={isLoadingMore}
+            hasError={!!error}
+            compactButtons={sortBy === "audio" || sortBy === "video"}
+            showVideoButton={sortBy === "video"}
+            source="astrologersPage"
+            hasMore={hasMore}
+            onLoadMore={() => {
+              const nextPage = currentPage + 1;
+              setCurrentPage(nextPage);
+              fetchAstrologers(nextPage, true);
+              updateURL(nextPage);
+            }}
+          />
         )}
       </main>
 
-
-
-      {/* Premium History Drawer/Modal */}
-      {(showHistory === 'transactions' || showHistory === 'calls') && (
+      {showHistory !== "none" && (
         <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-all duration-500 ease-out"
-            onClick={() => setShowHistory('none')}
-            style={{
-              animation: 'fadeIn 0.3s ease-out'
-            }}
-          />
-          
-          {/* Drawer */}
-          <div 
-            className={`fixed top-0 right-0 h-full w-full sm:w-96 lg:w-[450px] bg-white/95 backdrop-blur-xl shadow-2xl border-l border-orange-100/50 z-50 transform transition-all duration-500 ease-out flex flex-col ${
-              showHistory === 'transactions' || showHistory === 'calls' ? 'translate-x-0' : 'translate-x-full'
-            }`}
-            style={{
-              transform: showHistory === 'transactions' || showHistory === 'calls' ? 'translateX(0)' : 'translateX(100%)',
-              transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: showHistory === 'transactions' || showHistory === 'calls' 
-                ? '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
-                : '0 0 0 0 rgba(0, 0, 0, 0)'
-            }}
-          >
-            {/* Header */}
-            <div 
-              className="flex items-center justify-between p-4 sm:p-6 border-b border-orange-100/50 bg-gradient-to-r from-orange-50/50 to-white flex-shrink-0"
-              style={{
-                animation: showHistory === 'transactions' || showHistory === 'calls' 
-                  ? 'slideDown 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both' 
-                  : 'none'
-              }}
-            >
-              <div className="flex items-center gap-3">
-                {showHistory === 'transactions' ? (
-                  <div 
-                    className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-orange-200"
-                    style={{
-                      animation: 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both'
-                    }}
-                  >
-                    <Receipt className="w-5 h-5 text-orange-600" />
-                  </div>
-                ) : (
-                  <div 
-                    className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-green-200"
-                    style={{
-                      animation: 'bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both'
-                    }}
-                  >
-                    <Phone className="w-5 h-5 text-green-600" />
-                  </div>
-                )}
-                <div 
-                  style={{
-                    animation: 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both'
-                  }}
-                >
-                  <h2 className="text-xl font-bold text-gray-900">
-                    {showHistory === 'transactions' ? 'Transaction History' : 'Call History'}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {showHistory === 'transactions' ? 'Your payment history' : 'Your call records'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowHistory('none')}
-                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-md"
-                style={{
-                  animation: 'fadeIn 0.4s ease-out 0.4s both'
-                }}
-              >
+          <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowHistory("none")} />
+          <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-xl font-bold">
+                {showHistory === "transactions" ? "Transaction History" : "Call History"}
+              </h2>
+              <button onClick={() => setShowHistory("none")} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                 <X className="w-4 h-4 text-gray-600" />
               </button>
             </div>
-            
-            {/* Content */}
-            <div 
-              className="flex-1 overflow-y-auto"
-              style={{
-                animation: showHistory === 'transactions' || showHistory === 'calls' 
-                  ? 'slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both' 
-                  : 'none'
-              }}
-            >
-              <div className="p-4 sm:p-6">
-                {showHistory === 'transactions' && <TransactionHistory />}
-                {showHistory === 'calls' && <CallHistory />}
-              </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {showHistory === "transactions" && <TransactionHistory />}
+              {showHistory === "calls" && <CallHistory />}
             </div>
           </div>
-
-          {/* Custom CSS Animations */}
-          <style jsx>{`
-            @keyframes fadeIn {
-              from {
-                opacity: 0;
-              }
-              to {
-                opacity: 1;
-              }
-            }
-            
-            @keyframes slideDown {
-              from {
-                opacity: 0;
-                transform: translateY(-20px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-            
-            @keyframes slideInUp {
-              from {
-                opacity: 0;
-                transform: translateY(30px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-            
-            @keyframes bounceIn {
-              0% {
-                opacity: 0;
-                transform: scale(0.3);
-              }
-              50% {
-                opacity: 1;
-                transform: scale(1.05);
-              }
-              70% {
-                transform: scale(0.9);
-              }
-              100% {
-                opacity: 1;
-                transform: scale(1);
-              }
-            }
-            
-            @keyframes fadeInUp {
-              from {
-                opacity: 0;
-                transform: translateY(20px);
-              }
-              to {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-          `}</style>
         </>
       )}
+    </>
+  );
+}
 
-
+export default function AstrologersPage() {
+  return (
+    <WalletBalanceProvider>
+      <AstrologersPageContent />
     </WalletBalanceProvider>
   );
 }

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Users, MessageCircle, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import { WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
@@ -146,8 +145,29 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
             >
               Call with Astrologer
             </motion.h1>
+
           </div>
         </motion.div>
+
+        <div className="max-w-6xl mx-auto px-6 py-8">
+          <motion.p
+            className="text-base sm:text-lg font-light mb-4 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            Our astrology experts are ready to assist you! Whether you need a consultation or have inquiries, get immediate answers to your life's questions.
+          </motion.p>
+          <motion.p
+            className="text-base sm:text-lg font-light text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <span className="text-black font-medium">Connect with skilled Astrologers </span>for personalized insights on love, career, health, and beyond.
+          </motion.p>
+        </div>
+
 
         {/* 🟠 Astrologers */}
         <div className="max-w-6xl mx-auto px-6 pb-12">
@@ -173,33 +193,6 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
               {isLoadingMore && <EnhancedLoader />}
             </motion.div>
           )}
-
-          {/* 🟠 Stats */}
-          <motion.div
-            className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.2 }}
-          >
-            {[
-              { icon: Users, number: "50,000+", label: "Happy Clients" },
-              { icon: MessageCircle, number: "1M+", label: "Consultations" },
-              { icon: TrendingUp, number: "98%", label: "Success Rate" },
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                className="bg-white rounded-2xl p-6 text-center shadow-lg border border-gray-100"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-100 rounded-full mb-4">
-                  <stat.icon className="w-8 h-8 text-orange-600" />
-                </div>
-                <h4 className="text-3xl font-bold text-gray-900 mb-2">{stat.number}</h4>
-                <p className="text-gray-600 font-medium">{stat.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
         </div>
       </div>
     </WalletBalanceProvider>

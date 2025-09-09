@@ -335,7 +335,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                 background: "linear-gradient(90deg, #F9A43A 0%, #F7971E 100%)",
               }}
             >
-              {hasCompletedFreeCall ? "Call" : "OFFER: FREE 1st call"}
+              {hasCompletedFreeCall ? "Call" : "OFFER: 1st FREE Call"}
             </button>
 
             {isCallMenuOpen && (

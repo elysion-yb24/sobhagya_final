@@ -112,13 +112,10 @@ const BlogSection = () => {
 
   return (
     <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
-<<<<<<< HEAD
       {/* Faded astrology icon background (optional) */}
       {/* <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
         <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={600} height={600} className="object-contain" />
       </div> */}
-=======
->>>>>>> 700e6bc (new changes sobhagya)
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-12 sm:mb-16">
           <h2

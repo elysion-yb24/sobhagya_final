@@ -80,87 +80,83 @@ function AstrologersPageContent() {
   }, [router]);
 
   
- const fetchAstrologers = useCallback(
-  async (
-    page: number = 1,
-    append: boolean = false,
-    query: string = searchQuery,
-    language: string = languageFilter,
-    sort: string = sortBy
-  ) => {
-    if (page === 1) setIsLoading(true);
-    else setIsLoadingMore(true);
-
-    setError(null);
-
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        setError("Authentication required. Please log in.");
-        return;
+  const fetchAstrologers = useCallback(
+    async (
+      page: number = 1,
+      append: boolean = false,
+      query: string = searchQuery,
+      language: string = languageFilter,
+      sort: string = sortBy
+    ) => {
+      if (page === 1) setIsLoading(true);
+      else setIsLoadingMore(true);
+  
+      setError(null);
+  
+      try {
+        const token = getAuthToken();
+        if (!token) {
+          setError("Authentication required. Please log in.");
+          return;
+        }
+  
+        const skip = (page - 1) * 10;
+        const limit = 10;
+  
+        let endpoint = "";
+  
+        if (query) {
+         
+          endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`;
+          if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
+          if (sort) endpoint += `&sortBy=${encodeURIComponent(sort)}`;
+        } else {
+       
+          const queryParts = [
+            `skip=${skip}`,
+            `limit=${limit}`,
+            language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
+            sort ? `sortBy=${encodeURIComponent(sort)}` : ""
+          ];
+          const queryString = queryParts.filter(Boolean).join("&");
+          endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.USERS}?${queryString}`;
+        }
+  
+        const res = await fetch(endpoint, {
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          credentials: "include",
+          cache: "no-store",
+        });
+  
+        if (!res.ok) throw new Error("Failed to fetch astrologers");
+  
+        const data = await res.json();
+  
+        const newAstrologers: Astrologer[] = query
+          ? data.data?.list || data.users || data.data || []
+          : data.data?.list || [];
+  
+        setAllAstrologers(prev => (append && !query ? [...prev, ...newAstrologers] : newAstrologers));
+ 
+        setHasMore(!query && newAstrologers.length === limit);
+        if (!query) setCurrentPage(page); 
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch astrologers");
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
       }
-
-      const skip = (page - 1) * 10;
-
-      let endpoint = "";
-      if (query) {
-        // 👈 use search API
-        endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?skip=${skip}&limit=10&name=${encodeURIComponent(query)}`;
-      } else {
-        // 👈 use users API
-        const queryParts = [
-          `skip=${skip}`,
-          `limit=10`,
-          language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
-          sort ? `sortBy=${encodeURIComponent(sort)}` : ""
-        ];
-        const queryString = queryParts.filter(Boolean).join("&");
-
-        endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.USERS}?${queryString}`;
-      }
-
-      const res = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        credentials: "include",
-        cache: "no-store"
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch astrologers");
-
-      const data = await res.json();
-
-      // ✅ FIX: different API response structures
-      const newAstrologers: Astrologer[] = query
-        ? data.data?.list || data.users || data.data || []
-        : data.data?.list || [];
-
-      setAllAstrologers(prev =>
-        append ? [...prev, ...newAstrologers] : newAstrologers
-      );
-
-      setHasMore(newAstrologers.length === 10);
-      if (append) setCurrentPage(page);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to fetch astrologers");
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  },
-  [searchQuery, languageFilter, sortBy]
-);
-
-
-
-
-
-  // 🔹 Handle search input change
+    },
+    [searchQuery, languageFilter, sortBy]
+  );
+  
+  
   const handleSearchInputChange = (query: string) => {
     setSearchQuery(query);
   };
 
-  // 🔹 Handle search button click
+ 
   const handleSearchClick = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
@@ -169,7 +165,7 @@ function AstrologersPageContent() {
     updateURL(1, query,sortBy,languageFilter); 
   };
   
-  // 🔹 Sort change
+
   const handleSortChange = useCallback(
     (sort: { type: string; language?: string }) => {
       setSortBy(sort.type as any);
@@ -185,7 +181,7 @@ function AstrologersPageContent() {
   
   
 
-  // 🔹 Clear filters
+
   const clearFilters = useCallback(() => {
     setSearchQuery("");
     setLanguageFilter("All");

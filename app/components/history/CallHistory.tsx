@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { Phone, Clock, Loader2, RefreshCw } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
@@ -21,11 +21,18 @@ interface CallLog {
 export default function CallHistory() {
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchCallLogs = async (isRefresh = false) => {
+  const fetchCallLogs = useCallback(async (page: number = 1, append: boolean = false, isRefresh = false) => {
     try {
+      if (page === 1 && !append) setIsLoading(true);
+      else if (append) setIsLoadingMore(true);
+      
       if (isRefresh) {
         setIsRefreshing(true);
       }
@@ -34,11 +41,13 @@ export default function CallHistory() {
       if (!token) {
         setError("Authentication required");
         setIsLoading(false);
+        setIsLoadingMore(false);
+        setIsRefreshing(false);
         return;
       }
-      // Use Next.js API route instead of calling backend directly to avoid CORS
-      const apiUrl = '/api/calling/call-log?skip=0&limit=10&role=user';
-      console.log('Fetching call logs from:', apiUrl);
+      
+      const skip = (page - 1) * 10;
+      const apiUrl = `/api/calling/call-log?skip=${skip}&limit=10&role=user`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -51,7 +60,6 @@ export default function CallHistory() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Call history response data:', data);
         
         // Handle the API response structure
         let calls = [];
@@ -65,24 +73,74 @@ export default function CallHistory() {
           calls = data;
         }
 
-        setCallLogs(calls);
+        setCallLogs((prev) => {
+          if (append) {
+            // Remove duplicates when appending
+            const existingIds = new Set(prev.map(c => c._id));
+            const uniqueNew = calls.filter((c: CallLog) => !existingIds.has(c._id));
+            return [...prev, ...uniqueNew];
+          }
+          return calls;
+        });
+        
+        setHasMore(calls.length === 10);
         setError(null);
       } else {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
-      console.error('Error fetching call logs:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch call logs');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
       setIsRefreshing(false);
     }
-  };
+  }, []);
 
+  // Initial fetch
   useEffect(() => {
-    fetchCallLogs();
+    fetchCallLogs(1, false);
+  }, [fetchCallLogs]);
+
+  // Load more function
+  const loadMoreCallLogs = useCallback(() => {
+    if (!hasMore || isLoadingMore) return;
     
-    // Set up auto-refresh for pending calls - reduced frequency
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchCallLogs(nextPage, true);
+  }, [hasMore, isLoadingMore, currentPage, fetchCallLogs]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting) {
+          loadMoreCallLogs();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMoreCallLogs]);
+
+  // Auto-refresh for pending calls
+  useEffect(() => {
     const interval = setInterval(() => {
       // Check if there are any pending calls
       const hasPendingCalls = callLogs.some(call => 
@@ -92,12 +150,12 @@ export default function CallHistory() {
       );
       
       if (hasPendingCalls) {
-        fetchCallLogs(true); // Refresh with loading indicator
+        fetchCallLogs(1, false, true); // Refresh with loading indicator
       }
-    }, 15000); // Increased from 5000 to 15000 (15 seconds)
+    }, 15000); // 15 seconds
     
     return () => clearInterval(interval);
-  }, []); // Removed callLogs dependency to prevent infinite re-renders
+  }, [callLogs, fetchCallLogs]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -155,29 +213,9 @@ export default function CallHistory() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-full overflow-y-auto">
       {/* Header with refresh button */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-          Call History
-          <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2">
-            ({callLogs.length} {callLogs.length === 1 ? 'call' : 'calls'})
-          </span>
-        </h3>
-        <button
-          onClick={() => fetchCallLogs(true)}
-          disabled={isRefreshing}
-          className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-all ${
-            isRefreshing 
-              ? 'text-blue-500 cursor-not-allowed bg-blue-50' 
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-          }`}
-          title="Refresh call history"
-        >
-          <RefreshCw className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
-        </button>
-      </div>
+      
       
       {/* Mobile-optimized call logs */}
       <div className="space-y-4">
@@ -253,6 +291,28 @@ export default function CallHistory() {
           </div>
         ))}
       </div>
+
+      {/* Infinite scroll loader */}
+      {hasMore && (
+        <div ref={loaderRef} className="flex flex-col items-center justify-center py-8 min-h-[120px]">
+          {isLoadingMore ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+              <div className="text-gray-500 text-sm">Loading more call logs...</div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              {/* <div className="text-gray-400 text-sm">Scroll down to load more call logs</div> */}
+              <button
+                onClick={loadMoreCallLogs}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 } 

@@ -18,7 +18,11 @@
     "framer-motion": "^12.23.0",
     "livekit-client": "^2.13.8",
     "livekit-server-sdk": "^2.13.1",
+<<<<<<< HEAD
     "lottie-react": "^2.4.1",
+=======
+    "loadash": "^1.0.0",
+>>>>>>> 700e6bc (new changes sobhagya)
     "lucide-react": "^0.525.0",
     "next": "15.1.7",
     "nodemailer": "^7.0.6",

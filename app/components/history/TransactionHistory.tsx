@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getAuthToken } from "../../utils/auth-utils";
 import { ArrowUpRight, ArrowDownLeft, Wallet, Loader2 } from "lucide-react";
 import { buildApiUrl } from "../../config/api";
@@ -29,20 +29,27 @@ interface Transaction {
 export default function TransactionHistory() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
+      if (page === 1) setIsLoading(true);
+      else setIsLoadingMore(true);
+
       const token = getAuthToken();
       if (!token) {
         setError("Authentication required");
         setIsLoading(false);
+        setIsLoadingMore(false);
         return;
       }
 
-      // Use Next.js API route instead of calling backend directly to avoid CORS
-      const apiUrl = '/api/transaction-history?skip=0&limit=10';
-      console.log('Fetching transactions from:', apiUrl);
+      const skip = (page - 1) * 10;
+      const apiUrl = `/api/transaction-history?skip=${skip}&limit=10`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -55,19 +62,21 @@ export default function TransactionHistory() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Transaction history response data:', data);
 
         if (data.success && data.data) {
-          // Debug: Log the actual transaction data to see what fields are available
-          console.log('Transaction data:', data.data.list);
-          console.log('Sample transaction:', data.data.list[0]);
-          if (data.data.list[0]) {
-            console.log('Amount:', data.data.list[0].amount, 'Type:', typeof data.data.list[0].amount);
-            console.log('IsCredited:', data.data.list[0].isCredited, 'Type:', typeof data.data.list[0].isCredited);
-            console.log('Status:', data.data.list[0].status);
-            console.log('PaymentFor:', data.data.list[0].paymentFor);
-          }
-          setTransactions(data.data.list || []);
+          const newTransactions: Transaction[] = data.data.list || [];
+          
+          setTransactions((prev) => {
+            if (append) {
+              // Remove duplicates when appending
+              const existingIds = new Set(prev.map(t => t._id));
+              const uniqueNew = newTransactions.filter(t => !existingIds.has(t._id));
+              return [...prev, ...uniqueNew];
+            }
+            return newTransactions;
+          });
+          
+          setHasMore(newTransactions.length === 10);
           setError(null);
         } else {
           throw new Error(data.message || 'No transactions found');
@@ -76,16 +85,54 @@ export default function TransactionHistory() {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch transactions');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  };
-
-  useEffect(() => {
-    fetchTransactions();
   }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchTransactions(1, false);
+  }, [fetchTransactions]);
+
+  // Load more function
+  const loadMoreTransactions = useCallback(() => {
+    if (!hasMore || isLoadingMore) return;
+    
+    const nextPage = currentPage + 1;
+    setCurrentPage(nextPage);
+    fetchTransactions(nextPage, true);
+  }, [hasMore, isLoadingMore, currentPage, fetchTransactions]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!hasMore || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting) {
+          loadMoreTransactions();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => {
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
+    };
+  }, [hasMore, isLoadingMore, loadMoreTransactions]);
 
   const getTransactionDate = (transaction: Transaction): string => {
     // Try multiple possible date fields
@@ -212,18 +259,8 @@ export default function TransactionHistory() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-full overflow-y-auto">
       {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-          Transaction History
-          <span className="text-xs sm:text-sm font-normal text-gray-500 ml-2">
-            ({transactions.length} {transactions.length === 1 ? 'transaction' : 'transactions'})
-          </span>
-        </h3>
-      </div>
-
-      {/* Mobile-optimized transaction list */}
       <div className="space-y-3 sm:space-y-4">
         {transactions.map((transaction) => (
           <div
@@ -290,6 +327,28 @@ export default function TransactionHistory() {
           </div>
         ))}
       </div>
+
+      {/* Infinite scroll loader */}
+      {hasMore && (
+        <div ref={loaderRef} className="flex flex-col items-center justify-center py-8 min-h-[120px]">
+          {isLoadingMore ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+              <div className="text-gray-500 text-sm">Loading more transactions...</div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              {/* <div className="text-gray-400 text-sm">Scroll down to load more transactions</div> */}
+              <button
+                onClick={loadMoreTransactions}
+                className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

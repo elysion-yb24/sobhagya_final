@@ -1,15 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { 
-  Users, 
-  MessageCircle, 
-  TrendingUp
-} from "lucide-react";
+import { Users, MessageCircle, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import AstrologerList from "../components/astrologers/AstrologerList";
-import { WalletBalanceProvider } from '../components/astrologers/WalletBalanceContext';
+import { WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
+import { getApiBaseUrl } from "../config/api";
+import { isAuthenticated } from "../utils/auth-utils";
 
 interface Astrologer {
   _id: string;
@@ -24,43 +23,19 @@ interface Astrologer {
   about?: string;
   age?: number;
   avatar?: string;
-  blockReason?: string;
-  blockedReason?: string;
-  callMinutes?: number;
-  callType?: string;
   calls?: number;
-  createdAt?: string;
-  hasBlocked?: boolean;
-  isBlocked?: boolean;
-  isLive?: boolean;
-  isLiveBlocked?: boolean;
-  isRecommended?: boolean;
-  isVideoCallAllowed?: boolean;
-  isVideoCallAllowedAdmin?: boolean;
-  language?: string[];
-  numericId?: number;
-  offerRpm?: number;
-  payoutAudioRpm?: number;
-  payoutVideoRpm?: number;
-  phone?: string;
-  priority?: number;
-  reportCount?: number;
-  role?: string;
   rpm?: number;
-  sample?: string;
-  status?: string;
-  talksAbout?: string[];
-  upi?: string;
   videoRpm?: number;
+  talksAbout?: string[];
 }
 
 interface CallWithAstrologerClientProps {
-  astrologers: Astrologer[];
+  initialAstrologers: Astrologer[];
   error: string | null;
 }
 
 const EnhancedLoader = () => (
-  <motion.div 
+  <motion.div
     className="flex flex-col items-center justify-center h-32"
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -70,7 +45,7 @@ const EnhancedLoader = () => (
       <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
       <div className="absolute inset-0 w-16 h-16 border-4 border-orange-200 rounded-full animate-pulse"></div>
     </div>
-    <motion.p 
+    <motion.p
       className="mt-4 text-gray-600 font-medium"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -81,23 +56,88 @@ const EnhancedLoader = () => (
   </motion.div>
 );
 
-const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({ astrologers, error }) => {
+const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
+  initialAstrologers,
+  error,
+}) => {
+  const router = useRouter();
+
+  // 🔒 Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.replace("/astrologers");
+    }
+  }, [router]);
+
+  const [astrologers, setAstrologers] = useState<Astrologer[]>(initialAstrologers || []);
+  const [skip, setSkip] = useState(initialAstrologers?.length || 0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchMoreAstrologers = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    try {
+      const baseUrl = getApiBaseUrl();
+      const limit = 10;
+      const apiUrl = `${baseUrl}/user/api/users-list?skip=${skip}&limit=${limit}`;
+
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+
+      if (data.success && data.data?.list) {
+        const newBatch = data.data.list;
+        setAstrologers((prev) => [...prev, ...newBatch]);
+        setSkip((prev) => prev + limit);
+        setHasMore(newBatch.length === limit);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error("Error loading more astrologers:", err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [skip, isLoadingMore, hasMore]);
+
+  // 📜 Infinite scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+        fetchMoreAstrologers();
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [fetchMoreAstrologers]);
+
   return (
     <WalletBalanceProvider>
       <div className="w-full bg-white min-h-screen">
-        {/* Header */}
-        <motion.div 
+        {/* 🟠 Hero Section */}
+        <motion.div
           className="relative h-[200px] overflow-hidden mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <div className="absolute inset-0 w-full h-[200px]">
-            <Image src="/call.png" alt="call-image" fill className="brightness-75 object-cover" />
-          </div>
+          <Image
+            src="/call.png"
+            alt="call-image"
+            fill
+            className="brightness-75 object-cover"
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
           <div className="relative flex flex-col items-center justify-center h-full text-center px-6">
-            <motion.h1 
+            <motion.h1
               className="text-white text-6xl sm:text-4xl md:text-6xl font-bold mb-2"
               style={{ fontFamily: "EB Garamond" }}
               initial={{ opacity: 0, y: 20 }}
@@ -109,22 +149,8 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({ ast
           </div>
         </motion.div>
 
-        {/* Astrologers Section */}
+        {/* 🟠 Astrologers */}
         <div className="max-w-6xl mx-auto px-6 pb-12">
-          <motion.div 
-            className="text-center mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-          >
-            <p className="text-gray-800 text-lg mb-6 leading-relaxed">
-              Our astrology experts are ready to assist you! Whether you need a consultation or have inquiries, get immediate answers to your life's questions.
-            </p>
-            <p className="text-gray-800 text-lg leading-relaxed">
-              <span className="font-semibold">Connect with skilled Astrologers</span> for personalized insights on love, career, health, and beyond.
-            </p>
-          </motion.div>
-
           {error ? (
             <motion.div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="text-center max-w-md">
@@ -136,19 +162,20 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({ ast
             </motion.div>
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.7 }}>
-              <AstrologerList 
-                astrologers={astrologers} 
-                isLoading={false}
+              <AstrologerList
+                astrologers={astrologers}
+                isLoading={isLoadingMore}
                 hasError={!!error}
                 compactButtons={false}
                 showVideoButton={true}
                 source="callWithAstrologer"
               />
+              {isLoadingMore && <EnhancedLoader />}
             </motion.div>
           )}
 
-          {/* Stats Section */}
-          <motion.div 
+          {/* 🟠 Stats */}
+          <motion.div
             className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -157,7 +184,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({ ast
             {[
               { icon: Users, number: "50,000+", label: "Happy Clients" },
               { icon: MessageCircle, number: "1M+", label: "Consultations" },
-              { icon: TrendingUp, number: "98%", label: "Success Rate" }
+              { icon: TrendingUp, number: "98%", label: "Success Rate" },
             ].map((stat, index) => (
               <motion.div
                 key={index}

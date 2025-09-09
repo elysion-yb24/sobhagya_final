@@ -178,7 +178,11 @@ export default function CallConfirmationDialog({
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0 relative">
                     <img
-                      src={astrologer.profileImage || '/default-astrologer.png'}
+                      src={
+                        astrologer.profileImage && astrologer.profileImage.startsWith('http')
+                          ? astrologer.profileImage
+                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=f97316&color=fff&size=56`
+                      }
                       alt={`${astrologer.name}'s profile`}
                       className="w-14 h-14 rounded-full border-3 border-orange-300 object-cover shadow-md"
                       onError={(e) => {

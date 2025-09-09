@@ -103,9 +103,15 @@ const RashiSection: React.FC = () => {
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.2 }}
               >
+<<<<<<< HEAD
                 <div className="mb-2 flex items-center justify-center mx-auto">
                   <LottieAnimation
                     src={rashi.image || "/default-image.png"}
+=======
+                <div className="w-10 h-10 sm:w-12 sm:h-12 mb-2 flex items-center justify-center mx-auto">
+                  <Image
+                    src={rashi.image && rashi.image.startsWith('http') ? rashi.image : "/default-image.png"}
+>>>>>>> 700e6bc (new changes sobhagya)
                     alt={rashi.name}
                   />
                 </div>

@@ -2,7 +2,7 @@
 import Cookies from "universal-cookie";
 
 // Use environment variable for API URL
-const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:7002";
 
 /**
  * Gets the authentication token from xxlocalStorage and cookies

@@ -25,7 +25,7 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsFetching(true);
     setAuthError(null);
     
-    console.log('🔄 Fetching wallet balance...');
+ 
     
     try {
       // Check if user is authenticated
@@ -44,11 +44,11 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      console.log('✅ User authenticated, fetching wallet balance');
+     ;
       
       // Use simple API function (works same in dev and production)
       const balance = await simpleFetchWalletBalance();
-      console.log('💰 Wallet balance fetched:', balance);
+     
       setWalletBalance(balance);
       setAuthError(null);
       
@@ -57,20 +57,20 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       
       // Check if user is still authenticated after error
       if (!isAuthenticated()) {
-        console.log('❌ User no longer authenticated after error, clearing data');
+       
         setWalletBalance(0);
-        setAuthError(null); // Don't show error for logout
+        setAuthError(null); 
         return;
       }
       
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        console.log('🔐 401 error detected');
+
         
         // Check if it's the specific payment service auth error
         if (error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
           setAuthError('Payment service authentication issue. Please contact support.');
         } else {
-          console.log('Clearing auth data due to 401 error');
+         
           setAuthError('Authentication failed. Please login again.');
           clearAuthData();
         }

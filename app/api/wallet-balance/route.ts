@@ -91,12 +91,7 @@ export async function GET(request: NextRequest) {
     
     // If we get a 401, try to provide more detailed error information
     if (response.status === 401) {
-      console.log('❌ 401 Authentication failed for payment service');
-      console.log('🔍 This might be due to:');
-      console.log('   - Payment service requiring different authentication');
-      console.log('   - Token format not accepted by payment service');
-      console.log('   - Payment service not configured to accept user service tokens');
-      
+     
       // Return the actual backend error response
       return NextResponse.json(data, { 
         status: response.status,

@@ -37,7 +37,7 @@ const HeroSection: React.FC = () => {
       title: "Chat with Astrologer",
       icon: "/chat2.png",
       iconComponent: MessageCircle,
-      href: "/calls/call1",
+      href: "/chat",
 
       color: "from-blue-500 to-blue-600"
     },

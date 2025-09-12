@@ -30,20 +30,21 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [newMessage, setNewMessage] = useState<string>('')
+  const [remainingTime, setRemainingTime] = useState<number | null>(null)
 
   const socketRef = useRef<Socket | null>(null)
   const selectedSessionRef = useRef<Session | null>(selectedSession)
   const userIdRef = useRef<string | null>(userId)
   const chatContainerRef = useRef<HTMLDivElement | null>(null)
+  const waitingTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Update refs on state change
   useEffect(() => { selectedSessionRef.current = selectedSession }, [selectedSession])
   useEffect(() => { userIdRef.current = userId }, [userId])
 
-  // Get user info from localStorage
+  // Load user info
   useEffect(() => {
     const storedUser = localStorage.getItem('userDetails')
     if (storedUser) {
@@ -63,7 +64,6 @@ export default function ChatPage() {
     socket.on('connect', () => {
       console.log('Socket connected:', socket.id)
 
-      // Fetch all sessions
       socket.emit('get_all_sessions', { userId, role: userRole }, (response: any) => {
         if (response.success && response.data?.sessions) {
           setSessions(response.data.sessions)
@@ -76,61 +76,62 @@ export default function ChatPage() {
       })
     })
 
-    // Listen for incoming messages
-    const handleReceiveMessage = (msg: any) => {
+    socket.on('receive_message', (msg: any) => {
       if (!selectedSessionRef.current || msg.sessionId !== selectedSessionRef.current.sessionId) return
-
-      // Avoid adding duplicate user messages (they are added already on send)
       if (msg.sentBy === userIdRef.current) return
+      setMessages(prev => [...prev, {
+        id: msg._id,
+        text: msg.message,
+        sender: 'astrologer',
+        timestamp: msg.createdAt || new Date().toISOString()
+      }])
+    })
 
-      setMessages(prev => [
-        ...prev,
-        {
-          id: msg._id,
-          text: msg.message,
-          sender: 'astrologer',
-          timestamp: new Date().toISOString(),
-        }
-      ])
-    }
-
-    // System messages (like user joined)
-    const handleUserJoined = (data: { userId: string, role: string, sessionId: string }) => {
+    socket.on('user_joined', (data: { userId: string, role: string, sessionId: string }) => {
       if (selectedSessionRef.current?.sessionId !== data.sessionId) return
-
+      if (data.role === 'astrologer' && waitingTimerRef.current) {
+        clearTimeout(waitingTimerRef.current)
+        waitingTimerRef.current = null
+      }
       const systemMsg: Message = {
         id: `system-${Date.now()}`,
         text: `${data.role} has joined the chat`,
         sender: 'system',
         timestamp: new Date().toISOString()
       }
-
       setMessages(prev => [...prev, systemMsg])
       toast.success(`${data.role} joined the chat`)
-    }
+    })
 
-    socket.on('receive_message', handleReceiveMessage)
-    socket.on('user_joined', handleUserJoined)
+    socket.on('session_tick', (data: { sessionId: string, remainingTime: number }) => {
+      if (selectedSessionRef.current?.sessionId === data.sessionId) {
+        setRemainingTime(data.remainingTime)
+      }
+    })
+
+    socket.on('session_ended', (data: any) => {
+      if (selectedSessionRef.current?.sessionId === data.sessionId) {
+        setSelectedSession(prev => prev ? { ...prev, status: 'ended' } : prev)
+        toast.error('Session ended due to timeout')
+      }
+    })
 
     return () => {
-      socket.off('receive_message', handleReceiveMessage)
-      socket.off('user_joined', handleUserJoined)
       socket.disconnect()
       socketRef.current = null
     }
   }, [userId, userRole])
 
-  // Scroll chat area to bottom on new message
+  // Auto-scroll chat
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
   }, [messages])
 
-  // Load session from query param
+  // Load session from URL
   useEffect(() => {
     if (!searchParams || sessions.length === 0 || !userId) return
-
     const sessionIdFromUrl = searchParams.get('sessionId')
     if (!sessionIdFromUrl) return
 
@@ -141,11 +142,11 @@ export default function ChatPage() {
 
     socketRef.current?.emit(
       'get_messages',
-      { sessionId: sessionIdFromUrl, limit: 50, skip: 0 },
+      { sessionId: sessionIdFromUrl, limit: 10, skip: 0 },
       (res: any) => {
         let msgs: Message[] = []
         if (res.success) {
-          msgs = (Array.isArray(res.data) ? res.data : Array.isArray(res.data?.messages) ? res.data.messages : []).map((m: any) => ({
+          msgs = (Array.isArray(res.data) ? res.data : res.data?.messages || []).map((m: any) => ({
             id: m._id,
             text: m.message,
             sender: m.sentBy === userId ? 'user' : 'astrologer',
@@ -153,22 +154,50 @@ export default function ChatPage() {
           }))
         }
 
-        const systemMsg: Message[] | [] = (userRole === 'user') ? [{
+        const systemMsg: Message[] = (userRole === 'user') ? [{
           id: 'system-join',
           text: `You have joined the chat. Waiting for astrologer... Estimated time: ~3 minutes`,
           sender: 'system',
           timestamp: new Date().toISOString()
         }] : []
 
-        setMessages([...systemMsg, ...msgs].sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()))
+        setMessages([...systemMsg, ...msgs].sort((a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        ))
+
+        // Start waiting timer
+        if (userRole === 'user') {
+          if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current)
+          waitingTimerRef.current = setTimeout(() => {
+            if (selectedSessionRef.current?.status === 'pending') {
+              socketRef.current?.emit(
+                'session_update',
+                { sessionId: selectedSessionRef.current.sessionId, status: 'ended' },
+                (res: any) => {
+                  if (!res.error) {
+                    setSelectedSession(prev => prev ? { ...prev, status: 'ended' } : prev)
+                    toast.error('Session ended as astrologer did not join in time.')
+                  }
+                }
+              )
+            }
+          }, 3 * 60 * 1000)
+        }
       }
     )
   }, [searchParams, sessions, userId])
 
-  // Select session
+  // Countdown timer (frontend smooth countdown)
+  useEffect(() => {
+    if (remainingTime === null) return
+    const interval = setInterval(() => {
+      setRemainingTime(prev => prev !== null && prev > 0 ? prev - 1 : 0)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [remainingTime])
+
   const handleSelectSession = (session: Session) => {
     if (!socketRef.current || !userId) return
-
     socketRef.current.emit(
       "session_update",
       { sessionId: session.sessionId, userId, providerId: session.providerId },
@@ -183,42 +212,50 @@ export default function ChatPage() {
     )
   }
 
-  // Send message
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedSession || !socketRef.current || !userId) return
-
-    const session = selectedSession
-
     socketRef.current.emit(
       'send_message',
       {
         message: newMessage,
-        sessionId: session.sessionId,
+        sessionId: selectedSession.sessionId,
         userId,
         sentBy: userId,
-        providerId: session.providerId,
+        providerId: selectedSession.providerId,
         messageType: 'text'
       },
       (res: any) => {
         if (!res.error) {
-          setMessages(prev => [
-            ...prev,
-            {
-              id: res.data._id,
-              text: newMessage,
-              sender: 'user',
-              timestamp: new Date().toISOString(),
-            }
-          ])
+          setMessages(prev => [...prev, {
+            id: res.data._id,
+            text: newMessage,
+            sender: 'user',
+            timestamp: new Date().toISOString()
+          }])
           setNewMessage('')
         }
       }
     )
   }
 
+  useEffect(() => {
+    return () => {
+      if (waitingTimerRef.current) clearTimeout(waitingTimerRef.current)
+    }
+  }, [])
+
+  const statusBadge = (status: Session['status']) => ({
+    active: 'bg-green-100 text-green-800',
+    pending: 'bg-yellow-100 text-yellow-800',
+    ended: 'bg-red-100 text-red-800'
+  }[status])
+
+  const formatTime = (secs: number) =>
+    `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
+
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Left Sidebar */}
+      {/* Sidebar */}
       <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
@@ -235,12 +272,25 @@ export default function ChatPage() {
               <div
                 key={session.sessionId}
                 onClick={() => handleSelectSession(session)}
-                className={`p-3 cursor-pointer transition-colors border-b border-gray-100
+                className={`flex items-center justify-between p-3 cursor-pointer border-b border-gray-100 transition-colors
                   ${selectedSession?.sessionId === session.sessionId ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
               >
-                <div className="flex flex-col">
-                  <span className="font-medium text-gray-900">Provider: {session.providerId}</span>
-                  <span className="text-sm text-gray-500 truncate max-w-xs">{session.lastMessage || 'No messages yet'}</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
+                    {session.providerId.charAt(0)}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-900">Provider: {session.providerId}</span>
+                    <span className="text-sm text-gray-500 truncate max-w-xs">{session.lastMessage || 'No messages yet'}</span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end space-y-1">
+                  <span className="text-xs text-gray-400">
+                    {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className={`px-2 py-1 text-xs rounded-full ${statusBadge(session.status)}`}>
+                    {session.status.toUpperCase()}
+                  </span>
                 </div>
               </div>
             ))
@@ -252,34 +302,53 @@ export default function ChatPage() {
       <div className="flex-1 flex flex-col">
         {selectedSession ? (
           <>
-            <div className="p-4 border-b border-gray-200 bg-white flex items-center">
-              <div className="ml-3">
-                <h3 className="text-lg font-medium text-gray-900">Provider: {selectedSession.providerId}</h3>
+            <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                  {selectedSession.providerId.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Provider: {selectedSession.providerId}</h3>
+                  <p className="text-sm text-gray-500">
+                    {selectedSession.status === 'active'
+                      ? remainingTime !== null
+                        ? `Time left: ${formatTime(remainingTime)}`
+                        : 'Online'
+                      : selectedSession.status.toUpperCase()
+                    }
+                  </p>
+                </div>
               </div>
+              <span className={`px-2 py-1 text-xs rounded-full ${statusBadge(selectedSession.status)}`}>
+                {selectedSession.status.toUpperCase()}
+              </span>
             </div>
 
-            <div
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-4 space-y-4"
-            >
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
               <AnimatePresence initial={false}>
-                {messages
-                  .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                  .map(msg => (
+                {messages.map(msg => (
                   <motion.div
                     key={msg.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ duration: 0.2 }}
-                    className={`flex ${msg.sender === 'user' ? 'justify-end' : msg.sender === 'astrologer' ? 'justify-start' : 'justify-center'}`}
+                    className={`flex ${msg.sender === 'user'
+                      ? 'justify-end'
+                      : msg.sender === 'astrologer'
+                        ? 'justify-start'
+                        : 'justify-center'}`}
                   >
                     {msg.sender === 'system' ? (
                       <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm text-center">{msg.text}</div>
                     ) : (
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${msg.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow ${msg.sender === 'user'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-200 text-gray-800'}`}>
                         <p className="text-sm">{msg.text}</p>
-                        <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>{new Date(msg.timestamp).toLocaleTimeString()}</p>
+                        <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
                       </div>
                     )}
                   </motion.div>
@@ -291,14 +360,14 @@ export default function ChatPage() {
               <input
                 type="text"
                 placeholder="Type your message..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={newMessage}
                 onChange={e => setNewMessage(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
                 disabled={selectedSession.status !== 'active'}
               />
               <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
                 onClick={handleSendMessage}
                 disabled={selectedSession.status !== 'active'}
               >

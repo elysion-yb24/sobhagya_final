@@ -175,12 +175,7 @@ export default function OtpVerificationScreen({
         storeAuthToken(finalToken);
         
         
-        // Log the data structure we're working with
-        console.log("User ID from data.data?._id:", data.data?._id);
-        console.log("User ID from data.user?.id:", data.user?.id);
-        console.log("User ID from data._id:", data._id);
-        console.log("User ID from data.id:", data.id);
-        
+       
         // Check if we have a captured name from call flow
         const capturedName = sessionStorage.getItem('capturedUserName');
         let firstName = '';
@@ -304,7 +299,7 @@ export default function OtpVerificationScreen({
   const isSubmitDisabled = isLoading || parentIsLoading || isResending || otp.some(digit => !digit);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
+    <div className="flex flex-col items-center justify-start px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
       {/* Premium Header */}
       <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mb-4 sm:mb-6">
         <div className="flex flex-col items-center">

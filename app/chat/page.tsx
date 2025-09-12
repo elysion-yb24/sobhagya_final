@@ -34,39 +34,36 @@ export default function ChatPage() {
   const socketRef = useRef<Socket | null>(null)
   const selectedSessionRef = useRef<Session | null>(selectedSession)
   const userIdRef = useRef<string | null>(userId)
-  const messagesEndRef = useRef<HTMLDivElement | null>(null)
+  const chatContainerRef = useRef<HTMLDivElement | null>(null)
 
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // Update refs
+  // Update refs on state change
   useEffect(() => { selectedSessionRef.current = selectedSession }, [selectedSession])
   useEffect(() => { userIdRef.current = userId }, [userId])
 
-  // Get userId and role from localStorage
+  // Get user info from localStorage
   useEffect(() => {
     const storedUser = localStorage.getItem('userDetails')
     if (storedUser) {
       const user = JSON.parse(storedUser)
       setUserId(user.id)
-      const normalizedRole = user.role === 'friend' ? 'provider' : user.role
-      setUserRole(normalizedRole)
+      setUserRole(user.role === 'friend' ? 'provider' : user.role)
     }
   }, [])
 
-  // Initialize socket once
+  // Initialize socket
   useEffect(() => {
-    if (!userId || !userRole) return
-    if (socketRef.current) return
+    if (!userId || !userRole || socketRef.current) return
 
-    const socket = io('http://localhost:7001', {
-      query: { userId, usertype: userRole },
-    })
+    const socket = io('http://localhost:7001', { query: { userId, usertype: userRole } })
     socketRef.current = socket
 
     socket.on('connect', () => {
       console.log('Socket connected:', socket.id)
 
+      // Fetch all sessions
       socket.emit('get_all_sessions', { userId, role: userRole }, (response: any) => {
         if (response.success && response.data?.sessions) {
           setSessions(response.data.sessions)
@@ -79,34 +76,37 @@ export default function ChatPage() {
       })
     })
 
-    // Listen for new messages
+    // Listen for incoming messages
     const handleReceiveMessage = (msg: any) => {
-      if (selectedSessionRef.current && msg.sessionId === selectedSessionRef.current.sessionId) {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: msg._id,
-            text: msg.message,
-            sender: msg.sentBy === userIdRef.current ? 'user' : 'astrologer',
-            timestamp: new Date().toISOString(),
-          }
-        ])
-      }
+      if (!selectedSessionRef.current || msg.sessionId !== selectedSessionRef.current.sessionId) return
+
+      // Avoid adding duplicate user messages (they are added already on send)
+      if (msg.sentBy === userIdRef.current) return
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: msg._id,
+          text: msg.message,
+          sender: 'astrologer',
+          timestamp: new Date().toISOString(),
+        }
+      ])
     }
 
+    // System messages (like user joined)
     const handleUserJoined = (data: { userId: string, role: string, sessionId: string }) => {
-      if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: `system-${Date.now()}`,
-            text: `${data.role} has joined the chat`,
-            sender: 'system',
-            timestamp: new Date().toISOString()
-          }
-        ])
-        toast.success(`${data.role} joined the chat`)
+      if (selectedSessionRef.current?.sessionId !== data.sessionId) return
+
+      const systemMsg: Message = {
+        id: `system-${Date.now()}`,
+        text: `${data.role} has joined the chat`,
+        sender: 'system',
+        timestamp: new Date().toISOString()
       }
+
+      setMessages(prev => [...prev, systemMsg])
+      toast.success(`${data.role} joined the chat`)
     }
 
     socket.on('receive_message', handleReceiveMessage)
@@ -120,51 +120,52 @@ export default function ChatPage() {
     }
   }, [userId, userRole])
 
-  // Scroll to bottom on new messages
+  // Scroll chat area to bottom on new message
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
     }
   }, [messages])
 
   // Load session from query param
   useEffect(() => {
-    if(!searchParams) return ;
+    if (!searchParams || sessions.length === 0 || !userId) return
+
     const sessionIdFromUrl = searchParams.get('sessionId')
-    if (sessionIdFromUrl && sessions.length > 0) {
-      const foundSession = sessions.find(s => s.sessionId === sessionIdFromUrl)
-      if (foundSession) {
-        setSelectedSession(foundSession)
+    if (!sessionIdFromUrl) return
 
-        socketRef.current?.emit(
-          'get_messages',
-          { sessionId: sessionIdFromUrl, limit: 50, skip: 0 },
-          (res: any) => {
-            let msgs: Message[] = []
-            if (res.success) {
-              msgs = (Array.isArray(res.data) ? res.data : Array.isArray(res.data?.messages) ? res.data.messages : []).map((m: any) => ({
-                id: m._id,
-                text: m.message,
-                sender: m.sentBy === userId ? 'user' : 'astrologer',
-                timestamp: m.createdAt
-              }))
-            }
+    const foundSession = sessions.find(s => s.sessionId === sessionIdFromUrl)
+    if (!foundSession) return
 
-            const systemMsg: Message = {
-              id: 'system-join',
-              text: `You have joined the chat. Waiting for astrologer... Estimated time: ~3 minutes`,
-              sender: 'system',
-              timestamp: new Date().toISOString()
-            }
+    setSelectedSession(foundSession)
 
-            setMessages([systemMsg, ...msgs].sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()))
-          }
-        )
+    socketRef.current?.emit(
+      'get_messages',
+      { sessionId: sessionIdFromUrl, limit: 50, skip: 0 },
+      (res: any) => {
+        let msgs: Message[] = []
+        if (res.success) {
+          msgs = (Array.isArray(res.data) ? res.data : Array.isArray(res.data?.messages) ? res.data.messages : []).map((m: any) => ({
+            id: m._id,
+            text: m.message,
+            sender: m.sentBy === userId ? 'user' : 'astrologer',
+            timestamp: m.createdAt
+          }))
+        }
+
+        const systemMsg: Message[] | [] = (userRole === 'user') ? [{
+          id: 'system-join',
+          text: `You have joined the chat. Waiting for astrologer... Estimated time: ~3 minutes`,
+          sender: 'system',
+          timestamp: new Date().toISOString()
+        }] : []
+
+        setMessages([...systemMsg, ...msgs].sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()))
       }
-    }
+    )
   }, [searchParams, sessions, userId])
 
-  // Handle session select / continue
+  // Select session
   const handleSelectSession = (session: Session) => {
     if (!socketRef.current || !userId) return
 
@@ -182,6 +183,7 @@ export default function ChatPage() {
     )
   }
 
+  // Send message
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedSession || !socketRef.current || !userId) return
 
@@ -256,7 +258,10 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4"
+            >
               <AnimatePresence initial={false}>
                 {messages
                   .sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
@@ -280,7 +285,6 @@ export default function ChatPage() {
                   </motion.div>
                 ))}
               </AnimatePresence>
-              <div ref={messagesEndRef} />
             </div>
 
             <div className="p-4 border-t border-gray-200 bg-white flex items-center space-x-2">

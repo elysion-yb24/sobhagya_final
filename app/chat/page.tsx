@@ -4,7 +4,10 @@ import React, { useEffect, useState, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'react-hot-toast'
-import { motion, AnimatePresence } from 'framer-motion'
+import Sidebar from '../components/chat/Sidebar'
+import ChatHeader from '../components/chat/ChatHeader'
+import ChatMessages from '../components/chat/ChatMessages'
+import ChatInput from '../components/chat/ChatInput'
 
 interface Message {
   id: string
@@ -24,6 +27,12 @@ interface Message {
   sentByName?: string
   sentByProfileImage?: string
   voiceMessageDuration?: number
+  isAutomated?: boolean
+  messageId?: string
+  options?: Array<{
+    optionId: string
+    optionText: string
+  }>
 }
 
 interface Session {
@@ -51,6 +60,22 @@ interface Session {
       userConnected: boolean
       providerConnected: boolean
     }
+    consultationDetails?: {
+      consultationFor: 'self' | 'someone_else'
+      personDetails: {
+        name?: string
+        age?: string
+        placeOfBirth?: string
+        timeOfBirth?: string
+        timeOfBirthType?: 'exact' | 'approximate' | 'unknown'
+      }
+      userProfileDetails: {
+        name?: string
+        age?: string
+        placeOfBirth?: string
+        timeOfBirth?: string
+      }
+    }
   }
 }
 
@@ -71,12 +96,26 @@ export default function ChatPage() {
   const [connectionStatus, setConnectionStatus] = useState<{userConnected: boolean, providerConnected: boolean}>({userConnected: false, providerConnected: false})
   const [userBalance, setUserBalance] = useState<number | null>(null)
   const [balanceLoading, setBalanceLoading] = useState<boolean>(false)
+  
+  // New wallet states
+  const [sessionDuration, setSessionDuration] = useState<number>(0)
+  const [sessionCost, setSessionCost] = useState<number>(0)
+  const [initialBalance, setInitialBalance] = useState<number>(0)
+  const [insufficientBalance, setInsufficientBalance] = useState<boolean>(false)
+  const [endingSession, setEndingSession] = useState<boolean>(false)
+  const [showEndSessionDialog, setShowEndSessionDialog] = useState<boolean>(false)
+
+  // Consultation flow states
+  const [consultationFlowActive, setConsultationFlowActive] = useState<boolean>(false)
+  const [waitingForAstrologer, setWaitingForAstrologer] = useState<boolean>(false)
+  const [lastMessageWithOptions, setLastMessageWithOptions] = useState<Message | null>(null)
 
   const socketRef = useRef<Socket | null>(null)
   const selectedSessionRef = useRef<Session | null>(selectedSession)
   const userIdRef = useRef<string | null>(userId)
   const chatContainerRef = useRef<HTMLDivElement | null>(null)
   const waitingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const sessionStartTimeRef = useRef<Date | null>(null)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -101,7 +140,6 @@ export default function ChatPage() {
     }
   }, [userId])
 
-
   // Initialize socket
   useEffect(() => {
     if (!userId || !userRole || socketRef.current) return
@@ -124,20 +162,18 @@ export default function ChatPage() {
       })
     })
 
-    // ✅ Handle incoming messages (user/astrologer/system)
     socket.on('receive_message', (msg: any) => {
-      if (!selectedSessionRef.current || msg.sessionId !== selectedSessionRef.current.sessionId) return
-
-      let sender: Message['sender'] = 'astrologer'
-      if (msg.isAutomated || msg.sentBy === 'system') {
-        sender = 'system'
-      } else if (msg.sentBy === userIdRef.current) {
-        sender = 'user'
-      }
-
-      setMessages(prev => [...prev, {
+      console.log('[Socket] Received message:', msg);
+    
+      if (!selectedSessionRef.current || msg.sessionId !== selectedSessionRef.current.sessionId) return;
+    
+      let sender: Message['sender'] = 'astrologer';
+      if (msg.isAutomated || msg.sentBy === 'system') sender = 'system';
+      else if (msg.sentBy === userIdRef.current) sender = 'user';
+    
+      const newMessage: Message = {
         id: msg._id || `msg-${Date.now()}`,
-        text: msg.message,
+        text: msg.message || '', // fallback if missing
         sender,
         timestamp: msg.createdAt || new Date().toISOString(),
         messageType: msg.messageType || 'text',
@@ -145,15 +181,32 @@ export default function ChatPage() {
         replyMessage: msg.replyMessage,
         sentByName: msg.sentByName,
         sentByProfileImage: msg.sentByProfileImage,
-        voiceMessageDuration: msg.voiceMessageDuration
-      }])
-    })
+        voiceMessageDuration: msg.voiceMessageDuration,
+        isAutomated: msg.isAutomated || false,
+        messageId: msg.messageId,
+        options: msg.options || [] 
+      };
+    
+      setMessages(prev => [...prev, newMessage]);
+    
+      // Track last message with options for automated flow
+      if (msg.messageType === 'options' && Array.isArray(msg.options) && msg.options.length > 0) {
+        console.log('[Socket] Automated message with options:', msg.options);
+        setLastMessageWithOptions(newMessage);
+        setConsultationFlowActive(true);
+      } else if (msg.isAutomated && (!msg.options || msg.options.length === 0)) {
+        setLastMessageWithOptions(null);
+      }
+    });
+    
+    
 
     socket.on('user_joined', (data: { userId: string, role: string, sessionId: string }) => {
       if (selectedSessionRef.current?.sessionId !== data.sessionId) return
       if (data.role === 'astrologer' && waitingTimerRef.current) {
         clearTimeout(waitingTimerRef.current)
         waitingTimerRef.current = null
+        setWaitingForAstrologer(false)
       }
       const systemMsg: Message = {
         id: `system-${Date.now()}`,
@@ -165,21 +218,62 @@ export default function ChatPage() {
       toast.success(`${data.role} joined the chat`)
     })
 
+    // ✅ Updated session tick handler with cost calculation
     socket.on('session_tick', (data: { sessionId: string, remainingTime: number }) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
         setRemainingTime(data.remainingTime)
+        
+        // Update session duration and cost
+        if (sessionStartTimeRef.current) {
+          const currentDuration = Math.floor((new Date().getTime() - sessionStartTimeRef.current.getTime()) / 1000)
+          setSessionDuration(currentDuration)
+          
+          if (selectedSessionRef.current?.rpm) {
+            const cost = (currentDuration / 60) * selectedSessionRef.current.rpm
+            setSessionCost(cost)
+          }
+        }
       }
     })
 
+    // ✅ Updated session ended handler with payment result
     socket.on('session_ended', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
         setSelectedSession(prev => prev ? { ...prev, status: 'ended' } : prev)
-        toast.error(data.message || 'Session ended due to timeout')
+        
+        // Show payment result with detailed information
+        if (data.paymentResult) {
+          if (data.paymentResult.success) {
+            toast.success(`Session ended successfully! Final cost: ₹${data.finalCost?.toFixed(2) || '0.00'}, Duration: ${data.sessionDuration || 0}s`)
+          } else {
+            toast.error(`Session ended but payment failed: ${data.paymentResult.message}`)
+          }
+        } else {
+          toast.error(data.message || 'Session ended due to timeout')
+        }
+        
+        // Reset session tracking
+        sessionStartTimeRef.current = null
+        setSessionDuration(0)
+        setSessionCost(0)
+        setConsultationFlowActive(false)
+        setWaitingForAstrologer(false)
+        setLastMessageWithOptions(null)
+        setEndingSession(false)
+        setShowEndSessionDialog(false)
+        
         // Refresh balance after session ends
         if (userRole === 'user') {
           fetchUserBalance()
         }
       }
+      
+      // ✅ Update sessions list in real-time
+      setSessions(prev => prev.map(session => 
+        session.sessionId === data.sessionId 
+          ? { ...session, status: 'ended' }
+          : session
+      ))
     })
 
     socket.on('session_created', (data: any) => {
@@ -192,11 +286,23 @@ export default function ChatPage() {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
         setSelectedSession(prev => prev ? { ...prev, status: 'active' } : prev)
         toast.success('Session started')
+        
+        // Start session tracking
+        sessionStartTimeRef.current = new Date()
+        setInitialBalance(data.data?.remainingBalance || 0)
+        
         // Refresh balance when session starts
         if (userRole === 'user') {
           fetchUserBalance()
         }
       }
+      
+      // ✅ Update sessions list in real-time
+      setSessions(prev => prev.map(session => 
+        session.sessionId === data.sessionId 
+          ? { ...session, status: 'active' }
+          : session
+      ))
     })
 
     socket.on('session_restarted', (data: any) => {
@@ -204,15 +310,37 @@ export default function ChatPage() {
         setSelectedSession(prev => prev ? { ...prev, status: 'active' } : prev)
         toast.success('Session restarted')
       }
+      
+      // ✅ Update sessions list in real-time
+      setSessions(prev => prev.map(session => 
+        session.sessionId === data.sessionId 
+          ? { ...session, status: 'active' }
+          : session
+      ))
     })
 
+    // ✅ Handle general session status updates
+    socket.on('session_status_updated', (data: any) => {
+      if (data.sessionId && data.status) {
+        // Update sessions list
+        setSessions(prev => prev.map(session => 
+          session.sessionId === data.sessionId 
+            ? { ...session, status: data.status }
+            : session
+        ))
+        
+        // Update selected session if it's the same session
+        if (selectedSessionRef.current?.sessionId === data.sessionId) {
+          setSelectedSession(prev => prev ? { ...prev, status: data.status } : prev)
+        }
+      }
+    })
+
+    // ✅ Handle low balance warning
     socket.on('low_balance_warning', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
         toast.error(data.message || `Low balance: ${data.remainingMinutes} minutes remaining`)
-        // Refresh balance when low balance warning is received
-        if (userRole === 'user') {
-          fetchUserBalance()
-        }
+        setUserBalance(data.remainingBalance)
       }
     })
 
@@ -228,13 +356,11 @@ export default function ChatPage() {
       }
     })
 
-
     socket.on('connection_status', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
         setConnectionStatus(data.connectionStatus)
       }
     })
-
 
     return () => {
       socket.disconnect()
@@ -280,7 +406,10 @@ export default function ChatPage() {
             replyMessage: m.replyMessage,
             sentByName: m.sentByName,
             sentByProfileImage: m.sentByProfileImage,
-            voiceMessageDuration: m.voiceMessageDuration
+            voiceMessageDuration: m.voiceMessageDuration,
+            isAutomated: m.isAutomated || false,
+            messageId: m.messageId,
+            options: m.options
           }))
         }
 
@@ -326,24 +455,82 @@ export default function ChatPage() {
     return () => clearInterval(interval)
   }, [remainingTime])
 
-  const handleSelectSession = (session: Session) => {
+  // Session duration timer
+  useEffect(() => {
+    if (selectedSession?.status === 'active' && !sessionStartTimeRef.current) {
+      sessionStartTimeRef.current = new Date()
+    }
+    
+    if (selectedSession?.status !== 'active') {
+      sessionStartTimeRef.current = null
+      setSessionDuration(0)
+      setSessionCost(0)
+    }
+  }, [selectedSession?.status])
+
+  const handleSelectSession = async (session: Session) => {
     if (!socketRef.current || !userId) return
+    
+    // Check balance before starting session (for users only)
+    if (userRole === 'user') {
+      const hasBalance = await checkBalanceBeforeSession()
+      if (!hasBalance) return
+    }
+    
     socketRef.current.emit(
       "session_update",
-      { sessionId: session.sessionId, userId, providerId: session.providerId },
+      { 
+        sessionId: session.sessionId, 
+        userId, 
+        providerId: session.providerId,
+        providerRpm: 10 
+      },
       (res: any) => {
         if (!res.error && res.data) {
-          setSelectedSession({ ...session, status: res.data.status })
-          router.push(`/chat?sessionId=${session.sessionId}`)
+          const updatedSession = { ...session, status: res.data.status }
+          setSelectedSession(updatedSession)
+          
+          // ✅ Update sessions list in real-time
+          setSessions(prev => prev.map(s => 
+            s.sessionId === session.sessionId 
+              ? { ...s, status: res.data.status }
+              : s
+          ))
+          
+          router.push(`/chat?sessionId=${session.sessionId}`),
+          {shallow: true}
+          
         } else {
           setError(res.message)
+          toast.error(res.message || 'Failed to start session')
         }
       }
     )
   }
 
+  const checkBalanceBeforeSession = async (): Promise<boolean> => {
+    try {
+      const balance = await fetchUserBalance()
+      if (balance < 10) { // Minimum balance check (1 minute worth)
+        toast.error('Insufficient balance to start chat session. Please top up your wallet.')
+        return false
+      }
+      return true
+    } catch (error) {
+      console.error('Error checking balance:', error)
+      toast.error('Unable to check balance. Please try again.')
+      return false
+    }
+  }
+
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedSession || !socketRef.current || !userId) return
+    
+    // Check for insufficient balance before sending
+    if (insufficientBalance) {
+      toast.error("Insufficient balance to send message")
+      return
+    }
     
     const messageData = {
       message: newMessage,
@@ -386,7 +573,45 @@ export default function ChatPage() {
         setReplyToMessage(null)
         setSelectedFile(null)
       } else {
-        toast.error(res.message || 'Failed to send message')
+        // Handle insufficient balance error
+        if (res.message?.includes('Insufficient balance')) {
+          setInsufficientBalance(true)
+          toast.error("Insufficient balance to send message")
+        } else {
+          toast.error(res.message || 'Failed to send message')
+        }
+      }
+    })
+  }
+
+  const handleOptionSelect = (optionId: string, messageId: string) => {
+    if (!selectedSession || !socketRef.current || !userId) return
+
+    const messageData = {
+      message: optionId,
+      sessionId: selectedSession.sessionId,
+      userId,
+      sentBy: userId,
+      providerId: selectedSession.providerId,
+      messageType: 'text' as const,
+      messageId: messageId, // Pass the messageId for automated flow handling
+      sentByName: 'User',
+      sentByProfileImage: '',
+      
+    }
+
+    socketRef.current.emit('send_message', messageData, (res: any) => {
+      if (!res.error) {
+        // Add user's selection to messages
+        setMessages(prev => [...prev, {
+          id: res.data._id,
+          text: optionId,
+          sender: 'user',
+          timestamp: new Date().toISOString(),
+          messageType: 'text'
+        }])
+      } else {
+        toast.error(res.message || 'Failed to send selection')
       }
     })
   }
@@ -397,17 +622,9 @@ export default function ChatPage() {
     }
   }, [])
 
-  const statusBadge = (status: Session['status']) => ({
-    active: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    ended: 'bg-red-100 text-red-800'
-  }[status])
 
-  const formatTime = (secs: number) =>
-    `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
-
-  const fetchUserBalance = async () => {
-    if (!userId) return
+  const fetchUserBalance = async (): Promise<number> => {
+    if (!userId) return 0
     
     setBalanceLoading(true)
     try {
@@ -415,7 +632,7 @@ export default function ChatPage() {
       if (!token) {
         console.log('No auth token found')
         setBalanceLoading(false)
-        return
+        return 0
       }
 
       const response = await fetch('/api/wallet-balance', {
@@ -430,8 +647,11 @@ export default function ChatPage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.data) {
-          setUserBalance(data.data.balance || 0)
-          console.log('User balance fetched:', data.data.balance)
+          const balance = data.data.balance || 0
+          setUserBalance(balance)
+          console.log('User balance fetched:', balance)
+          setBalanceLoading(false)
+          return balance
         }
       } else {
         console.error('Failed to fetch balance:', response.status)
@@ -441,8 +661,8 @@ export default function ChatPage() {
     } finally {
       setBalanceLoading(false)
     }
+    return 0
   }
-
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -456,307 +676,96 @@ export default function ChatPage() {
     setReplyToMessage(message)
   }
 
-
-
   const handleEndSession = () => {
     if (!selectedSession || !userId || !socketRef.current) return
+    
+    // Show confirmation dialog with session details
+    setShowEndSessionDialog(true)
+  }
+
+  const confirmEndSession = () => {
+    if (!selectedSession || !userId || !socketRef.current) return
+    
+    setEndingSession(true)
+    setShowEndSessionDialog(false)
     
     socketRef.current.emit('end_session', {
       sessionId: selectedSession.sessionId,
       userId
     }, (response: any) => {
+      setEndingSession(false)
+      
       if (response.error) {
         toast.error(response.message || 'Failed to end session')
       } else {
-        
-        if (userRole === 'user') {
-          fetchUserBalance()
-        }
+        // The session_ended event will handle the success message with payment details
+        console.log('Session end request sent successfully')
       }
     })
   }
 
-  const renderMessageContent = (message: Message) => {
-    if (message.messageType === 'image' && message.fileLink) {
-      return (
-        <div>
-          <img src={message.fileLink} alt="Shared image" className="max-w-xs rounded-lg" />
-          {message.text && <p className="text-sm mt-2">{message.text}</p>}
-        </div>
-      )
-    }
-    
-    if (message.messageType === 'voice' && message.fileLink) {
-      return (
-        <div>
-          <audio controls className="w-full">
-            <source src={message.fileLink} type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-          {message.voiceMessageDuration && (
-            <p className="text-xs text-gray-500 mt-1">
-              Duration: {Math.floor(message.voiceMessageDuration / 60)}:{(message.voiceMessageDuration % 60).toString().padStart(2, '0')}
-            </p>
-          )}
-        </div>
-      )
-    }
-    
-    if (message.messageType === 'file' && message.fileLink) {
-      return (
-        <div>
-          <a href={message.fileLink} download className="text-blue-500 hover:underline">
-            📎 Download File
-          </a>
-          {message.text && <p className="text-sm mt-2">{message.text}</p>}
-        </div>
-      )
-    }
-    
-    return <p className="text-sm">{message.text}</p>
+  const cancelEndSession = () => {
+    setShowEndSessionDialog(false)
   }
+
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
-            {userRole === 'user' && (
-              <div className="text-right">
-                <div className="flex items-center space-x-2">
-                  <div>
-                    <div className="text-sm text-gray-600">Wallet Balance</div>
-                    <div className="text-lg font-bold text-green-600">
-                      {balanceLoading ? (
-                        <span className="animate-pulse">Loading...</span>
-                      ) : (
-                        `₹${userBalance !== null ? userBalance.toFixed(2) : '0.00'}`
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={fetchUserBalance}
-                    disabled={balanceLoading}
-                    className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                    title="Refresh Balance"
-                  >
-                    🔄
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <p className="p-4 text-gray-500">Loading chats...</p>
-          ) : error ? (
-            <p className="p-4 text-red-500">{error}</p>
-          ) : sessions.length === 0 ? (
-            <p className="p-4 text-gray-500">No chats available</p>
-          ) : (
-            sessions.map(session => (
-              <div
-                key={session.sessionId}
-                onClick={() => handleSelectSession(session)}
-                className={`flex items-center justify-between p-3 cursor-pointer border-b border-gray-100 transition-colors
-                  ${selectedSession?.sessionId === session.sessionId ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
-                    {session.providerId.charAt(0)}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-medium text-gray-900">Provider: {session.providerId}</span>
-                    <span className="text-sm text-gray-500 truncate max-w-xs">{session.lastMessage || 'No messages yet'}</span>
-                    {session.rpm && session.rpm > 0 && (
-                      <span className="text-xs text-blue-600">₹{session.rpm}/min</span>
-                    )}
-                    {session.remainingBalance !== undefined && (
-                      <span className="text-xs text-green-600">Balance: ₹{session.remainingBalance}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end space-y-1">
-                  <span className="text-xs text-gray-400">
-                    {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                  <div className="flex items-center space-x-1">
-                    {session.userUnreadCount && session.userUnreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                        {session.userUnreadCount}
-                      </span>
-                    )}
-                    <span className={`px-2 py-1 text-xs rounded-full ${statusBadge(session.status)}`}>
-                      {session.status.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+      <Sidebar
+        sessions={sessions}
+        selectedSession={selectedSession}
+        userRole={userRole}
+        userBalance={userBalance}
+        balanceLoading={balanceLoading}
+        loading={loading}
+        error={error}
+        onSelectSession={handleSelectSession}
+        onRefreshBalance={fetchUserBalance}
+      />
 
-      {/* Chat Area */}
       <div className="flex-1 flex flex-col">
         {selectedSession ? (
           <>
-            <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                  {selectedSession.providerId.charAt(0)}
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">Provider: {selectedSession.providerId}</h3>
-                  <p className="text-sm text-gray-500">
-                    {selectedSession.status === 'active'
-                      ? remainingTime !== null
-                        ? `Time left: ${formatTime(remainingTime)}`
-                        : 'Online'
-                      : selectedSession.status.toUpperCase()
-                    }
-                  </p>
-                  {selectedSession.rpm && selectedSession.rpm > 0 && (
-                    <p className="text-xs text-blue-600">Rate: ₹{selectedSession.rpm}/min</p>
-                  )}
-                  {selectedSession.remainingBalance !== undefined && (
-                    <p className="text-xs text-green-600">Balance: ₹{selectedSession.remainingBalance}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 text-xs rounded-full ${statusBadge(selectedSession.status)}`}>
-                  {selectedSession.status.toUpperCase()}
-                </span>
-                {selectedSession.status === 'active' && (
-                  <button
-                    onClick={handleEndSession}
-                    className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    End
-                  </button>
-                )}
-              </div>
-            </div>
+            <ChatHeader
+              selectedSession={selectedSession}
+              userRole={userRole}
+              userBalance={userBalance}
+              remainingTime={remainingTime}
+              sessionCost={sessionCost}
+              sessionDuration={sessionDuration}
+              consultationFlowActive={consultationFlowActive}
+              waitingForAstrologer={waitingForAstrologer}
+              insufficientBalance={insufficientBalance}
+              endingSession={endingSession}
+              onEndSession={handleEndSession}
+            />
 
-            <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-              <AnimatePresence initial={false}>
-                {messages.map(msg => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.2 }}
-                    className={`flex ${msg.sender === 'user'
-                      ? 'justify-end'
-                      : msg.sender === 'astrologer'
-                        ? 'justify-start'
-                        : 'justify-center'}`}
-                  >
-                    {msg.sender === 'system' ? (
-                      <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm text-center">
-                        {msg.text}
-                      </div>
-                    ) : (
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-xl shadow ${msg.sender === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-200 text-gray-800'}`}>
-                        {msg.replyMessage && (
-                          <div className={`text-xs p-2 rounded mb-2 ${msg.sender === 'user' ? 'bg-blue-400' : 'bg-gray-300'}`}>
-                            <p className="font-medium">Replying to {msg.replyMessage.replyBy === userId ? 'you' : 'astrologer'}</p>
-                            <p className="truncate">{msg.replyMessage.message}</p>
-                          </div>
-                        )}
-                        {renderMessageContent(msg)}
-                        <div className="flex justify-between items-center mt-1">
-                          <p className={`text-xs ${msg.sender === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                          {msg.sender !== 'user' && (
-                            <button
-                              onClick={() => handleReplyToMessage(msg)}
-                              className="text-xs text-gray-500 hover:text-gray-700"
-                            >
-                              Reply
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
+            <ChatMessages
+              ref={chatContainerRef}
+              messages={messages}
+              userId={userId}
+              onReplyToMessage={handleReplyToMessage}
+              onOptionSelect={handleOptionSelect}
+            />
 
-            <div className="p-4 border-t border-gray-200 bg-white">
-              {replyToMessage && (
-                <div className="mb-2 p-2 bg-gray-100 rounded-lg flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-gray-500">Replying to:</p>
-                    <p className="text-sm truncate">{replyToMessage.text}</p>
-                  </div>
-                  <button
-                    onClick={() => setReplyToMessage(null)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              
-              {selectedFile && (
-                <div className="mb-2 p-2 bg-blue-100 rounded-lg flex justify-between items-center">
-                  <div>
-                    <p className="text-xs text-blue-600">Selected file:</p>
-                    <p className="text-sm">{selectedFile.name}</p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  onChange={handleFileSelect}
-                  accept="image/*,audio/*,video/*,.pdf,.doc,.docx"
-                />
-                <label
-                  htmlFor="file-upload"
-                  className="px-3 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors cursor-pointer"
-                >
-                  📎
-                </label>
-                
-                <input
-                  type="text"
-                  placeholder="Type your message..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
-                  disabled={selectedSession.status !== 'active'}
-                />
-                
-                <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors disabled:bg-gray-400"
-                  onClick={handleSendMessage}
-                  disabled={selectedSession.status !== 'active' || (!newMessage.trim() && !selectedFile)}
-                >
-                  Send
-                </button>
-              </div>
-            </div>
+            <ChatInput
+              newMessage={newMessage}
+              setNewMessage={setNewMessage}
+              selectedFile={selectedFile}
+              setSelectedFile={setSelectedFile}
+              replyToMessage={replyToMessage}
+              setReplyToMessage={setReplyToMessage}
+              showFileUpload={showFileUpload}
+              setShowFileUpload={setShowFileUpload}
+              selectedSessionStatus={selectedSession.status}
+              insufficientBalance={insufficientBalance}
+              onSendMessage={handleSendMessage}
+              onFileSelect={handleFileSelect}
+              automatedFlowActive={consultationFlowActive}
+              waitingForAstrologer={waitingForAstrologer}
+              lastMessageWithOptions={lastMessageWithOptions}
+              onOptionSelect={handleOptionSelect}
+            />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center">
@@ -764,6 +773,64 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* End Session Confirmation Dialog */}
+      {showEndSessionDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              End Session Confirmation
+            </h3>
+            
+            <div className="space-y-3 mb-6">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Session Duration:</span>
+                <span className="font-medium">
+                  {Math.floor(sessionDuration / 60)}:{(sessionDuration % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600">Session Cost:</span>
+                <span className="font-medium text-orange-600">
+                  ₹{sessionCost.toFixed(2)}
+                </span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600">Current Balance:</span>
+                <span className="font-medium text-green-600">
+                  ₹{userBalance?.toFixed(2) || '0.00'}
+                </span>
+              </div>
+              
+              {sessionCost > 0 && userBalance !== null && (
+                <div className="flex justify-between border-t pt-2">
+                  <span className="text-gray-600">Balance After Payment:</span>
+                  <span className={`font-medium ${(userBalance - sessionCost) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    ₹{(userBalance - sessionCost).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={cancelEndSession}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEndSession}
+                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+              >
+                End Session
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

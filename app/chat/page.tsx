@@ -497,8 +497,7 @@ export default function ChatPage() {
               : s
           ))
           
-          router.push(`/chat?sessionId=${session.sessionId}`),
-          {shallow: true}
+          router.push(`/chat?sessionId=${session.sessionId}`)
           
         } else {
           setError(res.message)
@@ -523,7 +522,9 @@ export default function ChatPage() {
     }
   }
 
-  const handleSendMessage = () => {
+  const handleSendMessage = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    
     if (!newMessage.trim() || !selectedSession || !socketRef.current || !userId) return
     
     // Check for insufficient balance before sending
@@ -584,7 +585,9 @@ export default function ChatPage() {
     })
   }
 
-  const handleOptionSelect = (optionId: string, messageId: string) => {
+  const handleOptionSelect = (optionId: string, messageId: string, e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    
     if (!selectedSession || !socketRef.current || !userId) return
 
     const messageData = {

@@ -92,7 +92,10 @@ const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(({
               {message.options?.map(opt => (
                 <button
                   key={opt.optionId}
-                  onClick={() => !opt.disabled && onOptionSelect(opt.optionId, message.messageId || '')}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    if (!opt.disabled) onOptionSelect(opt.optionId, message.messageId || '')
+                  }}
                   className={`px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
                   disabled={opt.disabled}
                 >

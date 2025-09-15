@@ -80,7 +80,10 @@ export default function ChatInput({
             {lastMessageWithOptions.options.map(opt => (
               <button
                 key={opt.optionId}
-                onClick={() => onOptionSelect?.(opt.optionId, lastMessageWithOptions.messageId || '')}
+                onClick={(e) => {
+                  e.preventDefault()
+                  onOptionSelect?.(opt.optionId, lastMessageWithOptions.messageId || '')
+                }}
                 className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-colors shadow-md hover:shadow-lg"
               >
                 {opt.optionText}
@@ -157,18 +160,27 @@ export default function ChatInput({
           }`}
           value={newMessage}
           onChange={e => setNewMessage(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !isInputDisabled && onSendMessage()}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !isInputDisabled) {
+              e.preventDefault()
+              onSendMessage()
+            }
+          }}
           disabled={isInputDisabled}
         />
 
         {/* Send Button */}
         <button
+          type="button"
           className={`px-4 py-2 rounded-full transition-colors ${
             isInputDisabled || (!newMessage.trim() && !selectedFile)
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-blue-500 text-white hover:bg-blue-600'
           }`}
-          onClick={onSendMessage}
+          onClick={(e) => {
+            e.preventDefault()
+            onSendMessage()
+          }}
           disabled={isInputDisabled || (!newMessage.trim() && !selectedFile)}
         >
           Send

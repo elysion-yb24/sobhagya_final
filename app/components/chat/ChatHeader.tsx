@@ -1,190 +1,160 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
+
+interface PopulatedUser {
+  _id: string
+  name?: string
+  avatar?: string
+}
 
 interface Session {
-  providerId: string
+  providerId: PopulatedUser
   sessionId: string
-  lastMessage: string
-  createdAt: string
   status: 'active' | 'ended' | 'pending'
-  rpm?: number
-  initialBalance?: number
-  remainingBalance?: number
-  sessionCost?: number
-  billingType?: 'per_minute' | 'per_message' | 'per_session'
-  userUnreadCount?: number
-  providerUnreadCount?: number
-  messagesSentByUser?: number
-  messagesSentByProvider?: number
-  creditsUsed?: number
-  messageCount?: number
-  sessionData?: {
-    lastActivity: string
-    isTyping: boolean
-    typingBy?: string
-    connectionStatus: {
-      userConnected: boolean
-      providerConnected: boolean
-    }
-    consultationDetails?: {
-      consultationFor: 'self' | 'someone_else'
-      personDetails: {
-        name?: string
-        age?: string
-        placeOfBirth?: string
-        timeOfBirth?: string
-        timeOfBirthType?: 'exact' | 'approximate' | 'unknown'
-      }
-      userProfileDetails: {
-        name?: string
-        age?: string
-        placeOfBirth?: string
-        timeOfBirth?: string
-      }
-    }
-  }
+  userId?: PopulatedUser
 }
 
 interface ChatHeaderProps {
   selectedSession: Session
   userRole: string | null
-  userBalance: number | null
-  remainingTime: number | null
-  sessionCost: number
-  sessionDuration: number
-  consultationFlowActive: boolean
-  waitingForAstrologer: boolean
   insufficientBalance: boolean
   endingSession: boolean
   onEndSession: () => void
-}
-
-const statusBadge = (status: Session['status']) => ({
-  active: 'bg-green-100 text-green-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  ended: 'bg-red-100 text-red-800'
-}[status])
-
-const formatTime = (secs: number) =>
-  `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`
-
-const formatDuration = (seconds: number) => {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds % 60
-  return `${mins}:${String(secs).padStart(2, '0')}`
+  onContinueChat?: () => void
+  onClearChat: () => void
+  sessionDuration?: string | null
 }
 
 export default function ChatHeader({
   selectedSession,
   userRole,
-  userBalance,
-  remainingTime,
-  sessionCost,
-  sessionDuration,
-  consultationFlowActive,
-  waitingForAstrologer,
   insufficientBalance,
   endingSession,
-  onEndSession
+  onEndSession,
+  onContinueChat,
+  onClearChat,
+  sessionDuration
 }: ChatHeaderProps) {
+  const router = useRouter()
+
+  const handleBackClick = () => {
+    router.push('/chat')
+  }
+
+  // Pick the correct participant (friend sees user, astrologer sees provider)
+  const participant =
+    userRole === 'friend' ? selectedSession.userId : selectedSession.providerId
+
+  const avatarLetter =
+    participant?.name?.charAt(0)?.toUpperCase() ||
+    participant?._id?.charAt(0)?.toUpperCase() ||
+    '?'
+
   return (
-    <div className="p-4 border-b border-gray-200 bg-white">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-            {selectedSession.providerId.charAt(0)}
-          </div>
-          <div>
-            <h3 className="text-lg font-medium text-gray-900">Provider: {selectedSession.providerId}</h3>
-            <p className="text-sm text-gray-500">
-              {selectedSession.status === 'active'
-                ? remainingTime !== null
-                  ? `Time left: ${formatTime(remainingTime)}`
-                  : 'Online'
-                : selectedSession.status.toUpperCase()
-              }
-            </p>
-            {selectedSession.rpm && selectedSession.rpm > 0 && (
-              <p className="text-xs text-blue-600">Rate: ₹{selectedSession.rpm}/min</p>
-            )}
-            {consultationFlowActive && (
-              <p className="text-xs text-purple-600">🔮 Consultation Flow Active</p>
-            )}
-            {waitingForAstrologer && (
-              <p className="text-xs text-orange-600">⏳ Waiting for Astrologer...</p>
-            )}
-          </div>
+    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-orange-200">
+      {/* Back Button + Avatar + Name + Status */}
+      <div className="flex items-center gap-3">
+        {/* Back Button */}
+        <button
+          onClick={handleBackClick}
+          className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+          title="Back to chat list"
+        >
+          <svg
+            className="w-5 h-5 text-orange-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Avatar */}
+        <div className="relative">
+          {participant?.avatar ? (
+            <img
+              src={participant.avatar}
+              alt={participant.name || 'Avatar'}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-sm">
+              {avatarLetter}
+            </div>
+          )}
+
+          {/* Online indicator */}
+          {selectedSession.status === 'active' && (
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            </div>
+          )}
         </div>
-        <div className="flex items-center space-x-4">
-          {/* Wallet Balance Display */}
-          {userBalance !== null && userRole === 'user' && (
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Balance</div>
-              <div className="text-lg font-semibold text-green-600">
-                ₹{userBalance.toFixed(2)}
-              </div>
-            </div>
-          )}
-          
-          {/* Session Cost Display */}
-          {selectedSession.status === 'active' && sessionCost > 0 && (
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Session Cost</div>
-              <div className="text-lg font-semibold text-orange-600">
-                ₹{sessionCost.toFixed(2)}
-              </div>
-            </div>
-          )}
-          
-          {/* Session Duration Display */}
-          {selectedSession.status === 'active' && sessionDuration > 0 && (
-            <div className="text-right">
-              <div className="text-sm text-gray-600">Duration</div>
-              <div className="text-lg font-semibold text-blue-600">
-                {formatDuration(sessionDuration)}
-              </div>
-            </div>
-          )}
-          
-          <div className="flex items-center space-x-2">
-            <span className={`px-2 py-1 text-xs rounded-full ${statusBadge(selectedSession.status)}`}>
-              {selectedSession.status.toUpperCase()}
-            </span>
-            {selectedSession.status === 'active' && (
-              <button
-                onClick={onEndSession}
-                disabled={endingSession}
-                className={`px-2 py-1 text-xs rounded transition-colors ${
-                  endingSession
-                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                    : 'bg-red-500 text-white hover:bg-red-600'
-                }`}
-              >
-                {endingSession ? 'Ending...' : 'End'}
-              </button>
-            )}
-          </div>
+
+        {/* Name + Status */}
+        <div className="flex flex-col">
+          <h3 className="text-base font-medium text-orange-800">
+            {participant?.name ||
+              `${userRole === 'friend' ? 'User' : 'Provider'} ${participant?._id?.slice(0, 8)}…`}
+          </h3>
+          <p className="text-xs text-orange-600">
+            {selectedSession.status === 'active' ? 'online' : 'last seen recently'}
+          </p>
         </div>
       </div>
-      
-      {/* Insufficient Balance Warning */}
-      {insufficientBalance && (
-        <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded-md">
-          <p className="text-sm text-red-800">
-            ❌ Insufficient balance! You cannot send messages. Please top up your wallet.
-          </p>
-        </div>
-      )}
 
-      {/* Consultation Flow Status */}
-      {consultationFlowActive && (
-        <div className="mt-2 p-2 bg-purple-100 border border-purple-300 rounded-md">
-          <p className="text-sm text-purple-800">
-            🔮 Consultation flow is active. Please follow the prompts to complete your consultation setup.
-          </p>
-        </div>
-      )}
+      {/* Right-side Actions */}
+      <div className="flex items-center gap-2">
+        {/* Always show Clear Chat */}
+        <button
+          onClick={onClearChat}
+          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          🗑️ Clear
+        </button>
+
+        {/* Active Session → End Session button */}
+        {selectedSession.status === 'active' && (
+          <button
+            onClick={onEndSession}
+            disabled={endingSession}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              endingSession
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-red-500 text-white hover:bg-red-600 shadow-sm hover:shadow-md'
+            }`}
+          >
+            {endingSession ? 'Ending...' : 'End Session'}
+          </button>
+        )}
+
+        {/* Pending Session Indicator */}
+        {selectedSession.status === 'pending' && (
+          <div className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium border border-yellow-200">
+            Waiting for provider...
+          </div>
+        )}
+
+        {/* Ended Session → Continue Chat (non-friend users) */}
+        {selectedSession.status === 'ended' && onContinueChat && userRole !== 'friend' && (
+          <button
+            onClick={onContinueChat}
+            className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 shadow-sm hover:shadow-md transition-colors"
+          >
+            Continue Chat
+          </button>
+        )}
+
+        {/* Session Duration (for astrologer/friend role) */}
+        {sessionDuration && (
+          <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+            {sessionDuration}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

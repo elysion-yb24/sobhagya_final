@@ -6,7 +6,9 @@ import { getAuthToken, getUserDetails, isAuthenticated } from "../../utils/auth-
 import { Phone, Video } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
+import ChatConnectingModal from "../../components/ui/ChatConnectingModal";
 import { useWalletBalance } from "./WalletBalanceContext";
+import { useSessionManager } from "./SessionManager";
 
 interface Astrologer {
   _id: string;
@@ -76,9 +78,14 @@ const AstrologerCard = React.memo(function AstrologerCard({
     serviceType: "call" | "gift" | "consultation";
   } | null>(null);
 
+  // Chat connecting modal state
+  const [showChatConnectingModal, setShowChatConnectingModal] = useState(false);
+
   // Free call check
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
   const { walletBalance } = useWalletBalance();
+  const { createOrJoinSession, isConnected } = useSessionManager();
+
 
   const partner = astrologer;
   const {
@@ -195,11 +202,13 @@ const AstrologerCard = React.memo(function AstrologerCard({
   };
 
   // ✅ Chat handler
-  const handleChatClick = () => {
+  const handleChatClick = async () => {
     if (isAuthenticated()) {
       const profile = getUserDetails();
       const currentUserId = profile?.id || profile?._id;
       const currentUserName = profile?.displayName || profile?.name || "User";
+
+      console.log('User details:', { currentUserId, currentUserName });
 
       if (!currentUserId) {
         localStorage.setItem("initiateChatWithAstrologerId", _id);
@@ -207,15 +216,48 @@ const AstrologerCard = React.memo(function AstrologerCard({
         return;
       }
 
-      const roomId = currentUserId < _id ? `chat-${currentUserId}-${_id}` : `chat-${_id}-${currentUserId}`;
-      const url = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(
-        currentUserId
-      )}&userName=${encodeURIComponent(currentUserName)}&role=user&astrologerId=${encodeURIComponent(
-        _id
-      )}&astroName=${encodeURIComponent(name || "")}`;
+      // Show loading modal
+      setShowChatConnectingModal(true);
 
-      window.open(url, "_blank");
+      if (!isConnected) {
+        console.error('Session manager not connected, going to chat page');
+        // Go directly to chat page
+        setTimeout(() => {
+          setShowChatConnectingModal(false);
+          router.push('/chat');
+        }, 1500); // Show loading for at least 1.5 seconds
+        return;
+      }
+
+      try {
+        console.log('Creating/updating session with provider:', _id);
+        // Use createSession which will handle both creating and checking
+        const sessionId = await createOrJoinSession(_id);
+        console.log('Session result:', sessionId);
+        
+        if (sessionId) {
+          console.log('Session created/found:', sessionId);
+          setTimeout(() => {
+            setShowChatConnectingModal(false);
+            router.push(`/chat?sessionId=${sessionId}`);
+          }, 1500); // Show loading for at least 1.5 seconds
+        } else {
+          console.error('Failed to create session');
+          setTimeout(() => {
+            setShowChatConnectingModal(false);
+            router.push('/chat');
+          }, 1500);
+        }
+      } catch (error) {
+        console.error('Error in chat session management:', error);
+        setTimeout(() => {
+          setShowChatConnectingModal(false);
+          router.push('/chat');
+        }, 1500);
+      }
+
     } else {
+      console.log('User not authenticated, redirecting to login');
       localStorage.setItem("selectedAstrologerId", _id);
       localStorage.setItem("chatIntent", "1");
       router.push(`/calls/call1?astrologerId=${_id}`);
@@ -373,6 +415,12 @@ const AstrologerCard = React.memo(function AstrologerCard({
           serviceType={insufficientBalanceData.serviceType}
         />
       )}
+
+      {/* Chat Connecting Modal */}
+      <ChatConnectingModal
+        isOpen={showChatConnectingModal}
+        astrologerName={name}
+      />
     </>
   );
 });

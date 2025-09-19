@@ -1,49 +1,22 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
+
+interface PopulatedUser {
+  _id: string
+  name: string
+  avatar?: string
+}
 
 interface Session {
-  providerId: string
+  providerId: PopulatedUser
+  userId: PopulatedUser
   sessionId: string
   lastMessage: string
   createdAt: string
   status: 'active' | 'ended' | 'pending'
-  rpm?: number
-  initialBalance?: number
-  remainingBalance?: number
-  sessionCost?: number
-  billingType?: 'per_minute' | 'per_message' | 'per_session'
   userUnreadCount?: number
   providerUnreadCount?: number
-  messagesSentByUser?: number
-  messagesSentByProvider?: number
-  creditsUsed?: number
-  messageCount?: number
-  sessionData?: {
-    lastActivity: string
-    isTyping: boolean
-    typingBy?: string
-    connectionStatus: {
-      userConnected: boolean
-      providerConnected: boolean
-    }
-    consultationDetails?: {
-      consultationFor: 'self' | 'someone_else'
-      personDetails: {
-        name?: string
-        age?: string
-        placeOfBirth?: string
-        timeOfBirth?: string
-        timeOfBirthType?: 'exact' | 'approximate' | 'unknown'
-      }
-      userProfileDetails: {
-        name?: string
-        age?: string
-        placeOfBirth?: string
-        timeOfBirth?: string
-      }
-    }
-  }
 }
 
 interface SidebarProps {
@@ -56,13 +29,11 @@ interface SidebarProps {
   error: string | null
   onSelectSession: (session: Session) => void
   onRefreshBalance: () => void
+  onToggleSidebar?: () => void
+  onLoadMoreSessions?: () => void
+  hasMoreSessions?: boolean
+  loadingMore?: boolean
 }
-
-const statusBadge = (status: Session['status']) => ({
-  active: 'bg-green-100 text-green-800',
-  pending: 'bg-yellow-100 text-yellow-800',
-  ended: 'bg-red-100 text-red-800'
-}[status])
 
 export default function Sidebar({
   sessions,
@@ -73,91 +44,181 @@ export default function Sidebar({
   loading,
   error,
   onSelectSession,
-  onRefreshBalance
+  onRefreshBalance,
+  onToggleSidebar,
+  onLoadMoreSessions,
+  hasMoreSessions = false,
+  loadingMore = false
 }: SidebarProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMoreSessions && !loadingMore && onLoadMoreSessions) {
+          onLoadMoreSessions()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current)
+    }
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current)
+      }
+    }
+  }, [hasMoreSessions, loadingMore, onLoadMoreSessions])
+
+  // ✅ Directly get user from populated fields
+  const getChatUser = (session: Session): PopulatedUser | null => {
+    if (!userRole) return null
+    return userRole === 'user' ? session.providerId : session.userId
+  }
+
+  const formatTime = (timestamp: string) => {
+    const now = new Date()
+    const messageTime = new Date(timestamp)
+    const diffInHours = (now.getTime() - messageTime.getTime()) / (1000 * 60 * 60)
+
+    if (diffInHours < 24) {
+      return messageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    } else if (diffInHours < 48) {
+      return 'Yesterday'
+    } else {
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+      return days[messageTime.getDay()]
+    }
+  }
+
+  const filteredSessions = sessions.filter(session => {
+    const user = getChatUser(session)
+    const searchText = user?.name?.toLowerCase() || ''
+    return (
+      searchText.includes(searchQuery.toLowerCase()) ||
+      session.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
+
   return (
-    <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-800">Chats</h2>
-          {userRole === 'user' && (
-            <div className="text-right">
-              <div className="flex items-center space-x-2">
-                <div>
-                  <div className="text-sm text-gray-600">Wallet Balance</div>
-                  <div className="text-lg font-bold text-green-600">
-                    {balanceLoading ? (
-                      <span className="animate-pulse">Loading...</span>
-                    ) : (
-                      `₹${userBalance !== null ? userBalance.toFixed(2) : '0.00'}`
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={onRefreshBalance}
-                  disabled={balanceLoading}
-                  className="p-1 text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                  title="Refresh Balance"
-                >
-                  🔄
-                </button>
-              </div>
+    <div className="w-80 bg-white flex flex-col border-r border-gray-200 h-screen overflow-hidden">
+      {/* Header */}
+      <div className="bg-white px-4 py-3 border-b border-orange-200">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onToggleSidebar && onToggleSidebar()}
+            className="p-2 hover:bg-orange-50 rounded-full"
+          >
+            <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div className="flex-1 relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-4 w-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
-          )}
+            <input
+              type="text"
+              placeholder="Search Chats ..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-white border border-orange-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 focus:border-orange-300 text-sm"
+            />
+          </div>
         </div>
       </div>
+
+      {/* Chat List */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <p className="p-4 text-gray-500">Loading chats...</p>
+          <div className="p-6 text-center">
+            <div className="w-8 h-8 mx-auto mb-3 border-2 border-orange-500 rounded-full animate-spin"></div>
+            <p className="text-gray-500">Loading chats…</p>
+          </div>
         ) : error ? (
-          <p className="p-4 text-red-500">{error}</p>
-        ) : sessions.length === 0 ? (
-          <p className="p-4 text-gray-500">No chats available</p>
+          <div className="p-6 text-center text-red-500">{error}</div>
+        ) : filteredSessions.length === 0 ? (
+          <div className="p-6 text-center text-gray-500">No chats available</div>
         ) : (
-          sessions.map(session => (
-            <div
-              key={session.sessionId}
-              onClick={() => onSelectSession(session)}
-              className={`flex items-center justify-between p-3 cursor-pointer border-b border-gray-100 transition-colors
-                ${selectedSession?.sessionId === session.sessionId ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-lg">
-                  {session.providerId.charAt(0)}
+          <div>
+            {filteredSessions.map(session => {
+              const user = getChatUser(session)
+              const isSelected = selectedSession?.sessionId === session.sessionId
+
+              return (
+                <div
+                  key={session.sessionId}
+                  onClick={() => onSelectSession(session)}
+                  className={`group relative border-b border-orange-100 cursor-pointer transition-colors duration-150 ${
+                    isSelected ? 'bg-orange-50' : 'hover:bg-orange-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 p-3">
+                    {/* Avatar */}
+                    <div className="relative">
+                      {user?.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 font-semibold text-lg">
+                          {user?.name?.charAt(0).toUpperCase() || '?'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Name + Last Message */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium truncate text-sm text-gray-900">
+                          {user?.name || 'Unknown User'}
+                        </p>
+                        <span className="text-xs text-gray-500">
+                          {formatTime(session.createdAt)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm truncate text-gray-500 flex-1">
+                          {session.lastMessage && session.lastMessage.trim() !== "" ?session.lastMessage : 'No messages yet'}
+                        </p>
+                        {(() => {
+                          const unreadCount = (userRole === 'user' || userRole === 'friend') ? session.userUnreadCount : session.providerUnreadCount;
+                          return unreadCount && unreadCount > 0 ? (
+                            <div className="ml-2 w-5 h-5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center justify-center flex-shrink-0">
+                              {unreadCount}
+                            </div>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium text-gray-900">Provider: {session.providerId}</span>
-                  <span className="text-sm text-gray-500 truncate max-w-xs">{session.lastMessage || 'No messages yet'}</span>
-                  {session.rpm && session.rpm > 0 && (
-                    <span className="text-xs text-blue-600">₹{session.rpm}/min</span>
-                  )}
-                  {/* {session.remainingBalance !== undefined && (
-                    <span className="text-xs text-green-600">Balance: ₹{session.remainingBalance}</span>
-                  )} */}
-                  {session.sessionData?.consultationDetails && (
-                    <span className="text-xs text-purple-600">
-                      {session.sessionData.consultationDetails.consultationFor === 'self' ? 'Self' : 'Someone Else'}
-                    </span>
-                  )}
-                </div>
+              )
+            })}
+            
+            {/* Load More Trigger */}
+            {hasMoreSessions && (
+              <div ref={loadMoreRef} className="p-4 text-center">
+                {loadingMore ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-6 h-6 border-2 border-orange-500 rounded-full animate-spin border-t-transparent"></div>
+                    <span className="ml-2 text-sm text-gray-500">Loading more...</span>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-400">Scroll to load more</div>
+                )}
               </div>
-              <div className="flex flex-col items-end space-y-1">
-                <span className="text-xs text-gray-400">
-                  {new Date(session.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-                <div className="flex items-center space-x-1">
-                  {session.userUnreadCount && session.userUnreadCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                      {session.userUnreadCount}
-                    </span>
-                  )}
-                  <span className={`px-2 py-1 text-xs rounded-full ${statusBadge(session.status)}`}>
-                    {session.status.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))
+            )}
+          </div>
         )}
       </div>
     </div>

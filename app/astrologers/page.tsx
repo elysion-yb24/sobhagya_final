@@ -10,6 +10,7 @@ import CallHistory from "../components/history/CallHistory";
 import { Wallet, Phone, X, CreditCard } from "lucide-react";
 import { getApiBaseUrl } from "../config/api";
 import { useWalletBalance, WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
+import { SessionManagerProvider } from "../components/astrologers/SessionManager";
 import { API_CONFIG } from "../config/api";
 
 interface Astrologer {
@@ -321,7 +322,9 @@ function AstrologersPageContent() {
 export default function AstrologersPage() {
   return (
     <WalletBalanceProvider>
-      <AstrologersPageContent />
+      <SessionManagerProvider>
+        <AstrologersPageContent />
+      </SessionManagerProvider>
     </WalletBalanceProvider>
   );
 }

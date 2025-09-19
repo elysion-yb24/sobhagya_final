@@ -1,191 +1,145 @@
 'use client'
 
-import React from 'react'
-
-interface Message {
-  id: string
-  text: string
-  sender: 'user' | 'astrologer' | 'system'
-  timestamp: string
-  messageType?: 'text' | 'voice' | 'image' | 'video' | 'file' | 'options' | 'informative' | 'call'
-  fileLink?: string
-  replyMessage?: {
-    id: string
-    message: string
-    replyTo: string
-    replyBy: string
-    messageType: string
-    voiceMessageDuration?: number
-  }
-  isAutomated?: boolean
-  messageId?: string
-  options?: Array<{ optionId: string; optionText: string }>
-}
+import React, { useState, useRef, useEffect } from 'react'
 
 interface ChatInputProps {
   newMessage: string
   setNewMessage: (message: string) => void
-  selectedFile: File | null
-  setSelectedFile: (file: File | null) => void
-  replyToMessage: Message | null
-  setReplyToMessage: (message: Message | null) => void
-  showFileUpload: boolean
-  setShowFileUpload: (show: boolean) => void
-  selectedSessionStatus: 'active' | 'ended' | 'pending'
-  insufficientBalance: boolean
   onSendMessage: () => void
-  onFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void
-  automatedFlowActive?: boolean
-  waitingForAstrologer?: boolean
-  lastMessageWithOptions?: Message | null
-  onOptionSelect?: (optionId: string, messageId: string) => void
+  isDisabled?: boolean
 }
 
 export default function ChatInput({
   newMessage,
   setNewMessage,
-  selectedFile,
-  setSelectedFile,
-  replyToMessage,
-  setReplyToMessage,
-  showFileUpload,
-  setShowFileUpload,
-  selectedSessionStatus,
-  insufficientBalance,
   onSendMessage,
-  onFileSelect,
-  automatedFlowActive,
-  waitingForAstrologer,
-  lastMessageWithOptions,
-  onOptionSelect
+  isDisabled = false
 }: ChatInputProps) {
+  const [isTyping, setIsTyping] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const isInputDisabled = selectedSessionStatus !== 'active' || insufficientBalance || automatedFlowActive || waitingForAstrologer
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+    }
+  }, [newMessage])
 
-  const placeholderText = insufficientBalance
-    ? "Insufficient balance - cannot send messages"
-    : automatedFlowActive
-      ? "Automated flow in progress..."
-      : waitingForAstrologer
-        ? "Waiting for astrologer..."
-        : "Type your message..."
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      if (newMessage.trim() && !isDisabled) {
+        onSendMessage()
+      }
+    }
+  }
 
-  // Show only options when automated flow is active and there are options available
-  if (automatedFlowActive && lastMessageWithOptions?.options && lastMessageWithOptions.options.length > 0) {
-    return (
-      <div className="p-4 border-t border-gray-200 bg-white">
-        <div className="text-center mb-4">
-          <p className="text-sm text-gray-600 mb-2">Please select an option to continue:</p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {lastMessageWithOptions.options.map(opt => (
-              <button
-                key={opt.optionId}
-                onClick={(e) => {
-                  e.preventDefault()
-                  onOptionSelect?.(opt.optionId, lastMessageWithOptions.messageId || '')
-                }}
-                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-sm font-medium transition-colors shadow-md hover:shadow-lg"
-              >
-                {opt.optionText}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNewMessage(e.target.value)
+    setIsTyping(true)
+    // Clear typing indicator after 1 second of no typing
+    if ((handleInputChange as any).typingTimeout) {
+      clearTimeout((handleInputChange as any).typingTimeout)
+    }
+    (handleInputChange as any).typingTimeout = setTimeout(() => {
+      setIsTyping(false)
+    }, 1000)
   }
 
   return (
-    <div className="p-4 border-t border-gray-200 bg-white">
-      {/* Reply Preview */}
-      {replyToMessage && (
-        <div className="mb-2 p-2 bg-gray-100 rounded-lg flex justify-between items-center">
-          <div>
-            <p className="text-xs text-gray-500">Replying to:</p>
-            <p className="text-sm truncate">{replyToMessage.text}</p>
-          </div>
+    <div className="p-3 bg-white border-t border-orange-200 flex-shrink-0">
+      <div className="flex items-center gap-2">
+        {/* Additional Actions */}
+        <div className="flex items-center gap-1">
+          {/* File upload button */}
           <button
-            onClick={() => setReplyToMessage(null)}
-            className="text-gray-500 hover:text-gray-700"
+            disabled={isDisabled}
+            className={`p-2 rounded-full transition-colors duration-200 ${
+              isDisabled
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-orange-600 hover:text-orange-800 hover:bg-orange-100'
+            }`}
+            title="Attach file"
           >
-            ✕
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
           </button>
         </div>
-      )}
 
-      {/* File Preview */}
-      {selectedFile && (
-        <div className="mb-2 p-2 bg-blue-100 rounded-lg flex justify-between items-center">
-          <div>
-            <p className="text-xs text-blue-600">Selected file:</p>
-            <p className="text-sm">{selectedFile.name}</p>
+        {/* Message Input */}
+        <div className="flex-1 relative">
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={newMessage}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              placeholder={isDisabled ? "Session ended or insufficient balance" : "Type a message"}
+              disabled={isDisabled}
+                className={`w-full px-4 py-2 pr-10 bg-orange-50 border border-orange-200 rounded-full resize-none focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all duration-200 text-sm ${
+                  isDisabled
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-900'
+                }`}
+              rows={1}
+              maxLength={1000}
+            />
+            
+            {/* Send button */}
+            <button
+              onClick={onSendMessage}
+              disabled={!newMessage.trim() || isDisabled}
+              className={`absolute right-1 top-1/2 transform -translate-y-1/2 p-1.5 rounded-full transition-all duration-200 ${
+                !newMessage.trim() || isDisabled
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : 'text-orange-600 hover:text-orange-800 hover:bg-orange-100'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => setSelectedFile(null)}
-            className="text-blue-500 hover:text-blue-700"
-          >
-            ✕
-          </button>
+          
+          {/* Typing indicator */}
+          {isTyping && !isDisabled && (
+            <div className="absolute -top-6 left-0 bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-gray-500 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-1 h-1 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <span className="ml-1">typing...</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Input Row */}
-      <div className="flex items-center space-x-2">
-        {/* File Upload */}
-        <input
-          type="file"
-          id="file-upload"
-          className="hidden"
-          onChange={onFileSelect}
-          accept="image/*,audio/*,video/*,.pdf,.doc,.docx"
-          disabled={isInputDisabled}
-        />
-        <label
-          htmlFor="file-upload"
-          className={`px-3 py-2 rounded-full cursor-pointer transition-colors ${
-            isInputDisabled ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          📎
-        </label>
-
-        {/* Text Input */}
-        <input
-          type="text"
-          placeholder={placeholderText}
-          className={`flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            isInputDisabled
-              ? 'border-red-300 bg-red-50 text-red-500 cursor-not-allowed'
-              : 'border-gray-300 bg-white text-gray-900'
-          }`}
-          value={newMessage}
-          onChange={e => setNewMessage(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !isInputDisabled) {
-              e.preventDefault()
-              onSendMessage()
-            }
-          }}
-          disabled={isInputDisabled}
-        />
-
-        {/* Send Button */}
+        {/* Voice message button */}
         <button
-          type="button"
-          className={`px-4 py-2 rounded-full transition-colors ${
-            isInputDisabled || (!newMessage.trim() && !selectedFile)
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600'
+          disabled={isDisabled}
+          className={`p-2 rounded-full transition-colors duration-200 ${
+            isDisabled
+              ? 'text-gray-300 cursor-not-allowed'
+              : 'text-orange-600 hover:text-orange-800 hover:bg-orange-100'
           }`}
-          onClick={(e) => {
-            e.preventDefault()
-            onSendMessage()
-          }}
-          disabled={isInputDisabled || (!newMessage.trim() && !selectedFile)}
+          title="Voice message"
         >
-          Send
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
         </button>
       </div>
+
+      {/* Status message */}
+      {isDisabled && (
+        <div className="mt-2 text-center">
+          <p className="text-xs text-gray-500">
+            {newMessage.includes('insufficient') ? 'Insufficient balance' : 'Session has ended'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -33,6 +33,7 @@ interface SidebarProps {
   onLoadMoreSessions?: () => void
   hasMoreSessions?: boolean
   loadingMore?: boolean
+  onDeleteSession?: (session: Session) => void
 }
 
 export default function Sidebar({
@@ -48,9 +49,11 @@ export default function Sidebar({
   onToggleSidebar,
   onLoadMoreSessions,
   hasMoreSessions = false,
-  loadingMore = false
+  loadingMore = false,
+  onDeleteSession
 }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [openMenuSessionId, setOpenMenuSessionId] = useState<string | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
   // Intersection Observer for infinite scroll
@@ -105,8 +108,33 @@ export default function Sidebar({
     )
   })
 
+  const handleMenuToggle = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setOpenMenuSessionId(openMenuSessionId === sessionId ? null : sessionId)
+  }
+
+  const handleDeleteSession = (session: Session, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onDeleteSession) {
+      onDeleteSession(session)
+    }
+    setOpenMenuSessionId(null)
+  }
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.dropdown-menu') && !target.closest('.menu-toggle-button')) {
+        setOpenMenuSessionId(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
+
   return (
-    <div className="w-80 bg-white flex flex-col border-r border-gray-200 h-screen overflow-hidden">
+    <div className="w-full sm:w-80 bg-white flex flex-col border-r border-gray-200 h-screen overflow-hidden">
       {/* Header */}
       <div className="bg-white px-4 py-3 border-b border-orange-200">
         <div className="flex items-center gap-3">
@@ -199,6 +227,36 @@ export default function Sidebar({
                           ) : null;
                         })()}
                       </div>
+                    </div>
+
+                    {/* Three Dots Menu */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => handleMenuToggle(session.sessionId, e)}
+                        className="menu-toggle-button p-2 hover:bg-gray-200 rounded-full transition-colors"
+                        title="Session options"
+                      >
+                        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                        </svg>
+                      </button>
+
+                      {/* Dropdown Menu */}
+                      {openMenuSessionId === session.sessionId && (
+                        <div className="dropdown-menu absolute right-0 top-10 w-48 bg-white rounded-lg shadow-xl border border-gray-200" style={{ zIndex: 9999 }}>
+                          <div className="py-1">
+                            <button
+                              onClick={(e) => handleDeleteSession(session, e)}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Clear Chat
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

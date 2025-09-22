@@ -23,7 +23,6 @@ interface ChatHeaderProps {
   endingSession: boolean
   onEndSession: () => void
   onContinueChat?: () => void
-  onClearChat: () => void
   sessionDuration?: string | null
 }
 
@@ -34,7 +33,6 @@ export default function ChatHeader({
   endingSession,
   onEndSession,
   onContinueChat,
-  onClearChat,
   sessionDuration
 }: ChatHeaderProps) {
   const router = useRouter()
@@ -53,13 +51,13 @@ export default function ChatHeader({
     '?'
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-orange-200">
+    <div className="flex items-center justify-between px-3 md:px-4 py-3 bg-white border-b border-orange-200 shadow-sm">
       {/* Back Button + Avatar + Name + Status */}
-      <div className="flex items-center gap-3">
-        {/* Back Button */}
+      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+        {/* Back Button - Only show on mobile */}
         <button
           onClick={handleBackClick}
-          className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+          className="md:hidden p-2 hover:bg-orange-50 rounded-full transition-colors flex-shrink-0"
           title="Back to chat list"
         >
           <svg
@@ -73,68 +71,62 @@ export default function ChatHeader({
         </button>
 
         {/* Avatar */}
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           {participant?.avatar ? (
             <img
               src={participant.avatar}
               alt={participant.name || 'Avatar'}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-sm">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-xs md:text-sm">
               {avatarLetter}
             </div>
           )}
 
           {/* Online indicator */}
           {selectedSession.status === 'active' && (
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full flex items-center justify-center">
-              <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+            <div className="absolute -bottom-0.5 -right-0.5 md:-bottom-1 md:-right-1 w-2.5 h-2.5 md:w-3 md:h-3 bg-white rounded-full flex items-center justify-center">
+              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500"></div>
             </div>
           )}
         </div>
 
         {/* Name + Status */}
-        <div className="flex flex-col">
-          <h3 className="text-base font-medium text-orange-800">
+        <div className="flex flex-col min-w-0 flex-1">
+          <h3 className="text-sm md:text-base font-medium text-orange-800 truncate">
             {participant?.name ||
               `${userRole === 'friend' ? 'User' : 'Provider'} ${participant?._id?.slice(0, 8)}…`}
           </h3>
-          <p className="text-xs text-orange-600">
+          <p className="text-xs text-orange-600 truncate">
             {selectedSession.status === 'active' ? 'online' : 'last seen recently'}
           </p>
         </div>
       </div>
 
       {/* Right-side Actions */}
-      <div className="flex items-center gap-2">
-        {/* Always show Clear Chat */}
-        <button
-          onClick={onClearChat}
-          className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-        >
-          🗑️ Clear
-        </button>
-
+      <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
         {/* Active Session → End Session button */}
         {selectedSession.status === 'active' && (
           <button
             onClick={onEndSession}
             disabled={endingSession}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
               endingSession
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-red-500 text-white hover:bg-red-600 shadow-sm hover:shadow-md'
             }`}
           >
-            {endingSession ? 'Ending...' : 'End Session'}
+            <span className="hidden md:inline">{endingSession ? 'Ending...' : 'End Session'}</span>
+            <span className="md:hidden">{endingSession ? 'End...' : 'End'}</span>
           </button>
         )}
 
         {/* Pending Session Indicator */}
         {selectedSession.status === 'pending' && (
-          <div className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium border border-yellow-200">
-            Waiting for provider...
+          <div className="px-2 md:px-3 py-1 md:py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium border border-yellow-200">
+            <span className="hidden md:inline">Waiting for provider...</span>
+            <span className="md:hidden">Waiting...</span>
           </div>
         )}
 
@@ -142,15 +134,16 @@ export default function ChatHeader({
         {selectedSession.status === 'ended' && onContinueChat && userRole !== 'friend' && (
           <button
             onClick={onContinueChat}
-            className="px-3 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 shadow-sm hover:shadow-md transition-colors"
+            className="px-2 md:px-3 py-1 md:py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 shadow-sm hover:shadow-md transition-colors"
           >
-            Continue Chat
+            <span className="hidden md:inline">Continue Chat</span>
+            <span className="md:hidden">Continue</span>
           </button>
         )}
 
         {/* Session Duration (for astrologer/friend role) */}
         {sessionDuration && (
-          <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+          <div className="text-xs md:text-sm text-gray-600 bg-gray-100 px-2 md:px-3 py-1 rounded-full">
             {sessionDuration}
           </div>
         )}

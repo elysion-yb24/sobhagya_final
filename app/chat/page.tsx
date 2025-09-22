@@ -38,6 +38,7 @@ interface Message {
   }>;
   isAutomated?: boolean;
   clientMessageId?: string;
+  deliveryStatus?: 'sent' | 'delivered' | 'read';
 }
 
 interface PopulatedUser {
@@ -73,13 +74,35 @@ export default function ChatPage() {
   const [typingMessage, setTypingMessage] = useState<Message | null>(null);
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null);
   const [sessionDuration, setSessionDuration] = useState<string>('00:00:00');
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  // Mobile-first: sidebar closed by default on mobile, open on desktop
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  
+  // Open sidebar on desktop by default
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+    
+    // Set initial state
+    handleResize();
+    
+    // Listen for window resize
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [sessionsPage, setSessionsPage] = useState<number>(1);
   const [hasMoreSessions, setHasMoreSessions] = useState<boolean>(true);
   const [loadingMoreSessions, setLoadingMoreSessions] = useState<boolean>(false);
   const [showReconnectionModal, setShowReconnectionModal] = useState<boolean>(false);
   const [wasDisconnected, setWasDisconnected] = useState<boolean>(false);
   const [lastActiveSession, setLastActiveSession] = useState<Session | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [automatedFlowCompleted, setAutomatedFlowCompleted] = useState<boolean>(false);
+  const [sessionLeftDialogOpen, setSessionLeftDialogOpen] = useState<boolean>(false);
 
   // Refs
   const selectedSessionRef = useRef<Session | null>(selectedSession);
@@ -249,10 +272,25 @@ export default function ChatPage() {
         messageId: msg.messageId,
         options: msg.options || [],
         isAutomated: msg.isAutomated || false,
-        clientMessageId: msg.clientMessageId
+        clientMessageId: msg.clientMessageId,
+        deliveryStatus: sender === 'user' ? 'delivered' : undefined
       };
 
       setMessages(prev => [...prev, newMsg]);
+
+      // Clear typing indicator when new message arrives
+      setTypingMessage(null);
+
+      // Show validation errors as toast notifications
+      if (msg.messageId === 'INVALID_INPUT') {
+        if (msg.message?.includes('inappropriate details')) {
+          toast.error('You have entered inappropriate details, please try again.');
+        } else if (msg.message?.includes('Invalid choice')) {
+          toast.error('Invalid choice, please select a valid option.');
+        } else {
+          toast.error('Please check your input and try again.');
+        }
+      }
     });
 
     // Handle typing indicator
@@ -267,20 +305,22 @@ export default function ChatPage() {
         messageType: 'text'
       });
 
-      // Clear typing indicator after 3 seconds
+
+      // Clear typing indicator after 2 seconds (more responsive like WhatsApp)
       setTimeout(() => {
         setTypingMessage(null);
-      }, 3000);
+      }, 2000);
     });
 
     // ✅ FIX: Handle session status updates
     socket.on('session_started', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
         setSelectedSession(prev => prev ? { ...prev, status: 'active' } : prev);
-        toast.success('Session started');
+        const astrologerName = selectedSessionRef.current?.providerId?.name || 'Astrologer';
+        toast.success(`${astrologerName} has joined! Session started`);
         const joinMsg: Message = {
           id: `provider-joined-${Date.now()}`,
-          text: `🎉 ${selectedSessionRef.current?.providerId?.name || 'Provider'} has joined the room.`,
+          text: `🎉 ${astrologerName} has joined the session! You can now start your consultation.`,
           sender: 'system',
           timestamp: new Date().toISOString(),
           messageType: 'informative',
@@ -331,18 +371,26 @@ export default function ChatPage() {
 
     socket.on('session_resumed', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        setSelectedSession(prev => prev ? { ...prev, status: 'pending' } : prev);
-        toast.success('Session resumed! Waiting for astrologer...');
+        const newStatus = data.data?.status || 'pending';
+        setSelectedSession(prev => prev ? { ...prev, status: newStatus } : prev);
+    
+        if (newStatus === 'active') {
+          toast.success('Session resumed and astrologer is online!');
+        } else {
+          toast('Session resumed, waiting for astrologer...', { icon: '⏳' });
+          // Don't add waiting message here - let it be handled by sessionStatus
+        }
         fetchUserBalance();
       }
-
-      // Update session in sidebar
+    
+    
       setSessions(prev => prev.map(session =>
         session.sessionId === data.sessionId
-          ? { ...session, status: 'pending' }
+          ? { ...session, status: data.data?.status || 'pending' }
           : session
       ));
     });
+    
 
     socket.on('session_status_updated', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
@@ -352,7 +400,7 @@ export default function ChatPage() {
         }
       }
 
-      // Update session in sidebar
+
       setSessions(prev => prev.map(session =>
         session.sessionId === data.sessionId
           ? { ...session, status: data.status }
@@ -360,7 +408,7 @@ export default function ChatPage() {
       ));
     });
 
-    // Listen for unread count updates
+   
     socket.on('unread_count_updated', (data: any) => {
       if (data.sessionId) {
         setSessions(prev => prev.map(session =>
@@ -375,7 +423,7 @@ export default function ChatPage() {
       }
     });
 
-    // Listen for messages marked as read
+    
     socket.on('messages_marked_read', (data: any) => {
       if (data.sessionId) {
         setSessions(prev => prev.map(session =>
@@ -387,27 +435,55 @@ export default function ChatPage() {
             }
             : session
         ));
+        
+        // Update message status to read if it's the current session
+        if (selectedSessionRef.current?.sessionId === data.sessionId && data.readBy !== userId) {
+          setMessages(prev => prev.map(msg => {
+            if (msg.sender === 'user' && msg.deliveryStatus !== 'read') {
+              return { ...msg, deliveryStatus: 'read' };
+            }
+            return msg;
+          }));
+        }
       }
     });
 
-    // Listen for automated flow events
+   
+    socket.on('session_deleted', (data: any) => {
+      if (data.sessionId) {
+        console.log('Session deleted from backend:', data.sessionId);
+        
+      
+        setSessions(prev => prev.filter(s => s.sessionId !== data.sessionId));
+        
+       
+        if (selectedSession?.sessionId === data.sessionId) {
+          setSelectedSession(null);
+          setMessages([]);
+          
+          
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('sessionId');
+          window.history.replaceState({}, '', newUrl.toString());
+          
+          toast.success('Session has been deleted');
+        }
+      }
+    });
+
+   
     socket.on('automated_flow_started', (data: any) => {
       console.log('Automated flow started for session:', data.sessionId);
+      if (selectedSessionRef.current?.sessionId === data.sessionId) {
+        setAutomatedFlowCompleted(false);
+      }
     });
 
     socket.on('automated_flow_completed', (data: any) => {
       console.log('Automated flow completed for session:', data.sessionId);
 
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        const waitingMsg: Message = {
-          id: `waiting-${Date.now()}`,
-          text: `⏳ Waiting for Provider ${selectedSessionRef.current?.providerId?.name || 'Astrologer'} to join...`,
-          sender: 'system',
-          timestamp: new Date().toISOString(),
-          messageType: 'informative',
-          isAutomated: true
-        };
-        setMessages(prev => [...prev, waitingMsg]);
+        setAutomatedFlowCompleted(true);
       }
     });
     // Listen for session created events
@@ -461,9 +537,30 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      // Check if user is near bottom before auto-scrolling (like WhatsApp)
+      const container = chatContainerRef.current;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+      
+      if (isNearBottom) {
+        // Smooth scroll to bottom
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
     }
-  }, [messages, typingMessage]);
+  }, [messages]);
+
+  // Separate effect for typing message to always scroll
+  useEffect(() => {
+    if (typingMessage && chatContainerRef.current) {
+      const container = chatContainerRef.current;
+      // Use requestAnimationFrame for smoother scrolling
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, [typingMessage]);
 
   // Session duration timer for friend role users
   useEffect(() => {
@@ -605,7 +702,22 @@ export default function ChatPage() {
       setSelectedSession(null);
       setMessages([]);
       setShowRating(false);
+      setAutomatedFlowCompleted(false);
       return;
+    }
+
+    // Check if user left and returned to session
+    const lastSession = localStorage.getItem('lastActiveSessionId');
+    const sessionLeftTimestamp = localStorage.getItem('sessionLeftTimestamp');
+    
+    if (lastSession === sessionIdFromUrl && sessionLeftTimestamp) {
+      const leftTime = parseInt(sessionLeftTimestamp);
+      const timeDiff = Date.now() - leftTime;
+      // If user left less than 30 minutes ago, show return dialog
+      if (timeDiff < 30 * 60 * 1000) {
+        setSessionLeftDialogOpen(true);
+        localStorage.removeItem('sessionLeftTimestamp');
+      }
     }
 
     const foundSession = sessions.find(s => s.sessionId === sessionIdFromUrl);
@@ -733,7 +845,8 @@ export default function ChatPage() {
             sentByProfileImage: msg.sentByProfileImage,
             messageId: msg.messageId,
             options: msg.options || [],
-            isAutomated: msg.isAutomated || false
+            isAutomated: msg.isAutomated || false,
+            deliveryStatus: sender === 'user' ? 'delivered' : undefined
           };
         });
         setMessages(formattedMessages);
@@ -782,6 +895,13 @@ export default function ChatPage() {
 
   const handleSelectSession = (session: Session) => {
     setSelectedSession(session);
+    // Don't reset flow state - let backend handle continuation
+    
+    // Close sidebar on mobile after selecting session
+    if (typeof window !== 'undefined' && window.innerWidth < 768) { // md breakpoint
+      setSidebarOpen(false);
+    }
+    
     router.push(`/chat?sessionId=${session.sessionId}`);
 
     // Immediately reset unread count in UI when session is selected
@@ -852,47 +972,140 @@ export default function ChatPage() {
       socket.emit('start_automated_flow', {
         sessionId: session.sessionId,
         userId: userId,
-        providerId: session.providerId._id,
-        flowType: 'CONTINUE_EXISTING_FLOW'
+        providerId: session.providerId._id
+        // Let backend determine correct flowType from session state
       });
     }
   };
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedSession || !socket || !userId) return;
+    if (!newMessage.trim() || !selectedSession || !socket || !userId || isSubmitting) return;
+    
+    setIsSubmitting(true);
 
     const messageToSend = newMessage;
-    setNewMessage('');
+    setNewMessage(''); // Clear input immediately for better UX
 
     const clientMessageId = `temp-${Date.now()}`;
 
-    const lastBotMessage = [...messages]
-      .reverse()
-      .find(m => (m.isAutomated || m.sender === 'system') && m.messageId);
+    // Add optimistic message immediately for instant feedback
+    const optimisticMessage: Message = {
+      id: clientMessageId,
+      text: messageToSend,
+      sender: 'user',
+      timestamp: new Date().toISOString(),
+      messageType: 'text',
+      clientMessageId,
+      deliveryStatus: 'sent'
+    };
 
-    socket.emit(
-      'send_message',
-      {
-        message: messageToSend,
+    setMessages(prev => [...prev, optimisticMessage]);
+
+    // Check if we're in an automated flow waiting for user input
+    const lastBotMessage = [...messages].reverse().find(m => 
+      (m.isAutomated || m.sender === 'system') && 
+      m.messageId && 
+      (!m.options || m.options.length === 0) &&
+      m.messageType !== 'options'
+    );
+
+    // If there's an automated message without options, it's waiting for text input
+    if (lastBotMessage && lastBotMessage.messageId) {
+      // Send as user_response for automated flow
+      socket.emit('user_response', {
         sessionId: selectedSession.sessionId,
-        sentBy: userId,
-        messageType: 'text',
-        clientMessageId,
-        messageId: lastBotMessage?.messageId
-      },
+        selectedOptionId: messageToSend, // Backend expects this parameter name
+        messageId: lastBotMessage.messageId,
+        userId: userId
+      }, (response: any) => {
+        setIsSubmitting(false);
+        if (response?.error) {
+          toast.error('Failed to send message');
+          setNewMessage(messageToSend);
+          setMessages(prev => prev.filter(m => m.clientMessageId !== clientMessageId));
+        } else {
+          // Update delivery status to delivered
+          setMessages(prev => prev.map(m => 
+            m.clientMessageId === clientMessageId 
+              ? { ...m, deliveryStatus: 'delivered' }
+              : m
+          ));
+        }
+      });
+    } else {
+      // Send as regular message (no messageId to prevent double processing)
+      socket.emit(
+        'send_message',
+        {
+          message: messageToSend,
+          sessionId: selectedSession.sessionId,
+          sentBy: userId,
+          messageType: 'text',
+          clientMessageId
+          // Deliberately NOT sending messageId to prevent backend double processing
+        },
       (response: any) => {
+        setIsSubmitting(false);
         if (response?.error) {
           toast.error('Failed to send message');
           setNewMessage(messageToSend); // restore input if failed
+          // Remove optimistic message on error
+          setMessages(prev => prev.filter(m => m.clientMessageId !== clientMessageId));
+        } else {
+          // Update delivery status to delivered
+          setMessages(prev => prev.map(m => 
+            m.clientMessageId === clientMessageId 
+              ? { ...m, deliveryStatus: 'delivered' }
+              : m
+          ));
         }
-        // ✅ no temp-message push, wait for receive_message
       }
     );
+    }
+  };
+
+  // Handle typing indicators
+  const handleTyping = () => {
+    if (!selectedSession || !socket || !userId) return;
+    socket.emit('typing', {
+      sessionId: selectedSession.sessionId,
+      userId: userId,
+      from: 'User'
+    });
+  };
+
+  const handleStopTyping = () => {
+    if (!selectedSession || !socket || !userId) return;
+    socket.emit('stop_typing', {
+      sessionId: selectedSession.sessionId,
+      userId: userId
+    });
   };
 
   // ✅ NEW: Handle option selection
   const handleOptionSelect = (optionId: string, messageId: string) => {
     if (!selectedSession || !socket || !userId) return;
+
+    // Find the option text for optimistic update
+    const optionMessage = messages.find(m => m.messageId === messageId);
+    const selectedOption = optionMessage?.options?.find(o => o.optionId === optionId);
+    
+    let optimisticClientMessageId = '';
+    
+    if (selectedOption) {
+      // Add optimistic user message immediately
+      optimisticClientMessageId = `opt-${Date.now()}`;
+      const optimisticMessage: Message = {
+        id: optimisticClientMessageId,
+        text: selectedOption.optionText,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        messageType: 'text',
+        clientMessageId: optimisticClientMessageId,
+        deliveryStatus: 'sent'
+      };
+      setMessages(prev => [...prev, optimisticMessage]);
+    }
 
     // Send option selection to server using the correct event name
     socket.emit('user_response', {
@@ -904,9 +1117,20 @@ export default function ChatPage() {
       if (response?.error) {
         console.error('Failed to process option selection:', response.message);
         toast.error('Failed to process selection');
+        // Remove optimistic message on error using the stored ID
+        if (selectedOption && optimisticClientMessageId) {
+          setMessages(prev => prev.filter(m => m.clientMessageId !== optimisticClientMessageId));
+        }
       } else {
         console.log('Option selection processed successfully');
-        // The server should send the next flow message via receive_message event
+        // Update delivery status to delivered
+        if (optimisticClientMessageId) {
+          setMessages(prev => prev.map(m => 
+            m.clientMessageId === optimisticClientMessageId 
+              ? { ...m, deliveryStatus: 'delivered' }
+              : m
+          ));
+        }
       }
     });
   };
@@ -998,28 +1222,34 @@ export default function ChatPage() {
     return 0;
   };
 
-  const handleClearChat = () => {
-    if (!selectedSession || !socket || !userId || !userRole) return;
+  const handleDeleteSession = (session: Session) => {
+    if (!socket || !userId || !userRole) return;
 
-    if (!confirm("Are you sure you want to clear this chat?")) return;
+    if (!confirm("Are you sure you want to delete this session? This action cannot be undone.")) return;
 
+    // Use clear_chat event which handles both session_update and deletion
     socket.emit('clear_chat', {
-      sessionId: selectedSession.sessionId,
-      userId,
-      
+      sessionId: session.sessionId,
+      userId
     }, (response: any) => {
       if (response.success) {
-        toast.success('Chat Cleared successfully');
-        setMessages([]);
-        setSessions(prev =>
-          prev.map(s =>
-            s.sessionId === selectedSession.sessionId
-              ? { ...s, lastMessage: '' }
-              : s
-          )
-        );
+        toast.success('Session deleted successfully');
+        
+
+        setSessions(prev => prev.filter(s => s.sessionId !== session.sessionId));
+        
+        // If this was the selected session, clear selection and update URL
+        if (selectedSession?.sessionId === session.sessionId) {
+          setSelectedSession(null);
+          setMessages([]);
+          
+          // Remove sessionId from URL
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete('sessionId');
+          window.history.replaceState({}, '', newUrl.toString());
+        }
       } else {
-        toast.error(response.message || 'Faliled To Clear Chat')
+        toast.error(response.message || 'Failed to delete session');
       }
     })
   }
@@ -1063,7 +1293,7 @@ export default function ChatPage() {
     setLastActiveSession(null);
   };
 
-  // Debug function to manually trigger reconnection modal (for testing)
+  
   const triggerReconnectionModal = () => {
     if (selectedSession) {
       console.log('Manually triggering reconnection modal');
@@ -1079,52 +1309,139 @@ export default function ChatPage() {
     }
   }, [selectedSession]);
 
+  // Mobile swipe gesture to close sidebar
+  useEffect(() => {
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!sidebarOpen) return;
+
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const endTime = Date.now();
+
+      const deltaX = endX - startX;
+      const deltaY = endY - startY;
+      const deltaTime = endTime - startTime;
+
+      // Check for left swipe (to close sidebar)
+      if (
+        deltaX < -50 && // Swipe left at least 50px
+        Math.abs(deltaY) < Math.abs(deltaX) && // More horizontal than vertical
+        deltaTime < 300 // Quick swipe (less than 300ms)
+      ) {
+        setSidebarOpen(false);
+      }
+    };
+
+    if (sidebarOpen) {
+      document.addEventListener('touchstart', handleTouchStart);
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [sidebarOpen]);
+
   // -------------------- UI --------------------
   return (
-    <div className="fixed inset-0 flex bg-white overflow-hidden" style={{ height: '100vh', top: '80px' }}>
-      {/* Sidebar */}
-      <div className={`transition-all duration-300 ease-in-out ${sidebarOpen ? 'w-80' : 'w-0'
-        } overflow-hidden`}>
-        <Sidebar
-          sessions={sessions}
-          selectedSession={selectedSession}
-          userRole={userRole}
-          userBalance={userBalance}
-          balanceLoading={false}
-          loading={!isConnected}
-          error={null}
-          onSelectSession={handleSelectSession}
-          onRefreshBalance={fetchUserBalance}
-          onToggleSidebar={toggleSidebar}
-          onLoadMoreSessions={loadMoreSessions}
-          hasMoreSessions={hasMoreSessions}
-          loadingMore={loadingMoreSessions}
-        />
-      </div>
+    <div className="fixed inset-0 bg-white z-40 md:top-16 lg:top-20" style={{ 
+      top: '64px', // Mobile header height
+      WebkitOverflowScrolling: 'touch' // iOS smooth scrolling
+    }}>
+      <div className="flex h-full overflow-hidden">
+        {/* Mobile Sidebar Overlay */}
+        {sidebarOpen && (
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            onClick={toggleSidebar}
+          />
+        )}
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100" style={{ height: 'calc(100vh - 80px)' }}>
-        {!sidebarOpen && (
-          <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 flex-shrink-0">
+        {/* Sidebar */}
+        <div className={`
+          transition-all duration-300 ease-in-out overflow-hidden bg-white
+          ${sidebarOpen 
+            ? 'w-full sm:w-80 md:w-80' // Mobile: full width, SM+: 320px
+            : 'w-0'
+          }
+          ${sidebarOpen ? 'absolute md:relative z-50 md:z-auto' : 'relative'}
+        `}
+        style={{ 
+          height: '100%'
+        }}>
+          <Sidebar
+            sessions={sessions}
+            selectedSession={selectedSession}
+            userRole={userRole}
+            userBalance={userBalance}
+            balanceLoading={false}
+            loading={!isConnected}
+            error={null}
+            onSelectSession={handleSelectSession}
+            onRefreshBalance={fetchUserBalance}
+            onToggleSidebar={toggleSidebar}
+            onLoadMoreSessions={loadMoreSessions}
+            hasMoreSessions={hasMoreSessions}
+            loadingMore={loadingMoreSessions}
+            onDeleteSession={handleDeleteSession}
+          />
+        </div>
+
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 min-w-0" style={{ 
+          height: '100%',
+          WebkitOverflowScrolling: 'touch'
+        }}>
+        {/* Mobile hamburger menu - always show on mobile */}
+        <div className="md:hidden bg-white px-3 py-2 border-b border-gray-200 flex-shrink-0 shadow-sm">
+          <div className="flex items-center justify-between">
             <button
               onClick={toggleSidebar}
-              className="p-2 hover:bg-gray-200 rounded-full"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
+            {selectedSession && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                  <span className="text-orange-600 text-sm font-semibold">
+                    {typeof selectedSession.providerId !== 'string' 
+                      ? selectedSession.providerId?.name?.charAt(0) || 'A'
+                      : 'A'
+                    }
+                  </span>
+                </div>
+                <span className="text-sm font-medium text-gray-900">
+                  {typeof selectedSession.providerId !== 'string' 
+                    ? selectedSession.providerId?.name || 'Astrologer'
+                    : 'Astrologer'
+                  }
+                </span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {selectedSession ? (
           <>
             {/* ✅ Header shows User info if astrologer (friend role) */}
-            <div className="flex-shrink-0 pt-4">
+            <div className="flex-shrink-0">
               <ChatHeader
                 selectedSession={selectedSession}
                 userRole={userRole}
-                onClearChat={handleClearChat}
                 onEndSession={handleEndSession}
                 onContinueChat={handleContinueChat}
                 insufficientBalance={false}
@@ -1144,6 +1461,7 @@ export default function ChatPage() {
                 userRole={userRole}
                 selectedSession={selectedSession}
                 sessionStatus={selectedSession.status}
+                automatedFlowCompleted={automatedFlowCompleted}
                 onReplyToMessage={() => { }}
                 onOptionSelect={handleOptionSelect}
               />
@@ -1168,13 +1486,28 @@ export default function ChatPage() {
               />
             </div>
 
+            {/* Show waiting loader if flow completed and session pending */}
+            {selectedSession.status === 'pending' && automatedFlowCompleted && (
+              <div className="flex-shrink-0 px-3 md:px-4 py-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-t border-orange-200">
+                <div className="flex items-center justify-center gap-2 md:gap-3">
+                  <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+                  <span className="text-orange-700 text-xs md:text-sm font-medium text-center">
+                    Waiting for {typeof selectedSession.providerId !== 'string' ? selectedSession.providerId?.name || 'astrologer' : 'astrologer'} to join...
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* ✅ Input disabled until session active for astrologers */}
             <div className="flex-shrink-0">
               <ChatInput
                 newMessage={newMessage}
                 setNewMessage={setNewMessage}
                 onSendMessage={handleSendMessage}
+                onTyping={handleTyping}
+                onStopTyping={handleStopTyping}
                 isDisabled={
+                  isSubmitting ||
                   (userRole === 'friend' && selectedSession.status !== 'active') ||
                   selectedSession.status === 'ended' ||
                   (userBalance !== null && userBalance <= 0 && userRole !== 'friend')
@@ -1183,60 +1516,77 @@ export default function ChatPage() {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center overflow-hidden relative">
+          <div className="flex-1 flex items-center justify-center overflow-hidden relative p-4">
             {/* Empty state with Sobhagya Logo */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="opacity-10 blur-sm transform scale-150">
+              <div className="opacity-5 md:opacity-10 blur-sm transform scale-75 md:scale-150">
                 <img
                   src="/sobhagya-logo.svg"
                   alt="Sobhagya Logo"
-                  className="w-96 h-96 object-contain"
+                  className="w-48 h-48 md:w-96 md:h-96 object-contain"
                 />
               </div>
             </div>
 
-            <div className="text-center relative z-10">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center relative z-10 max-w-sm mx-auto">
+              <div className="w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                <svg className="w-8 h-8 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <h3 className="text-gray-700 text-xl font-semibold mb-2">
+              <h3 className="text-gray-700 text-lg md:text-xl font-semibold mb-2">
                 {userRole === 'friend' ? 'Waiting for User Requests' : 'Welcome to Sobhagya Chat'}
               </h3>
-              <p className="text-gray-500 text-lg font-medium mb-1">
-                {userRole === 'friend' ? 'Select a user to start consultation' : 'Select a chat to start messaging'}
+              <p className="text-gray-500 text-base md:text-lg font-medium mb-1">
+                {userRole === 'friend' ? 'Select a user to start consultation' : 'Start your consultation'}
               </p>
-              <p className="text-gray-400 text-sm">
-                {userRole === 'friend' ? 'Manage your active consultations here' : 'Choose from your active conversations'}
+              <p className="text-gray-400 text-sm mb-6">
+                {userRole === 'friend' ? 'Manage your active consultations here' : 'Connect with our experienced astrologers'}
               </p>
+              
+              {/* Mobile action button */}
+              <div className="md:hidden">
+                <button
+                  onClick={toggleSidebar}
+                  className="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors active:scale-95"
+                >
+                  View Chats
+                </button>
+              </div>
+              
+              {/* Desktop hint */}
+              <div className="hidden md:block mt-6 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                <p className="text-orange-600 text-sm">
+                  Select a chat from the sidebar to start messaging
+                </p>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* End session dialog remains same */}
+      {/* End session dialog - Mobile optimized */}
       {showEndSessionDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-sm md:max-w-md w-full shadow-2xl">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 md:w-8 md:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">End Session</h3>
-              <p className="text-gray-600 mb-6">Are you sure you want to end this session? This action cannot be undone.</p>
-              <div className="flex space-x-3">
+              <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">End Session</h3>
+              <p className="text-gray-600 mb-6 text-sm md:text-base">Are you sure you want to end this session? This action cannot be undone.</p>
+              <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
                <button
                   onClick={() => setShowEndSessionDialog(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmEndSession}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 active:scale-95 transition-all font-medium"
                 >
                   End Session
                 </button>
@@ -1245,7 +1595,9 @@ export default function ChatPage() {
           </div>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    
   );
 
 }

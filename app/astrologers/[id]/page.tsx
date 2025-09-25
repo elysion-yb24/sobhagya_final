@@ -827,6 +827,15 @@ export default function AstrologerProfilePage() {
         throw new Error('Authentication required');
       }
 
+      // Check if user role is 'friend' (partner)
+      if (userDetails.role === 'friend') {
+        console.log('Call blocked: User is a partner (friend role)');
+        setIsAudioCallProcessing(false);
+        setCurrentCallType(null);
+        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
+        return;
+      }
+
       // Defensive check for partner._id
       if (!partner || !partner._id) {
         alert('Astrologer information is missing. Please refresh the page.');
@@ -1040,6 +1049,15 @@ export default function AstrologerProfilePage() {
       
       if (!token || !userId) {
         throw new Error('Authentication required');
+      }
+
+      // Check if user role is 'friend' (partner)
+      if (userDetails.role === 'friend') {
+        console.log('Call blocked: User is a partner (friend role)');
+        setIsVideoCallProcessing(false);
+        setCurrentCallType(null);
+        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
+        return;
       }
 
       // Defensive check for partner._id

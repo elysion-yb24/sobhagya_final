@@ -319,7 +319,7 @@ const Header = () => {
                   </div>
                 ) : (
                   <Link
-                    href="/calls/call1"
+                    href="/login"
                   className="px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     Signup/Login
@@ -409,7 +409,7 @@ const Header = () => {
                   </div>
                 ) : (
                   <Link
-                    href="/calls/call1"
+                    href="/login"
                   className="px-3 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-sm shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
                   >
                     Signup/Login

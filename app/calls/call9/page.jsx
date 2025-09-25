@@ -46,16 +46,85 @@ export default function Call9() {
         timeOfBirth: localStorage.getItem("userTimeOfBirth"),
         knowBirthTime: localStorage.getItem("knowBirthTime"),
         placeOfBirth: localStorage.getItem("userPlaceOfBirth"),
-        languages: localStorage.getItem("userLanguages"),
+        languages: JSON.parse(localStorage.getItem("userLanguages") || "[]"),
         lifeChallenge: selectedChallenge,
       };
 
       console.log("Complete form data:", formData);
 
-      setIsExiting(true);
-      setTimeout(() => {
-        router.push("/login");
-      }, 100);
+      // Show completion message
+      const completionModal = document.createElement('div');
+      completionModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+      completionModal.innerHTML = `
+        <div class="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
+          <div class="mb-4">
+            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-4">Thank You for Completing Your Profile</h3>
+            <p class="text-gray-600 mb-6">Your profile has been successfully completed. You can now continue with your consultation.</p>
+            <button id="completionOkBtn" class="w-full bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium">
+              Continue
+            </button>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(completionModal);
+      
+      document.getElementById('completionOkBtn')?.addEventListener('click', () => {
+        document.body.removeChild(completionModal);
+        
+        // Store user details in sessionStorage for OTP send
+        try {
+          sessionStorage.setItem('capturedUserName', formData.name);
+          if (formData.gender) sessionStorage.setItem('capturedUserGender', formData.gender);
+          if (formData.dob) sessionStorage.setItem('capturedUserDob', formData.dob);
+          if (formData.placeOfBirth) sessionStorage.setItem('capturedUserPlaceOfBirth', formData.placeOfBirth);
+          if (formData.timeOfBirth) sessionStorage.setItem('capturedUserTimeOfBirth', formData.timeOfBirth);
+          if (formData.languages) sessionStorage.setItem('capturedUserLanguages', formData.languages);
+          if (formData.interests) sessionStorage.setItem('capturedUserInterests', formData.interests);
+          console.log('✅ User details stored in sessionStorage for OTP send');
+        } catch (e) {
+          console.error('❌ Error storing user details in sessionStorage:', e);
+        }
+
+        // Update user details in localStorage to mark profile as completed
+        const storedUserDetails = localStorage.getItem('userDetails');
+        if (storedUserDetails) {
+          try {
+            const userDetails = JSON.parse(storedUserDetails);
+            const nameParts = formData.name.split(' ');
+            const updatedUserDetails = {
+              ...userDetails,
+              name: formData.name,
+              firstName: nameParts[0],
+              lastName: nameParts.slice(1).join(' '),
+              displayName: formData.name,
+              profileCompleted: true,
+              profileData: formData,
+              updatedAt: new Date().getTime()
+            };
+            localStorage.setItem('userDetails', JSON.stringify(updatedUserDetails));
+            console.log('✅ Profile completed and user details updated');
+          } catch (e) {
+            console.error('❌ Error updating user details:', e);
+          }
+        }
+        
+        // Check if user came from call intent or direct signup
+        const storedAstrologerId = localStorage.getItem("selectedAstrologerId");
+        const callIntent = localStorage.getItem("callIntent");
+        const callSource = localStorage.getItem("callSource");
+        
+        setIsExiting(true);
+        setTimeout(() => {
+          // Always redirect to login page to complete authentication and save data to database
+          router.push("/login");
+        }, 100);
+      });
     }
   };
 

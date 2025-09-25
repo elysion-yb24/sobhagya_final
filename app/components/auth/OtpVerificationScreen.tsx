@@ -202,10 +202,22 @@ export default function OtpVerificationScreen({
           profileCompleted: !!fullName
         };
         
-        // Clear the captured name from session storage
-        if (capturedName) {
-          sessionStorage.removeItem('capturedUserName');
-        }
+        // Clear all captured user details from session storage
+        const sessionKeys = [
+          'capturedUserName',
+          'capturedUserGender', 
+          'capturedUserDob',
+          'capturedUserPlaceOfBirth',
+          'capturedUserTimeOfBirth',
+          'capturedUserLanguages',
+          'capturedUserInterests'
+        ];
+        
+        sessionKeys.forEach(key => {
+          if (sessionStorage.getItem(key)) {
+            sessionStorage.removeItem(key);
+          }
+        });
         
         console.log("Storing user details:", userDetails);
         storeUserDetails(userDetails);

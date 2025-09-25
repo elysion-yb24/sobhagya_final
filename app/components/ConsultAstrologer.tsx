@@ -3,6 +3,7 @@ import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { getApiBaseUrl } from '@/app/config/api';
 import { isAuthenticated } from '@/app/utils/auth-utils';
 
@@ -28,6 +29,8 @@ const AstrologerCarousel = () => {
   const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [showCallOptions, setShowCallOptions] = useState(false);
+  const [selectedCallAstrologer, setSelectedCallAstrologer] = useState<Astrologer | null>(null);
 
 
  
@@ -122,15 +125,25 @@ const AstrologerCarousel = () => {
 
   // Handle astrologer card click
   const handleAstrologerClick = (astrologerId: string) => {
-    // Check if user is authenticated
-    const isAuthValid = isAuthenticated();
+    // Go to the dedicated ConsultAstrologer profile page
+    router.push(`/consult-astrologer/profile/${astrologerId}`);
+  };
 
-    if (isAuthValid) {
-      // If authenticated, go directly to astrologer profile
-      router.push(`/astrologers/${astrologerId}`);
-    } else {
-      // If not authenticated, go to call flow with astrologer ID
-      router.push(`/calls/call1?astrologerId=${astrologerId}`);
+  // Handle call button click
+  const handleCallClick = (astrologer: Astrologer, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedCallAstrologer(astrologer);
+    setShowCallOptions(true);
+  };
+
+  // Handle call type selection
+  const handleCallTypeSelection = (callType: 'audio' | 'video') => {
+    if (selectedCallAstrologer) {
+      localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
+      localStorage.setItem("callIntent", callType);
+      localStorage.setItem("callSource", "consultAstrologer");
+      setShowCallOptions(false);
+      router.push("/login");
     }
   };
 
@@ -239,10 +252,7 @@ const AstrologerCarousel = () => {
                     Exp: {Math.floor(astrologer.callMinutes / 60)} hours
                   </p>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAstrologerClick(astrologer._id);
-                    }}
+                    onClick={(e) => handleCallClick(astrologer, e)}
                     className="bg-[#F7971E] hover:bg-[#F7971E] text-white rounded-md px-4 py-2 text-sm font-semibold transition-colors duration-200 mt-auto cursor-pointer"
                     style={{ fontFamily: "Poppins" }}
                   >
@@ -278,6 +288,53 @@ const AstrologerCarousel = () => {
           </div>
         </div>
       </div>
+
+      {/* Call Options Modal */}
+      {showCallOptions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <motion.div
+            className="bg-white rounded-lg p-6 max-w-sm w-full mx-4"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+              Choose Call Type
+            </h3>
+            <p className="text-gray-600 text-center mb-6">
+              How would you like to connect with {selectedCallAstrologer?.name}?
+            </p>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => handleCallTypeSelection('audio')}
+                className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+              >
+                <img src="/phone.svg" alt="Audio Call" className="w-5 h-5" />
+                Audio Call
+              </button>
+              
+              <button
+                onClick={() => handleCallTypeSelection('video')}
+                className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor"/>
+                  <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor"/>
+                </svg>
+                Video Call
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setShowCallOptions(false)}
+              className="w-full mt-4 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

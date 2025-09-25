@@ -30,6 +30,7 @@ interface AstrologerListProps {
   source?: string;
   onLoadMore?: () => void; // 👈 callback for infinite scroll
   hasMore?: boolean;
+  onCallModalOpen?: (astrologer: any) => void;
 }
 
 const AstrologerList: React.FC<AstrologerListProps> = ({
@@ -43,6 +44,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   source,
   onLoadMore,
   hasMore = true,
+  onCallModalOpen,
 }) => {
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
@@ -125,6 +127,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
               compactButtons={compactButtons}
               showVideoButton={showVideoButton || astrologer.hasVideo}
               source={source}
+              onCallModalOpen={onCallModalOpen}
             />
           </div>
         ))}

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { forwardRef } from 'react'
+import React, { forwardRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface Message {
@@ -141,30 +141,43 @@ const WaitingForAstrologer = ({ astrologerName }: { astrologerName?: string }) =
   </motion.div>
 )
 
-const OptionButton = ({ option, messageId, onOptionSelect }: {
+const OptionButton = ({ option, messageId, onOptionSelect, isSelected }: {
   option: { optionId: string; optionText: string; disabled?: boolean }
   messageId: string
   onOptionSelect: (optionId: string, messageId: string) => void
+  isSelected?: boolean
 }) => (
   <motion.button
-    whileHover={{ scale: 1.02 }}
-    whileTap={{ scale: 0.98 }}
-    onClick={() => !option.disabled && onOptionSelect(option.optionId, messageId)}
-    disabled={option.disabled}
-    className={`px-3 md:px-4 py-2 md:py-2.5 m-1 rounded-xl text-xs md:text-sm font-medium transition-all duration-200 border-2 min-h-[44px] flex items-center justify-center ${
+    whileHover={{ scale: isSelected ? 1 : 1.02 }}
+    whileTap={{ scale: isSelected ? 1 : 0.98 }}
+    onClick={() => !option.disabled && !isSelected && onOptionSelect(option.optionId, messageId)}
+    disabled={option.disabled || isSelected}
+    className={`px-3 md:px-4 py-2 md:py-2.5 m-1 rounded-xl text-xs md:text-sm font-medium transition-all duration-300 border-2 min-h-[44px] flex items-center justify-center ${
       option.disabled
         ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-        : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 hover:shadow-lg border-orange-500 hover:border-orange-600 active:scale-95'
+        : isSelected
+        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-green-500 shadow-lg cursor-default transform scale-105'
+        : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 hover:shadow-lg border-orange-500 hover:border-orange-600 active:scale-95 hover:scale-105'
     }`}
   >
+    {isSelected && (
+      <motion.span
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        className="mr-2"
+      >
+        ✓
+      </motion.span>
+    )}
     {option.optionText}
   </motion.button>
 )
 
-const OptionsContainer = ({ options, messageId, onOptionSelect }: {
+const OptionsContainer = ({ options, messageId, onOptionSelect, selectedOptionId }: {
   options: Array<{ optionId: string; optionText: string; disabled?: boolean }>
   messageId: string
   onOptionSelect: (optionId: string, messageId: string) => void
+  selectedOptionId?: string
 }) => (
   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-3 flex flex-wrap gap-2">
     {options.map((option, index) => (
@@ -172,7 +185,8 @@ const OptionsContainer = ({ options, messageId, onOptionSelect }: {
         key={`${messageId}-opt-${option.optionId}-${index}`} 
         option={option} 
         messageId={messageId} 
-        onOptionSelect={onOptionSelect} 
+        onOptionSelect={onOptionSelect}
+        isSelected={selectedOptionId === option.optionId}
       />
     ))}
   </motion.div>
@@ -204,7 +218,7 @@ const MessageTicks = ({ status }: { status?: 'sent' | 'delivered' | 'read' }) =>
   )
 }
 
-const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSelect }: {
+const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSelect, selectedOptionId }: {
   message: Message
   userId: string | null
   userRole?: string | null
@@ -213,6 +227,7 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
     providerId: { _id: string; name?: string; avatar?: string } | string
   } | null
   onOptionSelect?: (optionId: string, messageId: string) => void
+  selectedOptionId?: string
 }) => {
   if (message.sender === 'system' && !message.isAutomated) {
     return (
@@ -266,7 +281,12 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
           
           {/* Options container - separate from message bubble */}
           {hasOptions && message.options && message.messageId && (
-            <OptionsContainer options={message.options} messageId={message.messageId} onOptionSelect={onOptionSelect || (() => {})} />
+            <OptionsContainer 
+              options={message.options} 
+              messageId={message.messageId} 
+              onOptionSelect={onOptionSelect || (() => {})} 
+              selectedOptionId={selectedOptionId}
+            />
           )}
         </div>
       </div>
@@ -304,7 +324,12 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
       <div className={`${getBubbleClasses(message)} relative max-w-[85%] sm:max-w-xs md:max-w-md lg:max-w-lg`}>
         <div className="break-words text-sm sm:text-base leading-relaxed">{message.text || 'No message content'}</div>
         {message.options && message.options.length > 0 && message.messageId && (
-          <OptionsContainer options={message.options} messageId={message.messageId} onOptionSelect={onOptionSelect || (() => {})} />
+          <OptionsContainer 
+            options={message.options} 
+            messageId={message.messageId} 
+            onOptionSelect={onOptionSelect || (() => {})} 
+            selectedOptionId={selectedOptionId}
+          />
         )}
         <div className={`text-xs mt-1 flex justify-end items-center ${message.sender === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
           {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
@@ -317,6 +342,22 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
 
 const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
   ({ messages, typingMessage, userId, userRole, selectedSession, onReplyToMessage, onOptionSelect, sessionStatus, automatedFlowCompleted }, ref) => {
+    // State to track selected options for each message
+    const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+    
+    // Enhanced option select handler that tracks selection
+    const handleOptionSelect = (optionId: string, messageId: string) => {
+      // Mark this option as selected for this message
+      setSelectedOptions(prev => ({
+        ...prev,
+        [messageId]: optionId
+      }))
+      
+      // Call the original handler
+      if (onOptionSelect) {
+        onOptionSelect(optionId, messageId)
+      }
+    }
     const filteredMessages = userRole === 'friend'
       ? messages.filter(msg => msg && !msg.isAutomated && msg.sender !== 'system')
       : messages.filter(msg => msg && msg.id) // Ensure messages have valid IDs
@@ -381,7 +422,14 @@ const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
                 exit={{ opacity: 0, y: -10, scale: 0.98 }}
                 transition={{ duration: 0.15, delay: index * 0.02 }}
               >
-                <MessageBubble message={msg} userId={userId} userRole={userRole} selectedSession={selectedSession} onOptionSelect={onOptionSelect} />
+                <MessageBubble 
+                  message={msg} 
+                  userId={userId} 
+                  userRole={userRole} 
+                  selectedSession={selectedSession} 
+                  onOptionSelect={handleOptionSelect} 
+                  selectedOptionId={selectedOptions[msg.messageId || '']}
+                />
               </motion.div>
             ))}
 

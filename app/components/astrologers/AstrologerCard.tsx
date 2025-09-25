@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { getAuthToken, getUserDetails, isAuthenticated } from "../../utils/auth-utils";
 import { Phone, Video } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
@@ -58,6 +59,7 @@ interface Props {
   compactButtons?: boolean;
   showVideoButton?: boolean;
   source?: string;
+  onCallModalOpen?: (astrologer: Astrologer) => void;
 }
 
 const AstrologerCard = React.memo(function AstrologerCard({
@@ -65,6 +67,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
   compactButtons = false,
   showVideoButton = false,
   source,
+  onCallModalOpen,
 }: Props) {
   const router = useRouter();
   const [isCallMenuOpen, setIsCallMenuOpen] = useState(false);
@@ -201,6 +204,34 @@ const AstrologerCard = React.memo(function AstrologerCard({
     }
   };
 
+  // ✅ Modal-based call handlers (for call-with-astrologer source)
+  const handleCallModalClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onCallModalOpen) {
+      onCallModalOpen(astrologer);
+    }
+  };
+
+
+  // ✅ Card click handler for profile view
+  const handleCardClick = () => {
+    // For call-with-astrologer source, go to the new profile page
+    if (source === "callWithAstrologer") {
+      router.push(`/call-with-astrologer/profile/${_id}`);
+      return;
+    }
+
+    // For other sources, check authentication
+    const isAuthValid = isAuthenticated();
+    if (isAuthValid) {
+      router.push(`/astrologers/${_id}`);
+    } else {
+      // Store astrologer ID and redirect to login for profile view
+      localStorage.setItem("selectedAstrologerId", _id);
+      router.push("/login");
+    }
+  };
+
   // ✅ Chat handler
   const handleChatClick = async () => {
     if (isAuthenticated()) {
@@ -272,6 +303,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
           borderColor: "#F7971E",
           boxShadow: "0 4px 16px rgba(247,151,30,0.15)",
         }}
+        onClick={handleCardClick}
       >
         {/* 🎁 Free Call Banner */}
         {!hasCompletedFreeCall && (
@@ -370,7 +402,11 @@ const AstrologerCard = React.memo(function AstrologerCard({
               ref={callButtonRef}
               onClick={(e) => {
                 e.stopPropagation();
-                setIsCallMenuOpen((prev) => !prev);
+                if (source === "callWithAstrologer") {
+                  handleCallModalClick(e);
+                } else {
+                  setIsCallMenuOpen((prev) => !prev);
+                }
               }}
               className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-black shadow-md transition"
               style={{
@@ -421,6 +457,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
         isOpen={showChatConnectingModal}
         astrologerName={name}
       />
+
     </>
   );
 });

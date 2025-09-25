@@ -107,12 +107,10 @@ function AstrologersPageContent() {
         let endpoint = "";
   
         if (query) {
-         
           endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`;
           if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
           if (sort) endpoint += `&sortBy=${encodeURIComponent(sort)}`;
         } else {
-       
           const queryParts = [
             `skip=${skip}`,
             `limit=${limit}`,
@@ -137,10 +135,18 @@ function AstrologersPageContent() {
           ? data.data?.list || data.users || data.data || []
           : data.data?.list || [];
   
-        setAllAstrologers(prev => (append && !query ? [...prev, ...newAstrologers] : newAstrologers));
- 
+        setAllAstrologers(prev => {
+          if (append && !query) {
+            // ✅ filter out duplicates
+            const existingIds = new Set(prev.map(a => a._id));
+            const uniqueNew = newAstrologers.filter(a => !existingIds.has(a._id));
+            return [...prev, ...uniqueNew];
+          }
+          return newAstrologers;
+        });
+  
         setHasMore(!query && newAstrologers.length === limit);
-        if (!query) setCurrentPage(page); 
+        if (!query) setCurrentPage(page);
       } catch (err) {
         console.error(err);
         setError("Failed to fetch astrologers");
@@ -151,6 +157,7 @@ function AstrologersPageContent() {
     },
     [searchQuery, languageFilter, sortBy]
   );
+  
   
   
   const handleSearchInputChange = (query: string) => {

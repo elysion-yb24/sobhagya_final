@@ -33,6 +33,7 @@ export default function Call1() {
 
   const handleNext = () => {
     if (selectedOption) {
+      localStorage.setItem("guidanceFor", selectedOption);
       setIsExiting(true);
       setTimeout(() => {
         router.push("/calls/call2");

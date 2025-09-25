@@ -44,52 +44,42 @@ interface Astrologer {
   videoRpm?: number;
 }
 
-// ✅ Fetch astrologers (with pagination loop for full data)
+
 async function fetchInitialAstrologers(): Promise<Astrologer[]> {
   try {
     const baseUrl = getApiBaseUrl();
-    let skip = 0;
-    const limit = 10;
-    let allData: Astrologer[] = [];
-    let hasMore = true;
+    const limit = 10; 
+    const apiUrl = `${baseUrl}/user/api/users-list?skip=0&limit=${limit}`;
+    
+    console.log("Fetching initial astrologers from:", apiUrl);
 
-    while (hasMore) {
-      const apiUrl = `${baseUrl}/user/api/users-list?skip=${skip}&limit=${limit}`;
-      console.log("Fetching astrologers from:", apiUrl);
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      
+      next: { revalidate: 300 }, 
+    });
 
-      const response = await fetch(apiUrl, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-        // Add cache options for better performance
-        next: { revalidate: 300 }, // Revalidate every 5 minutes
-      });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    console.log("API Response:", data);
 
-      const data = await response.json();
-      console.log("API Response:", data);
-
-      if (data.success && data.data?.list) {
-        const batch = data.data.list;
-        allData = [...allData, ...batch];
-        hasMore = batch.length === limit;
-        skip += limit;
-      } else {
-        hasMore = false;
-      }
+    if (data.success && data.data?.list) {
+      return data.data.list;
+    } else {
+      return [];
     }
-
-    return allData;
   } catch (err) {
     console.error("Error fetching astrologers:", err);
     throw new Error("Failed to fetch astrologers");
   }
 }
 
-// ✅ Main page component - server component
+
 const AstrologerCallPage = async () => {
   let initialAstrologers: Astrologer[] = [];
   let error: string | null = null;

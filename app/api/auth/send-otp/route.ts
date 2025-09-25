@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     
     console.log('Proxying send-otp request:', body);
     
-    const { phone, notifyToken } = body;
+    const { phone, notifyToken, name, gender, dob, placeOfBirth, timeOfBirth, languages, interests } = body;
 
     // Validate required fields
     if (!phone) {
@@ -17,10 +17,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const requestBody = {
+    const requestBody: any = {
       phone,
       notifyToken: notifyToken || 'placeholder_token',
     };
+
+    // Add user details if provided
+    if (name) requestBody.name = name;
+    if (gender) requestBody.gender = gender;
+    if (dob) requestBody.dob = dob;
+    if (placeOfBirth) requestBody.placeOfBirth = placeOfBirth;
+    if (timeOfBirth) requestBody.timeOfBirth = timeOfBirth;
+    if (languages) requestBody.languages = languages;
+    if (interests) requestBody.interests = interests;
 
     // Use configured API URL
     const targetUrl = buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP);

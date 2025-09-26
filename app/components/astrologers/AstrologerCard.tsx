@@ -330,9 +330,15 @@ const AstrologerCard = React.memo(function AstrologerCard({
                     )}&background=F7971E&color=fff&size=70`
               }
               alt={name}
-              className="w-[70px] h-[70px] rounded-full object-cover border-2"
+              className="w-[70px] h-[70px] rounded-full object-cover border-4"
               style={{
-                borderColor: partner.status === "online" ? "#10B981" : "#F7971E",
+                borderColor: partner.status === "online" 
+                  ? "#10B981" 
+                  : partner.status === "busy" 
+                  ? "#F97316" 
+                  : partner.status === "offline" 
+                  ? "#EF4444" 
+                  : "#F7971E",
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -341,10 +347,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
                 )}&background=F7971E&color=fff&size=70`;
               }}
             />
-            {/* Online Badge */}
-            {/* {partner.status === "online" && (
-              <span className="absolute bottom-1 right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
-            )} */}
 
             {/* ⭐ Rating */}
             <div className="mt-2 flex items-center text-yellow-500 text-sm">
@@ -368,6 +370,35 @@ const AstrologerCard = React.memo(function AstrologerCard({
               <h3 className="text-lg font-bold text-gray-900 truncate">{name}</h3>
               <img src="/orange_tick.png" alt="Verified" className="w-4 h-4" />
             </div>
+            {/* Status Text */}
+            {partner.status && (
+              <div className="flex items-center gap-1 mt-1">
+                <div 
+                  className={`w-2 h-2 rounded-full ${
+                    partner.status === "online" 
+                      ? "bg-green-500" 
+                      : partner.status === "busy" 
+                      ? "bg-orange-500" 
+                      : partner.status === "offline" 
+                      ? "bg-red-500" 
+                      : "bg-gray-500"
+                  }`}
+                ></div>
+                <span 
+                  className={`text-xs font-medium capitalize ${
+                    partner.status === "online" 
+                      ? "text-green-600" 
+                      : partner.status === "busy" 
+                      ? "text-orange-600" 
+                      : partner.status === "offline" 
+                      ? "text-red-600" 
+                      : "text-gray-600"
+                  }`}
+                >
+                  {partner.status}
+                </span>
+              </div>
+            )}
             <p className="text-sm text-gray-600 mt-1 line-clamp-1">
               {partner.talksAbout?.slice(0, 3).join(", ") ||
                 specializations?.join(", ") ||

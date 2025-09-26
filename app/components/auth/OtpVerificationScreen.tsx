@@ -221,13 +221,22 @@ export default function OtpVerificationScreen({
         
         console.log("Storing user details:", userDetails);
         storeUserDetails(userDetails);
-        // Dispatch event for instant header update
+        
+        // Dispatch multiple events for instant updates across all components
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('user-auth-changed'));
+          window.dispatchEvent(new CustomEvent('auth-success', { detail: userDetails }));
+          // Force a storage event to trigger other listeners
+          window.dispatchEvent(new StorageEvent('storage', {
+            key: 'userDetails',
+            newValue: JSON.stringify(userDetails),
+            storageArea: localStorage
+          }));
         }
+        
         // Call onVerify only to notify success, don't pass data that would trigger another verification
         console.log("Calling onVerify - parent will handle redirect...");
-        onVerify({ success: true, verified: true });
+        onVerify({ success: true, verified: true, userDetails });
         
         // Let the parent component handle the redirect based on stored astrologer ID
       } else {

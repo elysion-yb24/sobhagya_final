@@ -421,7 +421,7 @@ export default function LoginPage() {
           setIsVerifyingOtp(false);
           router.push('/astrologers');
         }
-      }, 1000); // 1 second delay to ensure everything is properly set
+      }, 300); // Reduced delay for faster redirect
       return;
     }
 

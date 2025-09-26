@@ -222,7 +222,18 @@ const AstrologerCarousel = () => {
                   onClick={() => handleAstrologerClick(astrologer._id)}
                   style={{ minHeight: '256px' }}
                 >
-                  <div className="relative w-20 h-20 mb-3  rounded-full overflow-hidden border-2 border-[#F7971E]">
+                  <div 
+                    className="relative w-20 h-20 mb-3 rounded-full overflow-hidden border-4"
+                    style={{
+                      borderColor: astrologer.status === "online" 
+                        ? "#10B981" 
+                        : astrologer.status === "busy" 
+                        ? "#F97316" 
+                        : astrologer.status === "offline" 
+                        ? "#EF4444" 
+                        : "#F7971E",
+                    }}
+                  >
                     <Image
                       src={
                         astrologer.avatar && astrologer.avatar.startsWith('http')
@@ -245,6 +256,36 @@ const AstrologerCarousel = () => {
                       : astrologer.name
                     }
                   </h3>
+                  {/* Status Text */}
+                  {astrologer.status && (
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <div 
+                        className={`w-2 h-2 rounded-full ${
+                          astrologer.status === "online" 
+                            ? "bg-green-500" 
+                            : astrologer.status === "busy" 
+                            ? "bg-orange-500" 
+                            : astrologer.status === "offline" 
+                            ? "bg-red-500" 
+                            : "bg-gray-500"
+                        }`}
+                      ></div>
+                      <span 
+                        className={`text-xs font-medium capitalize ${
+                          astrologer.status === "online" 
+                            ? "text-green-600" 
+                            : astrologer.status === "busy" 
+                            ? "text-orange-600" 
+                            : astrologer.status === "offline" 
+                            ? "text-red-600" 
+                            : "text-gray-600"
+                        }`}
+                        style={{ fontFamily: "Poppins" }}
+                      >
+                        {astrologer.status}
+                      </span>
+                    </div>
+                  )}
                   <p className="text-center text-sm text-gray-600 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
                     {astrologer.talksAbout?.slice(0, 2).join(", ") || "Astrology Expert"}
                   </p>
@@ -274,14 +315,13 @@ const AstrologerCarousel = () => {
             </svg>
           </button>
 
-          {/* Dots indicator - only show on mobile (smaller dots) */}
-          <div className="flex justify-center mt-2 md:hidden space-x-1">
+          {/* Dots indicator - hidden on mobile, only show on desktop */}
+          <div className="hidden md:flex justify-center mt-2 space-x-1">
             {astrologers.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`rounded-full transition-colors ${index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'}`}
-                
+                className={`w-2 h-2 rounded-full transition-colors ${index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'}`}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}

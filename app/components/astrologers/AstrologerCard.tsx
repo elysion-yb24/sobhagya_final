@@ -330,7 +330,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                     )}&background=F7971E&color=fff&size=70`
               }
               alt={name}
-              className="w-[70px] h-[70px] rounded-full object-cover border-4"
+              className="w-[70px] h-[70px] rounded-full object-cover border-2"
               style={{
                 borderColor: partner.status === "online" 
                   ? "#10B981" 

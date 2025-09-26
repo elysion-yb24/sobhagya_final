@@ -75,7 +75,12 @@ const AstrologerCarousel = () => {
         console.log('API Response:', data);
 
         if (data.success && data.data?.list) {
-          setAstrologers(data.data.list);
+          // Filter astrologers: show all online, but limit offline to 3
+          const onlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "online");
+          const offlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "offline").slice(0, 3);
+          const otherAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status !== "online" && astrologer.status !== "offline");
+          
+          setAstrologers([...onlineAstrologers, ...offlineAstrologers, ...otherAstrologers]);
         } else {
           console.warn('API response format unexpected:', data);
           throw new Error('Invalid API response format');
@@ -218,87 +223,75 @@ const AstrologerCarousel = () => {
                 }}
               >
                 <div
-                  className="bg-white rounded-lg shadow-lg flex flex-col items-center w-56 h-64 p-4 mx-auto border-2 border-[#F7971E] cursor-pointer hover:shadow-xl transition-shadow"
+                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[221px] mx-auto"
                   onClick={() => handleAstrologerClick(astrologer._id)}
-                  style={{ minHeight: '256px' }}
                 >
-                  <div 
-                    className="relative w-20 h-20 mb-3 rounded-full overflow-hidden border-4"
-                    style={{
-                      borderColor: astrologer.status === "online" 
-                        ? "#10B981" 
-                        : astrologer.status === "busy" 
-                        ? "#F97316" 
-                        : astrologer.status === "offline" 
-                        ? "#EF4444" 
-                        : "#F7971E",
-                    }}
-                  >
-                    <Image
-                      src={
-                        astrologer.avatar && astrologer.avatar.startsWith('http')
-                          ? astrologer.avatar
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              astrologer.name
-                            )}`
-                      }
-                      alt={astrologer.name}
-                      width={96}
-                      height={96}
-                      className="w-full h-full object-cover rounded-full"
-                    />
+                  {/* Profile Picture */}
+                  <div className="mb-3">
+                    <div 
+                      className="relative w-20 h-20 rounded-full overflow-hidden border-2 flex items-center justify-center mx-auto"
+                      style={{
+                        borderColor: astrologer.status === "online" 
+                          ? "#399932" 
+                          : astrologer.status === "offline" 
+                          ? "#EF4444" 
+                          : "#F7971E"
+                      }}
+                    >
+                      <Image
+                        src={
+                          astrologer.avatar && astrologer.avatar.startsWith('http')
+                            ? astrologer.avatar
+                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                astrologer.name
+                              )}&background=FF6B35&color=fff&size=120`
+                        }
+                        alt={astrologer.name}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover rounded-full"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            astrologer.name
+                          )}&background=FF6B35&color=fff&size=120`;
+                        }}
+                      />
+                    </div>
                   </div>
-
-
-                  <h3 className="font-semibold text-base text-center text-gray-800 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
+                  
+                  {/* Name */}
+                  <h3 className="font-bold text-base text-gray-900 mb-0.5">
                     {astrologer.name.split(' ').length > 2
                       ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
                       : astrologer.name
                     }
                   </h3>
-                  {/* Status Text */}
-                  {astrologer.status && (
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <div 
-                        className={`w-2 h-2 rounded-full ${
-                          astrologer.status === "online" 
-                            ? "bg-green-500" 
-                            : astrologer.status === "busy" 
-                            ? "bg-orange-500" 
-                            : astrologer.status === "offline" 
-                            ? "bg-red-500" 
-                            : "bg-gray-500"
-                        }`}
-                      ></div>
-                      <span 
-                        className={`text-xs font-medium capitalize ${
-                          astrologer.status === "online" 
-                            ? "text-green-600" 
-                            : astrologer.status === "busy" 
-                            ? "text-orange-600" 
-                            : astrologer.status === "offline" 
-                            ? "text-red-600" 
-                            : "text-gray-600"
-                        }`}
-                        style={{ fontFamily: "Poppins" }}
-                      >
-                        {astrologer.status}
-                      </span>
-                    </div>
-                  )}
-                  <p className="text-center text-sm text-gray-600 mb-2 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
-                    {astrologer.talksAbout?.slice(0, 2).join(", ") || "Astrology Expert"}
+                  
+                  {/* Language */}
+                  <p className="text-sm text-gray-600 mb-0">
+                    Hindi
                   </p>
-                  <p className="text-center text-xs text-gray-500 mb-4 truncate max-w-full" style={{ fontFamily: "Poppins" }}>
-                    Exp: {Math.floor(astrologer.callMinutes / 60)} hours
+                  
+                  {/* Expertise */}
+                  <p className="text-sm text-gray-600 mb-0 line-clamp-2 h-8 flex items-center justify-center text-center">
+                    {astrologer.talksAbout?.slice(0, 3).join(", ") || "Kp, Vedic, Vastu"}
                   </p>
-                  <button
-                    onClick={(e) => handleCallClick(astrologer, e)}
-                    className="bg-[#F7971E] hover:bg-[#F7971E] text-white rounded-md px-4 py-2 text-sm font-semibold transition-colors duration-200 mt-auto cursor-pointer"
-                    style={{ fontFamily: "Poppins" }}
-                  >
-                    OFFER: FREE 1st call
-                  </button>
+                  
+                  {/* Experience */}
+                  <p className="text-sm text-gray-600 mb-1.5">
+                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
+                  </p>
+                  
+                  {/* Call Button */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={(e) => handleCallClick(astrologer, e)}
+                      className="w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                    >
+                      OFFER: FREE 1st call
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

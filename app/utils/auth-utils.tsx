@@ -80,6 +80,75 @@ export function getUserDetails(): any {
 }
 
 /**
+ * Checks if user has made calls before (not first-time user)
+ */
+export function hasUserCalledBefore(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    
+    // Check if user has call history
+    const callHistory = localStorage.getItem('callHistory');
+    if (callHistory) {
+      const history = JSON.parse(callHistory);
+      return Array.isArray(history) && history.length > 0;
+    }
+    
+    // Check if user has transaction history
+    const transactionHistory = localStorage.getItem('transactionHistory');
+    if (transactionHistory) {
+      const history = JSON.parse(transactionHistory);
+      return Array.isArray(history) && history.length > 0;
+    }
+    
+    // Check if user has made any calls (stored in user details)
+    const userDetails = getUserDetails();
+    if (userDetails && userDetails.hasCalledBefore) {
+      return true;
+    }
+    
+    // Check if user has been authenticated for more than 1 day (likely not first time)
+    const tokenTimestamp = localStorage.getItem('tokenTimestamp');
+    if (tokenTimestamp) {
+      const tokenTime = parseInt(tokenTimestamp);
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      return (now - tokenTime) > oneDay;
+    }
+    
+    return false;
+  } catch (e) {
+    console.error("Error checking call history:", e);
+    return false;
+  }
+}
+
+/**
+ * Marks user as having made a call
+ */
+export function markUserAsCalled(): void {
+  try {
+    if (typeof window === "undefined") return;
+    
+    const userDetails = getUserDetails();
+    if (userDetails) {
+      const updatedUserDetails = {
+        ...userDetails,
+        hasCalledBefore: true,
+        lastCallTime: Date.now()
+      };
+      storeUserDetails(updatedUserDetails);
+    }
+    
+    // Dispatch event to update UI
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('user-call-status-changed'));
+    }
+  } catch (e) {
+    console.error("Error marking user as called:", e);
+  }
+}
+
+/**
  * Gets user profile with enhanced display name logic
  */
 export async function fetchUserProfile(): Promise<any> {

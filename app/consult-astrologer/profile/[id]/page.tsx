@@ -346,7 +346,7 @@ export default function CallAstrologerProfilePage() {
                 className="relative h-32 sm:h-40 md:h-48 overflow-hidden w-full"
             >
                 <img
-                    src="/image (6) (1) 1.svg"
+                    src="/Astrologer profile Background.svg"
                     alt="Profile header background"
                     className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -419,24 +419,24 @@ export default function CallAstrologerProfilePage() {
                                 }}>{astrologer.name}</h1>
 
                                 {/* Specializations */}
-                                <p className="text-[#373737] mb-2 sm:mb-3 text-sm sm:text-base md:text-lg">
+                                <p className="text-[#373737] mb-1 text-sm sm:text-base md:text-lg">
                                     {astrologer.talksAbout?.slice(0, 3).join(", ") ||
                                         astrologer.specializations?.join(", ") ||
                                         "Tarrot reading, Pranic healing, Vedic, Horoscope Readings"}
                                 </p>
 
                                 {/* Languages */}
-                                <p className="text-[#636161] mb-3 sm:mb-4 text-sm sm:text-base">
+                                <p className="text-[#636161] mb-1 text-sm sm:text-base">
                                     {(astrologer.languages || []).join(", ") || "Hindi, Sanskrit, English"}
                                 </p>
 
                                 {/* Experience */}
-                                <div className="text-[#373737] mb-3 sm:mb-4 text-sm sm:text-base">
+                                <div className="text-[#373737] mb-1 text-sm sm:text-base">
                                     Exp:- {astrologer.age || astrologer.experience || "2"}years
                                 </div>
 
                                 {/* Pricing */}
-                                <div className="text-lg sm:text-xl md:text-2xl font-bold text-[#373737] mb-3 sm:mb-4">
+                                <div className="text-lg sm:text-xl md:text-2xl font-bold text-[#373737] mb-2 sm:mb-3">
                                     ₹ {astrologer.rpm || 108}/min
                                 </div>
 
@@ -465,7 +465,7 @@ export default function CallAstrologerProfilePage() {
                         </div>
 
                         {/* Description */}
-                        <p className="text-gray-700 text-xs sm:text-sm leading-relaxed mb-2 sm:mb-3 w-full">
+                        <p className="text-gray-700 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 w-full">
                             {astrologer.about ||
                                 `Astrologer ${astrologer.name} is a renowned expert in ${(astrologer.talksAbout?.slice(0, 3) || astrologer.specializations || ["Tarrot reading", "Pranic healing", "Vedic astrology"]).join(", ")}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer.name} offers personalized consultations to align your life with cosmic energies.`}
                         </p>
@@ -521,13 +521,13 @@ export default function CallAstrologerProfilePage() {
 
                                  <div
                                      id="similar-container"
-                                     className="flex gap-3 sm:gap-4 md:gap-6 overflow-x-auto scrollbar-hide px-6 sm:px-8 md:px-10"
+                                     className="flex gap-3 sm:gap-4 md:gap-4 overflow-x-auto scrollbar-hide -ml-5 pr-6 sm:pr-8 md:pr-10"
                                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                  >
                                      {similarAstrologers.map((similar) => (
                                          <div
                                              key={similar._id}
-                                             className="flex-shrink-0 w-[221px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200"
+                                             className="flex-shrink-0 w-[221px] sm:w-[221px] md:w-[220px] lg:w-[210px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200"
                                              onClick={() => router.push(`/call-with-astrologer/profile/${similar._id}`)}
                                          >
                                              {/* Profile Picture */}
@@ -542,7 +542,14 @@ export default function CallAstrologerProfilePage() {
                                                              )}&background=FF6B35&color=fff&size=120`
                                                      }
                                                      alt={similar.name}
-                                                     className="w-24 h-24 rounded-full object-cover mx-auto border-2 border-[#F7971E]"
+                                                     className="w-24 h-24 rounded-full object-cover mx-auto border-2"
+                                                     style={{
+                                                         borderColor: similar.status === "online" 
+                                                             ? "#399932" 
+                                                             : similar.status === "offline" 
+                                                             ? "#EF4444" 
+                                                             : "#F7971E"
+                                                     }}
                                                      onError={(e) => {
                                                          const target = e.target as HTMLImageElement;
                                                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -553,20 +560,20 @@ export default function CallAstrologerProfilePage() {
                                              </div>
                                              
                                              {/* Name */}
-                                             <h3 className="font-bold text-base text-gray-900 mb-1">{similar.name}</h3>
+                                             <h3 className="font-bold text-base text-gray-900 mb-0.5">{similar.name}</h3>
                                              
                                              {/* Language */}
-                                             <p className="text-sm text-gray-600 mb-1">
+                                             <p className="text-sm text-gray-600 mb-0.5">
                                                  {(similar.languages || []).join(", ") || "Hindi"}
                                              </p>
                                              
                                              {/* Expertise */}
-                                             <p className="text-sm text-gray-600 mb-1 line-clamp-2 h-8 flex items-center justify-center text-center">
+                                             <p className="text-sm text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center">
                                                  {similar.talksAbout?.join(", ") || similar.specializations?.join(", ") || "Kp, Vedic, Vastu"}
                                              </p>
                                              
                                              {/* Experience */}
-                                             <p className="text-sm text-gray-600 mb-3">
+                                             <p className="text-sm text-gray-600 mb-2">
                                                  Exp:- {similar.age || similar.experience || "2"}years
                                              </p>
                                              

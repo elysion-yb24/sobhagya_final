@@ -514,7 +514,7 @@ export default function CallAstrologerProfilePage() {
                             <div className="relative">
                                 <button
                                     onClick={scrollSimilarLeft}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors shadow-md"
+                                    className="absolute -left-16 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors shadow-md"
                                 >
                                     <ChevronLeft className="w-3 h-3 sm:w-5 sm:h-5 text-orange-600" />
                                 </button>

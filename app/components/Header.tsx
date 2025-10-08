@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { Eagle_Lake } from "next/font/google";
 import { Menu, X, Phone, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../utils/production-api';
 
@@ -17,6 +17,7 @@ const delayBetween = 5000;
 
 const Header = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [textIndex, setTextIndex] = useState(0);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -499,7 +500,13 @@ const Header = () => {
           >
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={() => setIsOpen(false)}>
+              <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={(e) => {
+                e.preventDefault();
+                setIsOpen(false);
+                setTimeout(() => {
+                  router.push("/");
+                }, 100);
+              }}>
                 <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
                 <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
                   Sobhagya
@@ -546,7 +553,13 @@ const Header = () => {
                 <Link
                   href="/login"
                   className="block w-full text-center bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl text-base font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => setIsOpen(false)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsOpen(false);
+                    setTimeout(() => {
+                      router.push("/login");
+                    }, 100);
+                  }}
                 >
                   Signup/Login
                 </Link>
@@ -578,7 +591,13 @@ const Header = () => {
                       <Link 
                         href="/astrologers?openHistory=transactions"
                         className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-blue-200"
-                        onClick={() => setIsOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsOpen(false);
+                          setTimeout(() => {
+                            router.push("/astrologers?openHistory=transactions");
+                          }, 100);
+                        }}
                       >
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-md">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -594,7 +613,13 @@ const Header = () => {
                       <Link 
                         href="/astrologers?openHistory=calls"
                         className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-green-200"
-                        onClick={() => setIsOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsOpen(false);
+                          setTimeout(() => {
+                            router.push("/astrologers?openHistory=calls");
+                          }, 100);
+                        }}
                       >
                         <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
                           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -629,7 +654,14 @@ const Header = () => {
                           ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
                           : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
                       }`}
-                      onClick={() => setIsOpen(false)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsOpen(false);
+                        // Use router.push for programmatic navigation
+                        setTimeout(() => {
+                          router.push(item.href);
+                        }, 100);
+                      }}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <div className="w-10 h-10 flex items-center justify-center">

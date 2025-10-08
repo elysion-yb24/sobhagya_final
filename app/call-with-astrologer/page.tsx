@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from "../config/api";
 import CallWithAstrologerClient from "./CallWithAstrologerClient";
+import { getSampleAstrologersResponse } from "../data/sampleAstrologers";
 
 interface Astrologer {
   _id: string;
@@ -74,8 +75,32 @@ async function fetchInitialAstrologers(): Promise<Astrologer[]> {
       return [];
     }
   } catch (err) {
-    console.error("Error fetching astrologers:", err);
-    throw new Error("Failed to fetch astrologers");
+    console.error("API failed, using sample data:", err);
+    
+    // Use sample data when API fails
+    try {
+      const sampleResponse = getSampleAstrologersResponse(0, 10);
+      const sampleAstrologers = sampleResponse.data.list;
+      
+      // Convert sample data to match the expected format
+      return sampleAstrologers.map(astrologer => ({
+        ...astrologer,
+        experience: astrologer.experience.toString(),
+        callsCount: Math.floor(Math.random() * 1000) + 100, // Random call count
+        rating: {
+          avg: astrologer.rating,
+          count: astrologer.totalReviews,
+          max: 5,
+          min: 1
+        },
+        hasVideo: true,
+        about: astrologer.bio,
+        age: Math.floor(Math.random() * 30) + 35 // Random age between 35-65
+      }));
+    } catch (sampleErr) {
+      console.error("Sample data also failed:", sampleErr);
+      throw new Error("Failed to fetch astrologers");
+    }
   }
 }
 

@@ -28,7 +28,6 @@ import {
   ChevronRight
 } from "lucide-react";
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../../utils/auth-utils";
-import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../../config/development";
 import { getSampleAstrologerProfile, getSampleReviews, getSampleGifts, getSimilarAstrologers } from "../../data/sampleAstrologerProfiles";
 import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/production-api';
@@ -261,30 +260,16 @@ export default function AstrologerProfilePage() {
     const token = getAuthToken();
     
     if (!isAuthValid && !token) {
-      // Check if we have sample data for this astrologer (only if configured)
-      if (shouldUseSampleData()) {
-        const sampleProfile = getSampleAstrologerProfile(astrologerId);
-        if (!sampleProfile) {
-          if (shouldShowDebugLogs()) {
-            console.log('❌ User authentication failed and no sample data available, redirecting to home');
-          }
-          clearAuthData();
-          router.push("/");
-          return;
-        }
-        // If we have sample data, continue without authentication
-        if (shouldShowDebugLogs()) {
-          console.log('No authentication, but sample data available for development');
-        }
-      } else {
-        // No sample data configured, require authentication
-        if (shouldShowDebugLogs()) {
-          console.log('❌ User authentication required, redirecting to home');
-        }
+      // Check if we have sample data for this astrologer
+      const sampleProfile = getSampleAstrologerProfile(astrologerId);
+      if (!sampleProfile) {
+        console.log('❌ User authentication failed and no sample data available, redirecting to home');
         clearAuthData();
         router.push("/");
         return;
       }
+      // If we have sample data, continue without authentication
+      console.log('No authentication, but sample data available for development');
     }
 
     // Clear any cached free call status to ensure fresh API check
@@ -434,16 +419,11 @@ export default function AstrologerProfilePage() {
 
       const token = getAuthToken();
       if (!token) {
-        if (shouldUseSampleData()) {
-          if (shouldShowDebugLogs()) {
-            console.log("No token found, using sample data for development");
-          }
-          // Use sample data when no token (for development)
-          const sampleProfile = getSampleAstrologerProfile(astrologerId);
-          if (sampleProfile) {
-            if (shouldShowDebugLogs()) {
-              console.log("Using sample data for astrologer:", astrologerId);
-            }
+        console.log("No token found, using sample data for development");
+        // Use sample data when no token (for development)
+        const sampleProfile = getSampleAstrologerProfile(astrologerId);
+        if (sampleProfile) {
+          console.log("Using sample data for astrologer:", astrologerId);
           
           // Convert sample data to match expected format
           const normalizedAstrologer = {
@@ -482,26 +462,14 @@ export default function AstrologerProfilePage() {
           setError(null);
           setIsLoading(false);
           return;
-          } else {
-            if (shouldShowDebugLogs()) {
-              console.error("❌ No authentication token found and no sample data available");
-            }
-            clearAuthData();
-            router.push("/");
-            return;
-          }
         } else {
-          if (shouldShowDebugLogs()) {
-            console.error("❌ No authentication token found and sample data is disabled");
-          }
+          console.error("❌ No authentication token found and no sample data available");
           clearAuthData();
           router.push("/");
           return;
         }
       }
-      if (shouldShowDebugLogs()) {
-        console.log("✅ Authentication token found:", token.substring(0, 20) + "...");
-      }
+      console.log("✅ Authentication token found:", token.substring(0, 20) + "...");
 
       // First try to get specific astrologer by ID if there's a specific endpoint
       let foundAstrologer = null;

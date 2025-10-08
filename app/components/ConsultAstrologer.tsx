@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { getApiBaseUrl } from '@/app/config/api';
 import { isAuthenticated } from '@/app/utils/auth-utils';
+import { getSampleAstrologersResponse } from '@/app/data/sampleAstrologers';
 
 interface Astrologer {
   _id: string;
@@ -21,6 +22,7 @@ interface Astrologer {
   rpm: number;
   status: string;
   isLive: boolean;
+  languages?: string[];
 }
 
 const AstrologerCarousel = () => {
@@ -86,9 +88,35 @@ const AstrologerCarousel = () => {
           throw new Error('Invalid API response format');
         }
       } catch (error) {
-        console.error('Error fetching astrologers:', error);
-        setHasError(true);
-        setAstrologers([]);
+        console.error('API failed, using sample data:', error);
+        
+        // Use sample data when API fails
+        try {
+          const sampleResponse = getSampleAstrologersResponse(0, 10);
+          const sampleAstrologers = sampleResponse.data.list;
+          
+          // Convert sample data to match the expected format
+          const formattedAstrologers = sampleAstrologers.map((astrologer: any) => ({
+            ...astrologer,
+            avatar: astrologer.profileImage,
+            status: astrologer.isOnline ? "online" : "offline",
+            talksAbout: astrologer.specializations,
+            rating: {
+              avg: astrologer.rating,
+              count: astrologer.totalReviews
+            },
+            calls: astrologer.totalReviews || 0,
+            callMinutes: astrologer.totalReviews * 10 || 0,
+            rpm: astrologer.audioRpm || 0
+          }));
+          
+          setAstrologers(formattedAstrologers);
+          setHasError(false); // Clear error since we have sample data
+        } catch (sampleErr) {
+          console.error('Sample data also failed:', sampleErr);
+          setHasError(true);
+          setAstrologers([]);
+        }
       } finally {
         setLoading(false);
       }
@@ -98,16 +126,38 @@ const AstrologerCarousel = () => {
   }, []);
 
   const nextSlide = () => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
+    const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    
+    let maxIndex;
+    if (isSmallScreen) {
+      maxIndex = astrologers.length - 1; // 1 card at a time
+    } else if (isTablet) {
+      maxIndex = Math.max(0, astrologers.length - 2); // 2 cards at a time
+    } else {
+      maxIndex = Math.max(0, astrologers.length - 4); // 4 cards at a time
+    }
+    
     setCurrentIndex((prevIndex) =>
       prevIndex >= maxIndex ? 0 : prevIndex + 1
     );
   };
 
   const prevSlide = () => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
+    const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    
+    let maxIndex;
+    if (isSmallScreen) {
+      maxIndex = astrologers.length - 1; // 1 card at a time
+    } else if (isTablet) {
+      maxIndex = Math.max(0, astrologers.length - 2); // 2 cards at a time
+    } else {
+      maxIndex = Math.max(0, astrologers.length - 4); // 4 cards at a time
+    }
+    
     setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? maxIndex : prevIndex - 1
     );
@@ -118,8 +168,18 @@ const AstrologerCarousel = () => {
     if (astrologers.length === 0) return;
 
     const interval = setInterval(() => {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
+      const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+      const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+      
+      let maxIndex;
+      if (isSmallScreen) {
+        maxIndex = astrologers.length - 1; // 1 card at a time
+      } else if (isTablet) {
+        maxIndex = Math.max(0, astrologers.length - 2); // 2 cards at a time
+      } else {
+        maxIndex = Math.max(0, astrologers.length - 4); // 4 cards at a time
+      }
+      
       setCurrentIndex((prevIndex) =>
         prevIndex >= maxIndex ? 0 : prevIndex + 1
       );
@@ -159,9 +219,9 @@ const AstrologerCarousel = () => {
 
   if (loading) {
     return (
-        <div className="w-full py-12 relative" style={{
-         backgroundImage: "url('/bg-image.svg')",
-        }}>
+      <div className="w-full py-12 relative" style={{
+        backgroundImage: "url('/bg-image.svg')",
+      }}>
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-center text-white text-5xl md:text-4xl font-bold mb-10" style={{
             fontFamily: 'EB Garamond',
@@ -184,10 +244,9 @@ const AstrologerCarousel = () => {
 
   return (
     <div
-      className="w-full py-12"
+      className="w-full py-12 relative"
       style={{
         backgroundImage: "url('/bg-image.svg')",
-        position: "relative",
       }}
     >
       <div className="max-w-6xl mx-auto px-4">
@@ -197,33 +256,186 @@ const AstrologerCarousel = () => {
         >
           Consult with <em>India's</em> best Astrologers
         </h2>
+      </div>
 
-        {/* Slider container */}
-        <div className="relative overflow-hidden">
-          {/* Previous button */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-            aria-label="Previous astrologer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+      {/* Slider container with arrows outside */}
+      <div className="relative">
+        {/* Previous button - widened */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-8 sm:left-16 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          aria-label="Previous astrologer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-          {/* Slider track */}
-          <div className="flex transition-transform duration-300 ease-out">
-            {astrologers.map((astrologer, index) => (
+        {/* Slider track - responsive card display */}
+        <div className="flex justify-center gap-4 px-4">
+          {/* Small screens: Show 1 card */}
+          <div className="block md:hidden">
+            {astrologers.slice(currentIndex, currentIndex + 1).map((astrologer, index) => (
               <div
                 key={astrologer._id}
-                className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex-shrink-0 px-1 md:px-2"
-                style={{
-                  transform: `translateX(-${currentIndex * 100}%)`,
-                  transition: 'transform 300ms ease-out'
-                }}
+                className="flex-shrink-0"
               >
                 <div
-                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[221px] mx-auto"
+                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[280px]"
+                  onClick={() => handleAstrologerClick(astrologer._id)}
+                >
+                  {/* Profile Picture */}
+                  <div className="mb-3">
+                    <img
+                      src={
+                        (astrologer.avatar && astrologer.avatar.startsWith('http'))
+                          ? astrologer.avatar
+                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`
+                      }
+                      alt={astrologer.name}
+                      className="w-24 h-24 rounded-full object-cover mx-auto border-2"
+                      style={{
+                        borderColor: astrologer.status === "online" 
+                          ? "#399932" 
+                          : astrologer.status === "offline" 
+                          ? "#EF4444" 
+                          : "#F7971E"
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`;
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Name */}
+                  <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
+                    <h3 
+                      className={`font-semibold text-gray-900 whitespace-nowrap ${astrologer.name.length > 15 ? 'scrolling-text' : ''}`}
+                      style={{ 
+                        fontFamily: "Poppins", 
+                        fontSize: "18px"
+                      }}
+                    >
+                      {astrologer.name}
+                    </h3>
+                  </div>
+                  
+                  {/* Language */}
+                  <p className="text-gray-600 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
+                    {(astrologer.languages || []).join(", ") || "Hindi"}
+                  </p>
+                  
+                  {/* Expertise */}
+                  <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
+                    {astrologer.talksAbout?.join(", ") || astrologer.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                  </p>
+                  
+                  {/* Experience */}
+                  <p className="text-gray-600 mb-2" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
+                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
+                  </p>
+                  
+                  {/* Call Button */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={(e) => handleCallClick(astrologer, e)}
+                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                    >
+                      OFFER: FREE 1st call
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tablets: Show 2 cards */}
+          <div className="hidden md:flex lg:hidden gap-4">
+            {astrologers.slice(currentIndex, currentIndex + 2).map((astrologer, index) => (
+              <div
+                key={astrologer._id}
+                className="flex-shrink-0"
+              >
+                <div
+                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[240px]"
+                  onClick={() => handleAstrologerClick(astrologer._id)}
+                >
+                  {/* Profile Picture */}
+                  <div className="mb-3">
+                    <img
+                      src={
+                        (astrologer.avatar && astrologer.avatar.startsWith('http'))
+                          ? astrologer.avatar
+                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`
+                      }
+                      alt={astrologer.name}
+                      className="w-24 h-24 rounded-full object-cover mx-auto border-2"
+                      style={{
+                        borderColor: astrologer.status === "online" 
+                          ? "#399932" 
+                          : astrologer.status === "offline" 
+                          ? "#EF4444" 
+                          : "#F7971E"
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`;
+                      }}
+                    />
+                  </div>
+                  
+                  {/* Name */}
+                  <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
+                    <h3 
+                      className={`font-semibold text-gray-900 whitespace-nowrap ${astrologer.name.length > 15 ? 'scrolling-text' : ''}`}
+                      style={{ 
+                        fontFamily: "Poppins", 
+                        fontSize: "18px"
+                      }}
+                    >
+                      {astrologer.name}
+                    </h3>
+                  </div>
+                  
+                  {/* Language */}
+                  <p className="text-gray-600 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
+                    {(astrologer.languages || []).join(", ") || "Hindi"}
+                  </p>
+                  
+                  {/* Expertise */}
+                  <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
+                    {astrologer.talksAbout?.join(", ") || astrologer.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                  </p>
+                  
+                  {/* Experience */}
+                  <p className="text-gray-600 mb-2" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
+                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
+                  </p>
+                  
+                  {/* Call Button */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={(e) => handleCallClick(astrologer, e)}
+                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                    >
+                      OFFER: FREE 1st call
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Show 4 cards */}
+          <div className="hidden lg:flex gap-4">
+            {astrologers.slice(currentIndex, currentIndex + 4).map((astrologer, index) => (
+              <div
+                key={astrologer._id}
+                className="flex-shrink-0"
+              >
+                <div
+                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[221px]"
                   onClick={() => handleAstrologerClick(astrologer._id)}
                 >
                   {/* Profile Picture */}
@@ -261,7 +473,7 @@ const AstrologerCarousel = () => {
                   </div>
                   
                   {/* Name */}
-                  <h3 className="font-bold text-base text-gray-900 mb-0.5" style={{ fontFamily: "Poppins" }}>
+                  <h3 className="font-semibold text-gray-900 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "18px" }}>
                     {astrologer.name.split(' ').length > 2
                       ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
                       : astrologer.name
@@ -269,17 +481,17 @@ const AstrologerCarousel = () => {
                   </h3>
                   
                   {/* Language */}
-                  <p className="text-sm text-gray-600 mb-0" style={{ fontFamily: "Poppins" }}>
+                  <p className="text-gray-600 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
                     Hindi
                   </p>
                   
                   {/* Expertise */}
-                  <p className="text-sm text-gray-600 mb-0 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins" }}>
+                  <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
                     {astrologer.talksAbout?.slice(0, 3).join(", ") || "Kp, Vedic, Vastu"}
                   </p>
                   
                   {/* Experience */}
-                  <p className="text-sm text-gray-600 mb-1.5" style={{ fontFamily: "Poppins" }}>
+                  <p className="text-gray-600 mb-2" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
                     Exp:- {Math.floor(astrologer.callMinutes / 60)}years
                   </p>
                   
@@ -287,7 +499,7 @@ const AstrologerCarousel = () => {
                   <div className="flex justify-center">
                     <button
                       onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
                     >
                       OFFER: FREE 1st call
                     </button>
@@ -296,21 +508,24 @@ const AstrologerCarousel = () => {
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Next button */}
-          <button
-            onClick={nextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
-            aria-label="Next astrologer"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+        {/* Next button - widened */}
+        <button
+          onClick={nextSlide}
+          className="absolute right-8 sm:right-16 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          aria-label="Next astrologer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
 
-          {/* Dots indicator - hidden on mobile, only show on desktop */}
-          <div className="hidden md:flex justify-center mt-2 space-x-1">
-            {astrologers.map((_, index) => (
+      {/* Dots indicator - dynamic based on scrollable cards */}
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="hidden md:flex justify-center mt-10 space-x-1">
+            {Array.from({ length: Math.max(0, astrologers.length - 3) }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
@@ -318,7 +533,6 @@ const AstrologerCarousel = () => {
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
-          </div>
         </div>
       </div>
 

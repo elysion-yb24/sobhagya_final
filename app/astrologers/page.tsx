@@ -12,6 +12,9 @@ import { getApiBaseUrl } from "../config/api";
 import { useWalletBalance, WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
 import { SessionManagerProvider } from "../components/astrologers/SessionManager";
 import { API_CONFIG } from "../config/api";
+import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../config/development";
+import { getSampleAstrologersResponse } from "../data/sampleAstrologers";
+import DevModeBanner from "../components/DevModeBanner";
 
 interface Astrologer {
   _id: string;
@@ -74,10 +77,16 @@ function AstrologersPageContent() {
   
 
 
-  // 🔒 Redirect if "friend" role
+  // 🔒 Redirect if "friend" role (but allow sample data viewing)
   useEffect(() => {
     const user = getUserDetails();
-    if (user?.role === "friend") router.push("/partner-info");
+    const token = getAuthToken();
+    
+    // Only redirect if user is authenticated and has friend role
+    if (user?.role === "friend" && token) {
+      router.push("/partner-info");
+    }
+    // If no token, allow viewing with sample data
   }, [router]);
 
   
@@ -94,15 +103,42 @@ function AstrologersPageContent() {
   
       setError(null);
   
+      const skip = (page - 1) * 10;
+      const limit = 10;
+  
       try {
         const token = getAuthToken();
         if (!token) {
-          setError("Authentication required. Please log in.");
+          if (shouldUseSampleData()) {
+            if (shouldShowDebugLogs()) {
+              console.log("No token found, using sample data for development");
+            }
+            // Use sample data when no token (for development)
+            const sampleResponse = getSampleAstrologersResponse(skip, limit);
+          const sampleAstrologers = sampleResponse.data.list.map((a: any) => ({
+            ...a,
+            callsCount: a.totalReviews || 0,
+            experience: a.experience?.toString() || "0"
+          }));
+          
+          setAllAstrologers(prev => {
+            if (append && !query) {
+              const existingIds = new Set(prev.map(a => a._id));
+              const uniqueNew = sampleAstrologers.filter(a => !existingIds.has(a._id));
+              return [...prev, ...uniqueNew];
+            }
+            return sampleAstrologers;
+          });
+          
+          setHasMore(!query && sampleAstrologers.length === limit);
+          if (!query) setCurrentPage(page);
           return;
+          } else {
+            // No token and sample data is disabled, show error
+            setError("Authentication required. Please log in to view astrologers.");
+            return;
+          }
         }
-  
-        const skip = (page - 1) * 10;
-        const limit = 10;
   
         let endpoint = "";
   
@@ -148,8 +184,33 @@ function AstrologersPageContent() {
         setHasMore(!query && newAstrologers.length === limit);
         if (!query) setCurrentPage(page);
       } catch (err) {
-        console.error(err);
-        setError("Failed to fetch astrologers");
+        console.error("API failed, using sample data:", err);
+        
+        // Use sample data when API fails
+        try {
+          const sampleResponse = getSampleAstrologersResponse(skip, limit);
+          const sampleAstrologers = sampleResponse.data.list.map((a: any) => ({
+            ...a,
+            callsCount: a.totalReviews || 0,
+            experience: a.experience?.toString() || "0"
+          }));
+          
+          setAllAstrologers(prev => {
+            if (append && !query) {
+              const existingIds = new Set(prev.map(a => a._id));
+              const uniqueNew = sampleAstrologers.filter(a => !existingIds.has(a._id));
+              return [...prev, ...uniqueNew];
+            }
+            return sampleAstrologers;
+          });
+          
+          setHasMore(!query && sampleAstrologers.length === limit);
+          if (!query) setCurrentPage(page);
+          setError(null); // Clear error since we have sample data
+        } catch (sampleErr) {
+          console.error("Sample data also failed:", sampleErr);
+          setError("Failed to fetch astrologers");
+        }
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -207,6 +268,7 @@ function AstrologersPageContent() {
 
   return (
     <>
+      {shouldShowDevBanner() && <DevModeBanner />}
       <section className="w-full flex justify-center py-3">
         <div className="w-full max-w-7xl mx-auto px-10 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8">
           <div className="flex-1 min-w-0">

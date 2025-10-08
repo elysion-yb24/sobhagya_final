@@ -5,6 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, isAuthenticated, getUserDetails, hasUserCalledBefore } from "../../../utils/auth-utils";
+import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../../../config/development";
+import { getSampleAstrologerProfile, getSampleReviews, getSampleGifts, getSimilarAstrologers } from "../../../data/sampleAstrologerProfiles";
+import DevModeBanner from "../../../components/DevModeBanner";
 import { motion } from "framer-motion";
 
 interface Astrologer {
@@ -12,12 +15,13 @@ interface Astrologer {
     name: string;
     languages: string[];
     specializations: string[];
-    experience: string;
-    callsCount: number;
+    experience: string | number;
+    callsCount?: number;
     rating: number | { avg: number; count: number; max: number; min: number };
     profileImage: string;
     hasVideo?: boolean;
     about?: string;
+    bio?: string;
     age?: number;
     avatar?: string;
     calls?: number;
@@ -25,21 +29,45 @@ interface Astrologer {
     videoRpm?: number;
     talksAbout?: string[];
     status?: string;
+    isOnline?: boolean;
+    totalReviews?: number;
 }
 
 interface Review {
     _id: string;
-    userId: string;
+    userId?: string;
     userName: string;
     rating: number;
     comment: string;
-    createdAt: string;
+    createdAt?: string;
+    date?: string;
+    callType?: string;
 }
 
 export default function CallAstrologerProfilePage() {
     const params = useParams();
     const router = useRouter();
     const astrologerId = params?.id as string;
+
+    // Add CSS animation for scrolling text
+    React.useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes scrollText {
+                0% { transform: translateX(0); }
+                25% { transform: translateX(0); }
+                75% { transform: translateX(calc(-100% + 180px)); }
+                100% { transform: translateX(calc(-100% + 180px)); }
+            }
+            .scrolling-text {
+                animation: scrollText 4s ease-in-out infinite;
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
     const [similarAstrologers, setSimilarAstrologers] = useState<Astrologer[]>([]);
@@ -49,11 +77,22 @@ export default function CallAstrologerProfilePage() {
     const [showCallOptions, setShowCallOptions] = useState(false);
     const [selectedCallAstrologer, setSelectedCallAstrologer] = useState<Astrologer | null>(null);
     const [userHasCalledBefore, setUserHasCalledBefore] = useState(false);
+    const [isAudioCallProcessing, setIsAudioCallProcessing] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
         if (astrologerId) {
+            // For sample IDs, load immediately without backend calls
+            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
+                const sampleProfile = getSampleAstrologerProfile(astrologerId);
+                if (sampleProfile) {
+                    setAstrologer(sampleProfile);
+                    setIsLoading(false);
+                    return;
+                }
+            }
             fetchAstrologerProfile();
-            //   fetchReviews();
+            fetchReviews();
         }
     }, [astrologerId]);
 
@@ -89,7 +128,24 @@ export default function CallAstrologerProfilePage() {
 
     const fetchAstrologerProfile = async () => {
         try {
+            if (shouldShowDebugLogs()) {
             console.log('Fetching astrologer profile for ID:', astrologerId);
+            }
+
+            // Use sample data if configured and available
+            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
+                if (shouldShowDebugLogs()) {
+                    console.log('Sample ID detected, using sample data immediately');
+                }
+                const sampleProfile = getSampleAstrologerProfile(astrologerId);
+                if (sampleProfile) {
+                    if (shouldShowDebugLogs()) {
+                        console.log('Using sample data for astrologer:', astrologerId);
+                    }
+                    setAstrologer(sampleProfile);
+                    return;
+                }
+            }
 
             // First try the specific user endpoint
             let response = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
@@ -135,8 +191,24 @@ export default function CallAstrologerProfilePage() {
                 return;
             }
 
-            // If we reach here, astrologer was not found
-            console.log('Astrologer not found in any endpoint');
+            // If we reach here, astrologer was not found - try sample data if configured
+            if (shouldUseSampleData()) {
+                if (shouldShowDebugLogs()) {
+                    console.log('Astrologer not found in any endpoint, trying sample data...');
+                }
+                const sampleProfile = getSampleAstrologerProfile(astrologerId);
+                if (sampleProfile) {
+                    if (shouldShowDebugLogs()) {
+                        console.log('Using sample data for astrologer:', astrologerId);
+                    }
+                    setAstrologer(sampleProfile);
+                    return;
+                }
+            }
+            
+            if (shouldShowDebugLogs()) {
+                console.log('No sample data available for astrologer:', astrologerId);
+            }
             setError("Astrologer not found");
         } catch (err) {
             console.error("Error fetching astrologer:", err);
@@ -148,6 +220,18 @@ export default function CallAstrologerProfilePage() {
 
     const fetchSimilarAstrologers = async () => {
         try {
+            // Use sample data if configured and available
+            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
+                if (shouldShowDebugLogs()) {
+                    console.log('Sample ID detected for similar astrologers, using sample data');
+                }
+                const sampleSimilar = getSimilarAstrologers(astrologerId);
+                if (sampleSimilar && sampleSimilar.length > 0) {
+                    setSimilarAstrologers(sampleSimilar);
+                    return;
+                }
+            }
+
             const response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=10`, {
                 method: "GET",
                 headers: {
@@ -190,39 +274,56 @@ export default function CallAstrologerProfilePage() {
             }
         } catch (err) {
             console.error("Error fetching similar astrologers:", err);
+            // Try sample data fallback if configured
+            if (shouldUseSampleData()) {
+                if (shouldShowDebugLogs()) {
+                    console.log('Using sample data for similar astrologers...');
+                }
+                const sampleSimilar = getSimilarAstrologers(astrologerId);
+                if (sampleSimilar && sampleSimilar.length > 0) {
+                    setSimilarAstrologers(sampleSimilar);
+                }
+            }
         }
     };
 
-    //   const fetchReviews = async () => {
-    //     // Mock reviews data
-    //     const mockReviews: Review[] = [
-    //       {
-    //         _id: "1",
-    //         userId: "user1",
-    //         userName: "Naresh",
-    //         rating: 4.5,
-    //         comment: "I had an amazing session with Astrologer Sahil Mehta! His insights were incredibly accurate, and his guidance gave me clarity on my career and relationships.",
-    //         createdAt: new Date().toISOString(),
-    //       },
-    //       {
-    //         _id: "2",
-    //         userId: "user2",
-    //         userName: "Pooja Bhatia",
-    //         rating: 5,
-    //         comment: "The remedies he suggested have truly made a difference in my life. Highly recommended for anyone seeking astrological advice!",
-    //         createdAt: new Date().toISOString(),
-    //       },
-    //       {
-    //         _id: "3",
-    //         userId: "user3",
-    //         userName: "Ram Charan",
-    //         rating: 4.5,
-    //         comment: "I had an amazing session with Astrologer Sahil Mehta! His insights were incredibly accurate, and his guidance gave me clarity on my career and relationships. The remedies he suggested have truly made a difference in my life. Highly recommended for anyone seeking astrological advice!",
-    //         createdAt: new Date().toISOString(),
-    //       },
-    //     ];
-    //     setReviews(mockReviews);
-    //   };
+    const fetchReviews = async () => {
+        try {
+            // Use sample data if configured and available
+            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
+                if (shouldShowDebugLogs()) {
+                    console.log('Sample ID detected for reviews, using sample data');
+                }
+                const sampleReviews = getSampleReviews(astrologerId);
+                if (sampleReviews && sampleReviews.length > 0) {
+                    setReviews(sampleReviews);
+                    return;
+                }
+            }
+
+            // API call for reviews (fallback)
+            const response = await fetch(`${getApiBaseUrl()}/user/api/reviews/${astrologerId}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    setReviews(data.data);
+                } else {
+                    setReviews([]);
+                }
+            } else {
+                setReviews([]);
+            }
+        } catch (err) {
+            console.error("Error fetching reviews:", err);
+            setReviews([]);
+        }
+    };
 
 
 
@@ -230,6 +331,15 @@ export default function CallAstrologerProfilePage() {
         
         setSelectedCallAstrologer(astrologer);
         setShowCallOptions(true);
+    };
+
+    const handleAudioCallClick = () => {
+        setIsAudioCallProcessing(true);
+        handleCallTypeSelection('audio');
+        // Reset processing state after a delay (in case the call doesn't go through)
+        setTimeout(() => {
+            setIsAudioCallProcessing(false);
+        }, 3000);
     };
 
     const handleCallTypeSelection = (callType: 'audio' | 'video') => {
@@ -245,17 +355,27 @@ export default function CallAstrologerProfilePage() {
     };
 
     const scrollSimilarLeft = () => {
-        const container = document.getElementById('similar-container');
-        if (container) {
-            container.scrollBy({ left: -200, behavior: 'smooth' });
-        }
+        setCurrentIndex(prev => {
+            // For small screens (1 card), move by 1
+            // For tablets (2 cards), move by 2  
+            // For desktop (4 cards), move by 4
+            const isSmallScreen = window.innerWidth < 768;
+            const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+            const moveBy = isSmallScreen ? 1 : isTablet ? 2 : 4;
+            return Math.max(0, prev - moveBy);
+        });
     };
 
     const scrollSimilarRight = () => {
-        const container = document.getElementById('similar-container');
-        if (container) {
-            container.scrollBy({ left: 200, behavior: 'smooth' });
-        }
+        setCurrentIndex(prev => {
+            // For small screens (1 card), move by 1
+            // For tablets (2 cards), move by 2
+            // For desktop (4 cards), move by 4
+            const isSmallScreen = window.innerWidth < 768;
+            const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
+            const moveBy = isSmallScreen ? 1 : isTablet ? 2 : 4;
+            return Math.min(similarAstrologers.length - moveBy, prev + moveBy);
+        });
     };
 
     const getRatingValue = (rating: number | { avg: number; count: number; max: number; min: number }) => {
@@ -274,7 +394,7 @@ export default function CallAstrologerProfilePage() {
                         key={i}
                         src="/Star 165.svg"
                         alt="Full star"
-                        className="w-5 h-5"
+                        className="w-8 h-8"
                     />
                 );
             } else if (i === fullStars && hasHalfStar) {
@@ -284,7 +404,7 @@ export default function CallAstrologerProfilePage() {
                         key={i}
                         src="/Star 161.svg"
                         alt="Half star"
-                        className="w-5 h-5"
+                        className="w-8 h-8"
                     />
                 );
             } else {
@@ -294,7 +414,7 @@ export default function CallAstrologerProfilePage() {
                         key={i}
                         src="/Star 210.svg"
                         alt="Empty star"
-                        className="w-5 h-5"
+                        className="w-8 h-8"
                     />
                 );
             }
@@ -341,6 +461,7 @@ export default function CallAstrologerProfilePage() {
 
     return (
         <div className="min-h-screen">
+            {shouldShowDevBanner() && <DevModeBanner />}
             {/* Hero Background - Starry Night Theme */}
             <div
                 className="relative h-32 sm:h-40 md:h-48 overflow-hidden w-full"
@@ -366,7 +487,7 @@ export default function CallAstrologerProfilePage() {
             {/* Profile Content */}
             <div className="relative -mt-4 sm:-mt-6 md:-mt-8">
                 <div className="px-4 sm:px-6">
-                    <div className="max-w-5xl mx-auto">
+                    <div className="max-w-6xl mx-auto">
                         {/* Profile Card */}
                         <motion.div
                             className="mb-6 sm:mb-8 relative"
@@ -374,123 +495,227 @@ export default function CallAstrologerProfilePage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6 }}
                         >
-                        {/* Mobile Layout - Stacked */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 md:gap-12">
-                            {/* Avatar with Online Status and Rating */}
-                            <div className="flex flex-col items-center flex-shrink-0">
+                            {/* Two Column Layout */}
+                            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
+                                
+                                {/* Left Column - Profile Picture, Rating, Experience, Call, Message */}
+                                <div className="flex flex-col items-center lg:items-start flex-shrink-0">
+                                    {/* Profile Picture Container with Online Status */}
+                                    <div className="flex flex-col items-center">
+                                        {/* Profile Picture */}
+                                        <div className="w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 rounded-full border-4 border-[#F7971E] shadow-lg overflow-hidden mr-0 lg:mr-6">
                                 <img
                                     src={
                                         (astrologer.avatar && astrologer.avatar.startsWith('http')) ||
                                             (astrologer.profileImage && astrologer.profileImage.startsWith('http'))
                                             ? astrologer.avatar || astrologer.profileImage
-                                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                astrologer.name
-                                            )}&background=FF6B35&color=fff&size=120`
+                                                    : `/sahil-mehta.svg`
                                     }
                                     alt={astrologer.name}
-                                    className="w-24 h-24 sm:w-32 sm:h-32 md:w-[180px] md:h-[180px] lg:w-[209px] lg:h-[209px] rounded-full object-cover border-[2.5px] border-[#F7971E] shadow-lg"
+                                            className="w-full h-full object-cover"
                                     onError={(e) => {
                                         const target = e.target as HTMLImageElement;
-                                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                            astrologer.name
-                                        )}&background=FF6B35&color=fff&size=120`;
-                                    }}
-                                />
+                                                target.src = `/sahil-mehta.svg`;
+                                            }}
+                                        />
+                                        </div>
 
-                                {/* Online Status */}
-                                <div className="mt-2 sm:mt-3 text-[#399932] text-xs sm:text-sm font-medium italic leading-relaxed">
-                                    Online
+                                        {/* Online Status - Exactly Below Profile Picture */}
+                                        <div className="mt-3 text-center text-[#399932] text-sm font-medium">
+                                            {astrologer.isOnline ? "Online" : "Offline"}
+                                        </div>
                                 </div>
 
                                 {/* Rating */}
-                                <div className="flex flex-col items-center mt-1 sm:mt-2">
+                                    <div className="flex flex-col items-center mt-2 ml-4">
                                     <div className="flex items-center gap-1">
                                         {renderStars(getRatingValue(astrologer.rating))}
                                     </div>
-                                    <span className="text-xs sm:text-sm text-gray-600 mt-1">Rating {getRatingValue(astrologer.rating).toFixed(1)}</span>
+                                        <span className="text-gray-600 mt-1" style={{ fontSize: '13px' }}>Rating {getRatingValue(astrologer.rating).toFixed(1)}</span>
+                                    </div>
+
+                                    {/* Very small screens only (800x800 and below): Three buttons in same row, All other sizes: Stacked vertically like web view */}
+                                    <div className="mt-8">
+                                        {/* Very small screens only: Row layout (800px and below) */}
+                                        <div className="flex flex-row lg:hidden gap-4">
+                                            {/* Experience - Very small screens */}
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <img src="/experience.svg" alt="Experience" className="w-5 h-5" />
+                                                <div>
+                                                    <div className="font-semibold text-[#373737] text-xs whitespace-nowrap" style={{ fontSize: '12px' }}>
+                                                        Experience
+                                                    </div>
+                                                    <div className="text-[#373737] text-xs whitespace-nowrap" style={{ fontSize: '14px' }}>
+                                                        {astrologer.experience || "2"} years
+                                                    </div>
                                 </div>
                             </div>
 
-                            {/* Profile Info */}
-                            <div className="flex-1 text-center sm:text-left pt-0 sm:pt-4 md:pt-16">
-                                {/* Name */}
-                                <h1 className="text-xl sm:text-2xl md:text-3xl font-medium text-gray-900 mb-2 sm:mb-3" style={{
-                                    fontFamily: 'Poppins'
-                                }}>{astrologer.name}</h1>
-
-                                {/* Specializations */}
-                                <p className="text-[#373737] mb-1 text-sm sm:text-base md:text-lg">
-                                    {astrologer.talksAbout?.slice(0, 3).join(", ") ||
-                                        astrologer.specializations?.join(", ") ||
-                                        "Tarrot reading, Pranic healing, Vedic, Horoscope Readings"}
-                                </p>
-
-                                {/* Languages */}
-                                <p className="text-[#636161] mb-1 text-sm sm:text-base">
-                                    {(astrologer.languages || []).join(", ") || "Hindi, Sanskrit, English"}
-                                </p>
-
-                                {/* Experience */}
-                                <div className="text-[#373737] mb-1 text-sm sm:text-base">
-                                    Exp:- {astrologer.age || astrologer.experience || "2"}years
+                                            {/* Call Stats - Very small screens */}
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <img src="/phone.svg" alt="Call" className="w-5 h-5" />
+                                                <div>
+                                                    <div className="font-semibold text-[#373737] text-xs whitespace-nowrap" style={{ fontSize: '12px' }}>
+                                                        Call
+                                                    </div>
+                                                    <div className="text-[#373737] text-xs whitespace-nowrap" style={{ fontSize: '14px' }}>
+                                                        {astrologer.callsCount || "580"}k mins
+                                                    </div>
+                                                </div>
                                 </div>
 
-                                {/* Pricing */}
-                                <div className="text-lg sm:text-xl md:text-2xl font-bold text-[#373737] mb-2 sm:mb-3">
-                                    ₹ {astrologer.rpm || 108}/min
+                                            {/* Message Stats - Very small screens */}
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <img src="/Group 13365.svg" alt="Message" className="w-5 h-5" />
+                                                <div>
+                                                    <div className="font-semibold text-[#373737] text-xs whitespace-nowrap" style={{ fontSize: '12px' }}>
+                                                        Message
+                                                    </div>
+                                                    <div className="text-[#373737] text-xs whitespace-nowrap" style={{ fontSize: '14px' }}>
+                                                        {Math.floor((astrologer.callsCount || 580) * 0.84)}k mins
+                                                    </div>
+                                                </div>
+                                            </div>
                                 </div>
 
-                                {/* Call & Message Stats */}
-                                <div className="flex items-center justify-center sm:justify-start gap-8 sm:gap-12 md:gap-20 my-2 sm:my-3 py-2 sm:py-3">
-                                    <div className="flex items-center gap-2 sm:gap-4">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-[1px] border-[#F7971E] rounded-full flex items-center justify-center bg-white">
-                                            <img src="/phone.svg" alt="Call" className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                                        {/* Large screens and above (801px+): Stacked vertically like web view */}
+                                        <div className="hidden lg:block">
+                                            {/* Experience - Large screens */}
+                                            <div className="flex items-center gap-5">
+                                                <img src="/experience.svg" alt="Experience" className="w-7 h-7" />
+                                                <div>
+                                                    <div className="font-semibold text-[#373737]" style={{ fontSize: '15px' }}>
+                                                        Experience
                                         </div>
+                                                    <div className="text-[#373737]" style={{ fontSize: '17px' }}>
+                                                        {astrologer.experience || "2"} years
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Call Stats - Large screens */}
+                                            <div className="mt-7 flex items-center gap-5">
+                                                <img src="/phone.svg" alt="Call" className="w-7 h-7" />
                                         <div>
-                                            <p className="text-mono font-normal text-[#636161]-700 text-xs sm:text-sm">Call</p>
-                                            <p className="text-mono font-normal text-[#636161] text-xs sm:text-sm">{astrologer.callsCount || astrologer.calls || "580"}k mins</p>
+                                                    <div className="font-semibold text-[#373737]" style={{ fontSize: '15px' }}>
+                                                        Call
                                         </div>
+                                                    <div className="text-[#373737]" style={{ fontSize: '17px' }}>
+                                                        {astrologer.callsCount || "580"}k mins
                                     </div>
-                                    <div className="flex items-center gap-2 sm:gap-4">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-[1px] border-[#F7971E] rounded-full flex items-center justify-center bg-white">
-                                            <img src="/Group 13365.svg" alt="Message" className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                                         </div>
+                                            </div>
+
+                                            {/* Message Stats - Large screens */}
+                                            <div className="mt-7 flex items-center gap-5">
+                                                <img src="/Group 13365.svg" alt="Message" className="w-7 h-7" />
                                         <div>
-                                            <p className="text-mono font-normal text-[#6316161] text-xs sm:text-sm">Message</p>
-                                            <p className="text-mono font-normal text-[#636161] text-xs sm:text-sm">{Math.floor((astrologer.callsCount || 488) * 0.84)}k mins</p>
+                                                    <div className="font-semibold text-[#373737]" style={{ fontSize: '15px' }}>
+                                                        Message
+                                                    </div>
+                                                    <div className="text-[#373737]" style={{ fontSize: '17px' }}>
+                                                        {Math.floor((astrologer.callsCount || 580) * 0.84)}k mins
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Description */}
-                        <p className="text-gray-700 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 w-full">
-                            {astrologer.about ||
-                                `Astrologer ${astrologer.name} is a renowned expert in ${(astrologer.talksAbout?.slice(0, 3) || astrologer.specializations || ["Tarrot reading", "Pranic healing", "Vedic astrology"]).join(", ")}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer.name} offers personalized consultations to align your life with cosmic energies.`}
-                        </p>
+                                </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6">
-                            <button className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] border border-[#f7971e] text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-50 transition-colors">
+                                {/* Right Column - Name, Specializations, Languages, About */}
+                                <div className="flex-1 pt-4 lg:pt-16">
+                                    {/* Name */}
+                                    <h1 className="font-bold text-gray-900 mb-2 text-2xl sm:text-3xl lg:text-4xl" style={{
+                                        fontFamily: 'EB Garamond'
+                                    }}>
+                                        {astrologer.name}
+                                    </h1>
+
+                                    {/* Specializations */}
+                                    <div className="mb-2">
+                                        <p className="text-[#373737] text-sm sm:text-base lg:text-lg" style={{
+                                            fontFamily: 'Poppins',
+                                            fontWeight: '400'
+                                        }}>
+                                            {(astrologer.specializations || ["Tarrot reading", "Pranic healing", "Vedic", "Horoscope Readings"]).join(", ")}
+                                        </p>
+                                    </div>
+
+                                    {/* Languages */}
+                                    <div className="mb-4">
+                                        <p className="text-[#373737] text-sm sm:text-base" style={{
+                                            fontFamily: 'Poppins'
+                                        }}>
+                                            {(astrologer.languages || ["Hindi", "Sanskrit", "English"]).join(", ")}
+                                        </p>
+                                    </div>
+
+                                    {/* Pricing - Only show if user has called before */}
+                                    {userHasCalledBefore && (
+                                        <div className="mb-6">
+                                            <div className="text-xl sm:text-2xl font-bold text-[#F7971E]">
+                                                ₹ {astrologer.rpm || 108}/min
+                            </div>
+                        </div>
+                                    )}
+
+                                    {/* About Paragraph */}
+                                    <div className="mb-6 pr-0 lg:pr-48">
+                                        <h3 className="text-base sm:text-lg font-semibold text-[#373737] mb-3" style={{
+                                            fontFamily: 'Poppins'
+                                        }}>
+                                            About
+                                        </h3>
+                                        <p className="text-gray-700 leading-relaxed text-justify text-sm sm:text-base" style={{
+                                            fontFamily: 'Poppins'
+                                        }}>
+                                            {astrologer.about || astrologer.bio || "Astrologer " + astrologer.name + " is a renowned expert in Tarrot reading, Pranic healing, Vedic astrology, horoscope readings, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success."}
+                                        </p>
+                                    </div>
+
+                                    {/* Action Buttons - Conditional based on call status */}
+                                    <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                                        <button className="bg-white border-2 border-[#F7971E] text-[#F7971E] font-semibold py-2 px-4 rounded hover:bg-[#F7971E] hover:text-white transition-colors">
                                 Follow
                             </button>
-                            <button className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#f7971e] text-black rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors">
+                                        <button className="bg-white border-2 border-[#F7971E] text-[#F7971E] font-semibold py-2 px-4 rounded hover:bg-[#F7971E] hover:text-white transition-colors">
                                 Dakshina
                             </button>
+                                        {userHasCalledBefore ? (
+                                            <>
                             <button
-                                onClick={handleCall}
-                                className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#f7971e] text-black rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors"
+                                                    onClick={() => router.push(`/chat?astrologerId=${astrologerId}`)}
+                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors"
                             >
-                                {userHasCalledBefore ? `₹${astrologer?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
+                                                    Message
                             </button>
+                                                <button
+                                                    onClick={handleAudioCallClick}
+                                                    disabled={isAudioCallProcessing}
+                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors disabled:opacity-50"
+                                                >
+                                                    {isAudioCallProcessing ? "Connecting..." : "Call"}
+                                                </button>
+                                            </>
+                                        ) : (
+                            <button
+                                                onClick={handleAudioCallClick}
+                                                disabled={isAudioCallProcessing}
+                                                className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors disabled:opacity-50"
+                            >
+                                                {isAudioCallProcessing ? "Connecting..." : "OFFER: FREE 1st call"}
+                            </button>
+                                        )}
+                                    </div>
+                                </div>
                         </div>
                         </motion.div>
                     </div>
                 </div>
 
                 {/* Divider Line */}
-                <div className="w-full h-[2px] sm:h-[4px] md:h-[6px] bg-[#d9d9d9] my-3"></div>
+                <div className="w-full h-[1px] bg-gray-200 my-16"></div>
 
                 <div className="px-4 sm:px-6">
                     <div className="max-w-5xl mx-auto">
@@ -514,22 +739,25 @@ export default function CallAstrologerProfilePage() {
                             <div className="relative">
                                 <button
                                     onClick={scrollSimilarLeft}
-                                    className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors shadow-md"
+                                    className="absolute -left-6 sm:-left-16 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-7 sm:h-7 bg-orange-100 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors shadow-md"
                                 >
-                                    <ChevronLeft className="w-3 h-3 sm:w-5 sm:h-5 text-orange-600" />
+                                    <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                                 </button>
 
                                  <div
                                      id="similar-container"
-                                     className="flex gap-3 sm:gap-4 md:gap-4 overflow-x-auto scrollbar-hide -ml-5 pr-6 sm:pr-8 md:pr-10"
-                                     style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                     className="flex justify-center gap-4 px-4"
                                  >
-                                     {similarAstrologers.map((similar) => (
+                                     {/* Small screens: Show 1 card */}
+                                     <div className="block md:hidden">
+                                         {similarAstrologers.slice(currentIndex, currentIndex + 1).map((similar) => (
                                          <div
                                              key={similar._id}
-                                             className="flex-shrink-0 w-[221px] sm:w-[221px] md:w-[220px] lg:w-[210px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200"
+                                                 className="w-[280px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 flex flex-col h-[280px]"
                                              onClick={() => router.push(`/call-with-astrologer/profile/${similar._id}`)}
                                          >
+                                                 {/* Content Section */}
+                                                 <div className="flex-1">
                                              {/* Profile Picture */}
                                              <div className="mb-3">
                                                  <img
@@ -537,9 +765,7 @@ export default function CallAstrologerProfilePage() {
                                                          (similar.avatar && similar.avatar.startsWith('http')) ||
                                                              (similar.profileImage && similar.profileImage.startsWith('http'))
                                                              ? similar.avatar || similar.profileImage
-                                                             : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                                 similar.name
-                                                             )}&background=FF6B35&color=fff&size=120`
+                                                                    : `/sahil-mehta.svg`
                                                      }
                                                      alt={similar.name}
                                                      className="w-24 h-24 rounded-full object-cover mx-auto border-2"
@@ -552,33 +778,42 @@ export default function CallAstrologerProfilePage() {
                                                      }}
                                                      onError={(e) => {
                                                          const target = e.target as HTMLImageElement;
-                                                         target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                             similar.name
-                                                         )}&background=FF6B35&color=fff&size=120`;
+                                                                 target.src = `/sahil-mehta.svg`;
                                                      }}
                                                  />
                                              </div>
                                              
                                              {/* Name */}
-                                             <h3 className="font-bold text-base text-gray-900 mb-0.5">{similar.name}</h3>
+                                                    <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
+                                                        <h3 
+                                                            className={`font-semibold text-gray-900 whitespace-nowrap ${similar.name.length > 15 ? 'scrolling-text' : ''}`}
+                                                            style={{ 
+                                                                fontFamily: 'Poppins', 
+                                                                fontSize: '18px'
+                                                            }}
+                                                        >
+                                                            {similar.name}
+                                                        </h3>
+                                                    </div>
                                              
                                              {/* Language */}
-                                             <p className="text-sm text-gray-600 mb-0.5">
+                                                    <p className="text-gray-600 mb-0.5" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
                                                  {(similar.languages || []).join(", ") || "Hindi"}
                                              </p>
                                              
                                              {/* Expertise */}
-                                             <p className="text-sm text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center">
+                                                    <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
                                                  {similar.talksAbout?.join(", ") || similar.specializations?.join(", ") || "Kp, Vedic, Vastu"}
                                              </p>
                                              
                                              {/* Experience */}
-                                             <p className="text-sm text-gray-600 mb-2">
+                                                    <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
                                                  Exp:- {similar.age || similar.experience || "2"}years
                                              </p>
+                                                 </div>
                                              
-                                             {/* Call Button */}
-                                             <div className="flex justify-center">
+                                                 {/* Call Button - Always at Bottom */}
+                                                 <div className="flex justify-center mt-auto">
                                                  <button
                                                      onClick={(e) => {
                                                          e.stopPropagation();
@@ -586,20 +821,185 @@ export default function CallAstrologerProfilePage() {
                                                          setSelectedCallAstrologer(similar);
                                                          setShowCallOptions(true);
                                                      }}
-                                                     className="w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                                                         className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
                                                  >
                                                      {userHasCalledBefore ? `₹${similar?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
                                                  </button>
                                              </div>
                                          </div>
                                      ))}
+                                     </div>
+
+                                     {/* Tablets: Show 2 cards */}
+                                     <div className="hidden md:flex lg:hidden gap-4">
+                                         {similarAstrologers.slice(currentIndex, currentIndex + 2).map((similar) => (
+                                             <div
+                                                 key={similar._id}
+                                                 className="flex-shrink-0 w-[240px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 flex flex-col h-[280px]"
+                                                 onClick={() => router.push(`/call-with-astrologer/profile/${similar._id}`)}
+                                             >
+                                                 {/* Content Section */}
+                                                 <div className="flex-1">
+                                                     {/* Profile Picture */}
+                                                     <div className="mb-3">
+                                                         <img
+                                                             src={
+                                                                 (similar.avatar && similar.avatar.startsWith('http')) ||
+                                                                     (similar.profileImage && similar.profileImage.startsWith('http'))
+                                                                     ? similar.avatar || similar.profileImage
+                                                                     : `/sahil-mehta.svg`
+                                                             }
+                                                             alt={similar.name}
+                                                             className="w-24 h-24 rounded-full object-cover mx-auto border-2"
+                                                             style={{
+                                                                 borderColor: similar.status === "online" 
+                                                                     ? "#399932" 
+                                                                     : similar.status === "offline" 
+                                                                     ? "#EF4444" 
+                                                                     : "#F7971E"
+                                                             }}
+                                                             onError={(e) => {
+                                                                 const target = e.target as HTMLImageElement;
+                                                                 target.src = `/sahil-mehta.svg`;
+                                                             }}
+                                                         />
+                                                     </div>
+                                                     
+                                                     {/* Name */}
+                                                     <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
+                                                         <h3 
+                                                             className={`font-semibold text-gray-900 whitespace-nowrap ${similar.name.length > 15 ? 'scrolling-text' : ''}`}
+                                                             style={{ 
+                                                                 fontFamily: 'Poppins', 
+                                                                 fontSize: '18px'
+                                                             }}
+                                                         >
+                                                             {similar.name}
+                                                         </h3>
+                                                     </div>
+                                                     
+                                                     {/* Language */}
+                                                     <p className="text-gray-600 mb-0.5" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
+                                                         {(similar.languages || []).join(", ") || "Hindi"}
+                                                     </p>
+                                                     
+                                                     {/* Expertise */}
+                                                     <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
+                                                         {similar.talksAbout?.join(", ") || similar.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                                                     </p>
+                                                     
+                                                     {/* Experience */}
+                                                     <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
+                                                         Exp:- {similar.age || similar.experience || "2"}years
+                                                     </p>
+                                                 </div>
+                                                 
+                                                 {/* Call Button - Always at Bottom */}
+                                                 <div className="flex justify-center mt-auto">
+                                                     <button
+                                                         onClick={(e) => {
+                                                             e.stopPropagation();
+                                                             localStorage.setItem("selectedAstrologerId", similar._id);
+                                                             setSelectedCallAstrologer(similar);
+                                                             setShowCallOptions(true);
+                                                         }}
+                                                         className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                                                     >
+                                                         {userHasCalledBefore ? `₹${similar?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
+                                                     </button>
+                                                 </div>
+                                             </div>
+                                         ))}
+                                     </div>
+
+                                     {/* Desktop: Show 4 cards */}
+                                     <div className="hidden lg:flex gap-4">
+                                         {similarAstrologers.slice(currentIndex, currentIndex + 4).map((similar) => (
+                                         <div
+                                             key={similar._id}
+                                                 className="flex-shrink-0 w-[221px] md:w-[220px] lg:w-[210px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 flex flex-col h-[280px]"
+                                             onClick={() => router.push(`/call-with-astrologer/profile/${similar._id}`)}
+                                         >
+                                             {/* Content Section */}
+                                             <div className="flex-1">
+                                             {/* Profile Picture */}
+                                             <div className="mb-3">
+                                                 <img
+                                                     src={
+                                                         (similar.avatar && similar.avatar.startsWith('http')) ||
+                                                             (similar.profileImage && similar.profileImage.startsWith('http'))
+                                                             ? similar.avatar || similar.profileImage
+                                                                : `/sahil-mehta.svg`
+                                                     }
+                                                     alt={similar.name}
+                                                     className="w-24 h-24 rounded-full object-cover mx-auto border-2"
+                                                     style={{
+                                                         borderColor: similar.status === "online" 
+                                                             ? "#399932" 
+                                                             : similar.status === "offline" 
+                                                             ? "#EF4444" 
+                                                             : "#F7971E"
+                                                     }}
+                                                     onError={(e) => {
+                                                         const target = e.target as HTMLImageElement;
+                                                             target.src = `/sahil-mehta.svg`;
+                                                     }}
+                                                 />
+                                             </div>
+                                             
+                                             {/* Name */}
+                                                <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
+                                                    <h3 
+                                                        className={`font-semibold text-gray-900 whitespace-nowrap ${similar.name.length > 15 ? 'scrolling-text' : ''}`}
+                                                        style={{ 
+                                                            fontFamily: 'Poppins', 
+                                                            fontSize: '18px'
+                                                        }}
+                                                    >
+                                                        {similar.name}
+                                                    </h3>
+                                                </div>
+                                             
+                                             {/* Language */}
+                                                <p className="text-gray-600 mb-0.5" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
+                                                 {(similar.languages || []).join(", ") || "Hindi"}
+                                             </p>
+                                             
+                                             {/* Expertise */}
+                                                <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
+                                                 {similar.talksAbout?.join(", ") || similar.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                                             </p>
+                                             
+                                             {/* Experience */}
+                                                <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
+                                                 Exp:- {similar.age || similar.experience || "2"}years
+                                             </p>
+                                             </div>
+                                             
+                                             {/* Call Button - Always at Bottom */}
+                                             <div className="flex justify-center mt-auto">
+                                                 <button
+                                                     onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         localStorage.setItem("selectedAstrologerId", similar._id);
+                                                         setSelectedCallAstrologer(similar);
+                                                         setShowCallOptions(true);
+                                                     }}
+                                                     className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                                                 >
+                                                     {userHasCalledBefore ? `₹${similar?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
+                                                 </button>
+                                             </div>
+                                         </div>
+                                     ))}
+                                     </div>
                                  </div>
 
                                 <button
                                     onClick={scrollSimilarRight}
-                                    className="absolute right-3 sm:-right-4 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-8 sm:h-8 bg-orange-100 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors shadow-md"
+                                    className="absolute -right-6 sm:-right-16 top-1/2 -translate-y-1/2 z-10 w-6 h-6 sm:w-7 sm:h-7 bg-orange-100 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors shadow-md"
                                 >
-                                    <ChevronRight className="w-3 h-3 sm:w-5 sm:h-5 text-orange-600" />
+                                    <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-orange-600" />
                                 </button>
                             </div>
                         </motion.div>
@@ -607,12 +1007,15 @@ export default function CallAstrologerProfilePage() {
                     </div>
                 </div>
 
-                {/* Divider Line */}
-                <div className="w-full h-[2px] sm:h-[4px] md:h-[6px] bg-[#d9d9d9] my-3"></div>
+                {/* Divider Line - Only show if reviews exist */}
+                {reviews && reviews.length > 0 && (
+                    <div className="w-full h-[1px] bg-gray-200 my-16"></div>
+                )}
 
                 <div className="px-4 sm:px-6">
                     <div className="max-w-5xl mx-auto">
-                    {/* Reviews */}
+                    {/* Reviews - Only show if reviews exist */}
+                    {reviews && reviews.length > 0 && (
                     <motion.div
                         className="mb-6 sm:mb-8 bg-white rounded-lg p-4 sm:p-6"
                         initial={{ opacity: 0, y: 20 }}
@@ -645,6 +1048,7 @@ export default function CallAstrologerProfilePage() {
                             ))}
                         </div>
                     </motion.div>
+                    )}
                     </div>
                 </div>
             </div>
@@ -668,7 +1072,7 @@ export default function CallAstrologerProfilePage() {
                         <div className="space-y-2 sm:space-y-3">
                             <button
                                 onClick={() => handleCallTypeSelection('audio')}
-                                className="w-full bg-[#F7971E] text-black py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
                             >
                                 <img src="/phone.svg" alt="Audio Call" className="w-4 h-4 sm:w-5 sm:h-5" />
                                 Audio Call
@@ -676,7 +1080,7 @@ export default function CallAstrologerProfilePage() {
                             
                             <button
                                 onClick={() => handleCallTypeSelection('video')}
-                                className="w-full bg-[#F7971E] text-black py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
                             >
                                 <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor"/>

@@ -423,7 +423,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
             }}
             className="flex-1 border border-[#F7971D] text-[#F7971D] rounded-md py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-orange-50 transition"
           >
-            <img src="/message.png" alt="Chat" className="w-[10px] h-[10px]" />
+            <img src="/message.png" alt="Chat" className="w-[16px] h-[16px]" />
             Chat
           </button>
 
@@ -439,7 +439,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                   setIsCallMenuOpen((prev) => !prev);
                 }
               }}
-              className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-black shadow-md transition"
+              className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-white shadow-md transition"
               style={{
                 background: "linear-gradient(90deg, #F9A43A 0%, #F7971E 100%)",
               }}

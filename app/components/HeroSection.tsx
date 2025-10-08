@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Star, MessageCircle, ShoppingBag, ArrowRight, Users, Clock, Shield } from "lucide-react";
 import { PhoneIcon } from '@heroicons/react/24/solid';
+import { globalCounter } from '../utils/globalCounter';
 
 const HeroSection: React.FC = () => {
   // State for active navigation
@@ -26,36 +27,22 @@ const HeroSection: React.FC = () => {
     );
   }, []);
 
-  // Live counter animation effect
+  // Global counter effect - ensures all users see the same number
   useEffect(() => {
     if (!mounted) return;
 
-    const startCount = 10023;
-    let currentCount = startCount;
-    let intervalId: NodeJS.Timeout;
-    
-    // Function to increment the counter
-    const incrementCounter = () => {
-      // Increment by 1-3 randomly to make it more realistic
-      const increment = Math.floor(Math.random() * 3) + 1;
-      currentCount += increment;
-      setConsultationCount(currentCount);
-    };
+    // Initialize with current global count
+    setConsultationCount(globalCounter.getDisplayCount());
 
-    // Start the counter after a short delay
-    const initialDelay = setTimeout(() => {
-      // Increment every 2-5 seconds randomly
-      intervalId = setInterval(() => {
-        incrementCounter();
-      }, Math.random() * 3000 + 2000); // Random interval between 2-5 seconds
-    }, 1000);
+    // Update counter every 3 seconds to sync with global counter
+    const intervalId = setInterval(() => {
+      const newCount = globalCounter.getDisplayCount();
+      setConsultationCount(newCount);
+    }, 3000);
 
     // Cleanup function
     return () => {
-      clearTimeout(initialDelay);
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      clearInterval(intervalId);
     };
   }, [mounted]);
 

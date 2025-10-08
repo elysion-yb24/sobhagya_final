@@ -23,6 +23,7 @@ import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from '../utils/auth-utils';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import { getApiBaseUrl } from '../config/api';
+import { isValidMobileNumber, getPhoneValidationError, sanitizePhoneInput } from '../utils/phone-validation';
 
 
 // Define types for country and authentication data
@@ -171,6 +172,14 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    
+    // Validate phone number before submitting
+    const phoneValidationError = getPhoneValidationError(phoneNumber);
+    if (phoneValidationError) {
+      setError(phoneValidationError);
+      setIsLoading(false);
+      return;
+    }
     
     try {
       // Check if we have user details from call flow
@@ -744,9 +753,10 @@ export default function LoginPage() {
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder="Enter your phone number"
+                onChange={(e) => setPhoneNumber(sanitizePhoneInput(e.target.value))}
+                placeholder="Enter 10-digit mobile number"
                 className="flex-1 px-3 sm:px-4 py-3 sm:py-3 bg-transparent outline-none text-base sm:text-lg font-medium text-gray-700 min-w-0"
+                maxLength={10}
                 required
               />
             </div>

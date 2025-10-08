@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import OtpVerificationScreen from '../../components/auth/OtpVerificationScreen'; 
 import { buildApiUrl, API_CONFIG } from '../../config/api';
+import { isValidMobileNumber, getPhoneValidationError, sanitizePhoneInput } from '../../utils/phone-validation';
 // Adjust the path to wherever your OtpVerificationScreen is located
 
 // Define a type for the country
@@ -76,6 +77,14 @@ export default function AuthenticationFlow({
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Validate phone number before submitting
+    const phoneValidationError = getPhoneValidationError(phoneNumber);
+    if (phoneValidationError) {
+      setError(phoneValidationError);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
@@ -309,10 +318,11 @@ export default function AuthenticationFlow({
               {/* Phone Number Input */}
               <input
                 type="tel"
-                placeholder="Enter Your Phone Number"
+                placeholder="Enter 10-digit mobile number"
                 className="w-full sm:flex-1 px-3 sm:px-4 py-3 sm:py-2 border border-gray-300 bg-[#F2F2F2] rounded-md sm:rounded-l-none sm:rounded-r-md h-12 focus:outline-[#F7971D] text-sm sm:text-base"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                onChange={(e) => setPhoneNumber(sanitizePhoneInput(e.target.value))}
+                maxLength={10}
                 required
               />
             </div>

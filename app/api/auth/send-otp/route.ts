@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildApiUrl, API_CONFIG } from '../../../config/api';
+import { isValidMobileNumber, getPhoneValidationError } from '../../../utils/phone-validation';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +15,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         name: "ExpressValidatorErr", 
         errors: { phone: "Phone number is required" } 
+      }, { status: 400 });
+    }
+
+    // Validate phone number format
+    const phoneValidationError = getPhoneValidationError(phone);
+    if (phoneValidationError) {
+      return NextResponse.json({ 
+        name: "ExpressValidatorErr", 
+        errors: { phone: phoneValidationError } 
       }, { status: 400 });
     }
 

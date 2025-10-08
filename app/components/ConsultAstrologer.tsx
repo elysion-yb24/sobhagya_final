@@ -328,7 +328,7 @@ const AstrologerCarousel = () => {
                   
                   {/* Expertise */}
                   <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {astrologer.talksAbout?.join(", ") || astrologer.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                    {astrologer.talksAbout?.join(", ") || "Kp, Vedic, Vastu"}
                   </p>
                   
                   {/* Experience */}
@@ -405,7 +405,7 @@ const AstrologerCarousel = () => {
                   
                   {/* Expertise */}
                   <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {astrologer.talksAbout?.join(", ") || astrologer.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                    {astrologer.talksAbout?.join(", ") || "Kp, Vedic, Vastu"}
                   </p>
                   
                   {/* Experience */}

@@ -1,6 +1,6 @@
 /**
  * Global Counter Service
- * Maintains a consistent consultation counter across all users and sessions
+ * Maintains a consistent consultation counter across all users, sessions, and tabs
  */
 
 class GlobalCounterService {
@@ -9,14 +9,70 @@ class GlobalCounterService {
   private lastUpdateTime: number = Date.now();
   private updateInterval: number = 3000; // 3 seconds between updates
   private incrementRate: number = 1.2; // Average consultations per second (realistic rate)
+  private broadcastChannel: BroadcastChannel | null = null;
+  private storageKey = 'sobhagya_consultation_counter';
 
-  private constructor() {}
+  private constructor() {
+    this.initializeBroadcastChannel();
+    this.loadFromStorage();
+  }
 
   public static getInstance(): GlobalCounterService {
     if (!GlobalCounterService.instance) {
       GlobalCounterService.instance = new GlobalCounterService();
     }
     return GlobalCounterService.instance;
+  }
+
+  private initializeBroadcastChannel(): void {
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      this.broadcastChannel = new BroadcastChannel('sobhagya-counter');
+      this.broadcastChannel.onmessage = (event) => {
+        if (event.data.type === 'COUNTER_UPDATE') {
+          this.baseCount = event.data.count;
+          this.lastUpdateTime = event.data.lastUpdateTime;
+        }
+      };
+    }
+  }
+
+  private loadFromStorage(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+          const data = JSON.parse(stored);
+          this.baseCount = data.count || 10023;
+          this.lastUpdateTime = data.lastUpdateTime || Date.now();
+        }
+      } catch (error) {
+        console.warn('Failed to load counter from storage:', error);
+      }
+    }
+  }
+
+  private saveToStorage(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        const data = {
+          count: this.baseCount,
+          lastUpdateTime: this.lastUpdateTime
+        };
+        localStorage.setItem(this.storageKey, JSON.stringify(data));
+      } catch (error) {
+        console.warn('Failed to save counter to storage:', error);
+      }
+    }
+  }
+
+  private broadcastUpdate(): void {
+    if (this.broadcastChannel) {
+      this.broadcastChannel.postMessage({
+        type: 'COUNTER_UPDATE',
+        count: this.baseCount,
+        lastUpdateTime: this.lastUpdateTime
+      });
+    }
   }
 
   /**
@@ -33,6 +89,10 @@ class GlobalCounterService {
       const consultationsAdded = Math.floor(intervalsPassed * this.incrementRate);
       this.baseCount += consultationsAdded;
       this.lastUpdateTime = now;
+      
+      // Save to storage and broadcast to other tabs
+      this.saveToStorage();
+      this.broadcastUpdate();
     }
 
     return this.baseCount;
@@ -54,7 +114,11 @@ class GlobalCounterService {
    * Initialize the counter (can be called on app start)
    */
   public initialize(): void {
-    this.lastUpdateTime = Date.now();
+    // Only update if we don't have a stored time
+    if (this.lastUpdateTime === Date.now()) {
+      this.lastUpdateTime = Date.now();
+      this.saveToStorage();
+    }
   }
 
   /**

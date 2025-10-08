@@ -5,13 +5,12 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, Star, MessageCircle, ShoppingBag, ArrowRight, Users, Clock, Shield } from "lucide-react";
 import { PhoneIcon } from '@heroicons/react/24/solid';
-import { globalCounter } from '../utils/globalCounter';
 
 const HeroSection: React.FC = () => {
   // State for active navigation
   const [activeNav, setActiveNav] = useState("chat");
   const [mounted, setMounted] = useState(false);
-  const [consultationCount, setConsultationCount] = useState(10023);
+  const [consultationCount] = useState(10023);
   const [particlePositions, setParticlePositions] = useState<{ left: number, top: number, delay: number, duration: number }[]>([]);
 
   useEffect(() => {
@@ -27,24 +26,6 @@ const HeroSection: React.FC = () => {
     );
   }, []);
 
-  // Global counter effect - ensures all users see the same number
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Initialize with current global count
-    setConsultationCount(globalCounter.getDisplayCount());
-
-    // Update counter every 3 seconds to sync with global counter
-    const intervalId = setInterval(() => {
-      const newCount = globalCounter.getDisplayCount();
-      setConsultationCount(newCount);
-    }, 3000);
-
-    // Cleanup function
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [mounted]);
 
   // Handle navigation click
   const handleNavClick = (nav: string) => {
@@ -140,15 +121,7 @@ const HeroSection: React.FC = () => {
               fontWeight: 700,
               lineHeight: 1.1
             }}>
-              <motion.span 
-                key={consultationCount}
-                initial={{ scale: 1.1, color: '#F7971D' }}
-                animate={{ scale: 1, color: 'inherit' }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                className="inline-block"
-              >
-                {consultationCount.toLocaleString()}
-              </motion.span>{" "}
+              <span>{consultationCount}</span>{" "}
               <span>Consultations Done</span>
             </h1>
             <p className="text-sm sm:text-base md:text-2xl font-semibold mb-4 px-2 sm:px-0" style={{

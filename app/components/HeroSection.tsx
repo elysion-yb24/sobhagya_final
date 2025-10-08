@@ -10,7 +10,7 @@ const HeroSection: React.FC = () => {
   // State for active navigation
   const [activeNav, setActiveNav] = useState("chat");
   const [mounted, setMounted] = useState(false);
-  const [consultationCount] = useState(10023);
+  const [consultationCount, setConsultationCount] = useState(10023);
   const [particlePositions, setParticlePositions] = useState<{ left: number, top: number, delay: number, duration: number }[]>([]);
 
   useEffect(() => {
@@ -25,6 +25,39 @@ const HeroSection: React.FC = () => {
       }))
     );
   }, []);
+
+  // Live counter animation effect
+  useEffect(() => {
+    if (!mounted) return;
+
+    const startCount = 10023;
+    let currentCount = startCount;
+    let intervalId: NodeJS.Timeout;
+    
+    // Function to increment the counter
+    const incrementCounter = () => {
+      // Increment by 1-3 randomly to make it more realistic
+      const increment = Math.floor(Math.random() * 3) + 1;
+      currentCount += increment;
+      setConsultationCount(currentCount);
+    };
+
+    // Start the counter after a short delay
+    const initialDelay = setTimeout(() => {
+      // Increment every 2-5 seconds randomly
+      intervalId = setInterval(() => {
+        incrementCounter();
+      }, Math.random() * 3000 + 2000); // Random interval between 2-5 seconds
+    }, 1000);
+
+    // Cleanup function
+    return () => {
+      clearTimeout(initialDelay);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [mounted]);
 
   // Handle navigation click
   const handleNavClick = (nav: string) => {
@@ -120,7 +153,15 @@ const HeroSection: React.FC = () => {
               fontWeight: 700,
               lineHeight: 1.1
             }}>
-              <span>{consultationCount}</span>{" "}
+              <motion.span 
+                key={consultationCount}
+                initial={{ scale: 1.1, color: '#F7971D' }}
+                animate={{ scale: 1, color: 'inherit' }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="inline-block"
+              >
+                {consultationCount.toLocaleString()}
+              </motion.span>{" "}
               <span>Consultations Done</span>
             </h1>
             <p className="text-sm sm:text-base md:text-2xl font-semibold mb-4 px-2 sm:px-0" style={{

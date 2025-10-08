@@ -308,7 +308,7 @@ function AstrologersPageContent() {
           <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setShowHistory("none")} />
           <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 flex flex-col">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-xl font-bold">
+              <h2 className="text-xl font-bold" style={{ fontFamily: "EB Garamond" }}>
                 {showHistory === "transactions" ? "Transaction History" : "Call History"}
               </h2>
               <button onClick={() => setShowHistory("none")} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">

@@ -44,7 +44,7 @@ export default function Services() {
         },
         { 
           name: "Matrimony", 
-          image: "/Group 13367.png", 
+          image: "/matrimony.svg", 
           description: "Astrology insights for a destined union, ensuring harmony, compatibility, and lifelong happiness.", 
           link: "#" 
         },
@@ -133,7 +133,7 @@ export default function Services() {
           </div>
           
           <motion.h2 
-            className="relative text-center text-white text-3xl sm:text-5xl lg:text-6xl font-bold"
+            className="relative text-center text-white text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -160,10 +160,10 @@ export default function Services() {
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
                 <img src="Kundli Generator icon.svg" alt="Free Kundli Generator" className="w-12 h-12" />
               </div>
-              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
+              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300" style={{ fontFamily: "Poppins" }}>
                 Free Kundli Generator
               </h3>
-              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300" style={{ fontFamily: "Poppins" }}>
                 Generate your complete birth chart (Kundli) with planetary positions, doshas, remedies, and detailed analysis.
               </p>
               <button 
@@ -184,10 +184,10 @@ export default function Services() {
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
                 <img src="daily-horoscope-.svg" alt="Daily Horoscope" className="w-12 h-12" />
               </div>
-              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
+              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300" style={{ fontFamily: "Poppins" }}>
                 Daily Horoscope
               </h3>
-              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300" style={{ fontFamily: "Poppins" }}>
                 Get personalized daily, weekly, monthly, and yearly horoscopes based on your zodiac sign with cosmic guidance.
               </p>
               <button 
@@ -208,10 +208,10 @@ export default function Services() {
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
                 <img src="Gun Milan (1).svg" alt="Gun Milan" className="w-12 h-12" />
               </div>
-              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
+              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300" style={{ fontFamily: "Poppins" }}>
                 Gun Milan
               </h3>
-              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
+              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300" style={{ fontFamily: "Poppins" }}>
                 Traditional Vedic astrology compatibility analysis for marriage. Calculate 36-point Gun Milan score with detailed insights.
               </p>
               <button 
@@ -230,10 +230,10 @@ export default function Services() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.0 }}
           >
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2" style={{ fontFamily: "Poppins" }}>
               Explore More Services
             </h3>
-            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto" style={{ fontFamily: "Poppins" }}>
               Discover our comprehensive range of astrology and spiritual services
             </p>
           </motion.div>
@@ -259,10 +259,10 @@ export default function Services() {
                     className="transition-opacity duration-200"
                   />
                 </div>
-                <h3 className="text-lg font-semibold mt-2 text-gray-800 transition-colors">
+                <h3 className="text-lg font-semibold mt-2 text-gray-800 transition-colors" style={{ fontFamily: "Poppins" }}>
                   {service.name}
                 </h3>
-                <p className="text-sm mt-1 text-gray-600 transition-colors">
+                <p className="text-sm mt-1 text-gray-600 transition-colors" style={{ fontFamily: "Poppins" }}>
                   {service.description}
                 </p>
                 <a href={service.link} className="text-[#F7971D] font-medium mt-2 block transition-colors">

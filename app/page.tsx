@@ -15,7 +15,6 @@ export default function Home() {
   return (
     <main>
       <HeroSection />
-      <div className="h-16 bg-white"></div>
       <ConsultingSection />
       <StatsBar />
       <OurProducts />

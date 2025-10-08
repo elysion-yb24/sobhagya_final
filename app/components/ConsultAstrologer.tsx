@@ -261,7 +261,7 @@ const AstrologerCarousel = () => {
                   </div>
                   
                   {/* Name */}
-                  <h3 className="font-bold text-base text-gray-900 mb-0.5">
+                  <h3 className="font-bold text-base text-gray-900 mb-0.5" style={{ fontFamily: "Poppins" }}>
                     {astrologer.name.split(' ').length > 2
                       ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
                       : astrologer.name
@@ -269,17 +269,17 @@ const AstrologerCarousel = () => {
                   </h3>
                   
                   {/* Language */}
-                  <p className="text-sm text-gray-600 mb-0">
+                  <p className="text-sm text-gray-600 mb-0" style={{ fontFamily: "Poppins" }}>
                     Hindi
                   </p>
                   
                   {/* Expertise */}
-                  <p className="text-sm text-gray-600 mb-0 line-clamp-2 h-8 flex items-center justify-center text-center">
+                  <p className="text-sm text-gray-600 mb-0 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins" }}>
                     {astrologer.talksAbout?.slice(0, 3).join(", ") || "Kp, Vedic, Vastu"}
                   </p>
                   
                   {/* Experience */}
-                  <p className="text-sm text-gray-600 mb-1.5">
+                  <p className="text-sm text-gray-600 mb-1.5" style={{ fontFamily: "Poppins" }}>
                     Exp:- {Math.floor(astrologer.callMinutes / 60)}years
                   </p>
                   
@@ -331,10 +331,10 @@ const AstrologerCarousel = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center" style={{ fontFamily: "Poppins" }}>
               Choose Call Type
             </h3>
-            <p className="text-gray-600 text-center mb-6">
+            <p className="text-gray-600 text-center mb-6" style={{ fontFamily: "Poppins" }}>
               How would you like to connect with {selectedCallAstrologer?.name}?
             </p>
             

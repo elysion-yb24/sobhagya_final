@@ -150,10 +150,10 @@ const BlogSection = () => {
                 />
               </div>
               <div className="p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 mb-3 line-clamp-2">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 mb-3 line-clamp-2" style={{ fontFamily: "Poppins" }}>
                   {blog.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed mb-4 h-10 overflow-hidden line-clamp-2">
+                <p className="text-gray-600 text-sm leading-relaxed mb-4 h-10 overflow-hidden line-clamp-2" style={{ fontFamily: "Poppins" }}>
                   {blog.excerpt || blog.content}
                   <span className="text-[#F7971E] cursor-pointer ml-1 font-semibold">
                     see more

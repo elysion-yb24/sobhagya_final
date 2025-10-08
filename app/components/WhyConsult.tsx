@@ -113,28 +113,27 @@ const WhyConsult: React.FC = () => {
             Professional Astrology Services
           </motion.div>
           
-          <motion.h1 
-            className="text-5xl md:text-7xl font-bold text-[#745802] mb-6 leading-tight"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.5 }}
-            style={{ fontFamily: "EB Garamond" }}
-          >
-            Why Consult our
-            <span className="block text-[#F7971D]">
-              Astrologers?
-            </span>
-          </motion.h1>
-          
-          <motion.p 
-            className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            style={{ fontFamily: "Poppins" }}
-          >
-            Discover how celestial wisdom can transform your life. Get personalized guidance, accurate predictions, and life-changing insights from certified professionals.
-          </motion.p>
+          <div className="px-6 sm:px-8">
+            <motion.h1 
+              className="text-3xl md:text-7xl font-bold text-[#745802] mb-6 leading-tight"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+              style={{ fontFamily: "EB Garamond" }}
+            >
+              Why Consult our <span className="text-[#F7971D]">Astrologers?</span>
+            </motion.h1>
+            
+            <motion.p 
+              className="text-base sm:text-xl text-gray-600 leading-relaxed text-center max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+              style={{ fontFamily: "Poppins" }}
+            >
+              Discover how celestial wisdom can transform your life. <br></br>Get personalized guidance, accurate predictions from certified professionals.
+            </motion.p>
+          </div>
         </div>
       </motion.div>
 
@@ -142,7 +141,7 @@ const WhyConsult: React.FC = () => {
       <div className="container mx-auto px-4">
         {/* Section 1: The Power of Astrology */}
         <motion.div 
-          className="max-w-5xl mx-auto mb-20"
+          className="max-w-5xl mx-auto mb-20 px-6 sm:px-8"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -150,25 +149,25 @@ const WhyConsult: React.FC = () => {
         >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "EB Garamond" }}>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "EB Garamond" }}>
                 The Power of Astrological Wisdom
               </h2>
-              <p className="text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
+              <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
                 Astrology is not just about predicting the future—it's about understanding yourself at a deeper level. Your birth chart is a cosmic blueprint that reveals your unique personality, strengths, challenges, and life purpose.
               </p>
-              <p className="text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
+              <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
                 Through careful analysis of planetary positions, astrologers can provide insights that help you make informed decisions, understand your relationships better, and navigate life's challenges with confidence.
               </p>
             </motion.div>
             
             <motion.div
               className="relative"
-              initial={{ opacity: 0, x: 30 }}
+              initial={{ opacity: 0 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
@@ -193,17 +192,17 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 2: Benefits with Animated Icons */}
         <motion.div 
-          className="max-w-6xl mx-auto mb-20"
+          className="max-w-6xl mx-auto mb-20 px-6 sm:px-8"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#745802] mb-4" style={{ fontFamily: "EB Garamond" }}>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-4" style={{ fontFamily: "EB Garamond" }}>
               Transform Your Life Through Astrology
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: "Poppins" }}>
+            <p className="text-sm sm:text-lg text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: "Poppins" }}>
               Discover how professional astrological guidance can bring clarity, direction, and positive change to every aspect of your life.
             </p>
           </div>
@@ -224,10 +223,10 @@ const WhyConsult: React.FC = () => {
                 <Image src="/relationship-harmony.svg" alt="Relationship Harmony" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
+                <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Relationship Harmony
                 </h3>
-                <p className="text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
                   Understand compatibility, resolve conflicts, and build stronger bonds. Astrology reveals the dynamics between different personalities and helps you navigate relationships with wisdom and compassion.
                 </p>
               </div>
@@ -248,10 +247,10 @@ const WhyConsult: React.FC = () => {
                 <Image src="/career-excellence.svg" alt="Career Excellence" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
+                <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Career Excellence
                 </h3>
-                <p className="text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
                   Discover your natural talents and career path. Astrology helps identify the best timing for career moves, business decisions, and professional development opportunities.
                 </p>
               </div>
@@ -269,13 +268,13 @@ const WhyConsult: React.FC = () => {
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.3 }}
               >
-                <Image src="/health-and-wellness.svg" alt="Health & Wellness" width={48} height={48} className="w-12 h-12" />
+                <Image src="/Health and wellness.svg" alt="Health & Wellness" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
+                <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Health & Wellness
                 </h3>
-                <p className="text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
                   Understand how planetary influences affect your well-being. Receive guidance on preventive health measures and lifestyle choices that align with your cosmic energy.
                 </p>
               </div>
@@ -296,10 +295,10 @@ const WhyConsult: React.FC = () => {
                 <Image src="/effective-remedies.svg" alt="Effective Remedies" width={48} height={48} className="w-12 h-12" />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
+                <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Effective Remedies
                 </h3>
-                <p className="text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
                   Receive personalized solutions including mantras, gemstones, and spiritual practices. These remedies help balance planetary energies and bring harmony to your life.
                 </p>
               </div>
@@ -309,7 +308,7 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 3: Call to Action */}
         <motion.div 
-          className="text-center mb-20"
+          className="text-center mb-20 px-6 sm:px-8"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -320,15 +319,15 @@ const WhyConsult: React.FC = () => {
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "EB Garamond" }}>
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "Poppins" }}>
               Ready to Discover Your Cosmic Path?
             </h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "Poppins" }}>
+            <p className="text-sm sm:text-lg text-gray-600 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "Poppins" }}>
               Connect with our certified astrologers and unlock the secrets written in your stars. Begin your journey of self-discovery today.
             </p>
             
             <motion.button 
-              className="bg-[#F7971D] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center mx-auto group hover:bg-orange-600"
+              className="bg-[#F7971D] text-white px-4 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center mx-auto group hover:bg-orange-600"
               style={{ fontFamily: "Poppins" }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

@@ -157,7 +157,7 @@ function ConfirmationDialog({
             </div>
           )}
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-lg font-bold text-gray-900" style={{ fontFamily: "Poppins" }}>{title}</h3>
             <p className="text-gray-600 text-sm mt-1">{message}</p>
           </div>
         </div>
@@ -1237,7 +1237,7 @@ export default function AstrologerProfilePage() {
             <X className="w-8 h-8 text-red-500" />
           </div>
           
-          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+          <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: "EB Garamond" }}>
             {error?.includes("not found") ? "Astrologer Not Found" : "Something Went Wrong"}
           </h2>
           
@@ -1347,7 +1347,7 @@ export default function AstrologerProfilePage() {
                            {/* Basic Info */}
                  <div className="bg-white rounded-xl p-6 shadow-sm">
                    <div className="flex items-center gap-3 mb-3">
-                     <h1 className="text-3xl font-bold text-gray-900">{astrologer?.name}</h1>
+                     <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "EB Garamond" }}>{astrologer?.name}</h1>
                      
                      {/* Blue verification tick - Instagram style */}
                      {/* <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
@@ -1462,8 +1462,8 @@ export default function AstrologerProfilePage() {
 
                 {/* About Section */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">About</h3>
-                  <p className="text-gray-700 leading-relaxed text-base">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: "Poppins" }}>About</h3>
+                  <p className="text-gray-700 leading-relaxed text-base" style={{ fontFamily: "Poppins" }}>
                     {astrologer?.about || `Astrologer ${astrologer?.name} is a renowned expert in ${astrologer?.specializations?.join(', ')}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer?.name} offers personalized consultations to align your life with cosmic energies.`}
                   </p>
                 </div>
@@ -1473,7 +1473,7 @@ export default function AstrologerProfilePage() {
               <div className="space-y-6">
                 {/* Call and Message Stats */}
                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4" style={{ fontFamily: "Poppins" }}>Statistics</h3>
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FDF4E6' }}>
@@ -1540,7 +1540,7 @@ export default function AstrologerProfilePage() {
                               }}
                             />
                           </div>
-                          <h4 className="font-semibold text-gray-900 mb-2 text-base">{ast.name}</h4>
+                          <h4 className="font-bold text-gray-900 mb-2 text-base" style={{ fontFamily: "Poppins" }}>{ast.name}</h4>
                           <p className="text-sm text-gray-600 mb-2">{ast.specializations?.slice(0, 2).join(', ')}</p>
                           <p className="text-sm text-gray-500 mb-4">Exp: {ast.experience} years</p>
                           <button 
@@ -1577,7 +1577,7 @@ export default function AstrologerProfilePage() {
 
             {/* Reviews Section */}
             <div className="bg-white">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">Reviews</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-8" style={{ fontFamily: "Poppins" }}>Reviews</h3>
               
               {reviewsLoading ? (
                 <div className="flex items-center justify-center py-12">
@@ -1593,7 +1593,7 @@ export default function AstrologerProfilePage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-bold text-gray-900 text-lg">{review.userName || 'Anonymous'}</h4>
+                          <h4 className="font-bold text-gray-900 text-lg" style={{ fontFamily: "Poppins" }}>{review.userName || 'Anonymous'}</h4>
                           <div className="flex items-center gap-1">
                             {[...Array(5)].map((_, i) => (
                               <Star
@@ -1605,7 +1605,7 @@ export default function AstrologerProfilePage() {
                             ))}
                           </div>
                         </div>
-                        <p className="text-gray-700 leading-relaxed">{review.comment || 'No comment provided'}</p>
+                        <p className="text-gray-700 leading-relaxed" style={{ fontFamily: "Poppins" }}>{review.comment || 'No comment provided'}</p>
                       </div>
                     </div>
                   ))}
@@ -1667,7 +1667,7 @@ export default function AstrologerProfilePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-xl p-6 shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Send Dakshina</h2>
+              <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: "EB Garamond" }}>Send Dakshina</h2>
               <button
                 onClick={() => setShowGiftModal(false)}
                 className="p-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -1677,7 +1677,7 @@ export default function AstrologerProfilePage() {
             </div>
             
             <div className="mb-4">
-              <p className="text-gray-600 text-sm mb-4">
+              <p className="text-gray-600 text-sm mb-4" style={{ fontFamily: "Poppins" }}>
                 Choose a gift to send to {astrologer?.name}. Your wallet balance: ₹{walletBalance}
               </p>
             </div>
@@ -1701,7 +1701,7 @@ export default function AstrologerProfilePage() {
                   >
                     <div className="flex flex-col items-center text-center">
                       <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-2" />
-                      <h3 className="font-semibold text-gray-900 text-sm mb-1">{gift.name}</h3>
+                      <h3 className="font-bold text-gray-900 text-sm mb-1" style={{ fontFamily: "Poppins" }}>{gift.name}</h3>
                       <p className="text-orange-600 font-bold">₹{gift.price}</p>
                       {walletBalance < gift.price && (
                         <p className="text-red-500 text-xs mt-1">Insufficient balance</p>

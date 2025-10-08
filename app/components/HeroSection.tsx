@@ -186,19 +186,23 @@ const HeroSection: React.FC = () => {
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className="rounded-lg px-3 py-2.5 flex items-center justify-center shadow-lg transition-all duration-300 bg-white text-gray-800 hover:bg-orange-50 hover:text-orange-600 group flex-1 max-w-[120px]"
+                    className="rounded-lg px-4 py-4 flex items-center justify-center shadow-lg transition-all duration-300 bg-white text-black hover:scale-105 group flex-1 max-w-[140px]"
                   >
                     <Image
                       src={card.icon}
                       alt={card.title}
-                      width={20}
-                      height={20}
-                      className="mr-1.5 block transition-all duration-300"
+                      width={24}
+                      height={24}
+                      className="mr-2 block transition-all duration-300"
                       style={{ display: 'block' }}
                     />
-                    <span className="text-xs font-medium leading-tight" style={{
+                    <span className="text-sm font-normal leading-tight" style={{
                       fontFamily:"Poppins"
-                    }}>{card.title}</span>
+                    }}>
+                      {card.id === "chat" ? "Chat" : 
+                       card.id === "talk" ? "Call" : 
+                       card.id === "shop" ? "Shop" : card.title}
+                    </span>
                   </div>
                 </Link>
               ))}
@@ -209,7 +213,7 @@ const HeroSection: React.FC = () => {
               {navigationCards.map((card) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <div
-                    className="rounded-xl p-6 sm:p-8 py-8 sm:py-10 flex flex-col items-center text-center shadow-xl transition-all duration-300 group bg-white text-gray-800 hover:bg-orange-50 hover:text-orange-600 hover:shadow-2xl hover:-translate-y-1"
+                    className="rounded-xl p-6 sm:p-8 py-8 sm:py-10 flex flex-col items-center text-center shadow-xl transition-all duration-300 group bg-white text-black hover:scale-105"
                   >
                     <div className="flex items-center justify-center">
                       <Image
@@ -221,7 +225,7 @@ const HeroSection: React.FC = () => {
                         style={{ display: 'block' }}
                       />
                     </div>
-                    <h3 className="font-normal mt-2 sm:mt-3 text-base sm:text-lg" style={{ fontFamily: "Poppins" }}>{card.title}</h3>
+                    <h3 className="font-medium mt-2 sm:mt-3 text-base sm:text-lg" style={{ fontFamily: "Poppins" }}>{card.title}</h3>
                   </div>
                 </Link>
               ))}

@@ -616,10 +616,10 @@ const Header = () => {
                 <h3 className="text-sm font-semibold text-gray-500 mb-3">Navigation</h3>
                 <nav className="space-y-2">
                   {[
-                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
-                    { href: "/about", label: "About", icon: "✨", bgColor: "bg-indigo-100" },
-                    { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
-                    { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
+                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "/Call with Astrologer.svg" },
+                    { href: "/about", label: "About", icon: "/About Us.svg" },
+                    { href: "/services", label: "Services", icon: "/Services.svg" },
+                    { href: "/blog", label: "Blog", icon: "/Blog.svg" },
                   ].map((item, index) => (
                     <Link 
                       key={item.href}
@@ -632,8 +632,14 @@ const Header = () => {
                       onClick={() => setIsOpen(false)}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
-                      <div className={`w-10 h-10 ${item.bgColor} rounded-full flex items-center justify-center`}>
-                        <span className="text-lg">{item.icon}</span>
+                      <div className="w-10 h-10 flex items-center justify-center">
+                        <Image 
+                          src={item.icon} 
+                          alt={item.label} 
+                          width={24} 
+                          height={24} 
+                          className="w-6 h-6" 
+                        />
                       </div>
                       <span className="flex-1">{item.label}</span>
                       <div className={`transition-opacity duration-300 ${

@@ -125,13 +125,14 @@ const WhyConsult: React.FC = () => {
             </motion.h1>
             
             <motion.p 
-              className="text-base sm:text-xl text-gray-600 leading-relaxed text-center max-w-3xl mx-auto"
+              className="text-base sm:text-xl text-gray-600 leading-relaxed text-center md:whitespace-nowrap"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.7 }}
               style={{ fontFamily: "Poppins" }}
             >
-              Discover how celestial wisdom can transform your life. <br></br>Get personalized guidance, accurate predictions from certified professionals.
+              Discover how celestial wisdom can transform your life.<br></br>
+              Get personalized guidance, accurate predictions from certified professionals.
             </motion.p>
           </div>
         </div>
@@ -157,10 +158,10 @@ const WhyConsult: React.FC = () => {
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "EB Garamond" }}>
                 The Power of Astrological Wisdom
               </h2>
-              <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
+              <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6 text-justify" style={{ fontFamily: "Poppins" }}>
                 Astrology is not just about predicting the future—it's about understanding yourself at a deeper level. Your birth chart is a cosmic blueprint that reveals your unique personality, strengths, challenges, and life purpose.
               </p>
-              <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
+              <p className="text-sm sm:text-lg text-gray-600 leading-relaxed mb-6 text-justify" style={{ fontFamily: "Poppins" }}>
                 Through careful analysis of planetary positions, astrologers can provide insights that help you make informed decisions, understand your relationships better, and navigate life's challenges with confidence.
               </p>
             </motion.div>
@@ -192,7 +193,7 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 2: Benefits with Animated Icons */}
         <motion.div 
-          className="max-w-6xl mx-auto mb-20 px-6 sm:px-8"
+          className="max-w-6xl mx-auto mb-20 pl-8 pr-20 sm:pl-12 sm:pr-28"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -226,7 +227,7 @@ const WhyConsult: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Relationship Harmony
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-justify" style={{ fontFamily: "Poppins" }}>
                   Understand compatibility, resolve conflicts, and build stronger bonds. Astrology reveals the dynamics between different personalities and helps you navigate relationships with wisdom and compassion.
                 </p>
               </div>
@@ -250,7 +251,7 @@ const WhyConsult: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Career Excellence
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-justify" style={{ fontFamily: "Poppins" }}>
                   Discover your natural talents and career path. Astrology helps identify the best timing for career moves, business decisions, and professional development opportunities.
                 </p>
               </div>
@@ -274,7 +275,7 @@ const WhyConsult: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Health & Wellness
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-justify" style={{ fontFamily: "Poppins" }}>
                   Understand how planetary influences affect your well-being. Receive guidance on preventive health measures and lifestyle choices that align with your cosmic energy.
                 </p>
               </div>
@@ -298,7 +299,7 @@ const WhyConsult: React.FC = () => {
                 <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-3" style={{ fontFamily: "Poppins" }}>
                   Effective Remedies
                 </h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-justify" style={{ fontFamily: "Poppins" }}>
                   Receive personalized solutions including mantras, gemstones, and spiritual practices. These remedies help balance planetary energies and bring harmony to your life.
                 </p>
               </div>

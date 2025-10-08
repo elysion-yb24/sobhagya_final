@@ -20,7 +20,7 @@ export default function Services() {
         },
         { 
           name: "Face Reading", 
-          image: "/Face reading.svg", 
+          image: "/face-reading.svg", 
           description: "Your face is a mirror of destiny, revealing secrets about your personality and future.", 
           link: "#"
         },

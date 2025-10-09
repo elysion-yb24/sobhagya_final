@@ -220,7 +220,7 @@ const AstrologerCarousel = () => {
   if (loading) {
     return (
       <div className="w-full py-12 relative" style={{
-        backgroundImage: "url('/bg-image.svg')",
+        backgroundImage: "url('/consult-home.gif')",
       }}>
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-center text-white text-5xl md:text-4xl font-bold mb-10" style={{
@@ -246,7 +246,7 @@ const AstrologerCarousel = () => {
     <div
       className="w-full py-12 relative"
       style={{
-        backgroundImage: "url('/bg-image.svg')",
+        backgroundImage: "url('/consult-home.gif')",
       }}
     >
       <div className="max-w-6xl mx-auto px-4">
@@ -258,21 +258,21 @@ const AstrologerCarousel = () => {
         </h2>
       </div>
 
-      {/* Slider container with arrows outside */}
-      <div className="relative">
-        {/* Previous button - widened */}
+      {/* Slider container with arrows inside */}
+      <div className="relative max-w-6xl mx-auto px-4">
+        {/* Previous button - positioned inside */}
         <button
           onClick={prevSlide}
-          className="absolute left-8 sm:left-16 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
           aria-label="Previous astrologer"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
         {/* Slider track - responsive card display */}
-        <div className="flex justify-center gap-4 px-4">
+        <div className="flex justify-center gap-4 px-8 sm:px-12">
           {/* Small screens: Show 1 card */}
           <div className="block md:hidden">
             {astrologers.slice(currentIndex, currentIndex + 1).map((astrologer, index) => (
@@ -510,13 +510,13 @@ const AstrologerCarousel = () => {
           </div>
         </div>
 
-        {/* Next button - widened */}
+        {/* Next button - positioned inside */}
         <button
           onClick={nextSlide}
-          className="absolute right-8 sm:right-16 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
           aria-label="Next astrologer"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>

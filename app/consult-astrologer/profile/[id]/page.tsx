@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, isAuthenticated, getUserDetails, hasUserCalledBefore } from "../../../utils/auth-utils";
 import { motion } from "framer-motion";
+import { getRandomAstrologerBackground } from "../../../utils/randomBackground";
 
 interface Astrologer {
     _id: string;
@@ -40,6 +41,7 @@ export default function CallAstrologerProfilePage() {
     const params = useParams();
     const router = useRouter();
     const astrologerId = params?.id as string;
+    const [randomBackground, setRandomBackground] = useState<string>('');
 
     const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
     const [similarAstrologers, setSimilarAstrologers] = useState<Astrologer[]>([]);
@@ -86,6 +88,11 @@ export default function CallAstrologerProfilePage() {
             fetchSimilarAstrologers();
         }
     }, [astrologer]);
+
+    // Set random background on component mount
+    useEffect(() => {
+        setRandomBackground(getRandomAstrologerBackground());
+    }, []);
 
     const fetchAstrologerProfile = async () => {
         try {
@@ -346,7 +353,7 @@ export default function CallAstrologerProfilePage() {
                 className="relative h-32 sm:h-40 md:h-48 overflow-hidden w-full"
             >
                 <img
-                    src="/Astrologer profile Background.svg"
+                    src={randomBackground || "/Astrologer profile Background.svg"}
                     alt="Profile header background"
                     className="absolute inset-0 w-full h-full object-cover"
                 />

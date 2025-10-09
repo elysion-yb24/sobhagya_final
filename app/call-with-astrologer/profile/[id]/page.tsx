@@ -9,6 +9,7 @@ import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from ".
 import { getSampleAstrologerProfile, getSampleReviews, getSampleGifts, getSimilarAstrologers } from "../../../data/sampleAstrologerProfiles";
 import DevModeBanner from "../../../components/DevModeBanner";
 import { motion } from "framer-motion";
+import { getRandomAstrologerBackground } from "../../../utils/randomBackground";
 
 interface Astrologer {
     _id: string;
@@ -48,6 +49,7 @@ export default function CallAstrologerProfilePage() {
     const params = useParams();
     const router = useRouter();
     const astrologerId = params?.id as string;
+    const [randomBackground, setRandomBackground] = useState<string>('');
 
     // Add CSS animation for scrolling text
     React.useEffect(() => {
@@ -125,6 +127,11 @@ export default function CallAstrologerProfilePage() {
             fetchSimilarAstrologers();
         }
     }, [astrologer]);
+
+    // Set random background on component mount
+    useEffect(() => {
+        setRandomBackground(getRandomAstrologerBackground());
+    }, []);
 
     const fetchAstrologerProfile = async () => {
         try {
@@ -467,7 +474,7 @@ export default function CallAstrologerProfilePage() {
                 className="relative h-32 sm:h-40 md:h-48 overflow-hidden w-full"
             >
                 <img
-                    src="/Astrologer profile Background.svg"
+                    src={randomBackground || "/Astrologer profile Background.svg"}
                     alt="Profile header background"
                     className="absolute inset-0 w-full h-full object-cover"
                 />
@@ -626,7 +633,7 @@ export default function CallAstrologerProfilePage() {
                                 {/* Right Column - Name, Specializations, Languages, About */}
                                 <div className="flex-1 pt-4 lg:pt-16">
                                     {/* Name */}
-                                    <h1 className="font-bold text-gray-900 mb-2 text-2xl sm:text-3xl lg:text-4xl" style={{
+                                    <h1 className="font-bold text-gray-900 mb-2 text-sm sm:text-lg md:text-xl lg:text-2xl" style={{
                                         fontFamily: 'EB Garamond'
                                     }}>
                                         {astrologer.name}

@@ -15,6 +15,7 @@ import { API_CONFIG } from "../config/api";
 import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../config/development";
 import { getSampleAstrologersResponse } from "../data/sampleAstrologers";
 import DevModeBanner from "../components/DevModeBanner";
+import ScrollAnimation from "../components/ui/ScrollAnimation";
 
 interface Astrologer {
   _id: string;

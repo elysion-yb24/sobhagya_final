@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import ScrollAnimation from '../components/ui/ScrollAnimation';
 
 export default function Services() {
     const services = [
@@ -102,7 +103,7 @@ export default function Services() {
         {/* Enhanced Background Image for Heading with Animations */}
         <motion.div
           className="relative bg-cover bg-center py-16 sm:py-20 overflow-hidden"
-          style={{ backgroundImage: "url('/service.png')" }}
+          style={{ backgroundImage: "url('/Our Services.gif')" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
@@ -239,12 +240,8 @@ export default function Services() {
           </motion.div>
 
           {/* Enhanced Services Grid with Animations */}
-          <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-          >
+          <ScrollAnimation delay={0.3} direction="up">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {services.map((service, index) => (
               <div
                 key={index}
@@ -270,15 +267,12 @@ export default function Services() {
                 </a>
               </div>
             ))}
-          </motion.div>
+            </div>
+          </ScrollAnimation>
   
           {/* Enhanced Call to Action with Animation */}
-          <motion.div 
-            className="bg-orange-50 py-16 sm:py-20 mt-12 mb-20 text-center px-4 sm:px-6 w-full"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 2.0 }}
-          >
+          <ScrollAnimation delay={0.5} direction="up">
+            <div className="bg-orange-50 py-16 sm:py-20 mt-12 mb-20 text-center px-4 sm:px-6 w-full">
             <div className="max-w-4xl mx-auto">
               <motion.p 
                 className="text-[#745802] text-base sm:text-lg font-light"
@@ -307,7 +301,8 @@ export default function Services() {
                 Book Now
               </motion.button>
             </div>
-          </motion.div>
+            </div>
+          </ScrollAnimation>
         </div>
       </section>
     );

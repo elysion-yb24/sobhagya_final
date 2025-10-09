@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import ScrollAnimation from "../components/ui/ScrollAnimation";
 import { Star, Users, Clock, Shield, Sparkles, Heart, Globe, Award, PhoneIcon, ArrowRight } from "lucide-react";
 
 const AboutUs = () => {
@@ -28,7 +29,7 @@ const AboutUs = () => {
       {/* Enhanced Background Image for Heading with Animations */}
       <motion.div 
         className="relative bg-cover bg-center py-16 sm:py-20 overflow-hidden"
-        style={{ backgroundImage: "url('/service.png')" }}
+        style={{ backgroundImage: "url('/About Us.gif')" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}

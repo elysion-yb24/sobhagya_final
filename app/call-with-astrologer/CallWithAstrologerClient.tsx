@@ -156,8 +156,8 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           transition={{ duration: 0.8 }}
         >
           <Image
-            src="/call.svg"
-            alt="call-image"
+            src="/call-with-astrologer.gif"
+            alt="call-with-astrologer"
             fill
             className="brightness-75 object-cover"
           />

@@ -129,16 +129,18 @@ const HeroSection: React.FC = () => {
             }}>
               Your's might be waiting
             </p>
-            <Link href="/call-with-astrologer">
-              <button className="bg-white text-orange-600 px-4 sm:px-6 py-3 sm:py-4 font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#F7971D] hover:text-white transition-all duration-300 flex items-center justify-center mx-auto md:mx-0 mt-4 sm:mt-6 w-full sm:w-auto" style={{
-                fontFamily: "Poppins",
-                fontSize: "clamp(16px, 4vw, 22px)"
-              }}>
-                <PhoneIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
-                Get a call now
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3" />
-              </button>
-            </Link>
+            <div className="flex justify-center md:justify-start mt-4 sm:mt-6">
+              <Link href="/call-with-astrologer" className="inline-block">
+                <button className="bg-white text-orange-600 px-4 sm:px-6 py-3 sm:py-4 font-semibold rounded-lg shadow-md hover:shadow-lg hover:bg-[#F7971D] hover:text-white transition-all duration-300 flex items-center justify-center" style={{
+                  fontFamily: "Poppins",
+                  fontSize: "clamp(16px, 4vw, 22px)"
+                }}>
+                  <PhoneIcon className="w-5 h-5 sm:w-6 sm:h-6 mr-2 sm:mr-3" />
+                  Get a call now
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 sm:ml-3" />
+                </button>
+              </Link>
+            </div>
           </div>
 
           {/* Mobile: Right: astrologer image first */}

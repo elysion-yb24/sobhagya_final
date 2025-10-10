@@ -142,7 +142,7 @@ const WhyConsult: React.FC = () => {
       <div className="container mx-auto px-4">
         {/* Section 1: The Power of Astrology */}
         <motion.div 
-          className="max-w-5xl mx-auto mb-20 px-6 sm:px-8"
+          className="max-w-5xl mx-auto mb-20 px-6 sm:px-8 mt-12"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -150,6 +150,7 @@ const WhyConsult: React.FC = () => {
         >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <motion.div
+              className="pr-4 lg:pr-8"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -173,17 +174,17 @@ const WhyConsult: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
             >
-              <div className="relative w-full h-80 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl overflow-hidden">
+              <div className="relative w-full h-96 lg:h-[500px] bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl overflow-hidden">
                 <motion.div
                   className="absolute inset-0 bg-[#F7971D] opacity-10 rounded-2xl"
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
                 <Image 
-                  src="/the-power-of-astrological-wisdom.svg" 
+                  src="/the-power-of-astrological-wisdom-1.gif" 
                   alt="The Power of Astrological Wisdom" 
-                  width={400} 
-                  height={320} 
+                  width={500} 
+                  height={500} 
                   className="w-full h-full object-cover" 
                 />
               </div>

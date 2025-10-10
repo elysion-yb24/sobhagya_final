@@ -71,7 +71,7 @@ const Contact = () => {
       {/* Enhanced Header Section with Animations */}
       <motion.div
         className="relative h-32 md:h-44 bg-cover bg-center flex items-center justify-center overflow-hidden"
-        style={{ backgroundImage: "url('/hh.png')" }}
+        style={{ backgroundImage: "url('/contact-us.gif')" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}

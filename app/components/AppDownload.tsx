@@ -6,7 +6,7 @@ const DownloadAppSection = () => {
     <section
       className="py-8 sm:py-12 px-4 sm:px-6"
       style={{
-        backgroundImage: "url('/orange.png')",
+        backgroundImage: "url('/download-app-bg.gif')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}

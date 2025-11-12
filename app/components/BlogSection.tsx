@@ -37,7 +37,9 @@ const BlogSection = () => {
 
         const data = await response.json();
 
-        if (data.success && Array.isArray(data.data)) {
+        if (data.success && data.data?.list && Array.isArray(data.data.list)) {
+          setBlogs(data.data.list);
+        } else if (data.success && Array.isArray(data.data)) {
           setBlogs(data.data);
         } else if (Array.isArray(data.blogs)) {
           setBlogs(data.blogs);
@@ -48,7 +50,7 @@ const BlogSection = () => {
           setBlogs([]);
         }
       } catch (err) {
-        console.error("Error fetching blogs:", err);
+        console.error("Failed to fetch blogs:", err);
         setError("Failed to fetch blogs");
         setBlogs([]);
       } finally {
@@ -148,6 +150,14 @@ const BlogSection = () => {
                     target.src = "/default-image.png";
                   }}
                 />
+                {/* Reading time badge */}
+                <div className="absolute top-3 right-3 bg-black/70 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12,6 12,12 16,14"></polyline>
+                  </svg>
+                  <span>{blog.readTime}</span>
+                </div>
               </div>
               <div className="p-4 sm:p-6">
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors duration-200 mb-3 line-clamp-2" style={{ fontFamily: "Poppins" }}>
@@ -155,9 +165,6 @@ const BlogSection = () => {
                 </h3>
                 <p className="text-gray-600 text-sm leading-relaxed mb-4 h-10 overflow-hidden line-clamp-2" style={{ fontFamily: "Poppins" }}>
                   {blog.excerpt || blog.content}
-                  <span className="text-[#F7971E] cursor-pointer ml-1 font-semibold">
-                    see more
-                  </span>
                 </p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs sm:text-sm text-gray-500 font-medium">

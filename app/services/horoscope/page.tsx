@@ -5,13 +5,38 @@ import { motion } from 'framer-motion';
 import { Star, ArrowLeft, RefreshCw, Heart, Users, TrendingUp } from 'lucide-react';
 import Lottie from 'lottie-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function HoroscopeService() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [horoscopes, setHoroscopes] = useState<any>({});
   const [language, setLanguage] = useState<'english' | 'hindi'>('english');
   const [lastUpdated, setLastUpdated] = useState<string>('');
   const [symbolData, setSymbolData] = useState<any>({});
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined') {
+      // Use browser history to go back to previous page
+      // This will naturally return to home if came from home, or services if came from services
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        // Fallback: if no history, check referrer
+        const ref = document.referrer;
+        if (ref && ref.includes(window.location.origin)) {
+          if (ref.includes('/services')) {
+            router.push('/services');
+          } else {
+            router.push('/');
+          }
+        } else {
+          // Default to services
+          router.push('/services');
+        }
+      }
+    }
+  };
 
   const zodiacSigns = [
     { 
@@ -251,13 +276,13 @@ export default function HoroscopeService() {
       <div className="bg-white shadow-sm border-b border-orange-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link 
-              href="/services"
+            <button
+              onClick={handleBack}
               className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back to Services</span>
-            </Link>
+              <span className="font-medium">Back</span>
+            </button>
             <div className="flex items-center gap-2">
               <Star className="w-5 h-5 text-orange-500" />
               <span className="text-sm text-gray-500">Daily Horoscope</span>

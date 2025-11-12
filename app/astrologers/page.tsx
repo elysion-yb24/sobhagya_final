@@ -12,8 +12,7 @@ import { getApiBaseUrl } from "../config/api";
 import { useWalletBalance, WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
 import { SessionManagerProvider } from "../components/astrologers/SessionManager";
 import { API_CONFIG } from "../config/api";
-import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../config/development";
-import { getSampleAstrologersResponse } from "../data/sampleAstrologers";
+import { shouldShowDevBanner, shouldShowDebugLogs } from "../config/development";
 import DevModeBanner from "../components/DevModeBanner";
 import ScrollAnimation from "../components/ui/ScrollAnimation";
 
@@ -48,6 +47,8 @@ function AstrologersPageContent() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [offlineCount, setOfflineCount] = useState(0);
+  const [showEndMessage, setShowEndMessage] = useState(false);
 
   const { walletBalance } = useWalletBalance();
 
@@ -110,35 +111,8 @@ function AstrologersPageContent() {
       try {
         const token = getAuthToken();
         if (!token) {
-          if (shouldUseSampleData()) {
-            if (shouldShowDebugLogs()) {
-              console.log("No token found, using sample data for development");
-            }
-            // Use sample data when no token (for development)
-            const sampleResponse = getSampleAstrologersResponse(skip, limit);
-          const sampleAstrologers = sampleResponse.data.list.map((a: any) => ({
-            ...a,
-            callsCount: a.totalReviews || 0,
-            experience: a.experience?.toString() || "0"
-          }));
-          
-          setAllAstrologers(prev => {
-            if (append && !query) {
-              const existingIds = new Set(prev.map(a => a._id));
-              const uniqueNew = sampleAstrologers.filter(a => !existingIds.has(a._id));
-              return [...prev, ...uniqueNew];
-            }
-            return sampleAstrologers;
-          });
-          
-          setHasMore(!query && sampleAstrologers.length === limit);
-          if (!query) setCurrentPage(page);
+          setError("Authentication required. Please log in to view astrologers.");
           return;
-          } else {
-            // No token and sample data is disabled, show error
-            setError("Authentication required. Please log in to view astrologers.");
-            return;
-          }
         }
   
         let endpoint = "";
@@ -172,6 +146,28 @@ function AstrologersPageContent() {
           ? data.data?.list || data.users || data.data || []
           : data.data?.list || [];
   
+        // Count offline astrologers in new batch
+        let updatedOfflineCount = offlineCount;
+        if (!query) {
+          const newOfflineCount = newAstrologers.filter(
+            (a: any) => a.status === 'offline' || a.isOnline === false
+          ).length;
+          
+          if (append) {
+            updatedOfflineCount = offlineCount + newOfflineCount;
+          } else {
+            updatedOfflineCount = newOfflineCount;
+          }
+          
+          setOfflineCount(updatedOfflineCount);
+          
+          // If we've reached 5-7 offline astrologers, stop loading
+          if (updatedOfflineCount >= 5) {
+            setHasMore(false);
+            setShowEndMessage(true);
+          }
+        }
+  
         setAllAstrologers(prev => {
           if (append && !query) {
             // ✅ filter out duplicates
@@ -182,36 +178,14 @@ function AstrologersPageContent() {
           return newAstrologers;
         });
   
-        setHasMore(!query && newAstrologers.length === limit);
+        // Only set hasMore if we haven't reached offline limit
+        if (!query && updatedOfflineCount < 5) {
+          setHasMore(newAstrologers.length === limit);
+        }
         if (!query) setCurrentPage(page);
       } catch (err) {
-        console.error("API failed, using sample data:", err);
-        
-        // Use sample data when API fails
-        try {
-          const sampleResponse = getSampleAstrologersResponse(skip, limit);
-          const sampleAstrologers = sampleResponse.data.list.map((a: any) => ({
-            ...a,
-            callsCount: a.totalReviews || 0,
-            experience: a.experience?.toString() || "0"
-          }));
-          
-          setAllAstrologers(prev => {
-            if (append && !query) {
-              const existingIds = new Set(prev.map(a => a._id));
-              const uniqueNew = sampleAstrologers.filter(a => !existingIds.has(a._id));
-              return [...prev, ...uniqueNew];
-            }
-            return sampleAstrologers;
-          });
-          
-          setHasMore(!query && sampleAstrologers.length === limit);
-          if (!query) setCurrentPage(page);
-          setError(null); // Clear error since we have sample data
-        } catch (sampleErr) {
-          console.error("Sample data also failed:", sampleErr);
-          setError("Failed to fetch astrologers");
-        }
+        console.error("Failed to fetch astrologers:", err);
+        setError("Failed to fetch astrologers. Please try again later.");
       } finally {
         setIsLoading(false);
         setIsLoadingMore(false);
@@ -230,7 +204,9 @@ function AstrologersPageContent() {
   const handleSearchClick = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
-    setAllAstrologers([])
+    setAllAstrologers([]);
+    setOfflineCount(0);
+    setShowEndMessage(false);
     fetchAstrologers(1, false,query,languageFilter,sortBy);
     updateURL(1, query,sortBy,languageFilter); 
   };
@@ -241,7 +217,9 @@ function AstrologersPageContent() {
       setSortBy(sort.type as any);
       setLanguageFilter(sort.language || "All");
       setCurrentPage(1);
-      setAllAstrologers([])
+      setAllAstrologers([]);
+      setOfflineCount(0);
+      setShowEndMessage(false);
   
       fetchAstrologers(1, false, searchQuery, sort.language || "All", sort.type);
       updateURL(1, searchQuery, sort.type, sort.language || "All");
@@ -257,6 +235,8 @@ function AstrologersPageContent() {
     setLanguageFilter("All");
     setSortBy("");
     setCurrentPage(1);
+    setOfflineCount(0);
+    setShowEndMessage(false);
 
     fetchAstrologers(1, false);
     router.push(window.location.pathname, { scroll: false });
@@ -356,7 +336,14 @@ function AstrologersPageContent() {
             showVideoButton={sortBy === "video"}
             source="astrologersPage"
             hasMore={hasMore}
+            showEndMessage={showEndMessage}
             onLoadMore={() => {
+              // Stop loading if we already have 5-7 offline astrologers
+              if (offlineCount >= 5) {
+                setHasMore(false);
+                setShowEndMessage(true);
+                return;
+              }
               const nextPage = currentPage + 1;
               setCurrentPage(nextPage);
               fetchAstrologers(nextPage, true);

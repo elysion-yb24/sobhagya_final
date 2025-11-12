@@ -23,6 +23,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   isLoading
 }) => {
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 
   const handleSearch = () => {
     onSearchClick(localQuery);
@@ -75,33 +76,44 @@ const FilterBar: React.FC<FilterBarProps> = ({
       </div>
 
       {/* 🌍 Language Dropdown */}
-      <div className="relative group">
+      <div className="relative">
         <button
+          onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
           className={`flex items-center gap-1 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
             selectedSort === "language"
               ? "bg-orange-500 text-white shadow-md"
               : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-orange-300"
           }`}
         >
-          Language <ChevronDown className="w-4 h-4" />
+          Language <ChevronDown className={`w-4 h-4 transition-transform ${isLanguageDropdownOpen ? 'rotate-180' : ''}`} />
         </button>
 
-        {/* Hover dropdown */}
-        <div className="absolute hidden group-hover:flex flex-col mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-          {["All", "Hindi", "English", "Marathi", "Punjabi", "Gujarati"].map((lang) => (
-            <button
-              key={lang}
-              onClick={() =>
-                onSortChange({ type: "language", language: lang })
-              }
-              className={`px-4 py-2 text-left text-sm hover:bg-orange-100 transition-colors ${
-                selectedLanguage === lang ? "font-semibold text-orange-600 bg-orange-50" : ""
-              }`}
-            >
-              {lang}
-            </button>
-          ))}
-        </div>
+        {/* Click dropdown */}
+        {isLanguageDropdownOpen && (
+          <>
+            {/* Backdrop to close on outside click */}
+            <div 
+              className="fixed inset-0 z-[9998]" 
+              onClick={() => setIsLanguageDropdownOpen(false)}
+            />
+            <div className="absolute flex flex-col mt-2 w-40 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] top-full left-0">
+              {["All", "Hindi", "English", "Marathi", "Punjabi", "Gujarati"].map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => {
+                    onSortChange({ type: "language", language: lang });
+                    setIsLanguageDropdownOpen(false);
+                  }}
+                  className={`px-4 py-2 text-left text-sm hover:bg-orange-100 transition-colors ${
+                    selectedLanguage === lang ? "font-semibold text-orange-600 bg-orange-50" : ""
+                  }`}
+                >
+                  {lang}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* ❌ Clear Filters */}

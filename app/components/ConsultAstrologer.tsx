@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { getApiBaseUrl } from '@/app/config/api';
-import { isAuthenticated } from '@/app/utils/auth-utils';
-import { getSampleAstrologersResponse } from '@/app/data/sampleAstrologers';
+import { isAuthenticated, hasUserCalledBefore } from '@/app/utils/auth-utils';
+import { Video } from 'lucide-react';
 
 interface Astrologer {
   _id: string;
@@ -33,7 +33,31 @@ const AstrologerCarousel = () => {
   const [hasError, setHasError] = useState(false);
   const [showCallOptions, setShowCallOptions] = useState(false);
   const [selectedCallAstrologer, setSelectedCallAstrologer] = useState<Astrologer | null>(null);
+  const [userHasCalledBefore, setUserHasCalledBefore] = useState(false);
 
+  // Check if user has called before
+  useEffect(() => {
+    const checkCallStatus = () => {
+      if (isAuthenticated()) {
+        const hasCalled = hasUserCalledBefore() || localStorage.getItem("userHasCalledBefore") === "true";
+        setUserHasCalledBefore(hasCalled);
+      } else {
+        setUserHasCalledBefore(false);
+      }
+    };
+
+    checkCallStatus();
+
+    // Listen for call status changes
+    const handleCallStatusChange = () => {
+      checkCallStatus();
+    };
+
+    window.addEventListener('user-call-status-changed', handleCallStatusChange);
+    return () => {
+      window.removeEventListener('user-call-status-changed', handleCallStatusChange);
+    };
+  }, []);
 
  
 
@@ -77,46 +101,18 @@ const AstrologerCarousel = () => {
         console.log('API Response:', data);
 
         if (data.success && data.data?.list) {
-          // Filter astrologers: show all online, but limit offline to 3
+          // Filter astrologers: show only online partners
           const onlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "online");
-          const offlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "offline").slice(0, 3);
-          const otherAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status !== "online" && astrologer.status !== "offline");
           
-          setAstrologers([...onlineAstrologers, ...offlineAstrologers, ...otherAstrologers]);
+          setAstrologers(onlineAstrologers);
         } else {
           console.warn('API response format unexpected:', data);
           throw new Error('Invalid API response format');
         }
       } catch (error) {
-        console.error('API failed, using sample data:', error);
-        
-        // Use sample data when API fails
-        try {
-          const sampleResponse = getSampleAstrologersResponse(0, 10);
-          const sampleAstrologers = sampleResponse.data.list;
-          
-          // Convert sample data to match the expected format
-          const formattedAstrologers = sampleAstrologers.map((astrologer: any) => ({
-            ...astrologer,
-            avatar: astrologer.profileImage,
-            status: astrologer.isOnline ? "online" : "offline",
-            talksAbout: astrologer.specializations,
-            rating: {
-              avg: astrologer.rating,
-              count: astrologer.totalReviews
-            },
-            calls: astrologer.totalReviews || 0,
-            callMinutes: astrologer.totalReviews * 10 || 0,
-            rpm: astrologer.audioRpm || 0
-          }));
-          
-          setAstrologers(formattedAstrologers);
-          setHasError(false); // Clear error since we have sample data
-        } catch (sampleErr) {
-          console.error('Sample data also failed:', sampleErr);
-          setHasError(true);
-          setAstrologers([]);
-        }
+        console.error('Failed to fetch astrologers:', error);
+        setHasError(true);
+        setAstrologers([]);
       } finally {
         setLoading(false);
       }
@@ -163,35 +159,12 @@ const AstrologerCarousel = () => {
     );
   };
 
-  // Auto-play functionality
-  useEffect(() => {
-    if (astrologers.length === 0) return;
-
-    const interval = setInterval(() => {
-      const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
-      const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
-      
-      let maxIndex;
-      if (isSmallScreen) {
-        maxIndex = astrologers.length - 1; // 1 card at a time
-      } else if (isTablet) {
-        maxIndex = Math.max(0, astrologers.length - 2); // 2 cards at a time
-      } else {
-        maxIndex = Math.max(0, astrologers.length - 4); // 4 cards at a time
-      }
-      
-      setCurrentIndex((prevIndex) =>
-        prevIndex >= maxIndex ? 0 : prevIndex + 1
-      );
-    }, 3500); // Change slide every 3.5 seconds
-
-    return () => clearInterval(interval);
-  }, [astrologers.length]);
+  // Auto-play functionality disabled - carousel only moves when user clicks arrows
 
   // Handle astrologer card click
   const handleAstrologerClick = (astrologerId: string) => {
-    // Go to the dedicated ConsultAstrologer profile page
-    router.push(`/consult-astrologer/profile/${astrologerId}`);
+    // Go to the new design profile page
+    router.push(`/call-with-astrologer/profile/${astrologerId}`);
   };
 
   // Handle call button click
@@ -210,6 +183,134 @@ const AstrologerCarousel = () => {
       setShowCallOptions(false);
       router.push("/login");
     }
+  };
+
+  // Helper function to render astrologer card
+  const renderAstrologerCard = (astrologer: Astrologer, cardWidth?: string) => {
+    const ratingValue = typeof astrologer.rating === 'object' ? astrologer.rating.avg : astrologer.rating || 4.5;
+    const experience = Math.floor((astrologer.callMinutes || 0) / 60) || 1;
+    const callsCount = astrologer.calls || 0;
+    
+    return (
+      <div
+        className="relative bg-white rounded-xl border pt-3 px-3 pb-2 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col w-full overflow-hidden"
+        style={{
+          borderColor: "#F7971E",
+          boxShadow: "0 4px 16px rgba(247,151,30,0.15)",
+          width: cardWidth || '100%',
+          height: '200px',
+        }}
+        onClick={() => handleAstrologerClick(astrologer._id)}
+      >
+        {/* Free Call Banner - Show for non-logged-in users OR new logged-in users who haven't called */}
+        {(!isAuthenticated() || (isAuthenticated() && !userHasCalledBefore)) && (
+          <div
+            className="absolute top-3 -right-10 w-[160px] bg-[#F7971E] text-white text-[11px] text-center font-bold py-[2px] rotate-[45deg] flex items-center justify-center shadow-md z-10 whitespace-normal leading-tight"
+            style={{ transformOrigin: "center" }}
+          >
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1st Free Call
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="flex gap-2.5 relative z-10 h-full">
+          {/* Avatar Section */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <img
+              src={
+                (astrologer.avatar && astrologer.avatar.startsWith('http'))
+                  ? astrologer.avatar
+                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=F7971E&color=fff&size=60`
+              }
+              alt={astrologer.name}
+              className="w-[60px] h-[60px] rounded-full object-cover border-2"
+              style={{
+                borderColor: astrologer.status === "online" 
+                  ? "#10B981" 
+                  : astrologer.status === "busy" 
+                  ? "#F97316" 
+                  : astrologer.status === "offline" 
+                  ? "#EF4444" 
+                  : "#F7971E",
+              }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=F7971E&color=fff&size=60`;
+              }}
+            />
+
+            {/* Rating */}
+            <div className="mt-1 flex items-center justify-center gap-0.5">
+              {[...Array(5)].map((_, i) => (
+                <span key={i} className={`text-[10px] ${i < Math.floor(ratingValue) ? "text-yellow-400" : "text-gray-300"}`}>
+                  ★
+                </span>
+              ))}
+            </div>
+            
+            {/* Experience & Orders */}
+            <div className="mt-1 space-y-0.5 text-center">
+              <div className="text-[10px] text-gray-600 whitespace-nowrap">
+                <span className="font-semibold">{experience}</span> {experience === 1 ? 'Yr' : 'Yrs'}
+              </div>
+              <div className="text-[10px] text-gray-600 whitespace-nowrap">
+                <span className="font-semibold">{callsCount || 0}</span> Orders
+              </div>
+            </div>
+          </div>
+
+          {/* Details Section */}
+          <div className="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              {/* Name & Verified */}
+              <div className="flex items-center gap-1.5 mb-1">
+                <h3 className="text-base font-bold text-gray-900 truncate">{astrologer.name}</h3>
+                <img src="/orange_tick.png" alt="Verified" className="w-3.5 h-3.5 flex-shrink-0" />
+              </div>
+
+              {/* Status */}
+              {astrologer.status && (
+                <div className="flex items-center gap-1.5 mb-1">
+                  <div 
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      astrologer.status === "online" 
+                        ? "bg-green-500" 
+                        : astrologer.status === "busy" 
+                        ? "bg-orange-500" 
+                        : astrologer.status === "offline" 
+                        ? "bg-red-500" 
+                        : "bg-gray-500"
+                    }`}
+                  ></div>
+                  <span className="text-xs font-medium text-gray-600 capitalize truncate">{astrologer.status}</span>
+                </div>
+              )}
+
+              {/* Expertise */}
+              <div className="mb-1">
+                <p className="text-xs text-gray-700 truncate">
+                  {astrologer.talksAbout?.slice(0, 3).join(", ") || "Numerology, Vedic, Vastu"}
+                </p>
+              </div>
+
+              {/* Languages */}
+              <div className="mb-1">
+                <p className="text-xs text-gray-600 truncate">
+                  {(astrologer.languages || []).join(", ") || "Hindi, Bhojpuri"}
+                </p>
+              </div>
+            </div>
+
+            {/* Price - Always visible in one line */}
+            <div className="mt-auto pt-1">
+              <div className="text-sm font-bold text-orange-600 whitespace-nowrap">
+                {isAuthenticated() && userHasCalledBefore ? `₹ ${astrologer?.rpm || 18}/min` : 'FREE 1st Call'}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Don't render anything if there's an error
@@ -244,14 +345,14 @@ const AstrologerCarousel = () => {
 
   return (
     <div
-      className="w-full py-12 relative"
+      className="w-full py-6 relative"
       style={{
         backgroundImage: "url('/consult-home.gif')",
       }}
     >
       <div className="max-w-6xl mx-auto px-4">
         <h2
-          className="text-center text-white text-5xl md:text-4xl font-bold mb-10"
+          className="text-center text-white text-5xl md:text-4xl font-bold mb-6"
           style={{ fontFamily: "EB Garamond" }}
         >
           Consult with <em>India's</em> best Astrologers
@@ -259,11 +360,11 @@ const AstrologerCarousel = () => {
       </div>
 
       {/* Slider container with arrows inside */}
-      <div className="relative max-w-6xl mx-auto px-4">
+      <div className="relative max-w-6xl mx-auto px-2">
         {/* Previous button - positioned inside */}
         <button
           onClick={prevSlide}
-          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
           aria-label="Previous astrologer"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -272,239 +373,30 @@ const AstrologerCarousel = () => {
         </button>
 
         {/* Slider track - responsive card display */}
-        <div className="flex justify-center gap-4 px-8 sm:px-12">
+        <div className="flex justify-center gap-2.5 px-6 sm:px-8">
           {/* Small screens: Show 1 card */}
           <div className="block md:hidden">
-            {astrologers.slice(currentIndex, currentIndex + 1).map((astrologer, index) => (
-              <div
-                key={astrologer._id}
-                className="flex-shrink-0"
-              >
-                <div
-                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[280px]"
-                  onClick={() => handleAstrologerClick(astrologer._id)}
-                >
-                  {/* Profile Picture */}
-                  <div className="mb-3">
-                    <img
-                      src={
-                        (astrologer.avatar && astrologer.avatar.startsWith('http'))
-                          ? astrologer.avatar
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`
-                      }
-                      alt={astrologer.name}
-                      className="w-24 h-24 rounded-full object-cover mx-auto border-2"
-                      style={{
-                        borderColor: astrologer.status === "online" 
-                          ? "#399932" 
-                          : astrologer.status === "offline" 
-                          ? "#EF4444" 
-                          : "#F7971E"
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`;
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Name */}
-                  <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
-                    <h3 
-                      className={`font-semibold text-gray-900 whitespace-nowrap ${astrologer.name.length > 15 ? 'scrolling-text' : ''}`}
-                      style={{ 
-                        fontFamily: "Poppins", 
-                        fontSize: "18px"
-                      }}
-                    >
-                      {astrologer.name}
-                    </h3>
-                  </div>
-                  
-                  {/* Language */}
-                  <p className="text-gray-600 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {(astrologer.languages || []).join(", ") || "Hindi"}
-                  </p>
-                  
-                  {/* Expertise */}
-                  <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {astrologer.talksAbout?.join(", ") || "Kp, Vedic, Vastu"}
-                  </p>
-                  
-                  {/* Experience */}
-                  <p className="text-gray-600 mb-2" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
-                  </p>
-                  
-                  {/* Call Button */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
-                    >
-                      OFFER: FREE 1st call
-                    </button>
-                  </div>
-                </div>
+            {astrologers.slice(currentIndex, currentIndex + 1).map((astrologer) => (
+              <div key={astrologer._id} className="flex-shrink-0 w-[280px]">
+                {renderAstrologerCard(astrologer, '280px')}
               </div>
             ))}
           </div>
 
           {/* Tablets: Show 2 cards */}
-          <div className="hidden md:flex lg:hidden gap-4">
-            {astrologers.slice(currentIndex, currentIndex + 2).map((astrologer, index) => (
-              <div
-                key={astrologer._id}
-                className="flex-shrink-0"
-              >
-                <div
-                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[240px]"
-                  onClick={() => handleAstrologerClick(astrologer._id)}
-                >
-                  {/* Profile Picture */}
-                  <div className="mb-3">
-                    <img
-                      src={
-                        (astrologer.avatar && astrologer.avatar.startsWith('http'))
-                          ? astrologer.avatar
-                          : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`
-                      }
-                      alt={astrologer.name}
-                      className="w-24 h-24 rounded-full object-cover mx-auto border-2"
-                      style={{
-                        borderColor: astrologer.status === "online" 
-                          ? "#399932" 
-                          : astrologer.status === "offline" 
-                          ? "#EF4444" 
-                          : "#F7971E"
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=FF6B35&color=fff&size=120`;
-                      }}
-                    />
-                  </div>
-                  
-                  {/* Name */}
-                  <div className="mb-0.5 h-6 flex items-center justify-center overflow-hidden relative">
-                    <h3 
-                      className={`font-semibold text-gray-900 whitespace-nowrap ${astrologer.name.length > 15 ? 'scrolling-text' : ''}`}
-                      style={{ 
-                        fontFamily: "Poppins", 
-                        fontSize: "18px"
-                      }}
-                    >
-                      {astrologer.name}
-                    </h3>
-                  </div>
-                  
-                  {/* Language */}
-                  <p className="text-gray-600 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {(astrologer.languages || []).join(", ") || "Hindi"}
-                  </p>
-                  
-                  {/* Expertise */}
-                  <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {astrologer.talksAbout?.join(", ") || "Kp, Vedic, Vastu"}
-                  </p>
-                  
-                  {/* Experience */}
-                  <p className="text-gray-600 mb-2" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
-                  </p>
-                  
-                  {/* Call Button */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
-                    >
-                      OFFER: FREE 1st call
-                    </button>
-                  </div>
-                </div>
+          <div className="hidden md:flex lg:hidden gap-2.5">
+            {astrologers.slice(currentIndex, currentIndex + 2).map((astrologer) => (
+              <div key={astrologer._id} className="flex-shrink-0 w-[240px]">
+                {renderAstrologerCard(astrologer, '240px')}
               </div>
             ))}
           </div>
 
           {/* Desktop: Show 4 cards */}
-          <div className="hidden lg:flex gap-4">
-            {astrologers.slice(currentIndex, currentIndex + 4).map((astrologer, index) => (
-              <div
-                key={astrologer._id}
-                className="flex-shrink-0"
-              >
-                <div
-                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[221px]"
-                  onClick={() => handleAstrologerClick(astrologer._id)}
-                >
-                  {/* Profile Picture */}
-                  <div className="mb-3">
-                    <div 
-                      className="relative w-20 h-20 rounded-full overflow-hidden border-2 flex items-center justify-center mx-auto"
-                      style={{
-                        borderColor: astrologer.status === "online" 
-                          ? "#399932" 
-                          : astrologer.status === "offline" 
-                          ? "#EF4444" 
-                          : "#F7971E"
-                      }}
-                    >
-                      <Image
-                        src={
-                          astrologer.avatar && astrologer.avatar.startsWith('http')
-                            ? astrologer.avatar
-                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                astrologer.name
-                              )}&background=FF6B35&color=fff&size=120`
-                        }
-                        alt={astrologer.name}
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover rounded-full"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            astrologer.name
-                          )}&background=FF6B35&color=fff&size=120`;
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Name */}
-                  <h3 className="font-semibold text-gray-900 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "18px" }}>
-                    {astrologer.name.split(' ').length > 2
-                      ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
-                      : astrologer.name
-                    }
-                  </h3>
-                  
-                  {/* Language */}
-                  <p className="text-gray-600 mb-0.5" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    Hindi
-                  </p>
-                  
-                  {/* Expertise */}
-                  <p className="text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    {astrologer.talksAbout?.slice(0, 3).join(", ") || "Kp, Vedic, Vastu"}
-                  </p>
-                  
-                  {/* Experience */}
-                  <p className="text-gray-600 mb-2" style={{ fontFamily: "Poppins", fontSize: "10px" }}>
-                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
-                  </p>
-                  
-                  {/* Call Button */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
-                    >
-                      OFFER: FREE 1st call
-                    </button>
-                  </div>
-                </div>
+          <div className="hidden lg:flex gap-2.5">
+            {astrologers.slice(currentIndex, currentIndex + 4).map((astrologer) => (
+              <div key={astrologer._id} className="flex-shrink-0 w-[221px]">
+                {renderAstrologerCard(astrologer, '221px')}
               </div>
             ))}
           </div>
@@ -522,17 +414,27 @@ const AstrologerCarousel = () => {
         </button>
       </div>
 
-      {/* Dots indicator - dynamic based on scrollable cards */}
+      {/* Dots indicator - limited to maximum 5 dots */}
       <div className="max-w-6xl mx-auto px-4">
         <div className="hidden md:flex justify-center mt-10 space-x-1">
-            {Array.from({ length: Math.max(0, astrologers.length - 3) }).map((_, index) => (
+            {astrologers.length > 0 && Array.from({ length: Math.min(5, Math.max(1, Math.ceil(astrologers.length / 4))) }).map((_, index) => {
+              const totalSlides = Math.ceil(astrologers.length / 4);
+              const slideIndex = index;
+              const currentSlide = Math.floor(currentIndex / 4);
+              const isActive = currentSlide === slideIndex;
+              
+              return (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'}`}
+                  onClick={() => {
+                    const targetIndex = Math.min(slideIndex * 4, Math.max(0, astrologers.length - 4));
+                    setCurrentIndex(targetIndex);
+                  }}
+                  className={`w-2 h-2 rounded-full transition-colors ${isActive ? 'bg-orange-500' : 'bg-gray-300'}`}
                 aria-label={`Go to slide ${index + 1}`}
               />
-            ))}
+              );
+            })}
         </div>
       </div>
 

@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { socketManager } from "../../utils/socket";
-import { getUserDetails, getAuthToken } from "../../utils/auth-utils";
+import { getUserDetails, getAuthToken, markUserAsCalled } from "../../utils/auth-utils";
 import { buildApiUrl, getApiBaseUrl } from "../../config/api";
 import GiftConfirmationDialog from '../ui/GiftConfirmationDialog';
 
@@ -698,6 +698,14 @@ export default function AudioCallRoom({
       console.log('🎵 Step 5: Setting room to null...');
       setRoom(null);
       console.log('🎵 Room state set to null');
+      
+      // Mark user as having called (hide offer after first call)
+      try {
+        markUserAsCalled();
+        console.log('🎵 User marked as having called');
+      } catch (markError) {
+        console.warn('🎵 Error marking user as called:', markError);
+      }
       
       // Step 6: Add a small delay before calling onDisconnect to ensure cleanup is complete
       console.log('🎵 Step 6: Waiting before calling onDisconnect...');

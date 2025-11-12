@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { socketManager } from "../../utils/socket";
-import { getUserDetails, getAuthToken } from "../../utils/auth-utils";
+import { getUserDetails, getAuthToken, markUserAsCalled } from "../../utils/auth-utils";
 import { buildApiUrl, getApiBaseUrl } from "../../config/api";
 import GiftConfirmationDialog from '../ui/GiftConfirmationDialog';
 
@@ -525,6 +525,14 @@ export default function VideoCallRoom({
       
       // Force cleanup room reference
       roomRef.current = null;
+      
+      // Mark user as having called (hide offer after first call)
+      try {
+        markUserAsCalled();
+        console.log('📞 User marked as having called');
+      } catch (markError) {
+        console.warn('📞 Error marking user as called:', markError);
+      }
       
       // Navigate away
       setTimeout(() => {

@@ -28,8 +28,7 @@ import {
   ChevronRight
 } from "lucide-react";
 import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from "../../utils/auth-utils";
-import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../../config/development";
-import { getSampleAstrologerProfile, getSampleReviews, getSampleGifts, getSimilarAstrologers } from "../../data/sampleAstrologerProfiles";
+import { shouldShowDevBanner, shouldShowDebugLogs } from "../../config/development";
 import { getApiBaseUrl, buildApiUrl, API_CONFIG } from "../../config/api";
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/production-api';
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
@@ -261,30 +260,13 @@ export default function AstrologerProfilePage() {
     const token = getAuthToken();
     
     if (!isAuthValid && !token) {
-      // Check if we have sample data for this astrologer (only if configured)
-      if (shouldUseSampleData()) {
-        const sampleProfile = getSampleAstrologerProfile(astrologerId);
-        if (!sampleProfile) {
-          if (shouldShowDebugLogs()) {
-            console.log('❌ User authentication failed and no sample data available, redirecting to home');
-          }
-          clearAuthData();
-          router.push("/");
-          return;
-        }
-        // If we have sample data, continue without authentication
-        if (shouldShowDebugLogs()) {
-          console.log('No authentication, but sample data available for development');
-        }
-      } else {
-        // No sample data configured, require authentication
-        if (shouldShowDebugLogs()) {
-          console.log('❌ User authentication required, redirecting to home');
-        }
-        clearAuthData();
-        router.push("/");
-        return;
+      // Require authentication
+      if (shouldShowDebugLogs()) {
+        console.log('❌ User authentication required, redirecting to home');
       }
+      clearAuthData();
+      router.push("/");
+      return;
     }
 
     // Clear any cached free call status to ensure fresh API check
@@ -304,6 +286,21 @@ export default function AstrologerProfilePage() {
       fetchSimilarAstrologers();
     }
   }, [astrologer]);
+
+  // Listen for call status changes
+  useEffect(() => {
+    const handleCallStatusChange = () => {
+      checkFreeCallStatus();
+    };
+
+    window.addEventListener('user-call-status-changed', handleCallStatusChange);
+    window.addEventListener('user-auth-changed', handleCallStatusChange);
+
+    return () => {
+      window.removeEventListener('user-call-status-changed', handleCallStatusChange);
+      window.removeEventListener('user-auth-changed', handleCallStatusChange);
+    };
+  }, []);
 
   // Handle callType query parameter for direct call initiation
   useEffect(() => {
@@ -398,30 +395,8 @@ export default function AstrologerProfilePage() {
 
       setSimilarAstrologers(similarAsts);
     } catch (error) {
-      console.error("API failed, using sample similar astrologers:", error);
-      
-      // Use sample similar astrologers for development
-      try {
-        const sampleSimilar = getSimilarAstrologers(astrologerId);
-        const transformedSimilar = sampleSimilar.map((ast: any) => ({
-          _id: ast._id,
-          name: ast.name,
-          languages: ast.languages,
-          specializations: ast.specializations,
-          experience: ast.experience.toString(),
-          callsCount: ast.callCount || 0,
-          rating: ast.rating,
-          profileImage: ast.profileImage,
-          hasVideo: true,
-          rpm: ast.audioRpm,
-          videoRpm: ast.videoRpm
-        }));
-        
-        setSimilarAstrologers(transformedSimilar);
-      } catch (sampleError) {
-        console.error("Sample similar astrologers also failed:", sampleError);
-        setSimilarAstrologers([]);
-      }
+      console.error("Failed to fetch similar astrologers:", error);
+      setSimilarAstrologers([]);
     } finally {
       setSimilarLoading(false);
     }
@@ -434,70 +409,12 @@ export default function AstrologerProfilePage() {
 
       const token = getAuthToken();
       if (!token) {
-        if (shouldUseSampleData()) {
-          if (shouldShowDebugLogs()) {
-            console.log("No token found, using sample data for development");
-          }
-          // Use sample data when no token (for development)
-          const sampleProfile = getSampleAstrologerProfile(astrologerId);
-          if (sampleProfile) {
-            if (shouldShowDebugLogs()) {
-              console.log("Using sample data for astrologer:", astrologerId);
-            }
-          
-          // Convert sample data to match expected format
-          const normalizedAstrologer = {
-            _id: sampleProfile._id,
-            name: sampleProfile.name,
-            languages: sampleProfile.languages,
-            specializations: sampleProfile.specializations,
-            experience: sampleProfile.experience.toString(),
-            callsCount: sampleProfile.callCount || 0,
-            rating: sampleProfile.rating,
-            profileImage: sampleProfile.profileImage,
-            hasVideo: true,
-            about: sampleProfile.about,
-            age: sampleProfile.age,
-            avatar: sampleProfile.profileImage,
-            isLive: sampleProfile.isLive,
-            isVideoCallAllowed: true,
-            rpm: sampleProfile.audioRpm,
-            videoRpm: sampleProfile.videoRpm,
-            status: sampleProfile.isOnline ? "online" : "offline",
-            talksAbout: sampleProfile.specializations,
-            // Add other required fields with defaults
-            callMinutes: 0,
-            calls: sampleProfile.callCount || 0,
-            createdAt: new Date().toISOString(),
-            isRecommended: false,
-            numericId: 1,
-            offerRpm: sampleProfile.audioRpm,
-            phone: "",
-            priority: 1,
-            role: "astrologer",
-            upi: ""
-          };
-          
-          setAstrologer(normalizedAstrologer);
-          setError(null);
-          setIsLoading(false);
-          return;
-          } else {
-            if (shouldShowDebugLogs()) {
-              console.error("❌ No authentication token found and no sample data available");
-            }
-            clearAuthData();
-            router.push("/");
-            return;
-          }
-        } else {
-          if (shouldShowDebugLogs()) {
-            console.error("❌ No authentication token found and sample data is disabled");
-          }
-          clearAuthData();
-          router.push("/");
-          return;
+        if (shouldShowDebugLogs()) {
+          console.error("❌ No authentication token found");
         }
+        clearAuthData();
+        router.push("/");
+        return;
       }
       if (shouldShowDebugLogs()) {
         console.log("✅ Authentication token found:", token.substring(0, 20) + "...");
@@ -632,61 +549,13 @@ export default function AstrologerProfilePage() {
 
       setAstrologer(normalizedAstrologer);
     } catch (error) {
-      console.error("API failed, trying sample data:", error);
+      console.error("Failed to fetch astrologer profile:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to load profile";
       
-      // Try to use sample data for development
-      try {
-        const sampleProfile = getSampleAstrologerProfile(astrologerId);
-        if (sampleProfile) {
-          console.log("Using sample data for astrologer:", astrologerId);
-          
-          // Convert sample data to match expected format
-          const normalizedAstrologer = {
-            _id: sampleProfile._id,
-            name: sampleProfile.name,
-            languages: sampleProfile.languages,
-            specializations: sampleProfile.specializations,
-            experience: sampleProfile.experience.toString(),
-            callsCount: sampleProfile.callCount || 0,
-            rating: sampleProfile.rating,
-            profileImage: sampleProfile.profileImage,
-            hasVideo: true,
-            about: sampleProfile.about,
-            age: sampleProfile.age,
-            avatar: sampleProfile.profileImage,
-            isLive: sampleProfile.isLive,
-            isVideoCallAllowed: true,
-            rpm: sampleProfile.audioRpm,
-            videoRpm: sampleProfile.videoRpm,
-            status: sampleProfile.isOnline ? "online" : "offline",
-            talksAbout: sampleProfile.specializations,
-            // Add other required fields with defaults
-            callMinutes: 0,
-            calls: sampleProfile.callCount || 0,
-            createdAt: new Date().toISOString(),
-            isRecommended: false,
-            numericId: 1,
-            offerRpm: sampleProfile.audioRpm,
-            phone: "",
-            priority: 1,
-            role: "astrologer",
-            upi: ""
-          };
-          
-          setAstrologer(normalizedAstrologer);
-          setError(null); // Clear error since we have sample data
-        } else {
-          throw new Error(`Sample data not found for astrologer ID: ${astrologerId}`);
-        }
-      } catch (sampleError) {
-        console.error("Sample data also failed:", sampleError);
-        const errorMessage = error instanceof Error ? error.message : "Failed to load profile";
-        
-        if (errorMessage.includes("not found")) {
-          setError(`Astrologer with ID "${astrologerId}" was not found. Please check the URL or try browsing our astrologers.`);
-        } else {
-          setError(errorMessage);
-        }
+      if (errorMessage.includes("not found")) {
+        setError(`Astrologer with ID "${astrologerId}" was not found. Please check the URL or try browsing our astrologers.`);
+      } else {
+        setError(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -737,26 +606,8 @@ export default function AstrologerProfilePage() {
         setReviews(transformedReviews);
       }
     } catch (error) {
-      console.error('API failed, using sample reviews:', error);
-      
-      // Use sample reviews for development
-      try {
-        const sampleReviews = getSampleReviews(astrologerId);
-        const transformedReviews = sampleReviews.map((review: any) => ({
-          _id: review._id,
-          userId: review._id,
-          userName: review.userName,
-          astrologerId: astrologerId,
-          rating: review.rating,
-          comment: review.comment,
-          createdAt: review.date
-        }));
-        
-        setReviews(transformedReviews);
-      } catch (sampleError) {
-        console.error('Sample reviews also failed:', sampleError);
-        setReviews([]);
-      }
+      console.error('Failed to fetch reviews:', error);
+      setReviews([]);
     } finally {
       setReviewsLoading(false);
     }
@@ -779,16 +630,8 @@ export default function AstrologerProfilePage() {
         setGifts(data.data || []);
       }
     } catch (error) {
-      console.error('API failed, using sample gifts:', error);
-      
-      // Use sample gifts for development
-      try {
-        const sampleGifts = getSampleGifts(astrologerId);
-        setGifts(sampleGifts.map((gift: any) => ({ ...gift, icon: gift.image })));
-      } catch (sampleError) {
-        console.error('Sample gifts also failed:', sampleError);
-        setGifts([]);
-      }
+      console.error('Failed to fetch gifts:', error);
+      setGifts([]);
     }
   };
 
@@ -811,6 +654,14 @@ export default function AstrologerProfilePage() {
 
   const checkFreeCallStatus = async () => {
     try {
+      // First check localStorage for immediate response
+      const cachedHasCalledBefore = localStorage.getItem("userHasCalledBefore");
+      if (cachedHasCalledBefore === "true") {
+        setHasCompletedFreeCall(true);
+        setUserHasCalledBefore(true);
+        return;
+      }
+
       const token = getAuthToken();
       const userDetails = getUserDetails();
       
@@ -1566,7 +1417,7 @@ export default function AstrologerProfilePage() {
                     {astrologer?.languages?.join(', ')}
                   </p>
                   <p className="text-gray-500 mb-3">
-                    Exp:- {astrologer?.experience} years
+                    Exp: {astrologer?.experience} years
                   </p>
                   <p className="font-bold text-2xl mb-4" style={{ color: '#F7971E' }}>
                     ₹ {astrologer?.rpm || 15}/ min

@@ -70,7 +70,7 @@ export default function BlogPage({ params }: { params: Promise<{ id: string }> }
           throw new Error('Blog not found');
         }
       } catch (err) {
-        console.error("Error fetching blog:", err);
+        console.error("Failed to fetch blog:", err);
         setError(err instanceof Error ? err.message : 'Failed to fetch blog');
       } finally {
         setLoading(false);
@@ -93,6 +93,7 @@ export default function BlogPage({ params }: { params: Promise<{ id: string }> }
   }
 
   if (error || !blog) {
+    console.log('Error or no blog:', { error, blog });
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center">
         <div className="text-center">
@@ -177,7 +178,14 @@ export default function BlogPage({ params }: { params: Promise<{ id: string }> }
         <div className="bg-white rounded-2xl p-8 shadow-lg mb-8">
           <div className="prose prose-lg max-w-none">
             <div className="whitespace-pre-line text-gray-700 leading-relaxed text-lg">
-              {blog.content}
+              {blog.content || 'No content available'}
+            </div>
+            {/* Debug info - remove this later */}
+            <div className="mt-4 p-4 bg-gray-100 rounded text-sm">
+              <strong>Debug Info:</strong><br/>
+              Blog ID: {blog.id}<br/>
+              Content Length: {blog.content?.length || 0}<br/>
+              Content Preview: {blog.content?.substring(0, 100)}...
             </div>
           </div>
         </div>

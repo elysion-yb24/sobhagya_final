@@ -4,10 +4,10 @@
 
 export const DEVELOPMENT_CONFIG = {
   // Set to false when backend is ready to remove all sample data
-  USE_SAMPLE_DATA: true,
+  USE_SAMPLE_DATA: false,
   
   // Development mode banner
-  SHOW_DEV_BANNER: true,
+  SHOW_DEV_BANNER: false,
   
   // Console logging for debugging
   ENABLE_DEBUG_LOGS: true,

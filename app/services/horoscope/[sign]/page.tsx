@@ -3,15 +3,28 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, Star, Heart, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Head from 'next/head';
 import Lottie from 'lottie-react';
 
 export default function ZodiacSignPage() {
   const params = useParams();
+  const router = useRouter();
   const signName = params?.sign as string;
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [lottieData, setLottieData] = useState(null);
+
+  const handleBack = () => {
+    if (typeof window !== 'undefined') {
+      // Use browser history to go back to previous page
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        // Fallback to horoscope page
+        router.push('/services/horoscope');
+      }
+    }
+  };
 
   // Load Lottie animation data
   useEffect(() => {
@@ -698,13 +711,13 @@ export default function ZodiacSignPage() {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link 
-              href="/services/horoscope"
+            <button
+              onClick={handleBack}
               className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back to Horoscope</span>
-            </Link>
+              <span className="font-medium">Back</span>
+            </button>
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { getApiBaseUrl } from "../config/api";
 import CallWithAstrologerClient from "./CallWithAstrologerClient";
-import { getSampleAstrologersResponse } from "../data/sampleAstrologers";
 
 interface Astrologer {
   _id: string;
@@ -52,7 +51,7 @@ async function fetchInitialAstrologers(): Promise<Astrologer[]> {
     const limit = 10; 
     const apiUrl = `${baseUrl}/user/api/users-list?skip=0&limit=${limit}`;
     
-    console.log("Fetching initial astrologers from:", apiUrl);
+    console.log("Server: Fetching initial astrologers from:", apiUrl);
 
     const response = await fetch(apiUrl, {
       method: "GET",
@@ -60,70 +59,42 @@ async function fetchInitialAstrologers(): Promise<Astrologer[]> {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      
-      next: { revalidate: 300 }, 
+      cache: "no-store", // Don't cache to always get fresh data
     });
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok) {
+      console.error(`Server: HTTP error! status: ${response.status}`);
+      return []; // Return empty array instead of throwing
+    }
 
     const data = await response.json();
-    console.log("API Response:", data);
+    console.log("Server: API Response:", data);
 
     if (data.success && data.data?.list) {
       return data.data.list;
     } else {
+      console.warn("Server: Unexpected response format:", data);
       return [];
     }
   } catch (err) {
-    console.error("API failed, using sample data:", err);
-    
-    // Use sample data when API fails
-    try {
-      const sampleResponse = getSampleAstrologersResponse(0, 10);
-      const sampleAstrologers = sampleResponse.data.list;
-      
-      // Convert sample data to match the expected format
-      return sampleAstrologers.map(astrologer => ({
-        ...astrologer,
-        experience: astrologer.experience.toString(),
-        callsCount: Math.floor(Math.random() * 1000) + 100, // Random call count
-        rating: {
-          avg: astrologer.rating,
-          count: astrologer.totalReviews,
-          max: 5,
-          min: 1
-        },
-        hasVideo: true,
-        about: astrologer.bio,
-        age: Math.floor(Math.random() * 30) + 35 // Random age between 35-65
-      }));
-    } catch (sampleErr) {
-      console.error("Sample data also failed:", sampleErr);
-      throw new Error("Failed to fetch astrologers");
-    }
+    console.error("Server: Failed to fetch astrologers:", err);
+    // Return empty array instead of throwing - let client handle fetching
+    return [];
   }
 }
 
 
 const AstrologerCallPage = async () => {
-  let initialAstrologers: Astrologer[] = [];
-  let error: string | null = null;
-
-  try {
-    initialAstrologers = await fetchInitialAstrologers();
-  } catch (err) {
-    error = err instanceof Error ? err.message : "Failed to fetch astrologers";
-  }
+  // Try to fetch initial astrologers on server, but don't fail if it doesn't work
+  // The client component will handle fetching if server fetch fails
+  const initialAstrologers = await fetchInitialAstrologers();
 
   return (
     <div className="w-full bg-white min-h-screen">
-      {/* 🔮 Header / Banner */}
-    
-
       {/* Client component */}
       <CallWithAstrologerClient
         initialAstrologers={initialAstrologers}
-        error={error}
+        error={initialAstrologers.length === 0 ? null : null} // Let client handle errors
       />
     </div>
   );

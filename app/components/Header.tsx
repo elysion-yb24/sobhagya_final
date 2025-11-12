@@ -238,7 +238,7 @@ const Header = () => {
               <Link
                 href="/call-with-astrologer"
                 className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
-                  isActiveLink('/call-with-astrologer') 
+                  (isActiveLink('/call-with-astrologer') || pathname === '/astrologers') 
                     ? 'text-orange-600 font-bold' 
                     : 'text-gray-700 hover:text-orange-600'
                 }`}
@@ -246,7 +246,7 @@ const Header = () => {
               >
                 <span className="block w-full">Call with Astrologer</span>
                 <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/call-with-astrologer') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                  (isActiveLink('/call-with-astrologer') || pathname === '/astrologers') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
                 }`} />
               </Link>
               
@@ -359,7 +359,7 @@ const Header = () => {
               <Link
                 href="/call-with-astrologer"
                 className={`relative text-sm font-semibold px-2 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[160px] text-center ${
-                  isActiveLink('/call-with-astrologer') 
+                  (isActiveLink('/call-with-astrologer') || pathname === '/astrologers') 
                     ? 'text-orange-600 font-bold' 
                     : 'text-gray-700 hover:text-orange-600'
                 }`}
@@ -367,7 +367,7 @@ const Header = () => {
               >
                 <span className="block w-full">Call with Astrologer</span>
                 <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/call-with-astrologer') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                  (isActiveLink('/call-with-astrologer') || pathname === '/astrologers') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
                 }`} />
               </Link>
               
@@ -650,17 +650,12 @@ const Header = () => {
                       key={item.href}
                       href={item.href}
                       className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border transition-all duration-300 ${
-                        isActiveLink(item.href)
+                        (isActiveLink(item.href) || (item.href === '/call-with-astrologer' && pathname === '/astrologers'))
                           ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
                           : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
                       }`}
-                      onClick={(e) => {
-                        e.preventDefault();
+                      onClick={() => {
                         setIsOpen(false);
-                        // Use router.push for programmatic navigation
-                        setTimeout(() => {
-                          router.push(item.href);
-                        }, 100);
                       }}
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
@@ -675,7 +670,7 @@ const Header = () => {
                       </div>
                       <span className="flex-1">{item.label}</span>
                       <div className={`transition-opacity duration-300 ${
-                        isActiveLink(item.href) ? 'opacity-100 text-orange-500' : 'opacity-0 group-hover:opacity-100 text-orange-500'
+                        (isActiveLink(item.href) || (item.href === '/call-with-astrologer' && pathname === '/astrologers')) ? 'opacity-100 text-orange-500' : 'opacity-0 group-hover:opacity-100 text-orange-500'
                       }`}>
                         →
                       </div>

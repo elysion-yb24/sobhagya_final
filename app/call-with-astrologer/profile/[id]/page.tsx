@@ -2,11 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Video, MessageCircle } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, isAuthenticated, getUserDetails, hasUserCalledBefore } from "../../../utils/auth-utils";
-import { shouldUseSampleData, shouldShowDevBanner, shouldShowDebugLogs } from "../../../config/development";
-import { getSampleAstrologerProfile, getSampleReviews, getSampleGifts, getSimilarAstrologers } from "../../../data/sampleAstrologerProfiles";
+import { shouldShowDevBanner, shouldShowDebugLogs } from "../../../config/development";
 import DevModeBanner from "../../../components/DevModeBanner";
 import { motion } from "framer-motion";
 import { getRandomAstrologerBackground } from "../../../utils/randomBackground";
@@ -84,15 +83,6 @@ export default function CallAstrologerProfilePage() {
 
     useEffect(() => {
         if (astrologerId) {
-            // For sample IDs, load immediately without backend calls
-            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
-                const sampleProfile = getSampleAstrologerProfile(astrologerId);
-                if (sampleProfile) {
-                    setAstrologer(sampleProfile);
-                    setIsLoading(false);
-                    return;
-                }
-            }
             fetchAstrologerProfile();
             fetchReviews();
         }
@@ -100,9 +90,46 @@ export default function CallAstrologerProfilePage() {
 
     // Check user call status
     useEffect(() => {
-        const checkUserCallStatus = () => {
+        const checkUserCallStatus = async () => {
+            // First check localStorage for immediate response
+            const cachedHasCalledBefore = localStorage.getItem("userHasCalledBefore");
+            if (cachedHasCalledBefore === "true") {
+                setUserHasCalledBefore(true);
+                return;
+            }
+
+            // Then check using the function (which checks API)
             const hasCalled = hasUserCalledBefore();
             setUserHasCalledBefore(hasCalled);
+
+            // Also check API directly for accuracy
+            try {
+                const token = getAuthToken();
+                if (token) {
+                    const response = await fetch(
+                        `${getApiBaseUrl()}/calling/api/call/call-log?skip=0&limit=10&role=user`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Authorization": `Bearer ${token}`,
+                                "Content-Type": "application/json",
+                            },
+                            credentials: 'include',
+                        }
+                    );
+
+                    if (response.ok) {
+                        const callHistory = await response.json();
+                        const totalCalls = callHistory.data?.list?.length || 0;
+                        if (totalCalls > 0) {
+                            setUserHasCalledBefore(true);
+                            localStorage.setItem('userHasCalledBefore', 'true');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking call history:', error);
+            }
         };
 
         checkUserCallStatus();
@@ -135,91 +162,144 @@ export default function CallAstrologerProfilePage() {
 
     const fetchAstrologerProfile = async () => {
         try {
+            setIsLoading(true);
+            setError(null);
+            
             if (shouldShowDebugLogs()) {
-            console.log('Fetching astrologer profile for ID:', astrologerId);
+                console.log('Fetching astrologer profile for ID:', astrologerId);
             }
 
-            // Use sample data if configured and available
-            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
-                if (shouldShowDebugLogs()) {
-                    console.log('Sample ID detected, using sample data immediately');
-                }
-                const sampleProfile = getSampleAstrologerProfile(astrologerId);
-                if (sampleProfile) {
-                    if (shouldShowDebugLogs()) {
-                        console.log('Using sample data for astrologer:', astrologerId);
-                    }
-                    setAstrologer(sampleProfile);
-                    return;
-                }
-            }
+            const token = getAuthToken();
+            let foundAstrologer = null;
 
             // First try the specific user endpoint
-            let response = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-
-            let data = null;
-            if (response.ok) {
-                data = await response.json();
-                console.log('Response from specific user endpoint:', data);
-            }
-
-            // If specific endpoint doesn't work or doesn't return data, try the users-list endpoint
-            if (!data || !data.success || !data.data) {
-                console.log('Trying users-list endpoint...');
-                response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=10`, {
+            try {
+                const specificResponse = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
                     method: "GET",
                     headers: {
                         "Content-Type": "application/json",
+                        ...(token && { "Authorization": `Bearer ${token}` }),
                     },
+                    credentials: 'include',
                 });
 
-                if (response.ok) {
-                    const listData = await response.json();
-                    console.log('Response from users-list endpoint:', listData);
+                if (specificResponse.ok) {
+                    const specificResult = await specificResponse.json();
+                    console.log('Response from specific user endpoint:', specificResult);
+                    
+                    if (specificResult?.data) {
+                        foundAstrologer = specificResult.data;
+                    } else if (specificResult && (specificResult._id || specificResult.id)) {
+                        foundAstrologer = specificResult;
+                    }
+                }
+            } catch (specificError) {
+                console.log("Specific endpoint not available, falling back to search");
+            }
 
-                    if (listData.success && listData.data?.list) {
-                        // Find the astrologer by ID in the list
-                        const foundAstrologer = listData.data.list.find((user: any) => user._id === astrologerId);
-                        if (foundAstrologer) {
-                            console.log('Found astrologer in list:', foundAstrologer);
-                            setAstrologer(foundAstrologer);
-                            return;
+            // If specific endpoint didn't work, search through all astrologers
+            if (!foundAstrologer) {
+                let currentSkip = 0;
+                const limit = 50; // Larger batch size for better performance
+                let searchCompleted = false;
+
+                while (!searchCompleted && !foundAstrologer) {
+                    console.log(`🔍 Searching for astrologer ${astrologerId} in batch starting at ${currentSkip}`);
+                    
+                    const response = await fetch(
+                        `${getApiBaseUrl()}/user/api/users?skip=${currentSkip}&limit=${limit}`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                                ...(token && { "Authorization": `Bearer ${token}` }),
+                            },
+                            credentials: 'include',
+                        }
+                    );
+
+                    if (!response.ok) {
+                        // Try users-list endpoint as fallback
+                        const listResponse = await fetch(
+                            `${getApiBaseUrl()}/user/api/users-list?skip=${currentSkip}&limit=${limit}`,
+                            {
+                                method: "GET",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                    ...(token && { "Authorization": `Bearer ${token}` }),
+                                },
+                                credentials: 'include',
+                            }
+                        );
+
+                        if (!listResponse.ok) {
+                            throw new Error("Failed to fetch astrologer profile");
+                        }
+
+                        const listResult = await listResponse.json();
+                        let astrologers: any[] = [];
+                        
+                        if (listResult?.data?.list && Array.isArray(listResult.data.list)) {
+                            astrologers = listResult.data.list;
+                        } else if (listResult?.list && Array.isArray(listResult.list)) {
+                            astrologers = listResult.list;
+                        }
+
+                        // Search for the astrologer in current batch
+                        foundAstrologer = astrologers.find((ast: any) => 
+                            ast._id === astrologerId || 
+                            ast.id === astrologerId || 
+                            ast.numericId?.toString() === astrologerId
+                        );
+
+                        // If found or no more results, stop searching
+                        if (foundAstrologer || astrologers.length < limit) {
+                            searchCompleted = true;
+                        } else {
+                            currentSkip += limit;
+                        }
+                    } else {
+                        const result = await response.json();
+                        let astrologers: any[] = [];
+                        
+                        if (result?.data?.list && Array.isArray(result.data.list)) {
+                            astrologers = result.data.list;
+                        } else if (result?.list && Array.isArray(result.list)) {
+                            astrologers = result.list;
+                        }
+
+                        // Search for the astrologer in current batch
+                        foundAstrologer = astrologers.find((ast: any) => 
+                            ast._id === astrologerId || 
+                            ast.id === astrologerId || 
+                            ast.numericId?.toString() === astrologerId
+                        );
+
+                        // If found or no more results, stop searching
+                        if (foundAstrologer || astrologers.length < limit) {
+                            searchCompleted = true;
+                        } else {
+                            currentSkip += limit;
                         }
                     }
                 }
-            } else if (data.success && data.data) {
-                console.log('Setting astrologer from specific endpoint:', data.data);
-                setAstrologer(data.data);
-                return;
             }
 
-            // If we reach here, astrologer was not found - try sample data if configured
-            if (shouldUseSampleData()) {
-                if (shouldShowDebugLogs()) {
-                    console.log('Astrologer not found in any endpoint, trying sample data...');
-                }
-                const sampleProfile = getSampleAstrologerProfile(astrologerId);
-                if (sampleProfile) {
-                    if (shouldShowDebugLogs()) {
-                        console.log('Using sample data for astrologer:', astrologerId);
-                    }
-                    setAstrologer(sampleProfile);
-                    return;
-                }
+            if (!foundAstrologer) {
+                throw new Error("Astrologer not found in the system");
             }
-            
-            if (shouldShowDebugLogs()) {
-                console.log('No sample data available for astrologer:', astrologerId);
-            }
-            setError("Astrologer not found");
+
+            console.log("✅ Found astrologer:", foundAstrologer.name);
+            setAstrologer(foundAstrologer);
         } catch (err) {
             console.error("Error fetching astrologer:", err);
-            setError("Failed to load astrologer profile");
+            const errorMessage = err instanceof Error ? err.message : "Failed to load astrologer profile";
+            
+            if (errorMessage.includes("not found")) {
+                setError(`Astrologer with ID "${astrologerId}" was not found. Please check the URL or try browsing our astrologers.`);
+            } else {
+                setError(errorMessage);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -227,23 +307,14 @@ export default function CallAstrologerProfilePage() {
 
     const fetchSimilarAstrologers = async () => {
         try {
-            // Use sample data if configured and available
-            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
-                if (shouldShowDebugLogs()) {
-                    console.log('Sample ID detected for similar astrologers, using sample data');
-                }
-                const sampleSimilar = getSimilarAstrologers(astrologerId);
-                if (sampleSimilar && sampleSimilar.length > 0) {
-                    setSimilarAstrologers(sampleSimilar);
-                    return;
-                }
-            }
-
-            const response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=10`, {
+            const token = getAuthToken();
+            const response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=50`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
+                    ...(token && { "Authorization": `Bearer ${token}` }),
                 },
+                credentials: 'include',
             });
 
             if (response.ok) {
@@ -281,48 +352,55 @@ export default function CallAstrologerProfilePage() {
             }
         } catch (err) {
             console.error("Error fetching similar astrologers:", err);
-            // Try sample data fallback if configured
-            if (shouldUseSampleData()) {
-                if (shouldShowDebugLogs()) {
-                    console.log('Using sample data for similar astrologers...');
-                }
-                const sampleSimilar = getSimilarAstrologers(astrologerId);
-                if (sampleSimilar && sampleSimilar.length > 0) {
-                    setSimilarAstrologers(sampleSimilar);
-                }
-            }
+            setSimilarAstrologers([]);
         }
     };
 
     const fetchReviews = async () => {
         try {
-            // Use sample data if configured and available
-            if (shouldUseSampleData() && astrologerId.startsWith('sample_')) {
-                if (shouldShowDebugLogs()) {
-                    console.log('Sample ID detected for reviews, using sample data');
-                }
-                const sampleReviews = getSampleReviews(astrologerId);
-                if (sampleReviews && sampleReviews.length > 0) {
-                    setReviews(sampleReviews);
-                    return;
-                }
-            }
-
-            // API call for reviews (fallback)
-            const response = await fetch(`${getApiBaseUrl()}/user/api/reviews/${astrologerId}`, {
+            const token = getAuthToken();
+            // API call for reviews
+            const response = await fetch(`${getApiBaseUrl()}/user/api/top-reviews?partnerId=${astrologerId}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
+                    ...(token && { "Authorization": `Bearer ${token}` }),
                 },
+                credentials: 'include',
             });
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.success && data.data) {
-                    setReviews(data.data);
-                } else {
-                    setReviews([]);
+                
+                // Get reviews from response - handle different response formats
+                let allReviews = [];
+                if (data.data && Array.isArray(data.data)) {
+                    allReviews = data.data;
+                } else if (data.list && Array.isArray(data.list)) {
+                    allReviews = data.list;
+                } else if (Array.isArray(data)) {
+                    allReviews = data;
+                } else if (data.success && data.data) {
+                    allReviews = Array.isArray(data.data) ? data.data : [];
                 }
+                
+                // Filter reviews for this astrologer using the 'to' field
+                const astrologerReviews = allReviews.filter((review: any) => 
+                    review.to === astrologerId || review.astrologerId === astrologerId
+                );
+                
+                // Transform reviews to match expected format
+                const transformedReviews = astrologerReviews.map((review: any) => ({
+                    _id: review._id || review.id,
+                    userId: review.userId || review.by || review.userId,
+                    userName: review.userName || review.name || 'Anonymous',
+                    astrologerId: astrologerId,
+                    rating: review.rating || 0,
+                    comment: review.comment || review.message || '',
+                    createdAt: review.createdAt || review.date || new Date().toISOString()
+                }));
+                
+                setReviews(transformedReviews);
             } else {
                 setReviews([]);
             }
@@ -658,14 +736,18 @@ export default function CallAstrologerProfilePage() {
                                         </p>
                                     </div>
 
-                                    {/* Pricing - Only show if user has called before */}
-                                    {userHasCalledBefore && (
-                                        <div className="mb-6">
+                                    {/* Pricing - Always show, but show different text based on call status */}
+                                    <div className="mb-6">
+                                        {userHasCalledBefore ? (
                                             <div className="text-xl sm:text-2xl font-bold text-[#F7971E]">
                                                 ₹ {astrologer.rpm || 108}/min
-                            </div>
-                        </div>
-                                    )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-xl sm:text-2xl font-bold text-[#F7971E]">
+                                                FREE 1st Call
+                                            </div>
+                                        )}
+                                    </div>
 
                                     {/* About Paragraph */}
                                     <div className="mb-6 pr-0 lg:pr-48">
@@ -693,16 +775,31 @@ export default function CallAstrologerProfilePage() {
                                             <>
                             <button
                                                     onClick={() => router.push(`/chat?astrologerId=${astrologerId}`)}
-                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors"
+                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors flex items-center gap-2"
                             >
+                                                    <MessageCircle className="w-4 h-4" />
                                                     Message
                             </button>
                                                 <button
                                                     onClick={handleAudioCallClick}
                                                     disabled={isAudioCallProcessing}
-                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors disabled:opacity-50"
+                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors disabled:opacity-50 flex items-center gap-2"
                                                 >
-                                                    {isAudioCallProcessing ? "Connecting..." : "Call"}
+                                                    {isAudioCallProcessing ? (
+                                                        "Connecting..."
+                                                    ) : (
+                                                        <>
+                                                            <img src="/call-icon.svg" alt="Call" className="w-4 h-4" />
+                                                            Call
+                                                        </>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleCallTypeSelection('video')}
+                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors flex items-center gap-2"
+                                                >
+                                                    <Video className="w-4 h-4" />
+                                                    Video Call
                                                 </button>
                                             </>
                                         ) : (
@@ -815,7 +912,7 @@ export default function CallAstrologerProfilePage() {
                                              
                                              {/* Experience */}
                                                     <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
-                                                 Exp:- {similar.age || similar.experience || "2"}years
+                                                 Exp: {similar.age || similar.experience || "2"} years
                                              </p>
                                                  </div>
                                              
@@ -897,7 +994,7 @@ export default function CallAstrologerProfilePage() {
                                                      
                                                      {/* Experience */}
                                                      <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
-                                                         Exp:- {similar.age || similar.experience || "2"}years
+                                                         Exp: {similar.age || similar.experience || "2"} years
                                                      </p>
                                                  </div>
                                                  
@@ -979,7 +1076,7 @@ export default function CallAstrologerProfilePage() {
                                              
                                              {/* Experience */}
                                                 <p className="text-gray-600 mb-2" style={{ fontFamily: 'Poppins', fontSize: '10px' }}>
-                                                 Exp:- {similar.age || similar.experience || "2"}years
+                                                 Exp: {similar.age || similar.experience || "2"} years
                                              </p>
                                              </div>
                                              

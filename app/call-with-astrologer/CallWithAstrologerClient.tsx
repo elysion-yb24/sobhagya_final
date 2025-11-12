@@ -61,22 +61,138 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
 }) => {
   const router = useRouter();
 
-  // 🔒 Optional redirect if already logged in (commented out for better performance)
-  // useEffect(() => {
-  //   if (isAuthenticated()) {
-  //     router.replace("/astrologers");
-  //   }
-  // }, [router]);
+  // 🔒 ALWAYS redirect logged-in users to astrologers page - check immediately and continuously
+  useEffect(() => {
+    const checkAuthAndRedirect = () => {
+      if (isAuthenticated()) {
+        router.replace("/astrologers");
+        return true; // Indicates redirect happened
+      }
+      return false;
+    };
+
+    // Check immediately on mount
+    if (checkAuthAndRedirect()) {
+      return; // If redirected, don't set up listeners
+    }
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuthAndRedirect();
+    };
+
+    window.addEventListener('user-auth-changed', handleAuthChange);
+    
+    // Check more frequently to catch any auth state changes
+    const interval = setInterval(() => {
+      if (checkAuthAndRedirect()) {
+        clearInterval(interval);
+      }
+    }, 200);
+
+    return () => {
+      window.removeEventListener('user-auth-changed', handleAuthChange);
+      clearInterval(interval);
+    };
+  }, [router]);
+
+  // Also check before rendering - early exit if authenticated
+  if (typeof window !== 'undefined' && isAuthenticated()) {
+    router.replace("/astrologers");
+    return null;
+  }
 
   const [astrologers, setAstrologers] = useState<Astrologer[]>(initialAstrologers || []);
   const [skip, setSkip] = useState(initialAstrologers?.length || 0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(initialAstrologers.length === 0);
+  const [hasError, setHasError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [offlineCount, setOfflineCount] = useState(0);
+  const [showEndMessage, setShowEndMessage] = useState(false);
   const [showCallOptions, setShowCallOptions] = useState(false);
   const [selectedCallAstrologer, setSelectedCallAstrologer] = useState<Astrologer | null>(null);
 
+  // Count offline astrologers in initial list
+  useEffect(() => {
+    if (initialAstrologers.length > 0) {
+      const initialOffline = initialAstrologers.filter(
+        (a: any) => a.status === 'offline' || a.isOnline === false
+      ).length;
+      setOfflineCount(initialOffline);
+    }
+  }, []);
+
+  // Fetch initial astrologers on client if server fetch failed
+  useEffect(() => {
+    if (initialAstrologers.length === 0 && !isLoadingMore) {
+      const fetchInitial = async () => {
+        setIsLoading(true);
+        setHasError(false);
+        try {
+          const baseUrl = getApiBaseUrl();
+          const limit = 10;
+          const apiUrl = `${baseUrl}/user/api/users-list?skip=0&limit=${limit}`;
+          
+          console.log("Client: Fetching initial astrologers from:", apiUrl);
+
+          const response = await fetch(apiUrl, {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Client: API Response:", data);
+
+          if (data.success && data.data?.list) {
+            const initialList = data.data.list;
+            const initialOffline = initialList.filter(
+              (a: any) => a.status === 'offline' || a.isOnline === false
+            ).length;
+            
+            setAstrologers(initialList);
+            setSkip(initialList.length);
+            setOfflineCount(initialOffline);
+            
+            // Stop if we already have 5+ offline astrologers
+            if (initialOffline >= 5) {
+              setHasMore(false);
+              setShowEndMessage(true);
+            } else {
+              setHasMore(initialList.length === limit);
+            }
+          } else {
+            setHasError(true);
+          }
+        } catch (err) {
+          console.error("Client: Failed to fetch astrologers:", err);
+          setHasError(true);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchInitial();
+    }
+  }, []); // Only run once on mount
+
   const fetchMoreAstrologers = useCallback(async () => {
     if (isLoadingMore || !hasMore) return;
+    
+    // Stop loading if we already have 5-7 offline astrologers
+    if (offlineCount >= 5) {
+      setHasMore(false);
+      setShowEndMessage(true);
+      return;
+    }
+    
     setIsLoadingMore(true);
     try {
       const baseUrl = getApiBaseUrl();
@@ -96,18 +212,38 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
 
       if (data.success && data.data?.list) {
         const newBatch = data.data.list;
-        setAstrologers((prev) => [...prev, ...newBatch]);
-        setSkip((prev) => prev + limit);
-        setHasMore(newBatch.length === limit);
+        
+        // Count offline astrologers in new batch
+        const newOfflineCount = newBatch.filter(
+          (a: any) => a.status === 'offline' || a.isOnline === false
+        ).length;
+        
+        const updatedOfflineCount = offlineCount + newOfflineCount;
+        
+        // If we've reached 5-7 offline astrologers, stop loading
+        if (updatedOfflineCount >= 5) {
+          setAstrologers((prev) => [...prev, ...newBatch]);
+          setOfflineCount(updatedOfflineCount);
+          setHasMore(false);
+          setShowEndMessage(true);
+        } else {
+          setAstrologers((prev) => [...prev, ...newBatch]);
+          setSkip((prev) => prev + limit);
+          setOfflineCount(updatedOfflineCount);
+          setHasMore(newBatch.length === limit);
+        }
       } else {
         setHasMore(false);
+        setShowEndMessage(true);
       }
     } catch (err) {
       console.error("Error loading more astrologers:", err);
+      setHasMore(false);
+      setShowEndMessage(true);
     } finally {
       setIsLoadingMore(false);
     }
-  }, [skip, isLoadingMore, hasMore]);
+  }, [skip, isLoadingMore, hasMore, offlineCount]);
 
   // 📜 Infinite scroll with throttling for better performance
   useEffect(() => {
@@ -156,7 +292,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           transition={{ duration: 0.8 }}
         >
           <Image
-            src="/call-with-astrologer.gif"
+            src="/call-with-astrologer-1.gif"
             alt="call-with-astrologer"
             fill
             className="brightness-75 object-cover"
@@ -176,7 +312,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           </div>
         </motion.div>
 
-        <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="max-w-6xl mx-auto px-6 pb-8 -mt-3">
           <motion.p
             className="text-base sm:text-lg font-light mb-4 text-center"
             initial={{ opacity: 0, y: 10 }}
@@ -198,13 +334,23 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
 
         {/* 🟠 Astrologers */}
         <div className="max-w-6xl mx-auto px-6 pb-12">
-          {error ? (
+          {isLoading ? (
+            <EnhancedLoader />
+          ) : hasError || error ? (
             <motion.div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="text-center max-w-md">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Unable to Load Astrologers
                 </h3>
-                <p className="text-gray-600 mb-6">{error}</p>
+                <p className="text-gray-600 mb-6">
+                  {error || "Failed to fetch astrologers. Please check your connection and try again."}
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                >
+                  Retry
+                </button>
               </div>
             </motion.div>
           ) : (
@@ -212,11 +358,13 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
               <AstrologerList
                 astrologers={astrologers}
                 isLoading={isLoadingMore}
-                hasError={!!error}
+                hasError={false}
                 compactButtons={false}
                 showVideoButton={true}
                 source="callWithAstrologer"
                 onCallModalOpen={handleCallModalOpen}
+                hasMore={hasMore}
+                showEndMessage={showEndMessage}
               />
               {isLoadingMore && <EnhancedLoader />}
             </motion.div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import AstrologerCard from "./AstrologerCard";
 import { AstrologerCardSkeleton, ListSkeleton } from "../ui/SkeletonLoader";
 
@@ -30,6 +31,7 @@ interface AstrologerListProps {
   source?: string;
   onLoadMore?: () => void; // 👈 callback for infinite scroll
   hasMore?: boolean;
+  showEndMessage?: boolean;
   onCallModalOpen?: (astrologer: any) => void;
 }
 
@@ -44,6 +46,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
   source,
   onLoadMore,
   hasMore = true,
+  showEndMessage = false,
   onCallModalOpen,
 }) => {
   const loaderRef = useRef<HTMLDivElement | null>(null);
@@ -115,12 +118,14 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
 
   return (
     <div className="space-y-12">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 px-2 sm:px-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 px-2 sm:px-0">
         {astrologers.map((astrologer, index) => (
-          <div
-          key={`${astrologer._id}-${index}`}
-            className="animate-fadeInUp flex justify-center"
-            style={{ animationDelay: `${(index % 6) * 0.1}s` }}
+          <motion.div
+            key={`${astrologer._id}-${index}`}
+            className="flex justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: (index % 6) * 0.1 }}
           >
             <AstrologerCard
               astrologer={astrologer}
@@ -129,7 +134,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
               source={source}
               onCallModalOpen={onCallModalOpen}
             />
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -139,6 +144,22 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
           {isLoadingMore && (
             <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
           )}
+        </div>
+      )}
+
+      {/* End message */}
+      {showEndMessage && !hasMore && (
+        <div className="flex justify-center py-8 px-4">
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <p className="text-lg md:text-xl text-gray-500 font-medium" style={{ fontFamily: "EB Garamond" }}>
+              ——— Over 10,000 more experts astrologers at your service ———
+            </p>
+          </motion.div>
         </div>
       )}
     </div>

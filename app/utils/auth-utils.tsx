@@ -139,6 +139,9 @@ export function markUserAsCalled(): void {
       storeUserDetails(updatedUserDetails);
     }
     
+    // Mark in localStorage for immediate UI updates
+    localStorage.setItem("userHasCalledBefore", "true");
+    
     // Dispatch event to update UI
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('user-call-status-changed'));

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Calendar, User, Clock, ArrowRight } from "lucide-react";
 import { BlogPost } from "@/types";
 import { getAuthToken } from "@/app/utils/auth-utils";
-import { buildApiUrl, API_CONFIG } from "@/app/config/api";
+import { API_CONFIG } from "@/app/config/api";
 
 const BlogPage = () => {
   const router = useRouter();
@@ -17,7 +17,7 @@ const BlogPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  const fetchBlogs = async (isLoadMore = false) => {
+  const fetchBlogs = async (isLoadMore = false, skipValue?: number) => {
     try {
       if (isLoadMore) {
         setIsLoadingMore(true);
@@ -34,8 +34,9 @@ const BlogPage = () => {
         headers["Authorization"] = `Bearer ${token}`;
       }
 
+      const currentSkip = skipValue !== undefined ? skipValue : skip;
       const response = await fetch(
-        buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS) + `?skip=${skip}&limit=6`,
+        API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS + `?skip=${currentSkip}&limit=6`,
         { headers }
       );
 
@@ -98,7 +99,7 @@ const BlogPage = () => {
   const loadMore = () => {
     const newSkip = skip + 6;
     setSkip(newSkip);
-    fetchBlogs(true);
+    fetchBlogs(true, newSkip);
   };
 
   if (loading) {

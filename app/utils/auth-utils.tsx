@@ -164,21 +164,87 @@ export async function fetchUserProfile(): Promise<any> {
 
     // Get cached user details
     const cachedDetails = getUserDetails();
+    const userId = cachedDetails?.id || cachedDetails?._id;
     
-    // For now, we'll work with the cached data since the backend user profile API isn't available
-    // In the future, when the backend supports user profile API, we can add that call here
+    // Try to fetch fresh profile from backend if we have a user ID
+    if (userId) {
+      try {
+        const { getApiBaseUrl } = await import('../config/api');
+        const baseUrl = getApiBaseUrl();
+        const response = await fetch(`${baseUrl}/user/api/users/${userId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result?.data) {
+            const freshProfile = result.data;
+            // Merge with cached details to preserve any additional fields
+            const enhancedProfile = {
+              ...cachedDetails,
+              ...freshProfile,
+              id: freshProfile._id || freshProfile.id || userId,
+              name: freshProfile.name || cachedDetails?.name,
+              firstName: freshProfile.firstName || cachedDetails?.firstName,
+              lastName: freshProfile.lastName || cachedDetails?.lastName,
+              displayName: freshProfile.name || 
+                          (freshProfile.firstName ? `${freshProfile.firstName} ${freshProfile.lastName || ''}`.trim() : '') ||
+                          cachedDetails?.name ||
+                          (cachedDetails?.firstName ? `${cachedDetails.firstName} ${cachedDetails.lastName || ''}`.trim() : '') ||
+                          'User',
+              timestamp: new Date().getTime(),
+            };
+            
+            // Update stored details
+            storeUserDetails(enhancedProfile);
+            return enhancedProfile;
+          }
+        }
+      } catch (apiError) {
+        console.log('Could not fetch user profile from API, using cached data:', apiError);
+      }
+    }
     
+    // Fallback to cached data with enhancement
     if (cachedDetails) {
-      // Enhance the cached data with better display logic
-      const enhancedProfile = {
-        ...cachedDetails,
-        displayName: cachedDetails.name || cachedDetails.firstName || cachedDetails.phoneNumber || 'User',
+      // Check for captured name from session storage
+      const capturedName = sessionStorage.getItem('capturedUserName');
+      
+      let enhancedProfile = { ...cachedDetails };
+      
+      // If we have a captured name and no existing name, use it
+      if (capturedName && !cachedDetails.name && !cachedDetails.firstName) {
+        const nameParts = capturedName.split(' ');
+        enhancedProfile = {
+          ...enhancedProfile,
+          name: capturedName,
+          firstName: nameParts[0],
+          lastName: nameParts.slice(1).join(' '),
+          profileCompleted: true
+        };
+        
+        // Clear from session storage and update stored details
+        sessionStorage.removeItem('capturedUserName');
+        storeUserDetails(enhancedProfile);
+      }
+      
+      // Enhance the cached data with better display logic (but don't use phone number)
+      const finalProfile = {
+        ...enhancedProfile,
+        displayName: enhancedProfile.name || 
+                    (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
+                    'User',
         timestamp: new Date().getTime(),
       };
       
       // Update the stored details with enhanced info
-      storeUserDetails(enhancedProfile);
-      return enhancedProfile;
+      storeUserDetails(finalProfile);
+      return finalProfile;
     }
 
     // If no cached data, return a basic profile

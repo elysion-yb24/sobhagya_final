@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 import { 
   Phone, 
@@ -87,6 +88,25 @@ export default function LoginPage() {
         const user = getUserDetails();
         console.log('🔍 checkAuthAndRedirect - User details:', user);
         console.log('🔍 checkAuthAndRedirect - Call data:', { storedAstrologerId, callIntent, callSource });
+        
+        // Check if user is new (no name) and redirect to profile completion
+        const hasName = user && (user.name || user.firstName || user.displayName) && 
+                      (user.name || user.firstName || user.displayName).trim() !== '';
+        const isPhoneNumber = (str: string): boolean => {
+          if (!str) return false;
+          const phonePattern = /^[\d\s\+\-\(\)]+$/;
+          const digitCount = (str.match(/\d/g) || []).length;
+          return phonePattern.test(str) && digitCount >= 10;
+        };
+        const displayNameIsPhone = user?.displayName && isPhoneNumber(user.displayName);
+        const userNeedsProfile = !hasName || displayNameIsPhone;
+        
+        // If user is new (no name) and no call intent, redirect to profile completion
+        if (userNeedsProfile && !callIntent && !storedAstrologerId) {
+          console.log('📝 New user detected (no name), redirecting to profile completion');
+          router.push('/profile/complete');
+          return;
+        }
         
         if (user && user.role === 'friend') {
           console.log('👥 checkAuthAndRedirect - User is a friend, checking for call intent');
@@ -290,7 +310,24 @@ export default function LoginPage() {
 
       const data = await response.json();
       if (!response.ok || !data?.data?.token || !data?.data?.channel) {
-        throw new Error(data?.message || 'Failed to initiate call');
+        const errorMessage = data?.message || 'Failed to initiate call';
+        
+        // Handle specific error messages with user-friendly notifications
+        if (errorMessage === 'User not online' || errorMessage.includes('not online')) {
+          toast.error('Astrologer is currently offline. Please try again later.');
+          return;
+        } else if (errorMessage === 'Call already in progress' || errorMessage.includes('already in progress')) {
+          toast.error('A call is already in progress. Please wait for it to complete.');
+          return;
+        } else if (errorMessage === 'DONT_HAVE_ENOUGH_BALANCE' || errorMessage.includes('balance')) {
+          toast.error('Insufficient wallet balance. Please recharge your wallet.');
+          return;
+        } else if (errorMessage === 'User already on another call') {
+          toast.error('Astrologer is currently busy on another call. Please try again later.');
+          return;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const astrologerName = await fetchAstrologerName(astrologerId, token);
@@ -306,9 +343,18 @@ export default function LoginPage() {
         : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
 
       router.replace(dest);
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Direct call initiation failed:', err);
-      router.replace('/astrologers');
+      
+      // Show user-friendly error message
+      const errorMessage = err?.message || 'Failed to initiate call';
+      if (!errorMessage.includes('User not online') && 
+          !errorMessage.includes('Call already in progress') &&
+          !errorMessage.includes('balance') &&
+          !errorMessage.includes('already on another call')) {
+        toast.error(errorMessage || 'Failed to initiate call. Please try again.');
+        router.replace('/astrologers');
+      }
     }
   };
 
@@ -381,15 +427,25 @@ export default function LoginPage() {
           
           // Check if user details are present in database response
           const userDetails = getUserDetails();
-          const hasUserDetails = userDetails && (userDetails.name || userDetails.displayName) && (userDetails.name || userDetails.displayName).trim() !== '';
+          const isPhoneNumber = (str: string): boolean => {
+            if (!str) return false;
+            const phonePattern = /^[\d\s\+\-\(\)]+$/;
+            const digitCount = (str.match(/\d/g) || []).length;
+            return phonePattern.test(str) && digitCount >= 10;
+          };
+          const hasUserDetails = userDetails && (userDetails.name || userDetails.firstName) && 
+                                (userDetails.name || userDetails.firstName).trim() !== '' &&
+                                !isPhoneNumber(userDetails.name || userDetails.firstName || '');
+          const displayNameIsPhone = userDetails?.displayName && isPhoneNumber(userDetails.displayName);
+          const userNeedsProfile = !hasUserDetails || displayNameIsPhone;
           
-          console.log('👤 User details check after OTP verification:', { userDetails, hasUserDetails });
+          console.log('👤 User details check after OTP verification:', { userDetails, hasUserDetails, userNeedsProfile });
           
-          // If user details are not present and there's a call intent, redirect to call pages
-          if (!hasUserDetails && (callIntent || storedAstrologerId)) {
-            console.log('📝 User details not present in database, redirecting to call flow for data collection');
+          // If user details are not present, redirect to profile completion
+          if (userNeedsProfile) {
+            console.log('📝 User needs profile completion, redirecting to profile completion page');
             setIsVerifyingOtp(false);
-            router.push('/calls/call1');
+            router.push('/profile/complete');
             return;
           }
           
@@ -489,14 +545,24 @@ export default function LoginPage() {
         }
 
         // Check if user details are present in database response (legacy)
-        const hasUserDetails = user && (user.name || user.displayName) && (user.name || user.displayName).trim() !== '';
+        const isPhoneNumber = (str: string): boolean => {
+          if (!str) return false;
+          const phonePattern = /^[\d\s\+\-\(\)]+$/;
+          const digitCount = (str.match(/\d/g) || []).length;
+          return phonePattern.test(str) && digitCount >= 10;
+        };
+        const hasUserDetails = user && (user.name || user.firstName) && 
+                              (user.name || user.firstName).trim() !== '' &&
+                              !isPhoneNumber(user.name || user.firstName || '');
+        const displayNameIsPhone = user?.displayName && isPhoneNumber(user.displayName);
+        const userNeedsProfile = !hasUserDetails || displayNameIsPhone;
         
-        console.log('👤 User details check (legacy):', { user, hasUserDetails });
+        console.log('👤 User details check (legacy):', { user, hasUserDetails, userNeedsProfile });
         
-        // If user details are not present and there's a call intent, redirect to call pages
-        if (!hasUserDetails && (callIntent || storedAstrologerId)) {
-          console.log('📝 User details not present in database (legacy), redirecting to call flow for data collection');
-          router.push('/calls/call1');
+        // If user details are not present, redirect to profile completion
+        if (userNeedsProfile) {
+          console.log('📝 User needs profile completion, redirecting to profile completion page');
+          router.push('/profile/complete');
           return;
         }
 

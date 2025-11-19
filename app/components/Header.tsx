@@ -1,10 +1,11 @@
 "use client";
 
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Eagle_Lake } from "next/font/google";
-import { Menu, X, Phone, User, LogOut } from "lucide-react";
+import { Menu, X, Phone, User, LogOut, ChevronDown, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
@@ -25,6 +26,7 @@ const Header = () => {
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
 
   // Helper function to check if a link is active
@@ -48,8 +50,19 @@ const Header = () => {
     setMounted(true);
   }, []);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isUserDropdownOpen && !(event.target as Element).closest('.user-dropdown-container')) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserDropdownOpen]);
+
   // Fetch wallet balance
-  const fetchWalletBalance = async () => {
+  const fetchWalletBalance = useCallback(async () => {
     try {
       const token = getAuthToken();
       if (!token) {
@@ -75,7 +88,7 @@ const Header = () => {
         setWalletBalance(0);
       }
     }
-  };
+  }, []);
 
 
 
@@ -105,31 +118,32 @@ const Header = () => {
     };
     window.addEventListener('user-auth-changed', handler);
     return () => window.removeEventListener('user-auth-changed', handler);
-  }, []);
+  }, [fetchWalletBalance]);
 
   // Always check auth state on mount to ensure correct display after redirects
   useEffect(() => {
     if (mounted) {
-      // Prevent duplicate fetch if already loaded
-      if (userProfile) return;
       const authenticated = isAuthenticated();
       setIsAuthenticatedUser(authenticated);
       if (authenticated) {
         let userDetails = getUserDetails();
         setUserProfile(userDetails);
-        // Only fetch if not present or outdated (older than 5 min)
-        if (!userDetails || !userDetails.timestamp || Date.now() - userDetails.timestamp > 5 * 60 * 1000) {
-          fetchUserProfile().then(freshProfile => {
-            if (freshProfile) setUserProfile(freshProfile);
-          });
-        }
+        // Always fetch fresh profile to get latest name from backend
+        // This ensures we have the most up-to-date user information
+        fetchUserProfile().then(freshProfile => {
+          if (freshProfile) {
+            setUserProfile(freshProfile);
+            // Trigger update event to refresh other components
+            window.dispatchEvent(new Event('user-auth-changed'));
+          }
+        });
         fetchWalletBalance();
       } else {
         setUserProfile(null);
         setWalletBalance(0);
       }
     }
-  }, [mounted, userProfile]);
+  }, [mounted, fetchWalletBalance]);
 
   const handleLogout = async () => {
     try {
@@ -173,36 +187,65 @@ const Header = () => {
   const getDisplayName = () => {
     if (!userProfile) return 'User';
     
-    // Use enhanced displayName if available
-    if (userProfile.displayName && userProfile.displayName !== 'User') {
-      return userProfile.displayName;
-    }
+    // Helper function to check if a string is a phone number
+    const isPhoneNumber = (str: string): boolean => {
+      if (!str) return false;
+      // Check if it contains only digits, spaces, +, or common phone formatting
+      const phonePattern = /^[\d\s\+\-\(\)]+$/;
+      // Check if it looks like a phone number (has 10+ digits)
+      const digitCount = (str.match(/\d/g) || []).length;
+      return phonePattern.test(str) && digitCount >= 10;
+    };
     
-    // Fallback priority: name > firstName lastName > firstName > phoneNumber
-    if (userProfile.name && userProfile.name.trim() !== '') {
+    // Helper function to format phone number for display
+    const formatPhoneNumber = (phone: string | number): string => {
+      const phoneStr = phone.toString();
+      if (phoneStr.length >= 10) {
+        const last10 = phoneStr.slice(-10);
+        return `+91 ${last10.replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}`;
+      }
+      return phoneStr;
+    };
+    
+    // Priority: name > firstName lastName > firstName > phoneNumber (for new users)
+    if (userProfile.name && userProfile.name.trim() !== '' && !isPhoneNumber(userProfile.name)) {
       return userProfile.name;
     }
     
-    if (userProfile.firstName && userProfile.firstName.trim() !== '') {
+    if (userProfile.firstName && userProfile.firstName.trim() !== '' && !isPhoneNumber(userProfile.firstName)) {
       const lastName = userProfile.lastName ? ` ${userProfile.lastName}` : '';
       return `${userProfile.firstName}${lastName}`;
     }
     
-    if (userProfile.phoneNumber) {
-      // Format phone number for display
-      const phone = userProfile.phoneNumber.toString();
-      if (phone.length >= 10) {
-        return `+91 ${phone.slice(-10).replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}`;
-      }
-      return phone;
+    // Check displayName only if it's not a phone number
+    if (userProfile.displayName && 
+        userProfile.displayName !== 'User' && 
+        !isPhoneNumber(userProfile.displayName)) {
+      return userProfile.displayName;
     }
     
+    // For new users without a name, show formatted phone number
+    if (userProfile.phoneNumber) {
+      return formatPhoneNumber(userProfile.phoneNumber);
+    }
+    
+    // Fallback to "User" if no phone number available
     return 'User';
   };
 
+  const getInitials = () => {
+    const name = getDisplayName();
+    if (name === 'User' || !name) return 'U';
+    const words = name.trim().split(' ').filter(Boolean);
+    if (words.length >= 2) {
+      return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+    }
+    return name[0].toUpperCase();
+  };
+
   const handleProfileCompletion = () => {
-    // Redirect to call pages flow for profile completion
-    window.location.href = '/calls/call2?profile=complete';
+    // Redirect to profile completion page
+    window.location.href = '/profile/complete';
   };
 
   return (
@@ -304,28 +347,74 @@ const Header = () => {
             {/* Right: User/Login, responsive width */}
             <div className="flex items-center gap-2 flex-shrink-0 min-w-[210px] justify-end">
               {isAuthenticatedUser ? (
-                <div className="flex items-center gap-2 bg-orange-50/70 border border-orange-100 rounded-full px-3 py-1.5 shadow-sm">
-                  <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center">
-                    <User className="w-5 h-5 text-orange-600" />
-                </div>
-                  <span className="text-gray-700 font-medium text-sm max-w-[100px] truncate">{getDisplayName()}</span>
-                    <button
-                      onClick={handleLogout}
-                    className="ml-1 p-2 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
-                      disabled={isLoggingOut}
-                    title="Logout"
-                    >
-                    <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/login"
-                  className="px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                <div className="relative user-dropdown-container">
+                  <button
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                    className="flex items-center gap-2 bg-orange-50/70 border border-orange-100 rounded-full px-3 py-1.5 shadow-sm hover:bg-orange-100 transition-colors duration-200"
                   >
-                    Signup/Login
-                  </Link>
-                )}
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-xs">{getInitials()}</span>
+                    </div>
+                    <span className="text-gray-700 font-medium text-sm max-w-[100px] truncate">{getDisplayName()}</span>
+                    <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {isUserDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50"
+                      >
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-semibold text-base">{getInitials()}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 truncate">{getDisplayName()}</p>
+                              {userProfile?.email && (
+                                <p className="text-xs text-gray-500 truncate">{userProfile.email}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors duration-200"
+                        >
+                          <Settings className="w-5 h-5" />
+                          <span className="font-medium">My Profile</span>
+                        </Link>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <button
+                          onClick={() => {
+                            setIsUserDropdownOpen(false);
+                            handleLogout();
+                          }}
+                          disabled={isLoggingOut}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span className="font-medium">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                >
+                  Signup/Login
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -394,53 +483,100 @@ const Header = () => {
             {/* Right: User/Login */}
             <div className="flex items-center gap-2 flex-shrink-0 min-w-[160px] justify-end">
               {isAuthenticatedUser ? (
-                <div className="flex items-center gap-1 bg-orange-50/70 border border-orange-100 rounded-full px-2 py-1.5 shadow-sm">
-                  <div className="w-6 h-6 rounded-full bg-orange-200 flex items-center justify-center">
-                    <User className="w-4 h-4 text-orange-600" />
-                </div>
-                  <span className="text-gray-700 font-medium text-xs max-w-[80px] truncate">{getDisplayName()}</span>
-                    <button
-                      onClick={handleLogout}
-                    className="ml-1 p-1 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
-                      disabled={isLoggingOut}
-                    title="Logout"
-                    >
-                    <LogOut className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/login"
-                  className="px-3 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-sm shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                <div className="relative user-dropdown-container">
+                  <button
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                    className="flex items-center gap-1 bg-orange-50/70 border border-orange-100 rounded-full px-2 py-1.5 shadow-sm hover:bg-orange-100 transition-colors duration-200"
                   >
-                    Signup/Login
-                  </Link>
-                )}
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-semibold text-[10px]">{getInitials()}</span>
+                    </div>
+                    <span className="text-gray-700 font-medium text-xs max-w-[80px] truncate">{getDisplayName()}</span>
+                    <ChevronDown className={`w-3 h-3 text-gray-600 transition-transform duration-200 ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {isUserDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-2 w-60 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50"
+                      >
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-semibold text-sm">{getInitials()}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-gray-900 truncate">{getDisplayName()}</p>
+                              {userProfile?.email && (
+                                <p className="text-[10px] text-gray-500 truncate">{userProfile.email}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors duration-200"
+                        >
+                          <Settings className="w-4 h-4" />
+                          <span className="font-medium text-sm">My Profile</span>
+                        </Link>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        <button
+                          onClick={() => {
+                            setIsUserDropdownOpen(false);
+                            handleLogout();
+                          }}
+                          disabled={isLoggingOut}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span className="font-medium text-sm">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-3 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-sm shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                >
+                  Signup/Login
+                </Link>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* MOBILE HEADER with enhanced animations */}
-      <div className="md:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          {/* Mobile Logo */}
-          <Link href="/" className={`group flex items-center gap-2 transition-all duration-300 ${
-            isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
-          }`}>
-          <Image
-              src="/sobhagya-logo.svg"
-            alt="Sobhagya"
-              width={40}
-              height={40}
-              className="w-10 h-10 object-contain"
-              priority
-              quality={100}
-            />
-            <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
-              Sobhagya
-            </span>
-        </Link>
+      {mounted && (
+        <div className="md:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Mobile Logo */}
+            <Link href="/" className={`group flex items-center gap-2 transition-all duration-300 ${
+              isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
+            }`}>
+            <Image
+                src="/sobhagya-logo.svg"
+              alt="Sobhagya"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
+                priority
+                quality={100}
+              />
+              <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
+                Sobhagya
+              </span>
+          </Link>
 
           {/* Mobile Action Buttons */}
           <div className="flex items-center gap-2">
@@ -482,12 +618,15 @@ const Header = () => {
           </button>
         </div>
       </div>
+        </div>
+      )}
 
-        {/* MOBILE MENU with enhanced animations and improved scroll behavior */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            className="fixed top-0 left-0 w-full z-[9999] flex flex-col bg-white shadow-2xl"
+      {/* MOBILE MENU with enhanced animations and improved scroll behavior */}
+      {mounted && (
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div 
+              className="fixed top-0 left-0 w-full z-[9999] flex flex-col bg-white shadow-2xl"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -529,14 +668,17 @@ const Header = () => {
                   {/* User Profile Card */}
                   <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
-                        <User className="h-6 w-6 text-white" />
+                      <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md flex-shrink-0">
+                        <span className="text-white font-semibold text-base">{getInitials()}</span>
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm text-orange-700 font-medium">Welcome back!</p>
                         <p className="text-lg font-bold text-orange-900 truncate">
                           {getDisplayName()}
                         </p>
+                        {userProfile?.email && (
+                          <p className="text-xs text-orange-600 truncate">{userProfile.email}</p>
+                        )}
                         {needsProfileCompletion() && (
                           <button
                             onClick={handleProfileCompletion}
@@ -588,6 +730,26 @@ const Header = () => {
                     
                     {/* Account Menu Items */}
                     <div className="space-y-3">
+                      <Link 
+                        href="/profile"
+                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsOpen(false);
+                          setTimeout(() => {
+                            router.push("/profile");
+                          }, 100);
+                        }}
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+                          <Settings className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="flex-1">My Profile</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                          →
+                        </div>
+                      </Link>
+
                       <Link 
                         href="/astrologers?openHistory=transactions"
                         className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-blue-200"
@@ -703,13 +865,12 @@ const Header = () => {
               )}
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-      </div>
-
+          )}
+        </AnimatePresence>
+      )}
 
     </header>
   );
-  };
+};
   
 export default Header;

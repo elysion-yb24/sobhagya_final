@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Video, MessageCircle } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, isAuthenticated, getUserDetails, hasUserCalledBefore } from "../../../utils/auth-utils";
@@ -9,6 +9,7 @@ import { shouldShowDevBanner, shouldShowDebugLogs } from "../../../config/develo
 import DevModeBanner from "../../../components/DevModeBanner";
 import { motion } from "framer-motion";
 import { getRandomAstrologerBackground } from "../../../utils/randomBackground";
+import { toast } from 'react-hot-toast';
 
 interface Astrologer {
     _id: string;
@@ -47,6 +48,7 @@ interface Review {
 export default function CallAstrologerProfilePage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const astrologerId = params?.id as string;
     const [randomBackground, setRandomBackground] = useState<string>('');
 
@@ -80,6 +82,7 @@ export default function CallAstrologerProfilePage() {
     const [userHasCalledBefore, setUserHasCalledBefore] = useState(false);
     const [isAudioCallProcessing, setIsAudioCallProcessing] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const hasInitiatedCallRef = React.useRef(false);
 
     useEffect(() => {
         if (astrologerId) {
@@ -87,6 +90,35 @@ export default function CallAstrologerProfilePage() {
             fetchReviews();
         }
     }, [astrologerId]);
+
+    // Auto-initiate call if callType is in URL or localStorage
+    useEffect(() => {
+        if (!astrologer || !isAuthenticated() || hasInitiatedCallRef.current) return;
+        
+        const callTypeFromUrl = searchParams?.get('callType');
+        const callIntentFromStorage = localStorage.getItem('callIntent');
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        
+        // Check if we should auto-initiate call
+        if ((callTypeFromUrl || callIntentFromStorage) && storedAstrologerId === astrologerId) {
+            // Mark as initiated to prevent multiple calls
+            hasInitiatedCallRef.current = true;
+            
+            // Clear the stored values first
+            const callType = (callTypeFromUrl || callIntentFromStorage) as 'audio' | 'video';
+            localStorage.removeItem('callIntent');
+            localStorage.removeItem('selectedAstrologerId');
+            localStorage.removeItem('callSource');
+            
+            // Auto-initiate the call by calling handleCallTypeSelection
+            if (callType === 'audio' || callType === 'video') {
+                // Small delay to ensure page is fully loaded
+                setTimeout(() => {
+                    handleCallTypeSelection(callType);
+                }, 500);
+            }
+        }
+    }, [astrologer, astrologerId, searchParams]);
 
     // Check user call status
     useEffect(() => {
@@ -289,7 +321,17 @@ export default function CallAstrologerProfilePage() {
                 throw new Error("Astrologer not found in the system");
             }
 
-            console.log("✅ Found astrologer:", foundAstrologer.name);
+            // Normalize status field - ensure status is set correctly
+            // If isOnline is provided but status is not, convert it
+            if (foundAstrologer.isOnline !== undefined && !foundAstrologer.status) {
+                foundAstrologer.status = foundAstrologer.isOnline ? "online" : "offline";
+            }
+            // If status is not provided, default to offline
+            if (!foundAstrologer.status) {
+                foundAstrologer.status = "offline";
+            }
+
+            console.log("✅ Found astrologer:", foundAstrologer.name, "Status:", foundAstrologer.status);
             setAstrologer(foundAstrologer);
         } catch (err) {
             console.error("Error fetching astrologer:", err);
@@ -353,6 +395,39 @@ export default function CallAstrologerProfilePage() {
         } catch (err) {
             console.error("Error fetching similar astrologers:", err);
             setSimilarAstrologers([]);
+        }
+    };
+
+    // Function to refresh astrologer status
+    const refreshAstrologerStatus = async () => {
+        try {
+            const token = getAuthToken();
+            const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+            const response = await fetch(`${baseUrl}/user/api/profile/${astrologerId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` }),
+                },
+                credentials: 'include',
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result?.data) {
+                    const updatedAstrologer = result.data;
+                    // Normalize status
+                    if (updatedAstrologer.isOnline !== undefined && !updatedAstrologer.status) {
+                        updatedAstrologer.status = updatedAstrologer.isOnline ? "online" : "offline";
+                    }
+                    if (!updatedAstrologer.status) {
+                        updatedAstrologer.status = "offline";
+                    }
+                    setAstrologer(prev => prev ? { ...prev, status: updatedAstrologer.status } : prev);
+                }
+            }
+        } catch (err) {
+            console.error('Error refreshing astrologer status:', err);
         }
     };
 
@@ -427,16 +502,137 @@ export default function CallAstrologerProfilePage() {
         }, 3000);
     };
 
-    const handleCallTypeSelection = (callType: 'audio' | 'video') => {
+    const handleCallTypeSelection = async (callType: 'audio' | 'video') => {
         // Get the selected astrologer ID from localStorage or use current astrologer
         const selectedId = localStorage.getItem("selectedAstrologerId") || astrologerId;
         
-        // Redirect to login with call intent
-        localStorage.setItem("selectedAstrologerId", selectedId);
-        localStorage.setItem("callIntent", callType);
-        localStorage.setItem("callSource", "callWithAstrologer");
         setShowCallOptions(false);
-        router.push("/login");
+        
+        // If user is authenticated, directly initiate the call
+        if (isAuthenticated()) {
+            try {
+                setIsAudioCallProcessing(true);
+                const token = getAuthToken();
+                const user = getUserDetails();
+                
+                if (!token || !user?.id) {
+                    router.push("/login");
+                    return;
+                }
+
+                // Check if user role is 'friend' (partner)
+                if (user.role === 'friend') {
+                    console.log('Call blocked: User is a partner (friend role)');
+                    setIsAudioCallProcessing(false);
+                    return;
+                }
+
+                // Refresh astrologer status before initiating call to get real-time status
+                await refreshAstrologerStatus();
+
+                const channelId = Date.now().toString();
+                const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
+                const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+                const body = {
+                    receiverUserId: selectedId,
+                    type: callType === 'audio' ? 'call' : 'video',
+                    appVersion: '1.0.0'
+                };
+
+                const response = await fetch(livekitUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(body),
+                    credentials: 'include',
+                });
+
+                const data = await response.json();
+                if (!response.ok || !data?.data?.token || !data?.data?.channel) {
+                    const errorMessage = data?.message || 'Failed to initiate call';
+                    
+                    // Handle specific error messages with user-friendly notifications
+                    if (errorMessage === 'User not online' || errorMessage.includes('not online')) {
+                        // Update the astrologer status to reflect real-time status
+                        setAstrologer(prev => prev ? { ...prev, status: 'offline' } : prev);
+                        toast.error('Astrologer is currently offline. Please try again later.');
+                        setIsAudioCallProcessing(false);
+                        return;
+                    } else if (errorMessage === 'Call already in progress' || errorMessage.includes('already in progress')) {
+                        toast.error('A call is already in progress. Please wait for it to complete.');
+                        setIsAudioCallProcessing(false);
+                        return;
+                    } else if (errorMessage === 'DONT_HAVE_ENOUGH_BALANCE' || errorMessage.includes('balance')) {
+                        toast.error('Insufficient wallet balance. Please recharge your wallet.');
+                        setIsAudioCallProcessing(false);
+                        return;
+                    } else if (errorMessage === 'User already on another call') {
+                        toast.error('Astrologer is currently busy on another call. Please try again later.');
+                        setIsAudioCallProcessing(false);
+                        return;
+                    }
+                    
+                    throw new Error(errorMessage);
+                }
+
+                // Get astrologer name
+                let astrologerName = astrologer?.name || 'Astrologer';
+                try {
+                    const astroResponse = await fetch(`${baseUrl}/user/api/profile/${selectedId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (astroResponse.ok) {
+                        const astroData = await astroResponse.json();
+                        astrologerName = astroData?.data?.name || astrologerName;
+                    }
+                } catch (err) {
+                    console.log('Could not fetch astrologer name:', err);
+                }
+
+                // Clear stored values
+                localStorage.setItem('lastAstrologerId', selectedId);
+                localStorage.setItem('callSource', 'callWithAstrologer');
+                localStorage.removeItem('selectedAstrologerId');
+                localStorage.removeItem('callIntent');
+
+                // Navigate to call page
+                const dest = callType === 'audio'
+                    ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(selectedId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
+                    : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(selectedId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+
+                router.replace(dest);
+            } catch (err: any) {
+                console.error('❌ Direct call initiation failed:', err);
+                setIsAudioCallProcessing(false);
+                
+                // Show user-friendly error message
+                const errorMessage = err?.message || 'Failed to initiate call';
+                if (!errorMessage.includes('User not online') && 
+                    !errorMessage.includes('Call already in progress') &&
+                    !errorMessage.includes('balance') &&
+                    !errorMessage.includes('already on another call')) {
+                    toast.error(errorMessage || 'Failed to initiate call. Please try again.');
+                }
+                
+                // Fallback to login flow only if not a specific error
+                if (!errorMessage.includes('User not online') && 
+                    !errorMessage.includes('Call already in progress') &&
+                    !errorMessage.includes('already on another call')) {
+                    localStorage.setItem("selectedAstrologerId", selectedId);
+                    localStorage.setItem("callIntent", callType);
+                    localStorage.setItem("callSource", "callWithAstrologer");
+                    router.push("/login");
+                }
+            }
+        } else {
+            // If not authenticated, redirect to login with call intent
+            localStorage.setItem("selectedAstrologerId", selectedId);
+            localStorage.setItem("callIntent", callType);
+            localStorage.setItem("callSource", "callWithAstrologer");
+            router.push("/login");
+        }
     };
 
     const scrollSimilarLeft = () => {
@@ -606,8 +802,14 @@ export default function CallAstrologerProfilePage() {
                                         </div>
 
                                         {/* Online Status - Exactly Below Profile Picture */}
-                                        <div className="mt-3 text-center text-[#399932] text-sm font-medium">
-                                            {astrologer.isOnline ? "Online" : "Offline"}
+                                        <div className="mt-3 text-center text-sm font-medium">
+                                            {astrologer.status === "online" ? (
+                                                <span className="text-[#399932]">Online</span>
+                                            ) : astrologer.status === "busy" ? (
+                                                <span className="text-orange-600">Busy</span>
+                                            ) : (
+                                                <span className="text-red-600">Offline</span>
+                                            )}
                                         </div>
                                 </div>
 

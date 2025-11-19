@@ -45,6 +45,9 @@ interface Astrologer {
 }
 
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 async function fetchInitialAstrologers(): Promise<Astrologer[]> {
   try {
     const baseUrl = getApiBaseUrl();

@@ -9,7 +9,8 @@ import ClientPathname from "./components/ClientPathname";
 import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
 import AuthErrorHandler from "@/app/components/AuthErrorHandler";
 import { SessionManagerProvider } from "@/app/components/astrologers/SessionManager";
-import ConditionalFooter from "./components/ConditionalFooter"; 
+import ConditionalFooter from "./components/ConditionalFooter";
+import { Toaster } from "react-hot-toast"; 
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </main>
               </ClientLayout>
               <ConditionalFooter />
+              <Toaster position="top-right" />
             </SessionManagerProvider>
           </WalletBalanceProvider>
         </Suspense>

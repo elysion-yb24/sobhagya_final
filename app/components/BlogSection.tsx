@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { BlogPost } from "@/types";
 import { getAuthToken } from "@/app/utils/auth-utils";
-import { buildApiUrl, API_CONFIG } from "@/app/config/api";
+import { API_CONFIG } from "@/app/config/api";
 
 const BlogSection = () => {
   const router = useRouter();
@@ -27,7 +27,7 @@ const BlogSection = () => {
         }
 
         const response = await fetch(
-          buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS) + "?skip=0&limit=10",
+          API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS + "?skip=0&limit=10",
           { headers }
         );
 

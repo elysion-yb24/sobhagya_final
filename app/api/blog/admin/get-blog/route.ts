@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
     console.log('Authorization header:', authHeader);
     console.log('Token from query:', token);
     
-    // Build the target URL using config
-    let targetUrl = `${buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOG)}?id=${blogId}`;
+    // Build the target URL using config - use backend endpoint
+    let targetUrl = `${buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOG_BACKEND)}?id=${blogId}`;
     
     console.log('Making request to:', targetUrl);
     
@@ -49,6 +49,10 @@ export async function GET(request: NextRequest) {
       headers,
     });
     
+    if (!response.ok) {
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    
     const data = await response.json();
     console.log('Get Blog API response status:', response.status);
     console.log('Get Blog API response data:', data);
@@ -63,12 +67,15 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Get Blog API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Get Blog API error:', errorMessage);
+    console.error('Target URL was:', buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOG_BACKEND));
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Internal server error',
-        message: 'Failed to fetch blog'
+        error: 'Failed to fetch blog from backend',
+        message: errorMessage
       }, 
       { 
         status: 500,

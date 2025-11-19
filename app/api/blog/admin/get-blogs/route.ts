@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     console.log('Authorization header:', authHeader);
     console.log('Token from query:', token);
     
-    // Build the target URL using config
-    let targetUrl = buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS);
+    // Build the target URL using config - use backend endpoint
+    let targetUrl = buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS_BACKEND);
     const queryParams = new URLSearchParams();
     
     // Add query parameters from request if any
@@ -47,6 +47,11 @@ export async function GET(request: NextRequest) {
       headers,
     });
     
+    if (!response.ok) {
+      // Backend returned an error
+      throw new Error(`Backend returned ${response.status}`);
+    }
+    
     const data = await response.json();
     console.log('Blog API response status:', response.status);
     console.log('Blog API response data:', data);
@@ -61,12 +66,15 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Blog API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Blog API error:', errorMessage);
+    console.error('Target URL was:', buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS_BACKEND));
+    
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Internal server error',
-        message: 'Failed to fetch blogs'
+        error: 'Failed to fetch blogs from backend',
+        message: errorMessage
       }, 
       { 
         status: 500,

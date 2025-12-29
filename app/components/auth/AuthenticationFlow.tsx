@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import OtpVerificationScreen from '../../components/auth/OtpVerificationScreen'; 
+import OtpVerificationScreen from '../../components/auth/OtpVerificationScreen';
 import { buildApiUrl, API_CONFIG } from '../../config/api';
 import { isValidMobileNumber, getPhoneValidationError, sanitizePhoneInput } from '../../utils/phone-validation';
 // Adjust the path to wherever your OtpVerificationScreen is located
@@ -38,7 +38,7 @@ const countries: Country[] = [
 
 export default function AuthenticationFlow({
   isOpen = false,
-  onClose = () => {},
+  onClose = () => { },
   onAuthenticated,
 }: AuthenticationFlowProps) {
   const [phoneNumber, setPhoneNumber] = useState<string>('');
@@ -49,17 +49,17 @@ export default function AuthenticationFlow({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [currentScreen, setCurrentScreen] = useState<'phone-input' | 'otp-verification'>('phone-input');
 
-  const [isLoading, setIsLoading] = useState<boolean>(false); 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Filter countries for the dropdown search
   const filteredCountries = searchTerm
     ? countries.filter(country =>
-        country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        country.dial_code.includes(searchTerm),
-      )
+      country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      country.dial_code.includes(searchTerm),
+    )
     : countries;
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function AuthenticationFlow({
 
       const data = await response.json();
       if (response.ok) {
-        
+
         setCurrentScreen('otp-verification');
       } else {
         setError(data.message || 'Failed to send OTP. Please try again.');
@@ -115,7 +115,6 @@ export default function AuthenticationFlow({
   const handleVerifyOtp = async (data: any) => {
     // If this is just a success notification from OtpVerificationScreen, don't re-verify
     if (data && data.verified === true) {
-      console.log("OTP verification completed successfully by child component");
       setIsLoading(false);
       setError(null);
       if (onAuthenticated) {
@@ -133,7 +132,6 @@ export default function AuthenticationFlow({
     }
 
     // If we get here, it's likely a legacy call or unexpected data
-    console.log("Received unexpected data in handleVerifyOtp:", data);
     setIsLoading(false);
   };
 
@@ -152,10 +150,10 @@ export default function AuthenticationFlow({
       });
 
       const data = await response.json();
-      
+
 
       if (response.ok) {
-        
+
         setError(null);
       } else {
         setError(data.message || 'Failed to resend OTP. Please try again.');
@@ -186,7 +184,7 @@ export default function AuthenticationFlow({
         onVerify={handleVerifyOtp}      // Called when OTP is verified
         onResend={handleResendOtp}      // Called when user clicks "Resend OTP"
         onBack={() => setCurrentScreen('phone-input')}
-        
+
         isLoading={isLoading}           // We pass this down
         error={error}                   // Pass down any error message
       />
@@ -197,7 +195,7 @@ export default function AuthenticationFlow({
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center items-center p-2 sm:p-4 lg:p-6">
       <div className="bg-white rounded-lg sm:rounded-xl shadow-md w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl overflow-hidden relative">
-        
+
         {/* Close button */}
         <button
           onClick={onClose}
@@ -205,11 +203,11 @@ export default function AuthenticationFlow({
           aria-label="Close"
         >
           <svg xmlns="http://www.w3.org/2000/svg"
-               className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6"
-               fill="none"
-               viewBox="0 0 24 24"
-               stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+            className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
@@ -269,7 +267,7 @@ export default function AuthenticationFlow({
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
                 </div>
@@ -331,9 +329,8 @@ export default function AuthenticationFlow({
             <button
               type="submit"
               disabled={isLoading || !phoneNumber}
-              className={`w-full max-w-full sm:max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-3 sm:py-4 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base touch-manipulation ${
-                (isLoading || !phoneNumber) ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`w-full max-w-full sm:max-w-md flex justify-center mx-auto bg-[#F7971D] text-white py-3 sm:py-4 px-4 sm:px-6 rounded-md hover:bg-orange-500 transition-colors font-medium text-sm sm:text-base touch-manipulation ${(isLoading || !phoneNumber) ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
             >
               {isLoading ? 'Sending...' : 'Send OTP on this Phone number'}
             </button>
@@ -341,7 +338,7 @@ export default function AuthenticationFlow({
 
           {/* Footer Text */}
           <p className="text-center text-xs sm:text-sm text-gray-600 mt-4 sm:mt-6 leading-relaxed px-2">
-            You agree to our 
+            You agree to our
             <a href="/privacy-policy" className="text-orange-400 hover:underline ml-1 touch-manipulation">Privacy Policy</a>
             <span className="mx-1">&</span>
             <a href="/terms" className="text-orange-400 hover:underline touch-manipulation">Terms of Service</a>

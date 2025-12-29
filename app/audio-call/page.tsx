@@ -29,12 +29,9 @@ export default function AudioCallPage() {
 
   // Check wallet balance and initialize call
   useEffect(() => {
-    console.log('🎵 Audio call page useEffect triggered:', { token, roomName });
     if (token && roomName) {
-      console.log('✅ Parameters found, fetching wallet data...');
       fetchWalletPageData();
     } else {
-      console.error('❌ Missing parameters:', { token: !!token, roomName: !!roomName });
       const missingParams = [];
       if (!token) missingParams.push('token');
       if (!roomName) missingParams.push('room');
@@ -46,20 +43,16 @@ export default function AudioCallPage() {
 
   const initializeSocket = async () => {
     try {
-      console.log('🔌 Initializing socket connection for audio call page...');
-      
-      // Get user details from localStorage
       const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
       const userId = userDetails?.id || userDetails?._id;
-      
+
       if (!userId) {
-        console.error('❌ No user ID found for socket connection');
         return;
       }
 
       // Dynamic import of socket.io-client
       const { io } = await import('socket.io-client');
-      
+
       // Connect to socket server
       const socket = io('https://micro.sobhagya.in', {
         path: '/call-socket/socket.io',
@@ -73,34 +66,23 @@ export default function AudioCallPage() {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected for audio call page:', socket.id);
-        
         // Register with the channel
         socket.emit('register', {
           userId,
           channelId: roomName
         });
-
-        console.log('✅ Registered with channel:', roomName);
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected from audio call page');
       });
 
       socket.on('broadcaster_joined', (data: any) => {
         // Support both {resp: ...} and direct object
         const resp = data?.resp || data;
-        console.log('👥 Broadcaster joined:', resp);
         // Handle different response statuses
         if (resp && resp.status) {
           switch (resp.status) {
             case 'NOT_ALLOWED':
-              console.error('❌ Broadcaster NOT_ALLOWED:', {
-                reason: resp.reason || 'Unknown reason',
-                message: resp.message || 'Astrologer is not authorized to join this call',
-                data: resp
-              });
               setBroadcasterStatus('not_allowed');
               // Show user-friendly error message based on the reason
               let errorMessage = 'Astrologer is not available for audio calls right now';
@@ -124,149 +106,108 @@ export default function AudioCallPage() {
               break;
             case 'SUCCESS':
             case 'ALLOWED':
-              console.log('✅ Broadcaster successfully joined the call');
               setBroadcasterStatus('joined');
               break;
             default:
-              console.warn('⚠️ Unknown broadcaster status:', resp.status);
               setBroadcasterStatus('error');
               break;
           }
         } else {
           // Legacy format - assume success if no status field
-          console.log('✅ Broadcaster joined (legacy format)');
           setBroadcasterStatus('joined');
         }
       });
 
       socket.on('end_call', (data: any) => {
-        console.log('📞 Call ended:', data);
         cleanup();
         handleDisconnect();
       });
 
       // Also listen for call_end events from server (for backward compatibility)
       socket.on('call_end', (data: any) => {
-        console.log('📞 Call ended (server event):', data);
         cleanup();
         handleDisconnect();
       });
 
       // Listen for partner disconnection events
       socket.on('partner_disconnect', (data: any) => {
-        console.log('📞 Partner disconnected:', data);
         alert('Astrologer has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('partner_left', (data: any) => {
-        console.log('📞 Partner left:', data);
         alert('Astrologer has left the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('call_terminated', (data: any) => {
-        console.log('📞 Call terminated:', data);
         alert('Call has been terminated.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('broadcaster_disconnect', (data: any) => {
-        console.log('📞 Broadcaster disconnected:', data);
         alert('Astrologer has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('broadcaster_left', (data: any) => {
-        console.log('📞 Broadcaster left:', data);
         alert('Astrologer has left the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('connect_error', (error: any) => {
-        console.error('❌ Socket connection error:', error);
       });
 
     } catch (error) {
-      console.error('❌ Failed to initialize socket:', error);
     }
   };
 
   const cleanup = () => {
-    console.log('🎵 Audio call page: cleanup called');
     if (socketRef.current) {
       try {
-        console.log('🎵 Disconnecting socket...');
         socketRef.current.disconnect();
-        
+
         // Force close the socket connection
         if (socketRef.current.connected) {
           socketRef.current.close();
         }
-        
+
         socketRef.current = null;
-        console.log('🎵 Socket disconnected successfully');
       } catch (error) {
-        console.warn('🎵 Error during socket cleanup:', error);
         socketRef.current = null;
       }
-    } else {
-      console.log('🎵 No socket to cleanup');
     }
   };
 
   const handleDisconnect = () => {
-    console.log('🎵 Audio call page: handleDisconnect called');
-    console.log('🎵 Current state:', {
-      hasSocket: !!socketRef.current,
-      roomName,
-      socketConnected: socketRef.current?.connected,
-      socketId: socketRef.current?.id
-    });
-    
     // Emit end call event via socket
     if (socketRef.current && roomName && roomName.trim() !== '') {
       const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
       const userId = userDetails?.id || userDetails?._id;
-      
-      console.log('🎵 Emitting end_call event:', { channelId: roomName, userId, reason: 'USER_ENDED_CALL' });
-      
+
       try {
         socketRef.current.emit('end_call', {
           channelId: roomName,
           userId,
           reason: 'USER_ENDED_CALL'
         });
-        console.log('🎵 End call event emitted successfully');
       } catch (error: any) {
-        console.warn('🎵 Failed to emit end_call event:', error);
-        console.warn('🎵 Error details:', {
-          message: error?.message || 'Unknown error',
-          stack: error?.stack || 'No stack trace'
-        });
       }
-    } else {
-      console.warn('🎵 No socket or roomName available for end call event');
-      console.warn('🎵 Details:', {
-        hasSocket: !!socketRef.current,
-        roomName: roomName || 'undefined',
-        roomNameTrimmed: roomName?.trim() || 'undefined'
-      });
     }
-    
+
     // Add a small delay to ensure socket events are sent
     setTimeout(() => {
       cleanup();
-      
+
       // Navigate back based on where the user came from
       setTimeout(() => {
         const callSource = localStorage.getItem('callSource');
-        
+
         if (callSource === 'astrologerCard') {
           // If user came from astrologer card, go back to astrologers list
           window.history.replaceState(null, '', '/astrologers');
@@ -280,7 +221,7 @@ export default function AudioCallPage() {
           window.history.replaceState(null, '', '/astrologers');
           window.location.href = '/astrologers';
         }
-        
+
         // Clean up localStorage
         localStorage.removeItem('callSource');
       }, 50);
@@ -297,7 +238,6 @@ export default function AudioCallPage() {
         return 0;
       }
 
-      // Use Next.js API route instead of calling backend directly to avoid CORS
       const response = await fetch('/api/wallet-balance', {
         method: "GET",
         headers: {
@@ -312,13 +252,13 @@ export default function AudioCallPage() {
         const balance = data.data?.balance || 0;
         setWalletBalance(balance);
         setIsCheckingBalance(false);
-        
+
         // Initialize socket after wallet check
         initializeSocket();
-        
+
         // Hide connecting overlay when socket is initialized
         setIsConnecting(false);
-        
+
         return balance;
       } else {
         setError('Failed to fetch wallet balance');
@@ -327,7 +267,6 @@ export default function AudioCallPage() {
         return 0;
       }
     } catch (error) {
-      console.error('Error fetching wallet data:', error);
       setError('Failed to fetch wallet balance');
       setIsCheckingBalance(false);
       setIsConnecting(false);

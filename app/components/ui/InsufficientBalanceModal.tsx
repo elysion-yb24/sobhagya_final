@@ -51,17 +51,13 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
   const [paymentStatus, setPaymentStatus] = useState<null | 'pending' | 'success' | 'failed' | 'timeout'>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  // Debug logging - only log when modal is actually open
-  if (isOpen) {
-    console.log('InsufficientBalanceModal opened:', { currentBalance, requiredAmount, astrologerName, serviceType });
-  }
+
 
   const fetchWalletPageData = async () => {
     try {
       setIsLoadingData(true);
       const token = getAuthToken();
       if (!token) {
-        console.error('No auth token available');
         setRechargeOptions(getDefaultRechargeOptions());
         return;
       }
@@ -70,7 +66,6 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
 
       // Use production-safe API wrapper
       if (isProduction()) {
-        console.log('Using production-safe transaction API');
         const data = await fetchTransactionHistory();
         apiResponse = { success: true, data };
       } else {
@@ -91,28 +86,24 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
         }
       }
 
-      console.log('Wallet page data from backend:', apiResponse);
-      
+
       // Handle the real API response structure
       if (apiResponse.success && apiResponse.data) {
         const { rechargeOptions: backendRechargeOptions, walletBalance } = apiResponse.data;
-        
+
         if (backendRechargeOptions && Array.isArray(backendRechargeOptions)) {
           setRechargeOptions(backendRechargeOptions);
         } else {
-          console.warn('Backend recharge options not found or invalid, using defaults');
           setRechargeOptions(getDefaultRechargeOptions());
         }
-        
+
         if (typeof walletBalance === 'number') {
           // setCurrentBalance(walletBalance); // This line was removed from the new_code, so it's removed here.
         }
       } else {
-        console.warn('Backend response not successful, using default recharge options');
         setRechargeOptions(getDefaultRechargeOptions());
       }
     } catch (error) {
-      console.error('Error fetching wallet page data:', error);
       setRechargeOptions(getDefaultRechargeOptions());
     } finally {
       setIsLoadingData(false);
@@ -168,7 +159,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
     try {
       const token = getAuthToken();
       if (!token) throw new Error('Authentication required');
-      
+
       // Step 1: Initiate payment and get transaction ID
       const payload = {
         amount: option.amount,
@@ -188,20 +179,19 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
       });
       if (!response.ok) throw new Error('Failed to initiate payment');
       const data = await response.json();
-      console.log('PhonePe payment data:', data);
       if (!data.success || !data.data?.transactionId) {
         throw new Error(data.message || 'Payment initiation failed');
       }
 
-      
+
       const jsonPayload = {
         "merchantOrderId": data.data.transactionId,
         "merchantTransactionId": data.data.transactionId,
         // "merchantUserId": data.data.userId,
-        "amount": data.data.amount * 100, 
+        "amount": data.data.amount * 100,
         // "callbackUrl": process.env.NEXT_PUBLIC_PHONEPE_CALLBACK_URL,
         "metaInfo": {
-          "udf1": serviceType ||  "recharge",
+          "udf1": serviceType || "recharge",
           "udf2": option.label || "",
           "udf3": `userId_${data.data.userId}`,
           "udf4": `extra_${option.additional || 0}`,
@@ -217,12 +207,12 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
         "paymentInstrument": {
           "type": "PAY_PAGE"
         },
-        "deviceContext": {"deviceOS": "WEB"}
+        "deviceContext": { "deviceOS": "WEB" }
       };
-      
-      const body = btoa(JSON.stringify(jsonPayload)); 
+
+      const body = btoa(JSON.stringify(jsonPayload));
       const checksumString = body + process.env.NEXT_PUBLIC_PHONEPE_API_END_POINT + process.env.NEXT_PUBLIC_PHONEPE_SALT_KEY;
-      
+
       // Create SHA256 hash
       const encoder = new TextEncoder();
       const data2 = encoder.encode(checksumString);
@@ -230,8 +220,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
       const checksum = hashHex + "###" + "1";
-      
-      console.log('PhonePe checksum:', checksum);
+
 
       const produrl = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay"
       const options = {
@@ -241,40 +230,32 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
           accept: 'application/json',
           'Content-Type': 'application/json',
           'X-VERIFY': checksum,
-          
-          
         },
-        data:{
-          request:  body, 
+        data: {
+          request: body,
         }
       }
 
       const phonePeResponse = await fetch(produrl, options);
 
-      console.log('PhonePe response:', phonePeResponse);
-
       const phonePeData = await phonePeResponse.json();
-      console.log('PhonePe data:', phonePeData);
-
       if (!phonePeData.success || !phonePeData.data?.redirectUrl) {
         throw new Error(phonePeData.message || 'Failed to get payment URL from PhonePe');
       }
-      
+
       // Open PhonePe payment page
       const paymentUrl = phonePeData.data.redirectUrl;
       const paymentWindow = window.open(paymentUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
       if (!paymentWindow) {
         throw new Error('Popup blocked. Please allow popups and try again.');
       }
-      
-      console.log('PhonePe payment window opened:', paymentUrl);    
-      
-      
-      
 
- 
-      
-     
+
+
+
+
+
+
       // Poll for payment status
       await pollPhonePeStatus(data.data.transactionId);
     } catch (err) {
@@ -337,7 +318,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
           >
             <X className="w-5 h-5" />
           </button>
-          
+
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-4">
               <Wallet className="h-8 w-8 text-white" />
@@ -421,7 +402,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
                 ))}
               </div>
             )}
-            
+
             {/* Show more options if available */}
             {!isLoadingData && rechargeOptions.length > 3 && (
               <div className="mt-3">
@@ -455,7 +436,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
               Add Money to Wallet
               <ArrowRight className="w-4 h-4" />
             </Link>
-            
+
             <button
               onClick={onClose}
               className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium hover:bg-gray-200 transition-colors"

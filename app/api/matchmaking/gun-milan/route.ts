@@ -52,29 +52,29 @@ class GunMilanCalculator {
   // Calculate Nakshatra from birth details (accurate calculation)
   private calculateNakshatra(dateOfBirth: string, timeOfBirth: string): any {
     const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
-    
+
     // Calculate Julian Day Number
     const year = birthDate.getFullYear();
     const month = birthDate.getMonth() + 1;
     const day = birthDate.getDate();
     const hour = birthDate.getHours();
     const minute = birthDate.getMinutes();
-    
-    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) + 
-             Math.floor(275 * month / 9) + day + 1721013.5 + 
-             (hour + minute / 60) / 24;
-    
+
+    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) +
+      Math.floor(275 * month / 9) + day + 1721013.5 +
+      (hour + minute / 60) / 24;
+
     // Calculate Ayanamsa (precession of equinoxes) - Lahiri Ayanamsa
     const t = (jd - 2451545.0) / 36525;
     const ayanamsa = 23.85 + 0.3812 * t + 0.0012 * t * t;
-    
+
     // Calculate Moon's position (as per Vedic tradition, Moon determines Nakshatra)
     const moonLongitude = this.calculateMoonLongitude(jd);
-    
+
     // Use Moon's position for Nakshatra
     let siderealLongitude = moonLongitude - ayanamsa;
     if (siderealLongitude < 0) siderealLongitude += 360;
-    
+
     // Calculate Nakshatra (27 nakshatras, each 13°20' = 13.3333°)
     const nakshatraIndex = Math.floor(siderealLongitude / 13.3333);
     return this.nakshatras[nakshatraIndex % 27];
@@ -83,54 +83,54 @@ class GunMilanCalculator {
   // Calculate Moon's longitude using VSOP87 theory
   private calculateMoonLongitude(jd: number): number {
     const t = (jd - 2451545.0) / 36525;
-    
+
     // Moon's mean longitude
-    const L0 = 218.3164477 + 481267.88123421 * t - 0.0015786 * t * t + 
-               t * t * t / 538841 - t * t * t * t / 65194000;
-    
+    const L0 = 218.3164477 + 481267.88123421 * t - 0.0015786 * t * t +
+      t * t * t / 538841 - t * t * t * t / 65194000;
+
     // Moon's mean anomaly
-    const M = 134.9623964 + 477198.8675055 * t + 0.0087414 * t * t + 
-              t * t * t / 69699 - t * t * t * t / 14712000;
-    
+    const M = 134.9623964 + 477198.8675055 * t + 0.0087414 * t * t +
+      t * t * t / 69699 - t * t * t * t / 14712000;
+
     // Moon's argument of latitude
-    const F = 93.2720950 + 483202.0175233 * t - 0.0036539 * t * t - 
-              t * t * t / 3526000 + t * t * t * t / 863310000;
-    
+    const F = 93.2720950 + 483202.0175233 * t - 0.0036539 * t * t -
+      t * t * t / 3526000 + t * t * t * t / 863310000;
+
     // Perturbations
-    const perturbation = 6.2886 * Math.sin(M * Math.PI / 180) + 
-                        1.2740 * Math.sin((2 * F - M) * Math.PI / 180) +
-                        0.6583 * Math.sin((2 * F) * Math.PI / 180) +
-                        0.2136 * Math.sin((2 * M) * Math.PI / 180);
-    
+    const perturbation = 6.2886 * Math.sin(M * Math.PI / 180) +
+      1.2740 * Math.sin((2 * F - M) * Math.PI / 180) +
+      0.6583 * Math.sin((2 * F) * Math.PI / 180) +
+      0.2136 * Math.sin((2 * M) * Math.PI / 180);
+
     return L0 + perturbation;
   }
 
   // Calculate Rashi (Zodiac sign) from birth details
   private calculateRashi(dateOfBirth: string, timeOfBirth: string): any {
     const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
-    
+
     // Calculate Julian Day Number
     const year = birthDate.getFullYear();
     const month = birthDate.getMonth() + 1;
     const day = birthDate.getDate();
     const hour = birthDate.getHours();
     const minute = birthDate.getMinutes();
-    
-    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) + 
-             Math.floor(275 * month / 9) + day + 1721013.5 + 
-             (hour + minute / 60) / 24;
-    
+
+    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) +
+      Math.floor(275 * month / 9) + day + 1721013.5 +
+      (hour + minute / 60) / 24;
+
     // Calculate Ayanamsa
     const t = (jd - 2451545.0) / 36525;
     const ayanamsa = 23.85 + 0.3812 * t + 0.0012 * t * t;
-    
+
     // Calculate Sun's position
     const sunLongitude = this.calculateSunLongitude(jd);
-    
+
     // Calculate sidereal longitude
     let siderealLongitude = sunLongitude - ayanamsa;
     if (siderealLongitude < 0) siderealLongitude += 360;
-    
+
     // Calculate Rashi (12 rashis, each 30°)
     const rashiIndex = Math.floor(siderealLongitude / 30);
     return this.rashis[rashiIndex % 12];
@@ -139,52 +139,52 @@ class GunMilanCalculator {
   // Calculate Sun's longitude using VSOP87 theory
   private calculateSunLongitude(jd: number): number {
     const t = (jd - 2451545.0) / 36525;
-    
+
     // Sun's mean longitude
     const L0 = 280.46645 + 36000.76983 * t + 0.0003032 * t * t;
-    
+
     // Sun's mean anomaly
     const M = 357.52910 + 35999.05030 * t - 0.0001559 * t * t - 0.00000048 * t * t * t;
-    
+
     // Sun's equation of center
     const C = (1.914600 - 0.004817 * t - 0.000014 * t * t) * Math.sin(M * Math.PI / 180) +
-              (0.019993 - 0.000101 * t) * Math.sin(2 * M * Math.PI / 180) +
-              0.000290 * Math.sin(3 * M * Math.PI / 180);
-    
+      (0.019993 - 0.000101 * t) * Math.sin(2 * M * Math.PI / 180) +
+      0.000290 * Math.sin(3 * M * Math.PI / 180);
+
     return L0 + C;
   }
 
   // Calculate Ascendant (Lagna) - simplified calculation
   private calculateAscendant(dateOfBirth: string, timeOfBirth: string, latitude: number, longitude: number): any {
     const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
-    
+
     // Calculate Julian Day Number
     const year = birthDate.getFullYear();
     const month = birthDate.getMonth() + 1;
     const day = birthDate.getDate();
     const hour = birthDate.getHours();
     const minute = birthDate.getMinutes();
-    
-    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) + 
-             Math.floor(275 * month / 9) + day + 1721013.5 + 
-             (hour + minute / 60) / 24;
-    
+
+    let jd = 367 * year - Math.floor(7 * (year + Math.floor((month + 9) / 12)) / 4) +
+      Math.floor(275 * month / 9) + day + 1721013.5 +
+      (hour + minute / 60) / 24;
+
     // Calculate Ayanamsa
     const t = (jd - 2451545.0) / 36525;
     const ayanamsa = 23.85 + 0.3812 * t + 0.0012 * t * t;
-    
+
     // Calculate Sun's position
     const sunLongitude = this.calculateSunLongitude(jd);
-    
+
     // Calculate sidereal time (simplified)
     const siderealTime = (6.697374558 + 2400.051336 * t + 0.000025862 * t * t) % 24;
-    
+
     // Calculate local sidereal time
     const localSiderealTime = (siderealTime + (longitude / 15)) % 24;
-    
+
     // Calculate ascendant (simplified)
     const ascendantLongitude = (localSiderealTime * 15 + latitude) % 360;
-    
+
     // Calculate Rashi for ascendant
     const rashiIndex = Math.floor(ascendantLongitude / 30);
     return this.rashis[rashiIndex % 12];
@@ -283,20 +283,20 @@ class GunMilanCalculator {
     // Varna calculation based on Nakshatra lords
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     // Compatible lords
     const compatiblePairs = [
       ['Sun', 'Moon'], ['Mars', 'Venus'], ['Jupiter', 'Mercury'],
       ['Saturn', 'Rahu'], ['Ketu', 'Venus']
     ];
-    
+
     for (const pair of compatiblePairs) {
-      if ((boyLord === pair[0] && girlLord === pair[1]) || 
-          (boyLord === pair[1] && girlLord === pair[0])) {
+      if ((boyLord === pair[0] && girlLord === pair[1]) ||
+        (boyLord === pair[1] && girlLord === pair[0])) {
         return 1;
       }
     }
-    
+
     return 0;
   }
 
@@ -306,24 +306,24 @@ class GunMilanCalculator {
     const girlElement = girlRashi.element;
     const boyNumber = boyRashi.number;
     const girlNumber = girlRashi.number;
-    
+
     // Fire signs are compatible with Air signs
-    if ((boyElement === 'Fire' && girlElement === 'Air') || 
-        (boyElement === 'Air' && girlElement === 'Fire')) {
+    if ((boyElement === 'Fire' && girlElement === 'Air') ||
+      (boyElement === 'Air' && girlElement === 'Fire')) {
       return 2;
     }
-    
+
     // Earth signs are compatible with Water signs
-    if ((boyElement === 'Earth' && girlElement === 'Water') || 
-        (boyElement === 'Water' && girlElement === 'Earth')) {
+    if ((boyElement === 'Earth' && girlElement === 'Water') ||
+      (boyElement === 'Water' && girlElement === 'Earth')) {
       return 2;
     }
-    
+
     // Same element compatibility
     if (boyElement === girlElement) {
       return 1;
     }
-    
+
     return 0;
   }
 
@@ -331,20 +331,20 @@ class GunMilanCalculator {
     // Tara calculation based on Nakshatra numbers
     const boyNumber = boyNakshatra.number;
     const girlNumber = girlNakshatra.number;
-    
+
     // Calculate Tara (distance between Nakshatras)
     let tara = Math.abs(boyNumber - girlNumber);
     if (tara > 13) tara = 27 - tara;
-    
+
     // Favorable Tara positions: 2, 3, 4, 5, 7, 9, 10, 11, 13
     const favorableTaras = [2, 3, 4, 5, 7, 9, 10, 11, 13];
-    
+
     if (favorableTaras.includes(tara)) {
       return 3;
     } else if (tara === 1 || tara === 6 || tara === 8 || tara === 12) {
       return 1;
     }
-    
+
     return 0;
   }
 
@@ -352,20 +352,20 @@ class GunMilanCalculator {
     // Yoni calculation based on Nakshatra characteristics
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     // Compatible Yoni pairs
     const compatibleYonis = [
       ['Sun', 'Moon'], ['Mars', 'Venus'], ['Jupiter', 'Mercury'],
       ['Saturn', 'Rahu'], ['Ketu', 'Venus']
     ];
-    
+
     for (const pair of compatibleYonis) {
-      if ((boyLord === pair[0] && girlLord === pair[1]) || 
-          (boyLord === pair[1] && girlLord === pair[0])) {
+      if ((boyLord === pair[0] && girlLord === pair[1]) ||
+        (boyLord === pair[1] && girlLord === pair[0])) {
         return 4;
       }
     }
-    
+
     return 0;
   }
 
@@ -373,7 +373,7 @@ class GunMilanCalculator {
     // Graha Maitri calculation based on Rashi lords
     const boyLord = boyRashi.lord;
     const girlLord = girlRashi.lord;
-    
+
     // Friendly planets
     const friendlyPlanets = {
       'Sun': ['Mars', 'Jupiter'],
@@ -386,13 +386,13 @@ class GunMilanCalculator {
       'Rahu': ['Saturn', 'Mercury'],
       'Ketu': ['Mars', 'Saturn']
     };
-    
-    if (boyLord && girlLord && 
-        (friendlyPlanets[boyLord as keyof typeof friendlyPlanets]?.includes(girlLord) || 
-         friendlyPlanets[girlLord as keyof typeof friendlyPlanets]?.includes(boyLord))) {
+
+    if (boyLord && girlLord &&
+      (friendlyPlanets[boyLord as keyof typeof friendlyPlanets]?.includes(girlLord) ||
+        friendlyPlanets[girlLord as keyof typeof friendlyPlanets]?.includes(boyLord))) {
       return 5;
     }
-    
+
     return 0;
   }
 
@@ -400,28 +400,28 @@ class GunMilanCalculator {
     // Gana calculation based on Nakshatra characteristics
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     // Deva (Divine), Manushya (Human), Rakshasa (Demonic) classification
     const ganaClassification = {
       'Sun': 'Deva', 'Moon': 'Deva', 'Mars': 'Rakshasa',
       'Mercury': 'Manushya', 'Jupiter': 'Deva', 'Venus': 'Manushya',
       'Saturn': 'Rakshasa', 'Rahu': 'Rakshasa', 'Ketu': 'Rakshasa'
     };
-    
+
     const boyGana = boyLord ? ganaClassification[boyLord as keyof typeof ganaClassification] : undefined;
     const girlGana = girlLord ? ganaClassification[girlLord as keyof typeof ganaClassification] : undefined;
-    
+
     // Same Gana is most compatible
     if (boyGana === girlGana) {
       return 6;
     }
-    
+
     // Deva and Manushya are compatible
-    if ((boyGana === 'Deva' && girlGana === 'Manushya') || 
-        (boyGana === 'Manushya' && girlGana === 'Deva')) {
+    if ((boyGana === 'Deva' && girlGana === 'Manushya') ||
+      (boyGana === 'Manushya' && girlGana === 'Deva')) {
       return 4;
     }
-    
+
     return 0;
   }
 
@@ -429,14 +429,14 @@ class GunMilanCalculator {
     // Bhakoot calculation based on Rashi numbers
     const boyNumber = boyRashi.number;
     const girlNumber = girlRashi.number;
-    
+
     // Calculate Bhakoot (distance between Rashis)
     let bhakoot = Math.abs(boyNumber - girlNumber);
     if (bhakoot > 6) bhakoot = 12 - bhakoot;
-    
+
     // Favorable Bhakoot positions: 1, 2, 3, 4, 5, 9, 10, 11
     const favorableBhakoots = [1, 2, 3, 4, 5, 9, 10, 11];
-    
+
     if (favorableBhakoots.includes(bhakoot)) {
       return 7;
     } else if (bhakoot === 6) {
@@ -446,7 +446,7 @@ class GunMilanCalculator {
     } else if (bhakoot === 8) {
       return 0; // 8th house is unfavorable
     }
-    
+
     return 0;
   }
 
@@ -454,22 +454,22 @@ class GunMilanCalculator {
     // Nadi calculation based on Nakshatra characteristics
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     // Nadi classification: Vata (Air), Pitta (Fire), Kapha (Water)
     const nadiClassification = {
       'Sun': 'Pitta', 'Moon': 'Kapha', 'Mars': 'Pitta',
       'Mercury': 'Vata', 'Jupiter': 'Kapha', 'Venus': 'Kapha',
       'Saturn': 'Vata', 'Rahu': 'Vata', 'Ketu': 'Pitta'
     };
-    
+
     const boyNadi = boyLord ? nadiClassification[boyLord as keyof typeof nadiClassification] : undefined;
     const girlNadi = girlLord ? nadiClassification[girlLord as keyof typeof nadiClassification] : undefined;
-    
+
     // Different Nadi is most compatible (prevents genetic issues)
     if (boyNadi !== girlNadi) {
       return 8;
     }
-    
+
     return 0;
   }
 
@@ -477,7 +477,7 @@ class GunMilanCalculator {
   private getVarnaDetails(boyNakshatra: any, girlNakshatra: any): string {
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     if (this.calculateVarnaScore(boyNakshatra, girlNakshatra) > 0) {
       return `${boyLord} and ${girlLord} are compatible lords, indicating good social harmony.`;
     } else {
@@ -488,7 +488,7 @@ class GunMilanCalculator {
   private getVashyaDetails(boyRashi: any, girlRashi: any): string {
     const boyElement = boyRashi.element;
     const girlElement = girlRashi.element;
-    
+
     if (this.calculateVashyaScore(boyRashi, girlRashi) > 0) {
       return `${boyElement} and ${girlElement} elements create good physical attraction.`;
     } else {
@@ -501,7 +501,7 @@ class GunMilanCalculator {
     const girlNumber = girlNakshatra.number;
     let tara = Math.abs(boyNumber - girlNumber);
     if (tara > 13) tara = 27 - tara;
-    
+
     if (this.calculateTaraScore(boyNakshatra, girlNakshatra) > 0) {
       return `Tara distance of ${tara} indicates good health compatibility.`;
     } else {
@@ -512,7 +512,7 @@ class GunMilanCalculator {
   private getYoniDetails(boyNakshatra: any, girlNakshatra: any): string {
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     if (this.calculateYoniScore(boyNakshatra, girlNakshatra) > 0) {
       return `${boyLord} and ${girlLord} create good intimate compatibility.`;
     } else {
@@ -523,7 +523,7 @@ class GunMilanCalculator {
   private getGrahaMaitriDetails(boyRashi: any, girlRashi: any): string {
     const boyLord = boyRashi.lord;
     const girlLord = girlRashi.lord;
-    
+
     if (this.calculateGrahaMaitriScore(boyRashi, girlRashi) > 0) {
       return `${boyLord} and ${girlLord} are friendly planets, indicating good mental compatibility.`;
     } else {
@@ -534,7 +534,7 @@ class GunMilanCalculator {
   private getGanaDetails(boyNakshatra: any, girlNakshatra: any): string {
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     if (this.calculateGanaScore(boyNakshatra, girlNakshatra) > 0) {
       return `${boyLord} and ${girlLord} have compatible temperaments.`;
     } else {
@@ -547,7 +547,7 @@ class GunMilanCalculator {
     const girlNumber = girlRashi.number;
     let bhakoot = Math.abs(boyNumber - girlNumber);
     if (bhakoot > 6) bhakoot = 12 - bhakoot;
-    
+
     if (this.calculateBhakootScore(boyRashi, girlRashi) > 0) {
       return `Bhakoot distance of ${bhakoot} indicates good love compatibility.`;
     } else {
@@ -558,7 +558,7 @@ class GunMilanCalculator {
   private getNadiDetails(boyNakshatra: any, girlNakshatra: any): string {
     const boyLord = boyNakshatra.lord;
     const girlLord = girlNakshatra.lord;
-    
+
     if (this.calculateNadiScore(boyNakshatra, girlNakshatra) > 0) {
       return `${boyLord} and ${girlLord} have different Nadi, ensuring good genetic compatibility.`;
     } else {
@@ -570,21 +570,21 @@ class GunMilanCalculator {
   public calculateCompatibility(boyData: any, girlData: any): any {
     try {
       // Calculate birth charts for both individuals
-    const boyNakshatra = this.calculateNakshatra(boyData.dateOfBirth, boyData.timeOfBirth);
+      const boyNakshatra = this.calculateNakshatra(boyData.dateOfBirth, boyData.timeOfBirth);
       const boyRashi = this.calculateRashi(boyData.dateOfBirth, boyData.timeOfBirth);
       const boyAscendant = this.calculateAscendant(boyData.dateOfBirth, boyData.timeOfBirth, 28.6139, 77.2090); // Default to Delhi coordinates
-      
-    const girlNakshatra = this.calculateNakshatra(girlData.dateOfBirth, girlData.timeOfBirth);
-    const girlRashi = this.calculateRashi(girlData.dateOfBirth, girlData.timeOfBirth);
+
+      const girlNakshatra = this.calculateNakshatra(girlData.dateOfBirth, girlData.timeOfBirth);
+      const girlRashi = this.calculateRashi(girlData.dateOfBirth, girlData.timeOfBirth);
       const girlAscendant = this.calculateAscendant(girlData.dateOfBirth, girlData.timeOfBirth, 28.6139, 77.2090); // Default to Delhi coordinates
-      
+
       // Calculate Gun Milan scores
       const { totalScore, gunDetails } = this.calculateGunMilan(boyNakshatra, boyRashi, girlNakshatra, girlRashi);
 
-    // Determine compatibility level
-    let compatibilityLevel = '';
-    let compatibilityDescription = '';
-    
+      // Determine compatibility level
+      let compatibilityLevel = '';
+      let compatibilityDescription = '';
+
       if (totalScore >= 32) {
         compatibilityLevel = 'Excellent';
         compatibilityDescription = 'This is an exceptional match with very high compatibility. The couple shares strong spiritual, mental, and physical harmony.';
@@ -600,22 +600,22 @@ class GunMilanCalculator {
       } else if (totalScore >= 16) {
         compatibilityLevel = 'Below Average';
         compatibilityDescription = 'This match has below-average compatibility. The couple may face significant challenges.';
-    } else {
+      } else {
         compatibilityLevel = 'Poor';
         compatibilityDescription = 'This match has poor compatibility with significant challenges.';
-    }
+      }
 
-    // Generate recommendations and remedies
+      // Generate recommendations and remedies
       const recommendations = this.generateRecommendations(totalScore);
       const remedies = this.generateRemedies(totalScore);
 
-    return {
-      totalScore,
-      compatibilityLevel,
-      compatibilityDescription,
+      return {
+        totalScore,
+        compatibilityLevel,
+        compatibilityDescription,
         gunDetails,
-      recommendations,
-      remedies,
+        recommendations,
+        remedies,
         birthCharts: {
           boy: {
             nakshatra: boyNakshatra,
@@ -630,7 +630,6 @@ class GunMilanCalculator {
         }
       };
     } catch (error) {
-      console.error('Error in Gun Milan calculation:', error);
       throw new Error('Failed to calculate Gun Milan compatibility');
     }
   }
@@ -696,13 +695,12 @@ export async function POST(request: NextRequest) {
 
     // Create calculator instance
     const calculator = new GunMilanCalculator();
-    
+
     // Calculate compatibility
     const result = calculator.calculateCompatibility(boyData, girlData);
-    
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error in Gun Milan API:', error);
     return NextResponse.json(
       { error: 'Failed to calculate Gun Milan compatibility' },
       { status: 500 }

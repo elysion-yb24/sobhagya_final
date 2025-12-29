@@ -92,14 +92,14 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
   // Free call check
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
-  
+
   // Navigation guard to prevent multiple rapid clicks
   const isNavigatingRef = useRef(false);
   const navigationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const { walletBalance } = useWalletBalance();
   const { createOrJoinSession, isConnected } = useSessionManager();
-  
+
   // Cleanup navigation timeout on unmount
   useEffect(() => {
     return () => {
@@ -217,7 +217,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
   const handleAudioCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     setIsCallMenuOpen(false);
 
     if (isAuthenticated()) {
@@ -235,15 +235,15 @@ const AstrologerCard = React.memo(function AstrologerCard({
   // Handle call confirmation
   const handleCallConfirm = () => {
     setIsCallProcessing(true);
-    
+
     // Store call type in localStorage for the destination page
     localStorage.setItem("callIntent", selectedCallType);
     localStorage.setItem("selectedAstrologerId", _id);
     localStorage.setItem("callSource", source || "astrologerCard");
-    
+
     // Navigate to the call-with-astrologer profile page
     router.push(`/call-with-astrologer/profile/${_id}?callType=${selectedCallType}`);
-    
+
     // Close dialog after a short delay
     setTimeout(() => {
       setShowCallConfirmDialog(false);
@@ -254,7 +254,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
   const handleVideoCall = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     setIsCallMenuOpen(false);
 
     if (isAuthenticated()) {
@@ -283,7 +283,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
     // Prevent multiple rapid clicks
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    
+
     // Always use the new design profile page
     const isAuthValid = isAuthenticated();
     if (isAuthValid) {
@@ -293,7 +293,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
       localStorage.setItem("selectedAstrologerId", _id);
       router.push("/login");
     }
-    
+
     // Reset after navigation (longer timeout to prevent double navigation)
     if (navigationTimeoutRef.current) {
       clearTimeout(navigationTimeoutRef.current);
@@ -308,13 +308,11 @@ const AstrologerCard = React.memo(function AstrologerCard({
     // Prevent multiple rapid clicks
     if (isNavigatingRef.current) return;
     isNavigatingRef.current = true;
-    
+
     if (isAuthenticated()) {
       const profile = getUserDetails();
       const currentUserId = profile?.id || profile?._id;
       const currentUserName = profile?.displayName || profile?.name || "User";
-
-      console.log('User details:', { currentUserId, currentUserName });
 
       if (!currentUserId) {
         localStorage.setItem("initiateChatWithAstrologerId", _id);
@@ -333,7 +331,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
       setShowChatConnectingModal(true);
 
       if (!isConnected) {
-        console.error('Session manager not connected, going to chat page');
         // Go directly to chat page
         setTimeout(() => {
           setShowChatConnectingModal(false);
@@ -350,13 +347,10 @@ const AstrologerCard = React.memo(function AstrologerCard({
       }
 
       try {
-        console.log('Creating/updating session with provider:', _id);
         // Use createSession which will handle both creating and checking
         const sessionId = await createOrJoinSession(_id);
-        console.log('Session result:', sessionId);
-        
+
         if (sessionId) {
-          console.log('Session created/found:', sessionId);
           setTimeout(() => {
             setShowChatConnectingModal(false);
             router.push(`/chat?sessionId=${sessionId}`);
@@ -369,7 +363,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
             }, 2000);
           }, 1500); // Show loading for at least 1.5 seconds
         } else {
-          console.error('Failed to create session');
           setTimeout(() => {
             setShowChatConnectingModal(false);
             router.push('/chat');
@@ -383,7 +376,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
           }, 1500);
         }
       } catch (error) {
-        console.error('Error in chat session management:', error);
         setTimeout(() => {
           setShowChatConnectingModal(false);
           router.push('/chat');
@@ -398,7 +390,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
       }
 
     } else {
-      console.log('User not authenticated, redirecting to login');
       localStorage.setItem("selectedAstrologerId", _id);
       localStorage.setItem("chatIntent", "1");
       router.push(`/calls/call1?astrologerId=${_id}`);
@@ -434,7 +425,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
             className="absolute top-3 -right-10 w-[160px] bg-[#F7971E] text-white text-[11px] text-center font-bold py-[2px] rotate-[45deg] flex items-center justify-center shadow-md z-10 whitespace-normal leading-tight"
             style={{ transformOrigin: "center" }}
           >
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1st Free Call
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1st Free Call
             {/* OFFER: <br /> FREE 1st CALL */}
           </div>
         )}
@@ -446,22 +437,22 @@ const AstrologerCard = React.memo(function AstrologerCard({
             <img
               src={
                 (partner.avatar && partner.avatar.startsWith('http')) ||
-                (partner.profileImage && partner.profileImage.startsWith('http'))
+                  (partner.profileImage && partner.profileImage.startsWith('http'))
                   ? partner.avatar || partner.profileImage
                   : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      name
-                    )}&background=F7971E&color=fff&size=70`
+                    name
+                  )}&background=F7971E&color=fff&size=70`
               }
               alt={name}
               className="w-[70px] h-[70px] rounded-full object-cover border-2"
               style={{
-                borderColor: partner.status === "online" 
-                  ? "#10B981" 
-                  : partner.status === "busy" 
-                  ? "#F97316" 
-                  : partner.status === "offline" 
-                  ? "#EF4444" 
-                  : "#F7971E",
+                borderColor: partner.status === "online"
+                  ? "#10B981"
+                  : partner.status === "busy"
+                    ? "#F97316"
+                    : partner.status === "offline"
+                      ? "#EF4444"
+                      : "#F7971E",
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -501,27 +492,25 @@ const AstrologerCard = React.memo(function AstrologerCard({
             {/* Status Text */}
             {partner.status && (
               <div className="flex items-center gap-1 mt-1">
-                <div 
-                  className={`w-2 h-2 rounded-full ${
-                    partner.status === "online" 
-                      ? "bg-green-500" 
-                      : partner.status === "busy" 
-                      ? "bg-orange-500" 
-                      : partner.status === "offline" 
-                      ? "bg-red-500" 
-                      : "bg-gray-500"
-                  }`}
+                <div
+                  className={`w-2 h-2 rounded-full ${partner.status === "online"
+                      ? "bg-green-500"
+                      : partner.status === "busy"
+                        ? "bg-orange-500"
+                        : partner.status === "offline"
+                          ? "bg-red-500"
+                          : "bg-gray-500"
+                    }`}
                 ></div>
-                <span 
-                  className={`text-xs font-medium capitalize ${
-                    partner.status === "online" 
-                      ? "text-green-600" 
-                      : partner.status === "busy" 
-                      ? "text-orange-600" 
-                      : partner.status === "offline" 
-                      ? "text-red-600" 
-                      : "text-gray-600"
-                  }`}
+                <span
+                  className={`text-xs font-medium capitalize ${partner.status === "online"
+                      ? "text-green-600"
+                      : partner.status === "busy"
+                        ? "text-orange-600"
+                        : partner.status === "offline"
+                          ? "text-red-600"
+                          : "text-gray-600"
+                    }`}
                 >
                   {partner.status}
                 </span>

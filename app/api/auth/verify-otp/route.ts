@@ -5,40 +5,38 @@ import { isValidMobileNumber, getPhoneValidationError } from '../../../utils/pho
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Proxying verify-otp request body:', body);
 
     const { phone, otp, notifyToken, session_id } = body;
 
     // Validate required fields
     if (!phone) {
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { phone: "Phone number is required" } 
+      return NextResponse.json({
+        name: "ExpressValidatorErr",
+        errors: { phone: "Phone number is required" }
       }, { status: 400 });
     }
 
     // Validate phone number format
     const phoneValidationError = getPhoneValidationError(phone);
     if (phoneValidationError) {
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { phone: phoneValidationError } 
+      return NextResponse.json({
+        name: "ExpressValidatorErr",
+        errors: { phone: phoneValidationError }
       }, { status: 400 });
     }
 
     if (!otp) {
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { otp: "OTP is required" } 
+      return NextResponse.json({
+        name: "ExpressValidatorErr",
+        errors: { otp: "OTP is required" }
       }, { status: 400 });
     }
 
     // Check if OTP is an object (which would be wrong)
     if (typeof otp === 'object') {
-      console.error('❌ OTP received as object, not string:', otp);
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { otp: "Invalid OTP format" } 
+      return NextResponse.json({
+        name: "ExpressValidatorErr",
+        errors: { otp: "Invalid OTP format" }
       }, { status: 400 });
     }
 
@@ -61,7 +59,6 @@ export async function POST(request: NextRequest) {
 
     // Use configured API URL
     const targetUrl = buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP);
-    console.log('Making request to:', targetUrl);
 
     // Forward the request to backend
     const response = await fetch(targetUrl, {
@@ -72,8 +69,6 @@ export async function POST(request: NextRequest) {
     });
 
     const responseBody = await response.text(); // read as text to avoid stream locking
-    console.log('Verify-OTP response status:', response.status);
-    console.log('Verify-OTP response body:', responseBody);
 
     // Create NextResponse with status
     const proxyResponse = new NextResponse(responseBody, {
@@ -94,7 +89,6 @@ export async function POST(request: NextRequest) {
     return proxyResponse;
 
   } catch (error) {
-    console.error('Proxy error in verify-otp:', error);
     return NextResponse.json(
       { error: 'Internal server error', message: 'Failed to verify OTP' },
       {

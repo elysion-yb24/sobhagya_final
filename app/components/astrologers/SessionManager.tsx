@@ -103,7 +103,6 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
   const createOrJoinSession = async (providerId: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!socketRef.current || !isConnected) {
-        console.error('Socket not connected')
         resolve(null)
         return
       }
@@ -111,7 +110,6 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
       const userDetails = getUserDetails()
       const userId = userDetails?.id || userDetails?._id
       if (!userId) {
-        console.error('User not authenticated')
         resolve(null)
         return
       }
@@ -124,7 +122,6 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
           )
 
           if (existing) {
-            console.log('✅ Reusing existing session:', existing.sessionId)
             // Just join existing session room
             joinSessionRoom(existing.sessionId, providerId).then(() => resolve(existing.sessionId))
             return
@@ -132,13 +129,11 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
         }
 
         // 2️⃣ If not found, create new one
-        console.log('⚡ Creating new session...')
         socketRef.current!.emit(
           'session_update',
           { userId, providerId, role: 'user' },
           (response: any) => {
             if (!response.error && response.data?.sessionId) {
-              console.log('✅ New session created:', response.data.sessionId)
               resolve(response.data.sessionId)
             } else {
               console.error('❌ Session creation failed:', response.message)

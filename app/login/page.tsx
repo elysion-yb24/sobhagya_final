@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 
-import { 
-  Phone, 
-  ChevronDown, 
-  Search, 
-  ArrowLeft, 
-  Sparkles, 
-  Shield, 
-  Zap, 
+import {
+  Phone,
+  ChevronDown,
+  Search,
+  ArrowLeft,
+  Sparkles,
+  Shield,
+  Zap,
   Star,
   Globe,
   Lock,
@@ -59,122 +59,101 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState<boolean>(false);
   const [showPartnerRestrictionModal, setShowPartnerRestrictionModal] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  
+
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
 
   useEffect(() => {
     setMounted(true);
-    
+
     const checkAuthAndRedirect = async () => {
       try {
-        console.log('🔄 checkAuthAndRedirect called - isVerifyingOtp:', isVerifyingOtp);
         // Don't run this check if we're currently verifying OTP
         if (isVerifyingOtp) {
-          console.log('🔄 Skipping auth check - OTP verification in progress');
           return;
         }
-        
+
         const isAuthValid = isAuthenticated();
         if (isAuthValid) {
-        console.log('✅ User already authenticated, checking for stored astrologer ID');
-        
-        // Check if there's a stored astrologer ID from the call flow
-        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-        const callIntent = localStorage.getItem('callIntent');
-        const callSource = localStorage.getItem('callSource');
-        
-        // Check user role first
-        const user = getUserDetails();
-        console.log('🔍 checkAuthAndRedirect - User details:', user);
-        console.log('🔍 checkAuthAndRedirect - Call data:', { storedAstrologerId, callIntent, callSource });
-        
-        // Check if user is new (no name) and redirect to profile completion
-        const hasName = user && (user.name || user.firstName || user.displayName) && 
-                      (user.name || user.firstName || user.displayName).trim() !== '';
-        const isPhoneNumber = (str: string): boolean => {
-          if (!str) return false;
-          const phonePattern = /^[\d\s\+\-\(\)]+$/;
-          const digitCount = (str.match(/\d/g) || []).length;
-          return phonePattern.test(str) && digitCount >= 10;
-        };
-        const displayNameIsPhone = user?.displayName && isPhoneNumber(user.displayName);
-        const userNeedsProfile = !hasName || displayNameIsPhone;
-        
-        // If user is new (no name) and no call intent, redirect to profile completion
-        if (userNeedsProfile && !callIntent && !storedAstrologerId) {
-          console.log('📝 New user detected (no name), redirecting to profile completion');
-          router.push('/profile/complete');
-          return;
-        }
-        
-        if (user && user.role === 'friend') {
-          console.log('👥 checkAuthAndRedirect - User is a friend, checking for call intent');
-          
-          // Check if there's a call intent - show modal if user was trying to make a call
-          if (callIntent) {
-            console.log('✅ checkAuthAndRedirect - Friend user has call intent, showing restriction modal');
-            console.log('checkAuthAndRedirect call intent details:', { storedAstrologerId, callIntent, callSource });
-            // Clear call-related localStorage items
+
+          // Check if there's a stored astrologer ID from the call flow
+          const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+          const callIntent = localStorage.getItem('callIntent');
+          const callSource = localStorage.getItem('callSource');
+
+          // Check user role first
+          const user = getUserDetails();
+
+          // Check if user is new (no name) and redirect to profile completion
+          const hasName = user && (user.name || user.firstName || user.displayName) &&
+            (user.name || user.firstName || user.displayName).trim() !== '';
+          const isPhoneNumber = (str: string): boolean => {
+            if (!str) return false;
+            const phonePattern = /^[\d\s\+\-\(\)]+$/;
+            const digitCount = (str.match(/\d/g) || []).length;
+            return phonePattern.test(str) && digitCount >= 10;
+          };
+          const displayNameIsPhone = user?.displayName && isPhoneNumber(user.displayName);
+          const userNeedsProfile = !hasName || displayNameIsPhone;
+
+          // If user is new (no name) and no call intent, redirect to profile completion
+          if (userNeedsProfile && !callIntent && !storedAstrologerId) {
+            router.push('/profile/complete');
+            return;
+          }
+
+          if (user && user.role === 'friend') {
+            // Check if there's a call intent - show modal if user was trying to make a call
+            if (callIntent) {
+              // Clear call-related localStorage items
+              localStorage.removeItem('selectedAstrologerId');
+              localStorage.removeItem('callIntent');
+              localStorage.removeItem('callSource');
+              setShowPartnerRestrictionModal(true);
+              return;
+            } else {
+              router.push('/partner-info');
+              return;
+            }
+          }
+
+          if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
+            // Clear the original intent data
             localStorage.removeItem('selectedAstrologerId');
             localStorage.removeItem('callIntent');
             localStorage.removeItem('callSource');
-            setShowPartnerRestrictionModal(true);
+            // Directly initiate call and navigate to call page
+            await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
             return;
+          } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
+            // Store the call intent for immediate call initiation
+            localStorage.setItem('immediateCallIntent', callIntent);
+            localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
+            // Clear the original intent data
+            localStorage.removeItem('selectedAstrologerId');
+            localStorage.removeItem('callIntent');
+            // Redirect to astrologers page for immediate call initiation
+            router.push('/astrologers');
+          } else if (storedAstrologerId) {
+            localStorage.removeItem('selectedAstrologerId');
+            // Redirect to the specific astrologer profile
+            router.push(`/astrologers/${storedAstrologerId}`);
           } else {
-            console.log('❌ checkAuthAndRedirect - Friend user without valid call intent, redirecting to partner info page');
-            console.log('Missing data - storedAstrologerId:', storedAstrologerId, 'callIntent:', callIntent, 'callSource:', callSource);
-            router.push('/partner-info');
-            return;
+            router.push('/astrologers');
           }
         }
-        
-        console.log('🔍 Checking stored data:', { storedAstrologerId, callIntent, callSource });
-        
-        if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-          console.log('✅ Found call intent from call-with-astrologer:', callIntent, 'for astrologer:', storedAstrologerId);
-          // Clear the original intent data
-          localStorage.removeItem('selectedAstrologerId');
-          localStorage.removeItem('callIntent');
-          localStorage.removeItem('callSource');
-          // Directly initiate call and navigate to call page
-          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
-          return;
-        } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
-          console.log('✅ Found call intent from astrologer card:', callIntent, 'for astrologer:', storedAstrologerId);
-          // Store the call intent for immediate call initiation
-          localStorage.setItem('immediateCallIntent', callIntent);
-          localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
-          // Clear the original intent data
-          localStorage.removeItem('selectedAstrologerId');
-          localStorage.removeItem('callIntent');
-          localStorage.removeItem('callSource');
-          // Redirect to astrologers page for immediate call initiation
-          console.log('🚀 Redirecting to astrologers page for immediate call');
-          router.push('/astrologers');
-        } else if (storedAstrologerId) {
-          console.log('📞 Found stored astrologer ID:', storedAstrologerId);
-          localStorage.removeItem('selectedAstrologerId');
-          // Redirect to the specific astrologer profile
-          router.push(`/astrologers/${storedAstrologerId}`);
-        } else {
-          console.log('🏠 No stored astrologer ID, redirecting to astrologers page');
-          router.push('/astrologers');
-        }
+      } catch (error) {
+
       }
-    } catch (error) {
-      console.log('❌ Authentication check failed on login page:', error);
-      
-    }
     };
-    
+
     checkAuthAndRedirect();
   }, [router, isVerifyingOtp]);
-  
-  const filteredCountries = searchTerm 
-    ? countries.filter(country => 
-        country.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        country.dial_code.includes(searchTerm))
+
+  const filteredCountries = searchTerm
+    ? countries.filter(country =>
+      country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      country.dial_code.includes(searchTerm))
     : countries;
 
   useEffect(() => {
@@ -183,7 +162,7 @@ export default function LoginPage() {
         setIsDropdownOpen(false);
       }
     }
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -192,7 +171,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
+
     // Validate phone number before submitting
     const phoneValidationError = getPhoneValidationError(phoneNumber);
     if (phoneValidationError) {
@@ -200,7 +179,7 @@ export default function LoginPage() {
       setIsLoading(false);
       return;
     }
-    
+
     try {
       // Check if we have user details from call flow
       const capturedName = sessionStorage.getItem('capturedUserName');
@@ -225,7 +204,6 @@ export default function LoginPage() {
       if (capturedLanguages) requestBody.languages = capturedLanguages;
       if (capturedInterests) requestBody.interests = capturedInterests;
 
-      console.log('Sending OTP with user details:', requestBody);
 
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
@@ -234,9 +212,9 @@ export default function LoginPage() {
         },
         body: JSON.stringify(requestBody),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         if (data.session_id) {
           setSessionId(data.session_id);
@@ -272,7 +250,7 @@ export default function LoginPage() {
     }
   };
 
-  
+
   const initiateDirectCall = async (astrologerId: string, callType: 'audio' | 'video') => {
     try {
       const token = getAuthToken();
@@ -284,7 +262,6 @@ export default function LoginPage() {
 
       // Check if user role is 'friend' (partner)
       if (user.role === 'friend') {
-        console.log('Call blocked: User is a partner (friend role)');
         setShowPartnerRestrictionModal(true);
         return;
       }
@@ -311,7 +288,7 @@ export default function LoginPage() {
       const data = await response.json();
       if (!response.ok || !data?.data?.token || !data?.data?.channel) {
         const errorMessage = data?.message || 'Failed to initiate call';
-        
+
         // Handle specific error messages with user-friendly notifications
         if (errorMessage === 'User not online' || errorMessage.includes('not online')) {
           toast.error('Astrologer is currently offline. Please try again later.');
@@ -326,7 +303,7 @@ export default function LoginPage() {
           toast.error('Astrologer is currently busy on another call. Please try again later.');
           return;
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -345,13 +322,13 @@ export default function LoginPage() {
       router.replace(dest);
     } catch (err: any) {
       console.error('❌ Direct call initiation failed:', err);
-      
+
       // Show user-friendly error message
       const errorMessage = err?.message || 'Failed to initiate call';
-      if (!errorMessage.includes('User not online') && 
-          !errorMessage.includes('Call already in progress') &&
-          !errorMessage.includes('balance') &&
-          !errorMessage.includes('already on another call')) {
+      if (!errorMessage.includes('User not online') &&
+        !errorMessage.includes('Call already in progress') &&
+        !errorMessage.includes('balance') &&
+        !errorMessage.includes('already on another call')) {
         toast.error(errorMessage || 'Failed to initiate call. Please try again.');
         router.replace('/astrologers');
       }
@@ -360,71 +337,47 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async (data: any) => {
     setIsVerifyingOtp(true);
-    console.log('🔄 Starting OTP verification process');
-    console.log('📋 localStorage before OTP processing:', Object.keys(localStorage).reduce((acc, key) => {
-      acc[key] = localStorage.getItem(key);
-      return acc;
-    }, {} as any));
     // If this is just a success notification from OtpVerificationScreen, don't re-verify
     if (data && data.verified === true) {
-      console.log("OTP verification completed successfully by child component");
       setError(null);
-      
+
       // Add a small delay to ensure localStorage and user details are properly set
       setTimeout(async () => {
         try {
           // Check user role first
           const user = getUserDetails();
-          console.log('👤 User details after OTP:', user);
-          
+
           if (user && user.role === 'friend') {
-            console.log('👥 User is a friend, checking call intent...');
-            console.log('👤 User object:', JSON.stringify(user, null, 2));
             setIsVerifyingOtp(false);
-            
+
             // Check if there was a call intent - only show modal if user was trying to make a call
             const callIntent = localStorage.getItem('callIntent');
             const callSource = localStorage.getItem('callSource');
-            
-            console.log('🔍 Call intent check:', { callIntent, callSource });
-            console.log('📋 All localStorage after OTP:', Object.keys(localStorage).reduce((acc, key) => {
-              acc[key] = localStorage.getItem(key);
-              return acc;
-            }, {} as any));
-            
+
             // For debugging: Always show modal for friend users if there was any call intent
             if (callIntent) {
-              console.log('✅ Partner user with call intent - showing restriction modal');
-              console.log('Call intent details:', { callIntent, callSource });
               // Clear call-related localStorage items
               localStorage.removeItem('selectedAstrologerId');
               localStorage.removeItem('callIntent');
               localStorage.removeItem('callSource');
-              
+
               // Show the partner restriction modal
               setShowPartnerRestrictionModal(true);
               return;
             } else {
-              console.log('❌ Partner user without call intent - redirecting to partner info');
-              console.log('Call intent missing or invalid source. callIntent:', callIntent, 'callSource:', callSource);
               // If no call intent, redirect to partner info page
               router.push('/partner-info');
               return;
             }
           }
 
+
           // After OTP success, route based on intent
           const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
           const chatIntent = localStorage.getItem('chatIntent');
           const callIntent = localStorage.getItem('callIntent');
           const callSource = localStorage.getItem('callSource');
-          
-          console.log('🔍 Routing based on intent:', { storedAstrologerId, chatIntent, callIntent, callSource });
-          console.log('📋 All localStorage items:', Object.keys(localStorage).reduce((acc, key) => {
-            acc[key] = localStorage.getItem(key);
-            return acc;
-          }, {} as any));
-          
+
           // Check if user details are present in database response
           const userDetails = getUserDetails();
           const isPhoneNumber = (str: string): boolean => {
@@ -433,22 +386,19 @@ export default function LoginPage() {
             const digitCount = (str.match(/\d/g) || []).length;
             return phonePattern.test(str) && digitCount >= 10;
           };
-          const hasUserDetails = userDetails && (userDetails.name || userDetails.firstName) && 
-                                (userDetails.name || userDetails.firstName).trim() !== '' &&
-                                !isPhoneNumber(userDetails.name || userDetails.firstName || '');
+          const hasUserDetails = userDetails && (userDetails.name || userDetails.firstName) &&
+            (userDetails.name || userDetails.firstName).trim() !== '' &&
+            !isPhoneNumber(userDetails.name || userDetails.firstName || '');
           const displayNameIsPhone = userDetails?.displayName && isPhoneNumber(userDetails.displayName);
           const userNeedsProfile = !hasUserDetails || displayNameIsPhone;
-          
-          console.log('👤 User details check after OTP verification:', { userDetails, hasUserDetails, userNeedsProfile });
-          
+
           // If user details are not present, redirect to profile completion
           if (userNeedsProfile) {
-            console.log('📝 User needs profile completion, redirecting to profile completion page');
             setIsVerifyingOtp(false);
             router.push('/profile/complete');
             return;
           }
-          
+
           if (storedAstrologerId && chatIntent === '1') {
             // Open chat with deterministic room id
             const profile = getUserDetails();
@@ -468,7 +418,6 @@ export default function LoginPage() {
           }
 
           if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-            console.log('🚀 Initiating direct call after OTP success');
             localStorage.removeItem('selectedAstrologerId');
             localStorage.removeItem('callIntent');
             localStorage.removeItem('callSource');
@@ -478,7 +427,6 @@ export default function LoginPage() {
           }
 
           // Otherwise go to astrologers as before
-          console.log('🏠 Redirecting to astrologers page');
           setIsVerifyingOtp(false);
           router.push('/astrologers');
         } catch (error) {
@@ -500,7 +448,7 @@ export default function LoginPage() {
 
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP), {
         method: 'POST',
@@ -513,33 +461,27 @@ export default function LoginPage() {
           session_id: sessionId
         }),
       });
-      
+
       const responseData: AuthenticationData = await response.json();
-      
+
       if (response.ok) {
         if (responseData.token) {
           localStorage.setItem('authToken', responseData.token);
-          
-          document.cookie = `authToken=${responseData.token}; path=/; max-age=${60*60*24*7}`; // 7 days
-          
-          console.log("Token saved successfully:", responseData.token);
+
+          document.cookie = `authToken=${responseData.token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 days
         } else {
           console.error("No token found in response:", responseData);
           setError("Authentication succeeded but no token was received.");
         }
-        
+
         // Post-OTP: handle call intent and chat intent
         const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
         const callIntent = localStorage.getItem('callIntent');
         const chatIntent = localStorage.getItem('chatIntent');
         const callSource = localStorage.getItem('callSource');
 
-        console.log('🔍 Post-OTP: Checking stored data:', { storedAstrologerId, callIntent, chatIntent, callSource });
-        console.log('🔍 All localStorage keys:', Object.keys(localStorage));
-
         const user = getUserDetails();
         if (user && user.role === 'friend') {
-          console.log('👥 User is a friend, redirecting to partner info');
           router.push('/partner-info');
           return;
         }
@@ -551,24 +493,20 @@ export default function LoginPage() {
           const digitCount = (str.match(/\d/g) || []).length;
           return phonePattern.test(str) && digitCount >= 10;
         };
-        const hasUserDetails = user && (user.name || user.firstName) && 
-                              (user.name || user.firstName).trim() !== '' &&
-                              !isPhoneNumber(user.name || user.firstName || '');
+        const hasUserDetails = user && (user.name || user.firstName) &&
+          (user.name || user.firstName).trim() !== '' &&
+          !isPhoneNumber(user.name || user.firstName || '');
         const displayNameIsPhone = user?.displayName && isPhoneNumber(user.displayName);
         const userNeedsProfile = !hasUserDetails || displayNameIsPhone;
-        
-        console.log('👤 User details check (legacy):', { user, hasUserDetails, userNeedsProfile });
-        
+
         // If user details are not present, redirect to profile completion
         if (userNeedsProfile) {
-          console.log('📝 User needs profile completion, redirecting to profile completion page');
           router.push('/profile/complete');
           return;
         }
 
         // Handle chat intent first
         if (storedAstrologerId && chatIntent === '1') {
-          console.log('💬 Handling chat intent');
           const profile = getUserDetails();
           const currentUserId = profile?.id || profile?._id || '';
           const currentUserName = profile?.displayName || profile?.name || 'User';
@@ -585,45 +523,36 @@ export default function LoginPage() {
 
         // Handle call intent from astrologer card or Call with Astrologer page
         if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-          console.log('📞 Found call intent from call-with-astrologer:', callIntent, 'for astrologer:', storedAstrologerId);
-          
+
           // Clear the original intent data
           localStorage.removeItem('selectedAstrologerId');
           localStorage.removeItem('callIntent');
           localStorage.removeItem('callSource');
-          
+
           // Directly initiate call and navigate to call page
           await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
           return;
         } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
-          console.log('📞 Found call intent from astrologer card:', callIntent, 'for astrologer:', storedAstrologerId);
-          
+
           // Store the call intent for immediate call initiation
           localStorage.setItem('immediateCallIntent', callIntent);
           localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
-          
+
           // Clear the original intent data
           localStorage.removeItem('selectedAstrologerId');
           localStorage.removeItem('callIntent');
           localStorage.removeItem('callSource');
-          
+
           // Redirect to astrologers page where immediate call will be initiated
-          console.log('🚀 Post-OTP: Redirecting to astrologers page for immediate call');
-          console.log('🔍 Stored immediate call data:', {
-            immediateCallIntent: callIntent,
-            immediateCallAstrologerId: storedAstrologerId
-          });
           router.push('/astrologers');
           return;
         }
 
         // Handle regular astrologer navigation
         if (storedAstrologerId) {
-          console.log('📞 Post-OTP: Found stored astrologer ID:', storedAstrologerId);
           localStorage.removeItem('selectedAstrologerId');
           router.push(`/astrologers/${storedAstrologerId}`);
         } else {
-          console.log('🏠 Post-OTP: No stored astrologer ID, redirecting to astrologers page');
           router.push('/astrologers');
         }
       } else {
@@ -641,7 +570,7 @@ export default function LoginPage() {
   const handleResendOtp = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP), {
         method: 'POST',
@@ -653,9 +582,9 @@ export default function LoginPage() {
           country_code: selectedCountry.dial_code
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         if (data.session_id) {
           setSessionId(data.session_id);
@@ -710,12 +639,12 @@ export default function LoginPage() {
       <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mt-4 sm:mt-6 md:mt-8 mb-3 sm:mb-4 md:mb-6">
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 sm:mb-3">
-            <Image 
-              src="/sobhagya-logo.svg" 
-              alt="Astrology Logo" 
-              width={80} 
-              height={80} 
-              className="object-cover w-full h-full rounded-full" 
+            <Image
+              src="/sobhagya-logo.svg"
+              alt="Astrology Logo"
+              width={80}
+              height={80}
+              className="object-cover w-full h-full rounded-full"
               priority
               quality={100}
             />
@@ -730,7 +659,7 @@ export default function LoginPage() {
       </div>
 
       {/* Glassmorphism Card */}
-      <motion.div 
+      <motion.div
         className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-2xl border-l-4 border-orange-400 p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center relative z-10"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -751,12 +680,12 @@ export default function LoginPage() {
                   className="flex items-center gap-1 sm:gap-2 focus:outline-none min-w-0 py-3 sm:py-2"
                 >
                   <span className="w-5 h-4 sm:w-6 sm:h-4 mr-1 flex items-center justify-center flex-shrink-0">
-                    <Image 
-                      src={selectedCountry.flag} 
-                      alt={selectedCountry.code} 
-                      width={24} 
-                      height={16} 
-                      className="object-contain rounded-sm" 
+                    <Image
+                      src={selectedCountry.flag}
+                      alt={selectedCountry.code}
+                      width={24}
+                      height={16}
+                      className="object-contain rounded-sm"
                     />
                   </span>
                   <span className="text-sm sm:text-base font-medium text-gray-700 whitespace-nowrap">
@@ -794,12 +723,12 @@ export default function LoginPage() {
                             className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-orange-50 transition-colors text-left touch-manipulation"
                           >
                             <span className="w-5 h-4 sm:w-6 sm:h-4 flex items-center justify-center flex-shrink-0">
-                              <Image 
-                                src={country.flag} 
-                                alt={country.code} 
-                                width={24} 
-                                height={16} 
-                                className="object-contain rounded-sm" 
+                              <Image
+                                src={country.flag}
+                                alt={country.code}
+                                width={24}
+                                height={16}
+                                className="object-contain rounded-sm"
                               />
                             </span>
                             <span className="flex-1 text-xs sm:text-sm text-gray-700 truncate">
@@ -827,7 +756,7 @@ export default function LoginPage() {
               />
             </div>
           </div>
-          
+
           {/* Error Message */}
           <AnimatePresence>
             {error && (
@@ -842,7 +771,7 @@ export default function LoginPage() {
               </motion.div>
             )}
           </AnimatePresence>
-          
+
           {/* Submit Button */}
           <motion.button
             type="submit"

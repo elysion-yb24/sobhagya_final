@@ -26,12 +26,9 @@ export default function AstrologerCallPage() {
 
   // Check wallet balance and initialize call
   useEffect(() => {
-    console.log('🎬 Astrologer call page useEffect triggered:', { userId, userName, roomName, callType });
     if (userId && userName && roomName && callType) {
-      console.log('✅ Parameters found, fetching wallet data and token...');
       fetchWalletPageData();
     } else {
-      console.error('❌ Missing parameters:', { userId: !!userId, userName: !!userName, roomName: !!roomName, callType: !!callType });
       setError('Missing call parameters');
       setIsCheckingBalance(false);
     }
@@ -39,20 +36,17 @@ export default function AstrologerCallPage() {
 
   const initializeSocket = async () => {
     try {
-      console.log('🔌 Initializing socket connection for astrologer call page...');
-      
       // Get astrologer details from localStorage
       const astrologerDetails = JSON.parse(localStorage.getItem('astrologerDetails') || '{}');
       const astrologerId = astrologerDetails?.id || astrologerDetails?._id;
-      
+
       if (!astrologerId) {
-        console.error('❌ No astrologer ID found for socket connection');
         return;
       }
 
       // Dynamic import of socket.io-client
       const { io } = await import('socket.io-client');
-      
+
       // Connect to socket server as broadcaster
       const socket = io('https://micro.sobhagya.in', {
         path: '/call-socket/socket.io',
@@ -66,70 +60,57 @@ export default function AstrologerCallPage() {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('✅ Astrologer socket connected:', socket.id);
-        
         // Register with the channel
         socket.emit('register', {
           userId: astrologerId,
           channelId: roomName
         });
-
-        console.log('✅ Astrologer registered with channel:', roomName);
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Astrologer socket disconnected');
       });
 
       socket.on('user_joined', (data: any) => {
-        console.log('👥 User joined the call:', data);
         setBroadcasterStatus('joined');
       });
 
       socket.on('end_call', (data: any) => {
-        console.log('📞 Call ended:', data);
         cleanup();
         handleDisconnect();
       });
 
       // Also listen for call_end events from server (for backward compatibility)
       socket.on('call_end', (data: any) => {
-        console.log('📞 Call ended (server event):', data);
         cleanup();
         handleDisconnect();
       });
 
       // Listen for partner disconnection events
       socket.on('partner_disconnect', (data: any) => {
-        console.log('📞 Partner disconnected:', data);
         alert('User has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('partner_left', (data: any) => {
-        console.log('📞 Partner left:', data);
         alert('User has left the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('call_terminated', (data: any) => {
-        console.log('📞 Call terminated:', data);
         alert('Call has been terminated.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('user_disconnect', (data: any) => {
-        console.log('📞 User disconnected:', data);
         alert('User has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('user_left', (data: any) => {
-        console.log('📞 User left:', data);
         alert('User has left the call.');
         cleanup();
         handleDisconnect();
@@ -156,14 +137,14 @@ export default function AstrologerCallPage() {
     if (socketRef.current && roomName) {
       const astrologerDetails = JSON.parse(localStorage.getItem('astrologerDetails') || '{}');
       const astrologerId = astrologerDetails?.id || astrologerDetails?._id;
-      
+
       socketRef.current.emit('end_call', {
         channelId: roomName,
         userId: astrologerId,
         reason: 'ASTROLOGER_ENDED_CALL'
       });
     }
-    
+
     cleanup();
     window.close(); // Close the popup window
   };
@@ -191,10 +172,10 @@ export default function AstrologerCallPage() {
         const data = await response.json();
         const balance = data.data?.balance || 0;
         setWalletBalance(balance);
-        
+
         // After wallet check, get LiveKit token
         await fetchLiveKitToken();
-        
+
         return balance;
       } else {
         setError('Failed to fetch wallet balance');
@@ -253,7 +234,7 @@ export default function AstrologerCallPage() {
       }
 
       const data = await response.json();
-      
+
       if (!data.success || !data.data?.token) {
         throw new Error(data.message || 'Failed to get call token');
       }
@@ -261,10 +242,10 @@ export default function AstrologerCallPage() {
       setLivekitToken(data.data.token);
       setWsURL(data.data.livekitSocketURL || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://sobhagya-gpfn4cyx.livekit.cloud');
       setIsCheckingBalance(false);
-      
+
       // Initialize socket after getting token
       initializeSocket();
-      
+
     } catch (error) {
       console.error('Error fetching LiveKit token:', error);
       setError(error instanceof Error ? error.message : 'Failed to get call token');

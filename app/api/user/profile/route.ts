@@ -4,7 +4,6 @@ import { getApiBaseUrl } from '../../../config/api';
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Proxying profile update request:', body);
 
     // Get authorization token from headers
     const authHeader = request.headers.get('authorization');
@@ -29,10 +28,6 @@ export async function PUT(request: NextRequest) {
 
     const baseUrl = getApiBaseUrl();
     const targetUrl = `${baseUrl}/user/api/users/${userId}`;
-    
-    console.log('Making profile update request to:', targetUrl);
-    console.log('User ID:', userId);
-    console.log('Request body (without userId):', JSON.stringify(profileUpdateData, null, 2));
 
     // Forward the request to backend
     const response = await fetch(targetUrl, {
@@ -46,12 +41,10 @@ export async function PUT(request: NextRequest) {
 
     let responseText: string;
     let responseData: any;
-    
+
     try {
       responseText = await response.text();
-      console.log('Profile update response status:', response.status);
-      console.log('Profile update response:', responseText.substring(0, 500));
-      
+
       // Try to parse as JSON
       try {
         responseData = JSON.parse(responseText);
@@ -59,7 +52,6 @@ export async function PUT(request: NextRequest) {
         responseData = { raw: responseText };
       }
     } catch (error) {
-      console.error('Error reading response:', error);
       responseText = '';
       responseData = { error: 'Failed to read response' };
     }
@@ -83,7 +75,6 @@ export async function PUT(request: NextRequest) {
     return proxyResponse;
 
   } catch (error) {
-    console.error('Proxy error in profile update:', error);
     return NextResponse.json(
       { error: 'Internal server error', message: 'Failed to update profile' },
       {

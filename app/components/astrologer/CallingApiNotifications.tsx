@@ -22,10 +22,10 @@ interface CallingApiNotificationsProps {
   onCallRejected?: (call: PendingCall) => void;
 }
 
-export default function CallingApiNotifications({ 
-  astrologerId, 
-  onCallAccepted, 
-  onCallRejected 
+export default function CallingApiNotifications({
+  astrologerId,
+  onCallAccepted,
+  onCallRejected
 }: CallingApiNotificationsProps) {
   const router = useRouter();
   const [pendingCalls, setPendingCalls] = useState<PendingCall[]>([]);
@@ -38,7 +38,7 @@ export default function CallingApiNotifications({
   const getAstrologerId = useCallback(() => {
     if (astrologerId) return astrologerId;
     const userDetails = getUserDetails();
-    return userDetails?._id;  
+    return userDetails?._id;
   }, [astrologerId]);
 
   // Fetch pending calls from calling API
@@ -47,8 +47,7 @@ export default function CallingApiNotifications({
     if (!currentAstrologerId) return;
 
     try {
-      console.log('📱 Fetching pending calls for astrologer:', currentAstrologerId);
-      
+
       const response = await fetch(`/api/calling/call/call-token-livekit?action=get_active_calls&astrologerId=${currentAstrologerId}`, {
         method: 'GET',
         headers: {
@@ -59,17 +58,16 @@ export default function CallingApiNotifications({
 
       if (response.ok) {
         const result = await response.json();
-        console.log('📱 Pending calls response:', result);
-        
+
         if (result.success && Array.isArray(result.data)) {
-          const activeCalls = result.data.filter((call: PendingCall) => 
+          const activeCalls = result.data.filter((call: PendingCall) =>
             call.status === 'pending' || call.status === 'active'
           );
-          
+
           setPendingCalls(activeCalls);
           setError(null);
           setLastUpdate(new Date());
-          
+
           // Show browser notification for new calls
           activeCalls.forEach((call: PendingCall) => {
             if (call.status === 'pending' && Notification.permission === 'granted') {
@@ -100,9 +98,9 @@ export default function CallingApiNotifications({
   // Poll for updates every 10 seconds instead of 3
   useEffect(() => {
     fetchPendingCalls();
-    
+
     const interval = setInterval(fetchPendingCalls, 10000); // Increased from 3000 to 10000
-    
+
     return () => clearInterval(interval);
   }, [fetchPendingCalls]);
 
@@ -110,7 +108,6 @@ export default function CallingApiNotifications({
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().then(permission => {
-        console.log('🔔 Notification permission:', permission);
       });
     }
   }, []);
@@ -141,7 +138,6 @@ export default function CallingApiNotifications({
 
         if (updateResponse.ok) {
           const result = await updateResponse.json();
-          console.log('📱 Call status updated:', result);
 
           // Remove from pending list
           setPendingCalls(prev => prev.filter(c => c.callId !== call.callId));
@@ -150,7 +146,7 @@ export default function CallingApiNotifications({
             try {
               // For accepted calls, use proper socket + LiveKit integration
               console.log('📱 Call accepted, setting up LiveKit session...');
-              
+
               // Connect astrologer socket with broadcaster role
               try {
                 const { io } = await import('socket.io-client');
@@ -165,7 +161,7 @@ export default function CallingApiNotifications({
 
                 socket.on('connect', () => {
                   console.log('📱 Astrologer socket connected:', socket.id);
-                  
+
                   // Register with the channel
                   socket.emit('register', {
                     userId: currentAstrologerId,
@@ -177,11 +173,8 @@ export default function CallingApiNotifications({
                     channelId: call.roomName,
                     userId: currentAstrologerId
                   }, (response: any) => {
-                    console.log('📱 Broadcaster joined response:', response);
                     if (response && response.error) {
                       console.error('❌ Failed to join as broadcaster:', response);
-                    } else {
-                      console.log('✅ Astrologer successfully joined as broadcaster');
                     }
                   });
                 });
@@ -195,14 +188,14 @@ export default function CallingApiNotifications({
               } catch (socketError) {
                 console.warn('📱 Socket integration failed, using LiveKit directly:', socketError);
               }
-              
+
               // Navigate to video call page with proper parameters
               const callUrl = `/astrologer-video-call?userId=${call.userId}&userName=${encodeURIComponent(call.userName)}&roomName=${encodeURIComponent(call.roomName)}&callType=${call.callType}`;
               console.log('📱 Navigating to:', callUrl);
-              
+
               // Use router push for better error handling
               window.location.href = callUrl;
-              
+
               if (onCallAccepted) {
                 onCallAccepted(call);
               }
@@ -223,10 +216,10 @@ export default function CallingApiNotifications({
       } catch (apiError) {
         console.error('📱 API call failed:', apiError);
         setError('Network error while responding to call');
-        
+
         // Fallback: Remove from pending list even if API call fails
         setPendingCalls(prev => prev.filter(c => c.callId !== call.callId));
-        
+
         if (response === 'accepted') {
           // Try to navigate anyway for better user experience
           try {
@@ -251,7 +244,7 @@ export default function CallingApiNotifications({
     let registered = false;
     const registerDeviceToken = async () => {
       if (registered) return;
-      
+
       const currentAstrologerId = getAstrologerId();
       if (!currentAstrologerId) return;
 
@@ -259,7 +252,7 @@ export default function CallingApiNotifications({
         registered = true;
         // Generate a web device token (in production, use actual push notification service)
         const deviceToken = `web_${currentAstrologerId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         const response = await fetch('/api/calling/call/call-token-livekit', {
           method: 'POST',
           headers: {
@@ -276,7 +269,6 @@ export default function CallingApiNotifications({
 
         if (response.ok) {
           const result = await response.json();
-          console.log('📱 Device token registered:', result);
         } else {
           console.error('📱 Failed to register device token:', response.status, response.statusText);
         }
@@ -294,7 +286,7 @@ export default function CallingApiNotifications({
     const callTime = new Date(timestamp);
     const diffMs = now.getTime() - callTime.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);
-    
+
     if (diffSeconds < 60) {
       return `${diffSeconds}s ago`;
     } else {
@@ -390,8 +382,8 @@ export default function CallingApiNotifications({
       </div>
 
       {pendingCalls.map((call) => (
-        <div 
-          key={call.callId} 
+        <div
+          key={call.callId}
           className="bg-white border border-orange-200 rounded-lg p-4 shadow-sm animate-pulse"
           style={{ backgroundColor: '#FDF4E6' }}
         >
@@ -400,7 +392,7 @@ export default function CallingApiNotifications({
               <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                 <Video className="w-6 h-6 text-white" />
               </div>
-              
+
               <div>
                 <h4 className="font-semibold text-gray-900">{call.userName}</h4>
                 <p className="text-sm text-gray-600">
@@ -426,7 +418,7 @@ export default function CallingApiNotifications({
                 )}
                 Accept
               </button>
-              
+
               <button
                 onClick={() => respondToCall(call, 'rejected')}
                 disabled={responding === call.callId}

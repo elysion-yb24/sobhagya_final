@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Proxy error in astrologers API:", error);
     return NextResponse.json(
       { error: "Internal server error", message: "Failed to fetch astrologers" },
       {

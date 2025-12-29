@@ -13,14 +13,14 @@ interface OtpVerificationScreenProps {
   onVerify: (data: any) => void;
   onResend: () => void;
   onBack: () => void;
- 
+
   isLoading?: boolean;
   error?: string | null;
   userData?: any;
 }
 
 
-function updateAccessToken(res:any) {
+function updateAccessToken(res: any) {
   const authToken = res.headers.get("auth-token");
   const cookies = new Cookies(null, { path: '/' })
   if (authToken) cookies.set('access_token', authToken)
@@ -33,7 +33,7 @@ export default function OtpVerificationScreen({
   onVerify,
   onResend,
   onBack,
-  
+
   userData,
   isLoading: parentIsLoading = false,
   error: parentError = null,
@@ -122,9 +122,6 @@ export default function OtpVerificationScreen({
     setError(null);
 
     try {
-      console.log("Verifying OTP:", otpValue, "for phone:", phoneNumber, "with session ID:",);
-      console.log("Making request to:", "/api/auth/verify-otp");
-
       let notifyToken = "";
       try {
         notifyToken = localStorage.getItem('fcmToken') || "placeholder_token";
@@ -146,9 +143,6 @@ export default function OtpVerificationScreen({
         }),
       });
 
-      console.log("OTP verification response status:", response.status);
-      console.log("Response headers auth-token:", response.headers.get('auth-token'));
-      
       let headerToken = response.headers.get('auth-token');
       let data;
       try {
@@ -161,27 +155,24 @@ export default function OtpVerificationScreen({
       let finalToken = headerToken || data.token;
       if (response.ok && finalToken) {
         setVerificationStatus('success');
-        
-        console.log("OTP verification successful");
-        console.log("Full Response data:", JSON.stringify(data, null, 2));
-        
+
         // Store token in localStorage for all future API calls
         localStorage.setItem('authToken', finalToken);
         localStorage.setItem('access_token', finalToken);
-          localStorage.setItem('tokenTimestamp', Date.now().toString());
+        localStorage.setItem('tokenTimestamp', Date.now().toString());
         // Also save token in cookies for SSR or server access
         // document.cookie = `authToken=${finalToken}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
         // document.cookie = `access_token=${finalToken}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
         storeAuthToken(finalToken);
-        
-        
-       
+
+
+
         // Check if we have a captured name from call flow
         const capturedName = sessionStorage.getItem('capturedUserName');
         let firstName = '';
         let lastName = '';
         let fullName = data.data?.name || data.user?.name || data.name || capturedName || "";
-        
+
         if (fullName) {
           const nameParts = fullName.split(' ');
           firstName = nameParts[0];
@@ -201,27 +192,26 @@ export default function OtpVerificationScreen({
           email: data.data?.email || data.user?.email || data.email || "",
           profileCompleted: !!fullName
         };
-        
+
         // Clear all captured user details from session storage
         const sessionKeys = [
           'capturedUserName',
-          'capturedUserGender', 
+          'capturedUserGender',
           'capturedUserDob',
           'capturedUserPlaceOfBirth',
           'capturedUserTimeOfBirth',
           'capturedUserLanguages',
           'capturedUserInterests'
         ];
-        
+
         sessionKeys.forEach(key => {
           if (sessionStorage.getItem(key)) {
             sessionStorage.removeItem(key);
           }
         });
-        
-        console.log("Storing user details:", userDetails);
+
         storeUserDetails(userDetails);
-        
+
         // Dispatch multiple events for instant updates across all components
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new Event('user-auth-changed'));
@@ -233,11 +223,9 @@ export default function OtpVerificationScreen({
             storageArea: localStorage
           }));
         }
-        
-        // Call onVerify only to notify success, don't pass data that would trigger another verification
-        console.log("Calling onVerify - parent will handle redirect...");
+
         onVerify({ success: true, verified: true, userDetails });
-        
+
         // Let the parent component handle the redirect based on stored astrologer ID
       } else {
         setVerificationStatus('error');
@@ -246,7 +234,7 @@ export default function OtpVerificationScreen({
     } catch (error) {
       console.error("Verification error:", error);
       setVerificationStatus('error');
-      
+
       // Check if it's a CORS or network error
       if (error instanceof TypeError && error.message.includes('fetch')) {
         setError("Network connection error. Please check your internet connection and try again.");
@@ -265,8 +253,6 @@ export default function OtpVerificationScreen({
     setError(null);
 
     try {
-      console.log("Resending OTP for phone:", phoneNumber);
-      
       let notifyToken = "";
       try {
         notifyToken = localStorage.getItem('fcmToken') || "placeholder_token";
@@ -284,13 +270,12 @@ export default function OtpVerificationScreen({
           },
           body: JSON.stringify({
             phone: phoneNumber,
-            notifyToken: notifyToken 
+            notifyToken: notifyToken
           }),
         }
       );
 
       const data = await response.json();
-      console.log("Resend OTP response:", data);
 
       if (response.ok) {
         setOtp(["", "", "", ""]);
@@ -303,7 +288,7 @@ export default function OtpVerificationScreen({
       }
     } catch (error) {
       console.error("Resend error:", error);
-      
+
       // Check if it's a CORS or network error
       if (error instanceof TypeError && error.message.includes('fetch')) {
         setError("Network connection error when trying to resend OTP. Please check your internet connection and try again.");
@@ -325,10 +310,10 @@ export default function OtpVerificationScreen({
       <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mb-4 sm:mb-6">
         <div className="flex flex-col items-center">
           <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2">
-            <img 
-              src="/sobhagya-logo.svg" 
-              alt="Astrology Logo" 
-              className="object-cover w-full h-full rounded-full" 
+            <img
+              src="/sobhagya-logo.svg"
+              alt="Astrology Logo"
+              className="object-cover w-full h-full rounded-full"
             />
           </div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 mb-1 text-center leading-tight">
@@ -346,7 +331,7 @@ export default function OtpVerificationScreen({
       </div>
 
       {/* Glassmorphism Card */}
-      <motion.div 
+      <motion.div
         className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-2xl border-l-4 border-orange-400 p-3 sm:p-4 md:p-6 flex flex-col items-center relative z-10"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -370,7 +355,7 @@ export default function OtpVerificationScreen({
                   onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ""))}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-xl sm:text-2xl md:text-3xl bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 font-bold text-gray-900 hover:border-orange-200"
-                  style={{fontFamily: 'Poppins', letterSpacing: '0.1em'}}
+                  style={{ fontFamily: 'Poppins', letterSpacing: '0.1em' }}
                 />
               ))}
             </div>
@@ -411,11 +396,10 @@ export default function OtpVerificationScreen({
               type="button"
               onClick={handleResend}
               disabled={timeLeft > 0 || isResending}
-              className={`text-orange-500 font-semibold text-xs sm:text-sm md:text-base transition-all duration-200 flex items-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg hover:bg-orange-50 order-1 sm:order-2 ${
-                timeLeft > 0 || isResending
-                  ? "opacity-40 cursor-not-allowed" 
-                  : "hover:text-orange-600 hover:scale-105"
-              }`}
+              className={`text-orange-500 font-semibold text-xs sm:text-sm md:text-base transition-all duration-200 flex items-center gap-1 sm:gap-2 py-2 px-3 sm:px-4 rounded-lg hover:bg-orange-50 order-1 sm:order-2 ${timeLeft > 0 || isResending
+                ? "opacity-40 cursor-not-allowed"
+                : "hover:text-orange-600 hover:scale-105"
+                }`}
             >
               {isResending ? (
                 <>

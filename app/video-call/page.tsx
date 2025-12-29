@@ -11,27 +11,18 @@ import VideoCallRoom from '../components/video/VideoCallRoom';
 export default function VideoCallPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
+
   const token = searchParams?.get('token');
   const roomName = searchParams?.get('room');
   const astrologerName = searchParams?.get('astrologer');
   const astrologerId = searchParams?.get('astrologerId') || localStorage.getItem('lastAstrologerId');
   const wsURL = searchParams?.get('wsURL');
-  
-  // Debug logging
-  console.log('🎥 Video call page loaded with parameters:', {
-    hasToken: !!token,
-    hasRoomName: !!roomName,
-    hasAstrologerName: !!astrologerName,
-    hasWsURL: !!wsURL,
-    tokenLength: token?.length,
-    roomNameLength: roomName?.length,
-    fullUrl: typeof window !== 'undefined' ? window.location.href : 'server-side'
-  });
-  
+
+
+
   const [error, setError] = useState<string | null>(null);
   const [broadcasterStatus, setBroadcasterStatus] = useState<'waiting' | 'joined' | 'not_allowed' | 'access_denied' | 'error'>('waiting');
-  
+
   const socketRef = useRef<any>(null);
 
   // Wallet balance states
@@ -47,12 +38,10 @@ export default function VideoCallPage() {
 
   // Check wallet balance and initialize call
   useEffect(() => {
-    console.log('🎥 Video call page useEffect triggered:', { token, roomName });
     if (token && roomName) {
-      console.log('✅ Parameters found, fetching wallet data...');
       fetchWalletPageData();
     } else {
-      console.error('❌ Missing parameters:', { token: !!token, roomName: !!roomName });
+
       const missingParams = [];
       if (!token) missingParams.push('token');
       if (!roomName) missingParams.push('room');
@@ -64,20 +53,16 @@ export default function VideoCallPage() {
 
   const initializeSocket = async () => {
     try {
-      console.log('🔌 Initializing socket connection for video call page...');
-      
-      // Get user details from localStorage
       const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
       const userId = userDetails?.id || userDetails?._id;
-      
+
       if (!userId) {
-        console.error('❌ No user ID found for socket connection');
         return;
       }
 
       // Dynamic import of socket.io-client
       const { io } = await import('socket.io-client');
-      
+
       // Connect to socket server
       const socket = io('https://micro.sobhagya.in', {
         path: '/call-socket/socket.io',
@@ -91,34 +76,23 @@ export default function VideoCallPage() {
       socketRef.current = socket;
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected for video call page:', socket.id);
-        
         // Register with the channel (already done in astrologer profile page, but good to ensure)
         socket.emit('register', {
           userId,
           channelId: roomName
         });
-
-        console.log('✅ Registered with channel:', roomName);
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected from video call page');
       });
 
       socket.on('broadcaster_joined', (data: any) => {
         // Support both {resp: ...} and direct object
         const resp = data?.resp || data;
-        console.log('👥 Broadcaster joined:', resp);
         // Handle different response statuses
         if (resp && resp.status) {
           switch (resp.status) {
             case 'NOT_ALLOWED':
-              console.error('❌ Broadcaster NOT_ALLOWED:', {
-                reason: resp.reason || 'Unknown reason',
-                message: resp.message || 'Astrologer is not authorized to join this call',
-                data: resp
-              });
               setBroadcasterStatus('not_allowed');
               // Show user-friendly error message based on the reason
               let errorMessage = 'Astrologer is not available for video calls right now';
@@ -142,76 +116,64 @@ export default function VideoCallPage() {
               break;
             case 'SUCCESS':
             case 'ALLOWED':
-              console.log('✅ Broadcaster successfully joined the call');
               setBroadcasterStatus('joined');
               break;
             default:
-              console.warn('⚠️ Unknown broadcaster status:', resp.status);
               setBroadcasterStatus('error');
               break;
           }
         } else {
           // Legacy format - assume success if no status field
-          console.log('✅ Broadcaster joined (legacy format)');
           setBroadcasterStatus('joined');
         }
       });
 
       socket.on('end_call', (data: any) => {
-        console.log('📞 Call ended:', data);
         cleanup();
         handleDisconnect();
       });
 
       // Also listen for call_end events from server (for backward compatibility)
       socket.on('call_end', (data: any) => {
-        console.log('📞 Call ended (server event):', data);
         cleanup();
         handleDisconnect();
       });
 
       // Listen for partner disconnection events
       socket.on('partner_disconnect', (data: any) => {
-        console.log('📞 Partner disconnected:', data);
         alert('Astrologer has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('partner_left', (data: any) => {
-        console.log('📞 Partner left:', data);
         alert('Astrologer has left the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('call_terminated', (data: any) => {
-        console.log('📞 Call terminated:', data);
         alert('Call has been terminated.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('broadcaster_disconnect', (data: any) => {
-        console.log('📞 Broadcaster disconnected:', data);
         alert('Astrologer has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('broadcaster_left', (data: any) => {
-        console.log('📞 Broadcaster left:', data);
         alert('Astrologer has left the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('connect_error', (error: any) => {
-        console.error('❌ Socket connection error:', error);
       });
 
     } catch (error) {
-      console.error('❌ Failed to initialize socket:', error);
     }
   };
 
@@ -223,15 +185,11 @@ export default function VideoCallPage() {
   };
 
   const handleDisconnect = () => {
-    console.log('📞 Video call page: handleDisconnect called');
-    
     // Emit end call event via socket
     if (socketRef.current && roomName) {
       const userDetails = JSON.parse(localStorage.getItem('userDetails') || '{}');
       const userId = userDetails?.id || userDetails?._id;
-      
-      console.log('📞 Emitting end_call event:', { channelId: roomName, userId, reason: 'USER_ENDED_CALL' });
-      
+
       try {
         socketRef.current.emit('end_call', {
           channelId: roomName,
@@ -239,18 +197,17 @@ export default function VideoCallPage() {
           reason: 'USER_ENDED_CALL'
         });
       } catch (error) {
-        console.warn('📞 Failed to emit end_call event:', error);
       }
     }
-    
+
     // Add a small delay to ensure socket events are sent
     setTimeout(() => {
       cleanup();
-      
+
       // Navigate back based on where the user came from
       setTimeout(() => {
         const callSource = localStorage.getItem('callSource');
-        
+
         if (callSource === 'astrologerCard') {
           // If user came from astrologer card, go back to astrologers list
           window.history.replaceState(null, '', '/astrologers');
@@ -264,7 +221,7 @@ export default function VideoCallPage() {
           window.history.replaceState(null, '', '/astrologers');
           window.location.href = '/astrologers';
         }
-        
+
         // Clean up localStorage
         localStorage.removeItem('callSource');
       }, 50);
@@ -282,14 +239,13 @@ export default function VideoCallPage() {
       }
 
       // Use simple API function (works same in dev and production)
-      console.log('Checking wallet balance for video call...');
       const balance = await simpleFetchWalletBalance();
 
       setWalletBalance(balance);
 
       // Check if user has sufficient balance for video call
       const estimatedCost = getEstimatedCallCost();
-      
+
       if (balance < estimatedCost) {
         setShowInsufficientBalanceModal(true);
         setIsConnecting(false);
@@ -300,7 +256,6 @@ export default function VideoCallPage() {
       initializeCall();
       return balance;
     } catch (error) {
-      console.error('Error checking wallet balance:', error);
       setError("Failed to check wallet balance");
       setIsConnecting(false);
       return 0;
@@ -313,7 +268,7 @@ export default function VideoCallPage() {
     // Get astrologer details from URL params or localStorage
     const searchParams = new URLSearchParams(window.location.search);
     const videoRpm = searchParams.get('videoRpm') || searchParams.get('rpm') || '25'; // Default video RPM
-    
+
     // Estimate minimum 2 minutes cost
     return parseInt(videoRpm) * 2;
   };
@@ -330,15 +285,14 @@ export default function VideoCallPage() {
   const initializeCall = async () => {
     try {
       setIsInitializingCall(true);
-      
+
       // Initialize socket connection
       await initializeSocket();
-      
+
       // Hide connecting overlay when call is ready
       setIsConnecting(false);
-      
+
     } catch (error) {
-      console.error('Error initializing call:', error);
       setError('Failed to initialize call');
       setIsConnecting(false);
     } finally {
@@ -373,12 +327,12 @@ export default function VideoCallPage() {
               <div className="w-10 h-10 bg-white rounded-full animate-pulse"></div>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
             <span className="text-xl font-semibold">Checking balance...</span>
           </div>
-          
+
           <p className="text-gray-300 text-sm">
             Verifying wallet balance for video call
           </p>

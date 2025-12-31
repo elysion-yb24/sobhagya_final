@@ -7,7 +7,7 @@ const StatsBar: React.FC = () => {
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full">
         <Image
-          src="/stats-bg-4.gif"
+          src="/stats-bg-4.jpg"
           alt="Stats Background"
           fill
           className="w-full h-full object-cover"

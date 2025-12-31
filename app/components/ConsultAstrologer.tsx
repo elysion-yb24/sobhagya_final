@@ -59,7 +59,7 @@ const AstrologerCarousel = () => {
     };
   }, []);
 
- 
+
 
 
   // Fetch astrologers from API
@@ -103,7 +103,7 @@ const AstrologerCarousel = () => {
         if (data.success && data.data?.list) {
           // Filter astrologers: show only online partners
           const onlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "online");
-          
+
           setAstrologers(onlineAstrologers);
         } else {
           console.warn('API response format unexpected:', data);
@@ -125,7 +125,7 @@ const AstrologerCarousel = () => {
     const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-    
+
     let maxIndex;
     if (isSmallScreen) {
       maxIndex = astrologers.length - 1; // 1 card at a time
@@ -134,7 +134,7 @@ const AstrologerCarousel = () => {
     } else {
       maxIndex = Math.max(0, astrologers.length - 4); // 4 cards at a time
     }
-    
+
     setCurrentIndex((prevIndex) =>
       prevIndex >= maxIndex ? 0 : prevIndex + 1
     );
@@ -144,7 +144,7 @@ const AstrologerCarousel = () => {
     const isSmallScreen = typeof window !== 'undefined' && window.innerWidth < 768;
     const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-    
+
     let maxIndex;
     if (isSmallScreen) {
       maxIndex = astrologers.length - 1; // 1 card at a time
@@ -153,7 +153,7 @@ const AstrologerCarousel = () => {
     } else {
       maxIndex = Math.max(0, astrologers.length - 4); // 4 cards at a time
     }
-    
+
     setCurrentIndex((prevIndex) =>
       prevIndex === 0 ? maxIndex : prevIndex - 1
     );
@@ -190,7 +190,7 @@ const AstrologerCarousel = () => {
     const ratingValue = typeof astrologer.rating === 'object' ? astrologer.rating.avg : astrologer.rating || 4.5;
     const experience = Math.floor((astrologer.callMinutes || 0) / 60) || 1;
     const callsCount = astrologer.calls || 0;
-    
+
     return (
       <div
         className="relative bg-white rounded-xl border pt-3 px-3 pb-2 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col w-full overflow-hidden"
@@ -225,13 +225,13 @@ const AstrologerCarousel = () => {
               alt={astrologer.name}
               className="w-[60px] h-[60px] rounded-full object-cover border-2"
               style={{
-                borderColor: astrologer.status === "online" 
-                  ? "#10B981" 
-                  : astrologer.status === "busy" 
-                  ? "#F97316" 
-                  : astrologer.status === "offline" 
-                  ? "#EF4444" 
-                  : "#F7971E",
+                borderColor: astrologer.status === "online"
+                  ? "#10B981"
+                  : astrologer.status === "busy"
+                    ? "#F97316"
+                    : astrologer.status === "offline"
+                      ? "#EF4444"
+                      : "#F7971E",
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
@@ -247,7 +247,7 @@ const AstrologerCarousel = () => {
                 </span>
               ))}
             </div>
-            
+
             {/* Experience & Orders */}
             <div className="mt-1 space-y-0.5 text-center">
               <div className="text-[10px] text-gray-600 whitespace-nowrap">
@@ -271,16 +271,15 @@ const AstrologerCarousel = () => {
               {/* Status */}
               {astrologer.status && (
                 <div className="flex items-center gap-1.5 mb-1">
-                  <div 
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      astrologer.status === "online" 
-                        ? "bg-green-500" 
-                        : astrologer.status === "busy" 
-                        ? "bg-orange-500" 
-                        : astrologer.status === "offline" 
-                        ? "bg-red-500" 
-                        : "bg-gray-500"
-                    }`}
+                  <div
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${astrologer.status === "online"
+                        ? "bg-green-500"
+                        : astrologer.status === "busy"
+                          ? "bg-orange-500"
+                          : astrologer.status === "offline"
+                            ? "bg-red-500"
+                            : "bg-gray-500"
+                      }`}
                   ></div>
                   <span className="text-xs font-medium text-gray-600 capitalize truncate">{astrologer.status}</span>
                 </div>
@@ -321,7 +320,7 @@ const AstrologerCarousel = () => {
   if (loading) {
     return (
       <div className="w-full py-12 relative" style={{
-        backgroundImage: "url('/consult-home.gif')",
+        backgroundImage: "url('/consult-home.jpg')",
       }}>
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-center text-white text-5xl md:text-4xl font-bold mb-10" style={{
@@ -347,7 +346,7 @@ const AstrologerCarousel = () => {
     <div
       className="w-full py-6 relative"
       style={{
-        backgroundImage: "url('/consult-home.gif')",
+        backgroundImage: "url('/consult-home.jpg')",
       }}
     >
       <div className="max-w-6xl mx-auto px-4">
@@ -417,24 +416,24 @@ const AstrologerCarousel = () => {
       {/* Dots indicator - limited to maximum 5 dots */}
       <div className="max-w-6xl mx-auto px-4">
         <div className="hidden md:flex justify-center mt-10 space-x-1">
-            {astrologers.length > 0 && Array.from({ length: Math.min(5, Math.max(1, Math.ceil(astrologers.length / 4))) }).map((_, index) => {
-              const totalSlides = Math.ceil(astrologers.length / 4);
-              const slideIndex = index;
-              const currentSlide = Math.floor(currentIndex / 4);
-              const isActive = currentSlide === slideIndex;
-              
-              return (
+          {astrologers.length > 0 && Array.from({ length: Math.min(5, Math.max(1, Math.ceil(astrologers.length / 4))) }).map((_, index) => {
+            const totalSlides = Math.ceil(astrologers.length / 4);
+            const slideIndex = index;
+            const currentSlide = Math.floor(currentIndex / 4);
+            const isActive = currentSlide === slideIndex;
+
+            return (
               <button
                 key={index}
-                  onClick={() => {
-                    const targetIndex = Math.min(slideIndex * 4, Math.max(0, astrologers.length - 4));
-                    setCurrentIndex(targetIndex);
-                  }}
-                  className={`w-2 h-2 rounded-full transition-colors ${isActive ? 'bg-orange-500' : 'bg-gray-300'}`}
+                onClick={() => {
+                  const targetIndex = Math.min(slideIndex * 4, Math.max(0, astrologers.length - 4));
+                  setCurrentIndex(targetIndex);
+                }}
+                className={`w-2 h-2 rounded-full transition-colors ${isActive ? 'bg-orange-500' : 'bg-gray-300'}`}
                 aria-label={`Go to slide ${index + 1}`}
               />
-              );
-            })}
+            );
+          })}
         </div>
       </div>
 
@@ -453,7 +452,7 @@ const AstrologerCarousel = () => {
             <p className="text-gray-600 text-center mb-6" style={{ fontFamily: "Poppins" }}>
               How would you like to connect with {selectedCallAstrologer?.name}?
             </p>
-            
+
             <div className="space-y-3">
               <button
                 onClick={() => handleCallTypeSelection('audio')}
@@ -462,19 +461,19 @@ const AstrologerCarousel = () => {
                 <img src="/phone.svg" alt="Audio Call" className="w-5 h-5" />
                 Audio Call
               </button>
-              
+
               <button
                 onClick={() => handleCallTypeSelection('video')}
                 className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor"/>
-                  <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor"/>
+                  <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor" />
+                  <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor" />
                 </svg>
                 Video Call
               </button>
             </div>
-            
+
             <button
               onClick={() => setShowCallOptions(false)}
               className="w-full mt-4 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"

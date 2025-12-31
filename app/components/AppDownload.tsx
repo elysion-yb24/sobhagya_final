@@ -6,7 +6,7 @@ const DownloadAppSection = () => {
     <section
       className="py-8 sm:py-12 px-4 sm:px-6"
       style={{
-        backgroundImage: "url('/download-app-bg.gif')",
+        backgroundImage: "url('/download-app-bg.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
@@ -34,7 +34,7 @@ const DownloadAppSection = () => {
 
             {/* Description - Adjust padding on different screens */}
             <p className="mt-3 sm:mt-4 text-white text-sm sm:text-base font-medium leading-relaxed px-4 sm:px-6 md:px-0 text-center lg:text-left" style={{ fontFamily: 'Poppins' }}>
-              Get daily horoscope updates, personalized astrological insights, and expert guidance anytime, anywhere. 
+              Get daily horoscope updates, personalized astrological insights, and expert guidance anytime, anywhere.
               Explore zodiac predictions, remedies, and live consultations—all at your fingertips in a click! Download now and unlock the wisdom of the stars.
             </p>
 

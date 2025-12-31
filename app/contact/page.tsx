@@ -57,7 +57,7 @@ const Contact = () => {
       setTimeout(() => setSubmitMessage(null), 5000);
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
@@ -65,13 +65,13 @@ const Contact = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="bg-[#fff]">
       {/* Enhanced Header Section with Animations */}
       <motion.div
         className="relative h-32 md:h-44 bg-cover bg-center flex items-center justify-center overflow-hidden"
-        style={{ backgroundImage: "url('/contact-us.gif')" }}
+        style={{ backgroundImage: "url('/contact-us.jpg')" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -98,7 +98,7 @@ const Contact = () => {
             />
           ))}
         </div>
-        
+
         <motion.h1
           className="text-white text-3xl md:text-5xl font-bold drop-shadow-lg relative z-10"
           style={{
@@ -117,7 +117,7 @@ const Contact = () => {
       {/* Enhanced Contact Section with Animations */}
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-12 grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Left Section - Get In Touch */}
-        <motion.div 
+        <motion.div
           className="space-y-6"
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
@@ -137,7 +137,7 @@ const Contact = () => {
           >
             Get In Touch
           </motion.h2>
-          <motion.p 
+          <motion.p
             className="text-[#373737] leading-relaxed text-lg md:w-[80%] mt-8"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -156,10 +156,10 @@ const Contact = () => {
           {/* Enhanced Contact Details with Animations */}
           <div className="space-y-4">
             {/* Contact Us */}
-            
+
 
             {/* Email */}
-            <motion.div 
+            <motion.div
               className="flex items-center space-x-4 mt-4"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -167,10 +167,10 @@ const Contact = () => {
               whileHover={{ x: 5 }}
             >
               <div className="relative w-10 h-20 flex items-center justify-center">
-                
-                <img 
-                  src="/gmail.svg" 
-                  alt="Gmail" 
+
+                <img
+                  src="/gmail.svg"
+                  alt="Gmail"
                   className="w-12 h-12 z-10"
                 />
               </div>
@@ -182,7 +182,7 @@ const Contact = () => {
           </div>
 
           {/* Separator Line */}
-          <motion.div 
+          <motion.div
             className="w-full h-px bg-orange-500 my-10"
             initial={{ opacity: 0, scaleX: 0 }}
             animate={{ opacity: 1, scaleX: 1 }}
@@ -190,7 +190,7 @@ const Contact = () => {
           />
 
           {/* Enhanced Call to Action with Animation */}
-          <motion.p 
+          <motion.p
             className="mt-8 text-gray-700 leading-relaxed text-lg font-medium"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -200,7 +200,7 @@ const Contact = () => {
           </motion.p>
 
           {/* Enhanced Social Media Links with Animations */}
-          <motion.div 
+          <motion.div
             className="flex flex-wrap gap-0 mt-0"
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -217,10 +217,10 @@ const Contact = () => {
               whileTap={{ scale: 0.95 }}
               aria-label="Follow us on Instagram"
             >
-              
-              <img 
-                src="/instagram.svg" 
-                alt="Instagram" 
+
+              <img
+                src="/instagram.svg"
+                alt="Instagram"
                 className="w-8 h-8 sm:w-10 sm:h-10 z-10"
               />
             </motion.a>
@@ -235,9 +235,9 @@ const Contact = () => {
               whileTap={{ scale: 0.95 }}
               aria-label="Follow us on LinkedIn"
             >
-              <img 
-                src="/linkedin.svg" 
-                alt="LinkedIn" 
+              <img
+                src="/linkedin.svg"
+                alt="LinkedIn"
                 className="w-8 h-8 sm:w-10 sm:h-10 z-10"
               />
             </motion.a>
@@ -252,9 +252,9 @@ const Contact = () => {
               whileTap={{ scale: 0.95 }}
               aria-label="Download Sobhagya app from Google Play Store"
             >
-              <img 
-                src="/play-store-small.svg" 
-                alt="Google Play Store" 
+              <img
+                src="/play-store-small.svg"
+                alt="Google Play Store"
                 className="w-8 h-8 sm:w-10 sm:h-10 z-10"
               />
             </motion.a>
@@ -269,9 +269,9 @@ const Contact = () => {
               whileTap={{ scale: 0.95 }}
               aria-label="Download Sobhagya app from App Store"
             >
-              <img 
-                src="/app-store-small.svg" 
-                alt="App Store" 
+              <img
+                src="/app-store-small.svg"
+                alt="App Store"
                 className="w-8 h-8 sm:w-10 sm:h-10 z-10"
               />
             </motion.a>
@@ -279,7 +279,7 @@ const Contact = () => {
         </motion.div>
 
         {/* Right Section - Enhanced Contact Form with Animations */}
-        <motion.div 
+        <motion.div
           className="bg-[#fcf4e9] p-6 sm:p-10 md:p-16 shadow-lg rounded-lg"
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
@@ -340,13 +340,13 @@ const Contact = () => {
                 required
               />
             </motion.div>
-            <motion.div 
+            <motion.div
               className="flex justify-center"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 1.3 }}
             >
-              <motion.button 
+              <motion.button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full sm:w-[214px] bg-[#fff] text-[#F7971D] py-3 rounded-md font-semibold hover:bg-[#e09e3c] hover:text-white transition"

@@ -27,15 +27,15 @@ const AboutUs = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Enhanced Background Image for Heading with Animations */}
-      <motion.div 
+      <motion.div
         className="relative bg-cover bg-center py-16 sm:py-20 overflow-hidden"
-        style={{ backgroundImage: "url('/About Us.gif')" }}
+        style={{ backgroundImage: "url('/About-Us.jpg')" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-          <div className="absolute inset-0 bg-black/50"></div>
-        
+        <div className="absolute inset-0 bg-black/50"></div>
+
         {/* Floating particles */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {Array.from({ length: 18 }).map((_, i) => (
@@ -58,19 +58,19 @@ const AboutUs = () => {
             />
           ))}
         </div>
-        
-        <motion.h2 
+
+        <motion.h2
           className="relative text-center text-white text-3xl sm:text-5xl lg:text-6xl font-bold"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            About Us
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          About Us
         </motion.h2>
       </motion.div>
 
       {/* Our Story Section */}
-      <motion.section 
+      <motion.section
         className="py-20 bg-white"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -79,7 +79,7 @@ const AboutUs = () => {
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.2 }}
@@ -95,7 +95,7 @@ const AboutUs = () => {
                 Our platform connects you with certified astrologers who combine traditional Vedic knowledge with contemporary insights, providing accurate predictions and practical solutions for love, career, health, and spiritual growth.
               </p>
               <div className="flex items-center space-x-4">
-                <motion.div 
+                <motion.div
                   className="flex items-center space-x-2 text-[#F7971D]"
                   whileHover={{ scale: 1.05 }}
                 >
@@ -104,8 +104,8 @@ const AboutUs = () => {
                 </motion.div>
               </div>
             </motion.div>
-            
-            <motion.div 
+
+            <motion.div
               className="relative"
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -113,12 +113,12 @@ const AboutUs = () => {
               viewport={{ once: true }}
             >
               <div className="relative w-full h-80 rounded-2xl overflow-hidden">
-                <Image 
-                  src="/sobhagya-logo.svg" 
-                  alt="Sobhagya Logo" 
-                  width={400} 
-                  height={320} 
-                  className="w-full h-full object-contain p-8" 
+                <Image
+                  src="/sobhagya-logo.svg"
+                  alt="Sobhagya Logo"
+                  width={400}
+                  height={320}
+                  className="w-full h-full object-contain p-8"
                 />
               </div>
             </motion.div>
@@ -127,7 +127,7 @@ const AboutUs = () => {
       </motion.section>
 
       {/* What We Offer Section */}
-      <motion.section 
+      <motion.section
         className="py-20 bg-gradient-to-br from-orange-50 to-white"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -183,8 +183,8 @@ const AboutUs = () => {
                 color: "from-orange-400 to-red-500"
               }
             ].map((service, index) => (
-                <motion.div 
-                  key={index} 
+              <motion.div
+                key={index}
                 className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-100 hover:border-orange-200 group"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -193,12 +193,12 @@ const AboutUs = () => {
                 whileHover={{ y: -5 }}
               >
                 <div className="w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Image 
-                    src={service.icon} 
-                    alt={service.title} 
-                    width={64} 
-                    height={64} 
-                    className="w-16 h-16" 
+                  <Image
+                    src={service.icon}
+                    alt={service.title}
+                    width={64}
+                    height={64}
+                    className="w-16 h-16"
                   />
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold text-[#745802] mb-4" style={{ fontFamily: "Poppins" }}>
@@ -207,14 +207,14 @@ const AboutUs = () => {
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
                   {service.description}
                 </p>
-                </motion.div>
-              ))}
+              </motion.div>
+            ))}
           </div>
         </div>
       </motion.section>
 
       {/* Why Choose Us Section */}
-      <motion.section 
+      <motion.section
         className="py-20 bg-white"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -257,9 +257,9 @@ const AboutUs = () => {
                 description: "Proven track record of accurate predictions and life-changing insights",
                 stat: "95%"
               }
-              ].map((feature, index) => (
-                <motion.div 
-                  key={index} 
+            ].map((feature, index) => (
+              <motion.div
+                key={index}
                 className="text-center group"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -268,12 +268,12 @@ const AboutUs = () => {
                 whileHover={{ y: -5 }}
               >
                 <div className="w-20 h-20 flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <Image 
-                    src={feature.icon} 
-                    alt={feature.title} 
-                    width={80} 
-                    height={80} 
-                    className="w-20 h-20" 
+                  <Image
+                    src={feature.icon}
+                    alt={feature.title}
+                    width={80}
+                    height={80}
+                    className="w-20 h-20"
                   />
                 </div>
                 <div className="text-2xl sm:text-3xl font-bold text-[#F7971D] mb-2" style={{ fontFamily: "EB Garamond" }}>
@@ -285,14 +285,14 @@ const AboutUs = () => {
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed" style={{ fontFamily: "Poppins" }}>
                   {feature.description}
                 </p>
-                </motion.div>
-              ))}
+              </motion.div>
+            ))}
           </div>
         </div>
       </motion.section>
 
       {/* Call to Action Section */}
-      <motion.section 
+      <motion.section
         className="py-20 bg-gradient-to-r from-orange-50 to-orange-100"
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -300,7 +300,7 @@ const AboutUs = () => {
         viewport={{ once: true }}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div 
+          <motion.div
             className="bg-white rounded-3xl p-12 border-2 border-orange-200 max-w-4xl mx-auto shadow-lg text-center"
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.3 }}
@@ -311,9 +311,9 @@ const AboutUs = () => {
             <p className="text-base sm:text-lg text-gray-600 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "Poppins" }}>
               Connect with our certified astrologers and unlock the secrets written in your stars. Begin your journey of self-discovery today.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <motion.button 
+              <motion.button
                 className="bg-[#F7971D] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:bg-orange-600"
                 style={{ fontFamily: "Poppins" }}
                 whileHover={{ scale: 1.05 }}
@@ -323,26 +323,26 @@ const AboutUs = () => {
                 Get a Call Now
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
               </motion.button>
-              
-              <motion.button 
+
+              <motion.button
                 className="bg-white text-[#F7971D] border-2 border-[#F7971D] px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
                 style={{ fontFamily: "Poppins" }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <Image 
-                  src="/Chat with Astrologer.svg" 
-                  alt="Chat" 
-                  width={20} 
-                  height={20} 
-                  className="w-5 h-5 mr-2" 
+                <Image
+                  src="/Chat with Astrologer.svg"
+                  alt="Chat"
+                  width={20}
+                  height={20}
+                  className="w-5 h-5 mr-2"
                 />
                 Chat with Astrologer
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
               </motion.button>
-          </div>
-        </motion.div>
-      </div>
+            </div>
+          </motion.div>
+        </div>
       </motion.section>
     </div>
   );

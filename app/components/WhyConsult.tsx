@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 const WhyConsult: React.FC = () => {
   const [activeTab, setActiveTab] = useState('benefits');
-  
+
   const cosmicJourney = [
     {
       phase: "Discovery",
@@ -17,7 +17,7 @@ const WhyConsult: React.FC = () => {
       step: "01"
     },
     {
-      phase: "Understanding", 
+      phase: "Understanding",
       icon: Brain,
       title: "Personality Insights",
       description: "Discover your strengths, weaknesses, and hidden potential through planetary positions",
@@ -52,7 +52,7 @@ const WhyConsult: React.FC = () => {
     },
     {
       name: "Rajesh Kumar",
-      sign: "Aries", 
+      sign: "Aries",
       rating: 5,
       text: "Relationship compatibility analysis saved my marriage. We're happier than ever now.",
       avatar: "/astrologer.png"
@@ -75,7 +75,7 @@ const WhyConsult: React.FC = () => {
     },
     {
       icon: Sparkles,
-      title: "AI-Powered Analysis", 
+      title: "AI-Powered Analysis",
       description: "Advanced algorithms combined with expert astrologer insights for accuracy",
       highlight: "Tech + Tradition"
     },
@@ -103,7 +103,7 @@ const WhyConsult: React.FC = () => {
         </div>
 
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <motion.div 
+          <motion.div
             className="inline-flex items-center px-6 py-3 bg-[#F7971D] text-white rounded-full text-sm font-medium mb-6"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -112,9 +112,9 @@ const WhyConsult: React.FC = () => {
             <Sparkles className="w-4 h-4 mr-2" />
             Professional Astrology Services
           </motion.div>
-          
+
           <div className="px-6 sm:px-8">
-            <motion.h1 
+            <motion.h1
               className="text-3xl md:text-7xl font-bold text-[#745802] mb-6 leading-tight"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -123,8 +123,8 @@ const WhyConsult: React.FC = () => {
             >
               Why Consult our <span className="text-[#F7971D]">Astrologers?</span>
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               className="text-base sm:text-xl text-gray-600 leading-relaxed text-center md:whitespace-nowrap"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -141,7 +141,7 @@ const WhyConsult: React.FC = () => {
       {/* Main Content with Flowing Text and Animations */}
       <div className="container mx-auto px-4">
         {/* Section 1: The Power of Astrology */}
-        <motion.div 
+        <motion.div
           className="max-w-5xl mx-auto mb-20 px-6 sm:px-8 mt-12"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -166,7 +166,7 @@ const WhyConsult: React.FC = () => {
                 Through careful analysis of planetary positions, astrologers can provide insights that help you make informed decisions, understand your relationships better, and navigate life's challenges with confidence.
               </p>
             </motion.div>
-            
+
             <motion.div
               className="relative"
               initial={{ opacity: 0 }}
@@ -180,12 +180,12 @@ const WhyConsult: React.FC = () => {
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 />
-                <Image 
-                  src="/the-power-of-astrological-wisdom-1.gif" 
-                  alt="The Power of Astrological Wisdom" 
-                  width={500} 
-                  height={500} 
-                  className="w-full h-full object-cover" 
+                <Image
+                  src="/the-power-of-astrological-wisdom-1.jpg"
+                  alt="The Power of Astrological Wisdom"
+                  width={500}
+                  height={500}
+                  className="w-full h-full object-cover"
                 />
               </div>
             </motion.div>
@@ -193,7 +193,7 @@ const WhyConsult: React.FC = () => {
         </motion.div>
 
         {/* Section 2: Benefits with Animated Icons */}
-        <motion.div 
+        <motion.div
           className="max-w-6xl mx-auto mb-20 pl-8 pr-20 sm:pl-12 sm:pr-28"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -309,14 +309,14 @@ const WhyConsult: React.FC = () => {
         </motion.div>
 
         {/* Section 3: Call to Action */}
-        <motion.div 
+        <motion.div
           className="text-center mb-20 px-6 sm:px-8"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <motion.div 
+          <motion.div
             className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-3xl p-12 border-2 border-orange-200 max-w-4xl mx-auto shadow-lg"
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.3 }}
@@ -327,8 +327,8 @@ const WhyConsult: React.FC = () => {
             <p className="text-sm sm:text-lg text-gray-600 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "Poppins" }}>
               Connect with our certified astrologers and unlock the secrets written in your stars. Begin your journey of self-discovery today.
             </p>
-            
-            <motion.button 
+
+            <motion.button
               className="bg-[#F7971D] text-white px-4 py-3 sm:px-8 sm:py-4 rounded-xl font-semibold text-sm sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center mx-auto group hover:bg-orange-600"
               style={{ fontFamily: "Poppins" }}
               whileHover={{ scale: 1.05 }}

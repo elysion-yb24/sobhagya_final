@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import Head from 'next/head';
 import Lottie from 'lottie-react';
+import { getRandomTemplate } from '../../../data/horoscope-content-library';
 
 export default function ZodiacSignPage() {
   const params = useParams();
@@ -634,47 +635,198 @@ export default function ZodiacSignPage() {
     );
   }
 
-  // Dynamic horoscope data based on planetary influences
+  // Dynamic horoscope data using rich content library
+  // Generate unique content for each period
+  const signKey = currentSign.displayName; // e.g., "Aries", "Taurus", etc.
+
   const horoscopeData = {
     daily: {
-      title: "Today's Insight",
-      content: currentSign.dailyInsight.content,
-      tags: currentSign.dailyInsight.tags,
+      title: "Today's Horoscope",
+      content: getRandomTemplate(signKey, 'general'),
+      tags: [
+        `Love: ${getRandomTemplate(signKey, 'love').substring(0, 60)}...`,
+        `Career: ${getRandomTemplate(signKey, 'career').substring(0, 60)}...`,
+        `Health: ${getRandomTemplate(signKey, 'health').substring(0, 60)}...`
+      ],
       icon: Calendar,
       color: "from-orange-500 to-red-500"
     },
     weekly: {
       title: "Tomorrow's Guidance",
-      content: `This week brings ${currentSign.displayName} opportunities for growth and transformation. Your ruling planet influences your path, bringing positive energy to your endeavors. Focus on key aspects of your life while maintaining balance with your natural nature.`,
+      content: getRandomTemplate(signKey, 'general'),
       tags: [
-        `Weekly Vibe: Positive`,
-        `Focus Area: Growth`,
-        `Best Day: ${getBestDay(currentSign.displayName)}`
+        `Tomorrow's Energy: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`,
+        `Focus: ${getRandomTemplate(signKey, 'career').substring(0, 50)}...`,
+        `Opportunity: ${getRandomTemplate(signKey, 'finance').substring(0, 50)}...`
       ],
       icon: Calendar,
       color: "from-blue-500 to-purple-500"
     },
     monthly: {
-      title: "Weekly Horoscope",
-      content: `This month marks a period of positive growth for ${currentSign.displayName}. Your key focus will bring unexpected breakthroughs. The planetary alignments favor your natural qualities. Trust your intuition guidance for important decisions.`,
+      title: "This Week's Horoscope",
+      content: `${getRandomTemplate(signKey, 'general')} ${getRandomTemplate(signKey, 'career')}`,
       tags: [
-        `Monthly Theme: Positive & Growth`,
-        `Key Focus: Development`,
-        `Lucky Month: ${getLuckyMonth(currentSign.displayName)}`
+        `Week's Theme: Growth & Progress`,
+        `Best Days: ${getBestDay(currentSign.displayName)} & Friday`,
+        `Focus: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
       ],
       icon: Calendar,
       color: "from-green-500 to-teal-500"
     },
     yearly: {
-      title: "Yearly Horoscope",
-      content: `This year represents a major turning point for ${currentSign.displayName}, bringing positive opportunities. Your key abilities will be recognized on a larger scale. Focus on building strong foundations using your natural nature. Your intuition influence will guide you toward success.`,
+      title: "This Year's Horoscope",
+      content: `This year marks a transformative period for ${currentSign.displayName}. ${getRandomTemplate(signKey, 'general')} ${getRandomTemplate(signKey, 'career')} ${getRandomTemplate(signKey, 'love')} Your journey this year emphasizes personal growth, meaningful relationships, and professional advancement. ${getRandomTemplate(signKey, 'advice')}`,
       tags: [
-        `Yearly Theme: Major Life Changes`,
-        `Career Focus: Growth & Innovation`,
-        `Personal Growth: Positive Development`
+        `Year's Theme: Transformation & Growth`,
+        `Career: ${getRandomTemplate(signKey, 'career').substring(0, 40)}...`,
+        `Love: ${getRandomTemplate(signKey, 'love').substring(0, 40)}...`,
+        `Finance: ${getRandomTemplate(signKey, 'finance').substring(0, 40)}...`
       ],
       icon: Calendar,
       color: "from-purple-500 to-pink-500"
+    }
+  };
+
+  // Detailed category sections for each period
+  const detailedSections = {
+    daily: {
+      loveRelationships: {
+        title: "Love & Relationships - Today",
+        content: getRandomTemplate(signKey, 'love'),
+        tags: [
+          `For Singles: ${getRandomTemplate(signKey, 'loveSingles').substring(0, 50)}...`,
+          `For Couples: ${getRandomTemplate(signKey, 'loveCouples').substring(0, 50)}...`
+        ]
+      },
+      career: {
+        title: "Career & Professional Life - Today",
+        content: getRandomTemplate(signKey, 'career'),
+        tags: [
+          `Focus Area: Professional Growth`,
+          `Advice: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      },
+      health: {
+        title: "Health & Wellness - Today",
+        content: getRandomTemplate(signKey, 'health'),
+        tags: [
+          `Wellness Tip: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      },
+      finance: {
+        title: "Finance & Money - Today",
+        content: getRandomTemplate(signKey, 'finance'),
+        tags: [
+          `Financial Advice: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      }
+    },
+    weekly: {
+      loveRelationships: {
+        title: "Love & Relationships - Tomorrow",
+        content: getRandomTemplate(signKey, 'love'),
+        tags: [
+          `Tomorrow's Romance: ${getRandomTemplate(signKey, 'loveSingles').substring(0, 45)}...`,
+          `Relationship Tip: ${getRandomTemplate(signKey, 'loveCouples').substring(0, 45)}...`
+        ]
+      },
+      career: {
+        title: "Career & Professional Life - Tomorrow",
+        content: getRandomTemplate(signKey, 'career'),
+        tags: [
+          `Tomorrow's Opportunity: Professional Advancement`,
+          `Key Action: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      },
+      health: {
+        title: "Health & Wellness - Tomorrow",
+        content: getRandomTemplate(signKey, 'health'),
+        tags: [
+          `Tomorrow's Focus: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      },
+      finance: {
+        title: "Finance & Money - Tomorrow",
+        content: getRandomTemplate(signKey, 'finance'),
+        tags: [
+          `Tomorrow's Financial Outlook: ${getRandomTemplate(signKey, 'advice').substring(0, 40)}...`
+        ]
+      }
+    },
+    monthly: {
+      loveRelationships: {
+        title: "Love & Relationships - This Week",
+        content: `${getRandomTemplate(signKey, 'love')} ${getRandomTemplate(signKey, 'loveSingles')}`,
+        tags: [
+          `Week's Romance: Building Connections`,
+          `Singles: ${getRandomTemplate(signKey, 'loveSingles').substring(0, 50)}...`,
+          `Couples: ${getRandomTemplate(signKey, 'loveCouples').substring(0, 50)}...`
+        ]
+      },
+      career: {
+        title: "Career & Professional Life - This Week",
+        content: `${getRandomTemplate(signKey, 'career')} This week presents opportunities for professional growth and advancement.`,
+        tags: [
+          `Week's Focus: Career Development`,
+          `Best Days: ${getBestDay(currentSign.displayName)} & Friday`,
+          `Strategy: ${getRandomTemplate(signKey, 'advice').substring(0, 45)}...`
+        ]
+      },
+      health: {
+        title: "Health & Wellness - This Week",
+        content: `${getRandomTemplate(signKey, 'health')} Maintain balance throughout the week for optimal wellbeing.`,
+        tags: [
+          `Weekly Wellness: Balanced Approach`,
+          `Focus: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      },
+      finance: {
+        title: "Finance & Money - This Week",
+        content: `${getRandomTemplate(signKey, 'finance')} Financial opportunities may arise midweek.`,
+        tags: [
+          `Week's Financial Theme: Steady Progress`,
+          `Advice: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      }
+    },
+    yearly: {
+      loveRelationships: {
+        title: "Love & Relationships - This Year",
+        content: `${getRandomTemplate(signKey, 'love')} ${getRandomTemplate(signKey, 'loveSingles')} ${getRandomTemplate(signKey, 'loveCouples')} This year brings significant developments in your romantic life and relationships.`,
+        tags: [
+          `Year's Romance: Deep Connections`,
+          `Singles: ${getRandomTemplate(signKey, 'loveSingles').substring(0, 45)}...`,
+          `Couples: ${getRandomTemplate(signKey, 'loveCouples').substring(0, 45)}...`,
+          `Growth: Emotional Maturity`
+        ]
+      },
+      career: {
+        title: "Career & Professional Life - This Year",
+        content: `${getRandomTemplate(signKey, 'career')} ${getRandomTemplate(signKey, 'general')} This year offers exceptional opportunities for career advancement and professional recognition.`,
+        tags: [
+          `Year's Career Theme: Advancement & Recognition`,
+          `Q1-Q2: ${getRandomTemplate(signKey, 'career').substring(0, 40)}...`,
+          `Q3-Q4: ${getRandomTemplate(signKey, 'advice').substring(0, 40)}...`
+        ]
+      },
+      health: {
+        title: "Health & Wellness - This Year",
+        content: `${getRandomTemplate(signKey, 'health')} ${getRandomTemplate(signKey, 'advice')} Focus on sustainable wellness practices throughout the year.`,
+        tags: [
+          `Year's Wellness: Sustainable Health`,
+          `Focus Areas: Mind, Body, Spirit`,
+          `Advice: ${getRandomTemplate(signKey, 'advice').substring(0, 50)}...`
+        ]
+      },
+      finance: {
+        title: "Finance & Money - This Year",
+        content: `${getRandomTemplate(signKey, 'finance')} ${getRandomTemplate(signKey, 'advice')} Financial growth and stability are highlighted this year.`,
+        tags: [
+          `Year's Financial Theme: Growth & Stability`,
+          `Best Months: ${getLuckyMonth(currentSign.displayName)} & December`,
+          `Strategy: ${getRandomTemplate(signKey, 'advice').substring(0, 45)}...`
+        ]
+      }
     }
   };
 
@@ -708,138 +860,171 @@ export default function ZodiacSignPage() {
       </Head>
       <div className="min-h-screen bg-white">
         {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <button
-              onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Sun Sign Banner */}
-      <div className="bg-[#FCF4E9] text-[#745802] py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-8">
-            {/* Zodiac Symbol on Left */}
-            <div className="w-32 h-32 flex items-center justify-center">
-              {lottieData ? (
-                <Lottie 
-                  animationData={lottieData} 
-                  loop={true}
-                  autoplay={true}
-                  style={{ width: '100%', height: '100%' }}
-                />
-              ) : (
-                <div className="text-8xl text-[#745802]">
-                  {currentSign.symbol}
-                </div>
-              )}
-            </div>
-            
-            {/* Text Content on Right */}
-            <div className="text-left">
-              <h1 className="text-4xl sm:text-5xl font-bold mb-2 text-[#745802]" style={{ fontFamily: 'EB Garamond, serif' }}>{currentSign.displayName}</h1>
-              <p className="text-xl sm:text-2xl text-[#745802] italic mb-2">{currentSign.tagline}</p>
-              <p className="text-lg text-[#745802]">Date Range: {currentSign.dates}</p>
+        <div className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <button
+                onClick={handleBack}
+                className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="font-medium">Back</span>
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-8">
-            
-            {/* Left Section - Time Period Selector (30%) */}
-            <div className="lg:w-1/3">
-              <div className="bg-gray-100 rounded shadow-sm border border-gray-200 p-6">
-                <h3 className="text-xl font-bold text-black mb-6">Horoscopes</h3>
-                <nav className="space-y-1">
-                  {[
-                    { id: 'daily', label: "Today's Insight", period: 'daily' },
-                    { id: 'weekly', label: "Tomorrow's Guidance", period: 'weekly' },
-                    { id: 'monthly', label: "Weekly Horoscope", period: 'monthly' },
-                    { id: 'yearly', label: "Yearly Horoscope", period: 'yearly' }
-                  ].map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSelectedPeriod(item.period as any)}
-                      className={`w-full text-left px-3 py-3 text-base transition-all duration-200 border-b border-gray-300 last:border-b-0 ${
-                        selectedPeriod === item.period
+        {/* Sun Sign Banner */}
+        <div className="bg-[#FCF4E9] text-[#745802] py-12">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-8">
+              {/* Zodiac Symbol on Left */}
+              <div className="w-32 h-32 flex items-center justify-center">
+                {lottieData ? (
+                  <Lottie
+                    animationData={lottieData}
+                    loop={true}
+                    autoplay={true}
+                    style={{ width: '100%', height: '100%' }}
+                  />
+                ) : (
+                  <div className="text-8xl text-[#745802]">
+                    {currentSign.symbol}
+                  </div>
+                )}
+              </div>
+
+              {/* Text Content on Right */}
+              <div className="text-left">
+                <h1 className="text-4xl sm:text-5xl font-bold mb-2 text-[#745802]" style={{ fontFamily: 'EB Garamond, serif' }}>{currentSign.displayName}</h1>
+                <p className="text-xl sm:text-2xl text-[#745802] italic mb-2">{currentSign.tagline}</p>
+                <p className="text-lg text-[#745802]">Date Range: {currentSign.dates}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="py-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row gap-8">
+
+              {/* Left Section - Time Period Selector (30%) */}
+              <div className="lg:w-1/3">
+                <div className="bg-gray-100 rounded shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-xl font-bold text-black mb-6">Horoscopes</h3>
+                  <nav className="space-y-1">
+                    {[
+                      { id: 'daily', label: "Today's Horoscope", period: 'daily' },
+                      { id: 'weekly', label: "Tomorrow's Guidance", period: 'weekly' },
+                      { id: 'monthly', label: "This Week's Horoscope", period: 'monthly' },
+                      { id: 'yearly', label: "This Year's Horoscope", period: 'yearly' }
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setSelectedPeriod(item.period as any)}
+                        className={`w-full text-left px-3 py-3 text-base transition-all duration-200 border-b border-gray-300 last:border-b-0 ${selectedPeriod === item.period
                           ? 'text-black font-bold'
                           : 'text-black font-normal hover:text-gray-700'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-            </div>
-
-            {/* Right Section - Horoscope Details (70%) */}
-            <div className="lg:w-2/3">
-              
-              {/* Current Period Horoscope */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-2xl font-bold text-[#745802] mb-4">{currentHoroscope.title}</h2>
-                <p className="text-black leading-relaxed mb-6 text-lg">
-                  {currentHoroscope.content}
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {currentHoroscope.tags.map((tag, index) => (
-                    <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
-                      {tag}
-                    </span>
-                  ))}
+                          }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </nav>
                 </div>
               </div>
 
-              {/* Love & Relationships Section */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h2 className="text-2xl font-bold text-[#745802] mb-4">
-                  {(currentSign.loveRelationships as any)[selectedPeriod]?.title || (currentSign.loveRelationships as any).title || "Love & Relationships"}
-                </h2>
-                <p className="text-black leading-relaxed mb-6 text-lg">
-                  {(currentSign.loveRelationships as any)[selectedPeriod]?.content || (currentSign.loveRelationships as any).content || "Your relationships are influenced by your zodiac sign's natural characteristics."}
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {((currentSign.loveRelationships as any)[selectedPeriod]?.tags || (currentSign.loveRelationships as any).tags || []).map((tag: string, index: number) => (
-                    <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              {/* Right Section - Horoscope Details (70%) */}
+              <div className="lg:w-2/3">
 
-              {/* Personal Life Section */}
-              <div className="bg-white rounded-lg p-6">
-                <h2 className="text-2xl font-bold text-[#745802] mb-4">
-                  {(currentSign.personalLife as any)[selectedPeriod]?.title || (currentSign.personalLife as any).title || "Personal Life"}
-                </h2>
-                <p className="text-black leading-relaxed mb-6 text-lg">
-                  {(currentSign.personalLife as any)[selectedPeriod]?.content || (currentSign.personalLife as any).content || "Your personal life is guided by your zodiac sign's unique characteristics and planetary influences."}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {((currentSign.personalLife as any)[selectedPeriod]?.tags || (currentSign.personalLife as any).tags || []).map((tag: string, index: number) => (
-                    <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
-                      {tag}
-                    </span>
-                  ))}
+                {/* Current Period Horoscope */}
+                <div className="bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-2xl font-bold text-[#745802] mb-4">{currentHoroscope.title}</h2>
+                  <p className="text-black leading-relaxed mb-6 text-lg">
+                    {currentHoroscope.content}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {currentHoroscope.tags.map((tag, index) => (
+                      <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
+                {/* Love & Relationships Section */}
+                <div className="bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-2xl font-bold text-[#745802] mb-4">
+                    {detailedSections[selectedPeriod].loveRelationships.title}
+                  </h2>
+                  <p className="text-black leading-relaxed mb-6 text-lg">
+                    {detailedSections[selectedPeriod].loveRelationships.content}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {detailedSections[selectedPeriod].loveRelationships.tags.map((tag: string, index: number) => (
+                      <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Career Section */}
+                <div className="bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-2xl font-bold text-[#745802] mb-4">
+                    {detailedSections[selectedPeriod].career.title}
+                  </h2>
+                  <p className="text-black leading-relaxed mb-6 text-lg">
+                    {detailedSections[selectedPeriod].career.content}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {detailedSections[selectedPeriod].career.tags.map((tag: string, index: number) => (
+                      <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Health Section */}
+                <div className="bg-white rounded-lg p-6 mb-6">
+                  <h2 className="text-2xl font-bold text-[#745802] mb-4">
+                    {detailedSections[selectedPeriod].health.title}
+                  </h2>
+                  <p className="text-black leading-relaxed mb-6 text-lg">
+                    {detailedSections[selectedPeriod].health.content}
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {detailedSections[selectedPeriod].health.tags.map((tag: string, index: number) => (
+                      <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Finance Section */}
+                <div className="bg-white rounded-lg p-6">
+                  <h2 className="text-2xl font-bold text-[#745802] mb-4">
+                    {detailedSections[selectedPeriod].finance.title}
+                  </h2>
+                  <p className="text-black leading-relaxed mb-6 text-lg">
+                    {detailedSections[selectedPeriod].finance.content}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {detailedSections[selectedPeriod].finance.tags.map((tag: string, index: number) => (
+                      <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </div>
     </>
   );

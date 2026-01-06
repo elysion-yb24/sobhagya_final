@@ -25,6 +25,7 @@ import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from '..
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import { getApiBaseUrl } from '../config/api';
 import { isValidMobileNumber, getPhoneValidationError, sanitizePhoneInput } from '../utils/phone-validation';
+import { initiateCall } from '../utils/call-utils';
 
 
 // Define types for country and authentication data
@@ -123,7 +124,11 @@ export default function LoginPage() {
             localStorage.removeItem('callIntent');
             localStorage.removeItem('callSource');
             // Directly initiate call and navigate to call page
-            await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+            await initiateCall({
+              astrologerId: storedAstrologerId,
+              callType: callIntent === 'video' ? 'video' : 'audio',
+              router
+            });
             return;
           } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
             // Store the call intent for immediate call initiation
@@ -231,109 +236,7 @@ export default function LoginPage() {
     }
   };
 
-  // Helper to fetch astrologer name for URL display
-  const fetchAstrologerName = async (astrologerId: string, token: string): Promise<string> => {
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-      if (!response.ok) return 'Astrologer';
-      const data = await response.json();
-      return data?.data?.name || data?.name || 'Astrologer';
-    } catch {
-      return 'Astrologer';
-    }
-  };
 
-
-  const initiateDirectCall = async (astrologerId: string, callType: 'audio' | 'video') => {
-    try {
-      const token = getAuthToken();
-      const user = getUserDetails();
-      if (!token || !user?.id) {
-        router.replace('/astrologers');
-        return;
-      }
-
-      // Check if user role is 'friend' (partner)
-      if (user.role === 'friend') {
-        setShowPartnerRestrictionModal(true);
-        return;
-      }
-
-      const channelId = Date.now().toString();
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      const body = {
-        receiverUserId: astrologerId,
-        type: callType === 'audio' ? 'call' : 'video',
-        appVersion: '1.0.0'
-      };
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
-        const errorMessage = data?.message || 'Failed to initiate call';
-
-        // Handle specific error messages with user-friendly notifications
-        if (errorMessage === 'User not online' || errorMessage.includes('not online')) {
-          toast.error('Astrologer is currently offline. Please try again later.');
-          return;
-        } else if (errorMessage === 'Call already in progress' || errorMessage.includes('already in progress')) {
-          toast.error('A call is already in progress. Please wait for it to complete.');
-          return;
-        } else if (errorMessage === 'DONT_HAVE_ENOUGH_BALANCE' || errorMessage.includes('balance')) {
-          toast.error('Insufficient wallet balance. Please recharge your wallet.');
-          return;
-        } else if (errorMessage === 'User already on another call') {
-          toast.error('Astrologer is currently busy on another call. Please try again later.');
-          return;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const astrologerName = await fetchAstrologerName(astrologerId, token);
-
-      // Keep source for back nav, drop intent keys
-      localStorage.setItem('lastAstrologerId', astrologerId);
-      localStorage.setItem('callSource', 'callWithAstrologer');
-      localStorage.removeItem('selectedAstrologerId');
-      localStorage.removeItem('callIntent');
-
-      const dest = callType === 'audio'
-        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
-        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
-
-      router.replace(dest);
-    } catch (err: any) {
-      console.error('❌ Direct call initiation failed:', err);
-
-      // Show user-friendly error message
-      const errorMessage = err?.message || 'Failed to initiate call';
-      if (!errorMessage.includes('User not online') &&
-        !errorMessage.includes('Call already in progress') &&
-        !errorMessage.includes('balance') &&
-        !errorMessage.includes('already on another call')) {
-        toast.error(errorMessage || 'Failed to initiate call. Please try again.');
-        router.replace('/astrologers');
-      }
-    }
-  };
 
   const handleVerifyOtp = async (data: any) => {
     setIsVerifyingOtp(true);
@@ -399,34 +302,44 @@ export default function LoginPage() {
             return;
           }
 
-          if (storedAstrologerId && chatIntent === '1') {
-            // Open chat with deterministic room id
-            const profile = getUserDetails();
-            const currentUserId = profile?.id || profile?._id || '';
-            const currentUserName = profile?.displayName || profile?.name || 'User';
-            if (currentUserId) {
-              const a = currentUserId;
-              const b = storedAstrologerId;
-              const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
-              // Clear intent keys
+          if (storedAstrologerId) {
+            if (chatIntent === '1') {
+              // Open chat with deterministic room id
+              const profile = getUserDetails();
+              const currentUserId = profile?.id || profile?._id || '';
+              const currentUserName = profile?.displayName || profile?.name || 'User';
+              if (currentUserId) {
+                const a = currentUserId;
+                const b = storedAstrologerId;
+                const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
+                // Clear intent keys
+                localStorage.removeItem('selectedAstrologerId');
+                localStorage.removeItem('chatIntent');
+                setIsVerifyingOtp(false);
+                window.location.href = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(storedAstrologerId)}`;
+                return;
+              }
+            } else if (callIntent) {
               localStorage.removeItem('selectedAstrologerId');
-              localStorage.removeItem('chatIntent');
+              localStorage.removeItem('callIntent');
+              localStorage.removeItem('callSource');
+              await initiateCall({
+                astrologerId: storedAstrologerId,
+                callType: callIntent === 'video' ? 'video' : 'audio',
+                router
+              });
               setIsVerifyingOtp(false);
-              window.location.href = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(storedAstrologerId)}`;
+              return;
+            } else {
+              // No specific intent, just go to profile
+              localStorage.removeItem('selectedAstrologerId');
+              router.push(`/astrologers/${storedAstrologerId}`);
+              setIsVerifyingOtp(false);
               return;
             }
           }
 
-          if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-            localStorage.removeItem('selectedAstrologerId');
-            localStorage.removeItem('callIntent');
-            localStorage.removeItem('callSource');
-            await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
-            setIsVerifyingOtp(false);
-            return;
-          }
-
-          // Otherwise go to astrologers as before
+          // Default fallback
           setIsVerifyingOtp(false);
           router.push('/astrologers');
         } catch (error) {
@@ -530,7 +443,11 @@ export default function LoginPage() {
           localStorage.removeItem('callSource');
 
           // Directly initiate call and navigate to call page
-          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+          await initiateCall({
+            astrologerId: storedAstrologerId,
+            callType: callIntent === 'video' ? 'video' : 'audio',
+            router
+          });
           return;
         } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
 

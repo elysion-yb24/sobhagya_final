@@ -12,7 +12,7 @@ export function getAuthToken(): string | null {
     // Try localStorage first - check both authToken and access_token keys
     const authToken = localStorage.getItem('authToken');
     if (authToken) return authToken;
-    
+
     const accessToken = localStorage.getItem('access_token');
     if (accessToken) return accessToken;
 
@@ -20,7 +20,7 @@ export function getAuthToken(): string | null {
     const cookies = new Cookies(null, { path: '/' });
     const cookieAccessToken = cookies.get('access_token');
     if (cookieAccessToken) return cookieAccessToken;
-    
+
     const cookieAuthToken = cookies.get('authToken');
     if (cookieAuthToken) return cookieAuthToken;
 
@@ -39,13 +39,13 @@ export function storeAuthToken(token: string): boolean {
   try {
     // Store in localStorage
     localStorage.setItem('authToken', token);
-    
+
     // Store timestamp
     localStorage.setItem('tokenTimestamp', Date.now().toString());
-    
+
     // Store in cookies for server-side access
-    document.cookie = `authToken=${token}; path=/; max-age=${60*60*24*7}`;
-    
+    document.cookie = `authToken=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+
     return true;
   } catch (e) {
     console.error("Error storing token:", e);
@@ -85,27 +85,27 @@ export function getUserDetails(): any {
 export function hasUserCalledBefore(): boolean {
   try {
     if (typeof window === "undefined") return false;
-    
+
     // Check if user has call history
     const callHistory = localStorage.getItem('callHistory');
     if (callHistory) {
       const history = JSON.parse(callHistory);
       return Array.isArray(history) && history.length > 0;
     }
-    
+
     // Check if user has transaction history
     const transactionHistory = localStorage.getItem('transactionHistory');
     if (transactionHistory) {
       const history = JSON.parse(transactionHistory);
       return Array.isArray(history) && history.length > 0;
     }
-    
+
     // Check if user has made any calls (stored in user details)
     const userDetails = getUserDetails();
     if (userDetails && userDetails.hasCalledBefore) {
       return true;
     }
-    
+
     // Check if user has been authenticated for more than 1 day (likely not first time)
     const tokenTimestamp = localStorage.getItem('tokenTimestamp');
     if (tokenTimestamp) {
@@ -114,7 +114,7 @@ export function hasUserCalledBefore(): boolean {
       const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
       return (now - tokenTime) > oneDay;
     }
-    
+
     return false;
   } catch (e) {
     console.error("Error checking call history:", e);
@@ -128,7 +128,7 @@ export function hasUserCalledBefore(): boolean {
 export function markUserAsCalled(): void {
   try {
     if (typeof window === "undefined") return;
-    
+
     const userDetails = getUserDetails();
     if (userDetails) {
       const updatedUserDetails = {
@@ -138,10 +138,10 @@ export function markUserAsCalled(): void {
       };
       storeUserDetails(updatedUserDetails);
     }
-    
+
     // Mark in localStorage for immediate UI updates
     localStorage.setItem("userHasCalledBefore", "true");
-    
+
     // Dispatch event to update UI
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('user-call-status-changed'));
@@ -165,13 +165,14 @@ export async function fetchUserProfile(): Promise<any> {
     // Get cached user details
     const cachedDetails = getUserDetails();
     const userId = cachedDetails?.id || cachedDetails?._id;
-    
+
     // Try to fetch fresh profile from backend if we have a user ID
     if (userId) {
       try {
         const { getApiBaseUrl } = await import('../config/api');
         const baseUrl = getApiBaseUrl();
-        const response = await fetch(`${baseUrl}/user/api/users/${userId}`, {
+        // Use the correct endpoint that exists on the backend
+        const response = await fetch(`${baseUrl}/user/data`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -182,7 +183,8 @@ export async function fetchUserProfile(): Promise<any> {
 
         if (response.ok) {
           const result = await response.json();
-          if (result?.data) {
+          // The response format is { success: true, data: {...}, message: "..." }
+          if (result?.success && result?.data) {
             const freshProfile = result.data;
             // Merge with cached details to preserve any additional fields
             const enhancedProfile = {
@@ -192,14 +194,14 @@ export async function fetchUserProfile(): Promise<any> {
               name: freshProfile.name || cachedDetails?.name,
               firstName: freshProfile.firstName || cachedDetails?.firstName,
               lastName: freshProfile.lastName || cachedDetails?.lastName,
-              displayName: freshProfile.name || 
-                          (freshProfile.firstName ? `${freshProfile.firstName} ${freshProfile.lastName || ''}`.trim() : '') ||
-                          cachedDetails?.name ||
-                          (cachedDetails?.firstName ? `${cachedDetails.firstName} ${cachedDetails.lastName || ''}`.trim() : '') ||
-                          'User',
+              displayName: freshProfile.name ||
+                (freshProfile.firstName ? `${freshProfile.firstName} ${freshProfile.lastName || ''}`.trim() : '') ||
+                cachedDetails?.name ||
+                (cachedDetails?.firstName ? `${cachedDetails.firstName} ${cachedDetails.lastName || ''}`.trim() : '') ||
+                'User',
               timestamp: new Date().getTime(),
             };
-            
+
             // Update stored details
             storeUserDetails(enhancedProfile);
             return enhancedProfile;
@@ -209,14 +211,14 @@ export async function fetchUserProfile(): Promise<any> {
         console.log('Could not fetch user profile from API, using cached data:', apiError);
       }
     }
-    
+
     // Fallback to cached data with enhancement
     if (cachedDetails) {
       // Check for captured name from session storage
       const capturedName = sessionStorage.getItem('capturedUserName');
-      
+
       let enhancedProfile = { ...cachedDetails };
-      
+
       // If we have a captured name and no existing name, use it
       if (capturedName && !cachedDetails.name && !cachedDetails.firstName) {
         const nameParts = capturedName.split(' ');
@@ -227,21 +229,21 @@ export async function fetchUserProfile(): Promise<any> {
           lastName: nameParts.slice(1).join(' '),
           profileCompleted: true
         };
-        
+
         // Clear from session storage and update stored details
         sessionStorage.removeItem('capturedUserName');
         storeUserDetails(enhancedProfile);
       }
-      
+
       // Enhance the cached data with better display logic (but don't use phone number)
       const finalProfile = {
         ...enhancedProfile,
-        displayName: enhancedProfile.name || 
-                    (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
-                    'User',
+        displayName: enhancedProfile.name ||
+          (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
+          'User',
         timestamp: new Date().getTime(),
       };
-      
+
       // Update the stored details with enhanced info
       storeUserDetails(finalProfile);
       return finalProfile;
@@ -253,7 +255,7 @@ export async function fetchUserProfile(): Promise<any> {
       displayName: 'User',
       timestamp: new Date().getTime(),
     };
-    
+
   } catch (error) {
     console.error('Error processing user profile:', error);
     return getUserDetails() || {
@@ -270,11 +272,11 @@ export async function fetchUserProfile(): Promise<any> {
 export function clearAuthData(): void {
   try {
     console.log('🧹 Starting complete logout cleanup...');
-    
+
     // Clear all localStorage items related to authentication
     const itemsToRemove = [
       'authToken',
-      'token', 
+      'token',
       'access_token',
       'refresh_token',
       'tokenTimestamp',
@@ -284,25 +286,25 @@ export function clearAuthData(): void {
       'user',
       'userData'
     ];
-    
+
     itemsToRemove.forEach(item => {
       if (localStorage.getItem(item)) {
         localStorage.removeItem(item);
         console.log(`✅ Removed localStorage item: ${item}`);
       }
     });
-    
+
     // Clear all authentication-related cookies
     const cookiesToClear = [
       'authToken',
       'token',
-      'access_token', 
+      'access_token',
       'refresh_token',
       'sessionId',
       'user',
       'auth-token'
     ];
-    
+
     cookiesToClear.forEach(cookieName => {
       // Clear for current domain
       document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}`;
@@ -315,7 +317,7 @@ export function clearAuthData(): void {
       document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       console.log(`✅ Cleared cookie: ${cookieName}`);
     });
-    
+
     // Clear using universal-cookie library as well
     try {
       const cookies = new Cookies(null, { path: '/' });
@@ -330,7 +332,7 @@ export function clearAuthData(): void {
     } catch (cookieError) {
       console.warn('Error clearing cookies with universal-cookie:', cookieError);
     }
-    
+
     // Clear session storage as well
     try {
       sessionStorage.clear();
@@ -338,7 +340,7 @@ export function clearAuthData(): void {
     } catch (sessionError) {
       console.warn('Error clearing sessionStorage:', sessionError);
     }
-    
+
     // Clear any cached data in memory (if any global variables exist)
     try {
       // Reset any global auth state if it exists
@@ -349,9 +351,9 @@ export function clearAuthData(): void {
     } catch (globalError) {
       console.warn('Error clearing global state:', globalError);
     }
-    
+
     console.log('🎉 Logout cleanup completed successfully');
-    
+
   } catch (e) {
     console.error("❌ Error during logout cleanup:", e);
   }
@@ -363,9 +365,9 @@ export function clearAuthData(): void {
 export async function performLogout(): Promise<boolean> {
   try {
     console.log('🚪 Starting logout process...');
-    
+
     const token = getAuthToken();
-    
+
     // Try to call backend logout API if token exists
     if (token) {
       try {
@@ -378,7 +380,7 @@ export async function performLogout(): Promise<boolean> {
           },
           credentials: 'include',
         });
-        
+
         if (response.ok) {
           console.log('✅ Backend logout successful');
         } else {
@@ -388,13 +390,13 @@ export async function performLogout(): Promise<boolean> {
         console.warn('⚠️ Backend logout API call failed, continuing with local cleanup:', apiError);
       }
     }
-    
+
     // Always perform local cleanup regardless of API call result
     clearAuthData();
-    
+
     console.log('🎉 Logout process completed successfully');
     return true;
-    
+
   } catch (error) {
     console.error('❌ Error during logout process:', error);
     // Even if there's an error, try to clear local data
@@ -409,24 +411,24 @@ export async function performLogout(): Promise<boolean> {
  */
 export function isTokenValid(token: string | null): boolean {
   if (!token) return false;
-  
+
   try {
     // Check if token is a non-empty string
     if (!token || token.trim() === '') return false;
-    
+
     // Check token timestamp
     const tokenTimestamp = localStorage.getItem('tokenTimestamp');
     if (!tokenTimestamp) return false;
-    
+
     // Token TTL: 7 days (in milliseconds)
     const TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
     const timestampNum = parseInt(tokenTimestamp, 10);
-    
+
     if (isNaN(timestampNum)) return false;
-    
+
     const currentTime = Date.now();
     if (timestampNum > currentTime) return false; // Future timestamp, invalid
-    
+
     return (currentTime - timestampNum) < TOKEN_TTL;
   } catch (e) {
     console.error("Error validating token:", e);
@@ -447,11 +449,11 @@ export function isAuthenticated(): boolean {
  */
 export async function refreshTokenIfNeeded(): Promise<boolean> {
   const token = getAuthToken();
-  
+
   if (!token) return false;
-  
+
   if (isTokenValid(token)) return true;
-  
+
   try {
     const response = await fetch('https://micro.sobhagya.in/auth/api/refresh-token', {
       method: 'POST',
@@ -460,7 +462,7 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
         'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (response.ok) {
       const data = await response.json();
       if (data.token) {
@@ -468,7 +470,7 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
         return true;
       }
     }
-    
+
     clearAuthData();
     return false;
   } catch (e) {
@@ -489,7 +491,7 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
 //               'Authorization': 'Bearer ' + access_token,
 //           },
 //       })
-      
+
 //       return isBlob ? await apiResponse.blob() : await apiResponse.json();
 //   } catch (err) {
 //       console.error('Err in ' + endpoint, err)
@@ -498,28 +500,28 @@ export async function refreshTokenIfNeeded(): Promise<boolean> {
 // }
 
 
-export const post=async(endpoint:any,access_token:any,body:any,options:any)=>{
- 
+export const post = async (endpoint: any, access_token: any, body: any, options: any) => {
+
   try {
-      const apiResponse = await fetch(`${API_URL}${endpoint}`, {
-          method:'POST',
-          credentials: 'include',
-          body: JSON.stringify(body),
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + access_token,
-          },
-      })
-      updateAccessToken(apiResponse)
-      return  await apiResponse.json();
+    const apiResponse = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + access_token,
+      },
+    })
+    updateAccessToken(apiResponse)
+    return await apiResponse.json();
   } catch (err) {
-      console.error('Err in '+ endpoint, err)
-      return { data: null, success: false, message: 'Internal Server Error' };
+    console.error('Err in ' + endpoint, err)
+    return { data: null, success: false, message: 'Internal Server Error' };
   }
 }
 
 
-function updateAccessToken(res:any) {
+function updateAccessToken(res: any) {
   const authToken = res.headers.get("auth-token");
   const cookies = new Cookies(null, { path: '/' })
   if (authToken) cookies.set('access_token', authToken)

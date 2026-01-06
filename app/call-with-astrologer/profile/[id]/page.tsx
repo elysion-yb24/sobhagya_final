@@ -10,6 +10,7 @@ import DevModeBanner from "../../../components/DevModeBanner";
 import { motion } from "framer-motion";
 import { getRandomAstrologerBackground } from "../../../utils/randomBackground";
 import { toast } from 'react-hot-toast';
+import { initiateCall } from "../../../utils/call-utils";
 
 interface Astrologer {
     _id: string;
@@ -389,38 +390,6 @@ export default function CallAstrologerProfilePage() {
         }
     };
 
-    // Function to refresh astrologer status
-    const refreshAstrologerStatus = async () => {
-        try {
-            const token = getAuthToken();
-            const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-            const response = await fetch(`${baseUrl}/user/api/profile/${astrologerId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token && { 'Authorization': `Bearer ${token}` }),
-                },
-                credentials: 'include',
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                if (result?.data) {
-                    const updatedAstrologer = result.data;
-                    // Normalize status
-                    if (updatedAstrologer.isOnline !== undefined && !updatedAstrologer.status) {
-                        updatedAstrologer.status = updatedAstrologer.isOnline ? "online" : "offline";
-                    }
-                    if (!updatedAstrologer.status) {
-                        updatedAstrologer.status = "offline";
-                    }
-                    setAstrologer(prev => prev ? { ...prev, status: updatedAstrologer.status } : prev);
-                }
-            }
-        } catch (err) {
-        }
-    };
-
     const fetchReviews = async () => {
         try {
             const token = getAuthToken();
@@ -497,128 +466,16 @@ export default function CallAstrologerProfilePage() {
 
         setShowCallOptions(false);
 
-        // If user is authenticated, directly initiate the call
-        if (isAuthenticated()) {
-            try {
-                setIsAudioCallProcessing(true);
-                const token = getAuthToken();
-                const user = getUserDetails();
-
-                if (!token || !user?.id) {
-                    router.push("/login");
-                    return;
-                }
-
-                // Check if user role is 'friend' (partner)
-                if (user.role === 'friend') {
-                    setIsAudioCallProcessing(false);
-                    return;
-                }
-
-                // Refresh astrologer status before initiating call to get real-time status
-                await refreshAstrologerStatus();
-
-                const channelId = Date.now().toString();
-                const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-                const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-                const body = {
-                    receiverUserId: selectedId,
-                    type: callType === 'audio' ? 'call' : 'video',
-                    appVersion: '1.0.0'
-                };
-
-                const response = await fetch(livekitUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(body),
-                    credentials: 'include',
-                });
-
-                const data = await response.json();
-                if (!response.ok || !data?.data?.token || !data?.data?.channel) {
-                    const errorMessage = data?.message || 'Failed to initiate call';
-
-                    // Handle specific error messages with user-friendly notifications
-                    if (errorMessage === 'User not online' || errorMessage.includes('not online')) {
-                        // Update the astrologer status to reflect real-time status
-                        setAstrologer(prev => prev ? { ...prev, status: 'offline' } : prev);
-                        toast.error('Astrologer is currently offline. Please try again later.');
-                        setIsAudioCallProcessing(false);
-                        return;
-                    } else if (errorMessage === 'Call already in progress' || errorMessage.includes('already in progress')) {
-                        toast.error('A call is already in progress. Please wait for it to complete.');
-                        setIsAudioCallProcessing(false);
-                        return;
-                    } else if (errorMessage === 'DONT_HAVE_ENOUGH_BALANCE' || errorMessage.includes('balance')) {
-                        toast.error('Insufficient wallet balance. Please recharge your wallet.');
-                        setIsAudioCallProcessing(false);
-                        return;
-                    } else if (errorMessage === 'User already on another call') {
-                        toast.error('Astrologer is currently busy on another call. Please try again later.');
-                        setIsAudioCallProcessing(false);
-                        return;
-                    }
-
-                    throw new Error(errorMessage);
-                }
-
-                // Get astrologer name
-                let astrologerName = astrologer?.name || 'Astrologer';
-                try {
-                    const astroResponse = await fetch(`${baseUrl}/user/api/profile/${selectedId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (astroResponse.ok) {
-                        const astroData = await astroResponse.json();
-                        astrologerName = astroData?.data?.name || astrologerName;
-                    }
-                } catch (err) {
-                }
-
-                // Clear stored values
-                localStorage.setItem('lastAstrologerId', selectedId);
-                localStorage.setItem('callSource', 'callWithAstrologer');
-                localStorage.removeItem('selectedAstrologerId');
-                localStorage.removeItem('callIntent');
-
-                // Navigate to call page
-                const dest = callType === 'audio'
-                    ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(selectedId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
-                    : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(selectedId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
-
-                router.replace(dest);
-            } catch (err: any) {
-                setIsAudioCallProcessing(false);
-
-                // Show user-friendly error message
-                const errorMessage = err?.message || 'Failed to initiate call';
-                if (!errorMessage.includes('User not online') &&
-                    !errorMessage.includes('Call already in progress') &&
-                    !errorMessage.includes('balance') &&
-                    !errorMessage.includes('already on another call')) {
-                    toast.error(errorMessage || 'Failed to initiate call. Please try again.');
-                }
-
-                // Fallback to login flow only if not a specific error
-                if (!errorMessage.includes('User not online') &&
-                    !errorMessage.includes('Call already in progress') &&
-                    !errorMessage.includes('already on another call')) {
-                    localStorage.setItem("selectedAstrologerId", selectedId);
-                    localStorage.setItem("callIntent", callType);
-                    localStorage.setItem("callSource", "callWithAstrologer");
-                    router.push("/login");
-                }
+        await initiateCall({
+            astrologerId: selectedId,
+            callType,
+            router,
+            setLoading: setIsAudioCallProcessing,
+            onStatusOffline: () => {
+                // Optionally update local state if status is tracked
+                setAstrologer(prev => prev ? { ...prev, status: 'offline' } : prev);
             }
-        } else {
-            // If not authenticated, redirect to login with call intent
-            localStorage.setItem("selectedAstrologerId", selectedId);
-            localStorage.setItem("callIntent", callType);
-            localStorage.setItem("callSource", "callWithAstrologer");
-            router.push("/login");
-        }
+        });
     };
 
     const scrollSimilarLeft = () => {
@@ -982,13 +839,15 @@ export default function CallAstrologerProfilePage() {
                                                         </>
                                                     )}
                                                 </button>
-                                                <button
-                                                    onClick={() => handleCallTypeSelection('video')}
-                                                    className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors flex items-center gap-2"
-                                                >
-                                                    <Video className="w-4 h-4" />
-                                                    Video Call
-                                                </button>
+                                                {(astrologer.isVideoCallAllowed || astrologer.isVideoCallAllowedAdmin) && (
+                                                    <button
+                                                        onClick={() => handleCallTypeSelection('video')}
+                                                        className="bg-[#F7971E] text-white font-semibold py-2 px-4 rounded hover:bg-[#E8850B] transition-colors flex items-center gap-2"
+                                                    >
+                                                        <Video className="w-4 h-4" />
+                                                        Video Call
+                                                    </button>
+                                                )}
                                             </>
                                         ) : (
                                             <button
@@ -1370,16 +1229,18 @@ export default function CallAstrologerProfilePage() {
                                 Audio Call
                             </button>
 
-                            <button
-                                onClick={() => handleCallTypeSelection('video')}
-                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
-                            >
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor" />
-                                    <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor" />
-                                </svg>
-                                Video Call
-                            </button>
+                            {(selectedCallAstrologer?.isVideoCallAllowed || selectedCallAstrologer?.isVideoCallAllowedAdmin) && (
+                                <button
+                                    onClick={() => handleCallTypeSelection('video')}
+                                    className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                >
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor" />
+                                        <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor" />
+                                    </svg>
+                                    Video Call
+                                </button>
+                            )}
                         </div>
 
                         <button

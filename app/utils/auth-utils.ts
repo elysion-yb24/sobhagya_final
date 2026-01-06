@@ -28,13 +28,13 @@ export function storeAuthToken(token: string): boolean {
   try {
     // Store in localStorage
     localStorage.setItem('authToken', token);
-    
+
     // Store timestamp
     localStorage.setItem('tokenTimestamp', Date.now().toString());
-    
+
     // Store in cookies for server-side access (using same name as working APIs)
-    document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; SameSite=Lax; Secure`;
-    
+    document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax; Secure`;
+
     return true;
   } catch (e) {
     console.error("Error storing token:", e);
@@ -79,27 +79,27 @@ export const getAuthenticatedUser = () => {
 export function hasUserCalledBefore(): boolean {
   try {
     if (typeof window === "undefined") return false;
-    
+
     // Check if user has call history
     const callHistory = localStorage.getItem('callHistory');
     if (callHistory) {
       const history = JSON.parse(callHistory);
       return Array.isArray(history) && history.length > 0;
     }
-    
+
     // Check if user has transaction history
     const transactionHistory = localStorage.getItem('transactionHistory');
     if (transactionHistory) {
       const history = JSON.parse(transactionHistory);
       return Array.isArray(history) && history.length > 0;
     }
-    
+
     // Check if user has made any calls (stored in user details)
     const userDetails = getUserDetails();
     if (userDetails && userDetails.hasCalledBefore) {
       return true;
     }
-    
+
     // Check if user has been authenticated for more than 1 day (likely not first time)
     const tokenTimestamp = localStorage.getItem('tokenTimestamp');
     if (tokenTimestamp) {
@@ -108,7 +108,7 @@ export function hasUserCalledBefore(): boolean {
       const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
       return (now - tokenTime) > oneDay;
     }
-    
+
     return false;
   } catch (e) {
     console.error("Error checking call history:", e);
@@ -122,7 +122,7 @@ export function hasUserCalledBefore(): boolean {
 export function markUserAsCalled(): void {
   try {
     if (typeof window === "undefined") return;
-    
+
     const userDetails = getUserDetails();
     if (userDetails) {
       const updatedUserDetails = {
@@ -132,10 +132,10 @@ export function markUserAsCalled(): void {
       };
       storeUserDetails(updatedUserDetails);
     }
-    
+
     // Mark in localStorage for immediate UI updates
     localStorage.setItem("userHasCalledBefore", "true");
-    
+
     // Dispatch event to update UI
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('user-call-status-changed'));
@@ -161,7 +161,7 @@ export function captureUserName(name: string): boolean {
     const nameParts = name.trim().split(' ');
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(' ');
-    
+
     const updatedUserDetails = {
       ...currentUserDetails,
       name: name.trim(),
@@ -171,14 +171,14 @@ export function captureUserName(name: string): boolean {
       profileCompleted: true,
       updatedAt: new Date().getTime()
     };
-    
+
     storeUserDetails(updatedUserDetails);
-    
+
     // Dispatch event for header update
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('user-auth-changed'));
     }
-    
+
     return true;
   } catch (error) {
     console.error('Error capturing user name:', error);
@@ -187,7 +187,90 @@ export function captureUserName(name: string): boolean {
 }
 
 /**
+ * Fetches user profile data from backend MongoDB database
+ * Uses /user/profile-v2 endpoint which extracts user ID from JWT token
+ */
+export async function fetchUserProfileFromBackend(): Promise<any> {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      console.log('❌ No authentication token found');
+      return getUserDetails();
+    }
+
+    console.log('📡 Fetching user profile from backend...');
+
+    // Import getApiBaseUrl dynamically to avoid circular dependencies
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://micro.sobhagya.in';
+    const apiUrl = `${baseUrl}/user/profile-v2`;
+
+    const response = await fetch(apiUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ Backend API returned ${response.status}, using cached data`);
+      return getUserDetails();
+    }
+
+    const data = await response.json();
+    console.log('✅ Backend profile data received:', data);
+
+    if (data.success && data.data?.user) {
+      const userData = data.data.user;
+
+      // Format the user data for localStorage
+      const formattedUserData = {
+        id: userData._id,
+        _id: userData._id,
+        phone: userData.phone,
+        phoneNumber: userData.phone,
+        name: userData.name || '',
+        firstName: userData.firstName || userData.name?.split(' ')[0] || '',
+        lastName: userData.lastName || userData.name?.split(' ').slice(1).join(' ') || '',
+        displayName: userData.name || userData.phone || 'User',
+        avatar: userData.avatar || '',
+        gender: userData.gender || '',
+        placeOfBirth: userData.placeOfBirth || '',
+        dateOfBirth: userData.dateOfBirth || userData.dob || '',
+        dob: userData.dob || userData.dateOfBirth || '',
+        timeOfBirth: userData.timeOfBirth || '',
+        language: userData.language || [],
+        role: userData.role || 'user',
+        profileCompleted: userData.profileCompleted || false,
+        familyMembers: userData.familyMembers || [],
+        timestamp: new Date().getTime(),
+      };
+
+      // Store in localStorage
+      storeUserDetails(formattedUserData);
+      console.log('✅ User profile updated in localStorage');
+
+      // Dispatch event to update UI
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-auth-changed'));
+      }
+
+      return formattedUserData;
+    }
+
+    console.warn('⚠️ Invalid response format from backend');
+    return getUserDetails();
+
+  } catch (error) {
+    console.error('❌ Error fetching user profile from backend:', error);
+    return getUserDetails();
+  }
+}
+
+/**
  * Gets user profile with enhanced display name logic
+ * @deprecated Use fetchUserProfileFromBackend() for fresh data from MongoDB
  */
 export async function fetchUserProfile(): Promise<any> {
   try {
@@ -199,16 +282,16 @@ export async function fetchUserProfile(): Promise<any> {
 
     // Get cached user details
     const cachedDetails = getUserDetails();
-    
+
     // For now, we'll work with the cached data since the backend user profile API isn't available
     // In the future, when the backend supports user profile API, we can add that call here
-    
+
     if (cachedDetails) {
       // Check for captured name from session storage
       const capturedName = sessionStorage.getItem('capturedUserName');
-      
+
       let enhancedProfile = { ...cachedDetails };
-      
+
       // If we have a captured name and no existing name, use it
       if (capturedName && !cachedDetails.name && !cachedDetails.firstName) {
         const nameParts = capturedName.split(' ');
@@ -219,21 +302,21 @@ export async function fetchUserProfile(): Promise<any> {
           lastName: nameParts.slice(1).join(' '),
           profileCompleted: true
         };
-        
+
         // Clear from session storage and update stored details
         sessionStorage.removeItem('capturedUserName');
         storeUserDetails(enhancedProfile);
       }
-      
+
       // Enhance the cached data with better display logic
       const finalProfile = {
         ...enhancedProfile,
-        displayName: enhancedProfile.name || 
-                    (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
-                    enhancedProfile.phoneNumber || 'User',
+        displayName: enhancedProfile.name ||
+          (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
+          enhancedProfile.phoneNumber || 'User',
         timestamp: new Date().getTime(),
       };
-      
+
       // Update the stored details with enhanced info
       storeUserDetails(finalProfile);
       return finalProfile;
@@ -245,7 +328,7 @@ export async function fetchUserProfile(): Promise<any> {
       displayName: 'User',
       timestamp: new Date().getTime(),
     };
-    
+
   } catch (error) {
     console.error('Error processing user profile:', error);
     return getUserDetails() || {
@@ -262,11 +345,11 @@ export async function fetchUserProfile(): Promise<any> {
 export function clearAuthData(): void {
   try {
     console.log('🧹 Starting complete logout cleanup...');
-    
+
     // Clear all localStorage items related to authentication
     const itemsToRemove = [
       'authToken',
-      'token', 
+      'token',
       'access_token',
       'refresh_token',
       'tokenTimestamp',
@@ -276,25 +359,25 @@ export function clearAuthData(): void {
       'user',
       'userData'
     ];
-    
+
     itemsToRemove.forEach(item => {
       if (localStorage.getItem(item)) {
         localStorage.removeItem(item);
         console.log(`✅ Removed localStorage item: ${item}`);
       }
     });
-    
+
     // Clear all authentication-related cookies
     const cookiesToClear = [
       'authToken',
       'token',
-      'access_token', 
+      'access_token',
       'refresh_token',
       'sessionId',
       'user',
       'auth-token'
     ];
-    
+
     cookiesToClear.forEach(cookieName => {
       // Clear for current domain
       document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}`;
@@ -307,7 +390,7 @@ export function clearAuthData(): void {
       document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       console.log(`✅ Cleared cookie: ${cookieName}`);
     });
-    
+
     // Clear using universal-cookie library as well
     try {
       const cookies = new Cookies(null, { path: '/' });
@@ -322,7 +405,7 @@ export function clearAuthData(): void {
     } catch (cookieError) {
       console.warn('Error clearing cookies with universal-cookie:', cookieError);
     }
-    
+
     // Clear session storage as well
     try {
       sessionStorage.clear();
@@ -330,14 +413,14 @@ export function clearAuthData(): void {
     } catch (sessionError) {
       console.warn('Error clearing sessionStorage:', sessionError);
     }
-    
+
     // Clear any cached data in memory (if any global variables exist)
     try {
       // Reset any global auth state if it exists
       if (typeof window !== 'undefined') {
         (window as any).authState = null;
         (window as any).userProfile = null;
-        
+
         // Dispatch logout event for components to respond
         window.dispatchEvent(new CustomEvent('user-logout'));
         console.log('📢 Dispatched user-logout event');
@@ -345,9 +428,9 @@ export function clearAuthData(): void {
     } catch (globalError) {
       console.warn('Error clearing global state:', globalError);
     }
-    
+
     console.log('🎉 Logout cleanup completed successfully');
-    
+
   } catch (e) {
     console.error("❌ Error during logout cleanup:", e);
   }
@@ -359,9 +442,9 @@ export function clearAuthData(): void {
 export async function performLogout(): Promise<boolean> {
   try {
     console.log('🚪 Starting logout process...');
-    
+
     const token = getAuthToken();
-    
+
     // Try to call backend logout API if token exists
     if (token) {
       try {
@@ -374,7 +457,7 @@ export async function performLogout(): Promise<boolean> {
           },
           credentials: 'include',
         });
-        
+
         if (response.ok) {
           console.log('✅ Backend logout successful');
         } else {
@@ -384,13 +467,13 @@ export async function performLogout(): Promise<boolean> {
         console.warn('⚠️ Backend logout API call failed, continuing with local cleanup:', apiError);
       }
     }
-    
+
     // Always perform local cleanup regardless of API call result
     clearAuthData();
-    
+
     console.log('🎉 Logout process completed successfully');
     return true;
-    
+
   } catch (error) {
     console.error('❌ Error during logout process:', error);
     // Even if there's an error, try to clear local data
@@ -405,11 +488,11 @@ export async function performLogout(): Promise<boolean> {
  */
 export function isTokenValid(token: string | null): boolean {
   if (!token) return false;
-  
+
   try {
     // Check if token is a non-empty string
     if (!token || token.trim() === '') return false;
-    
+
     // Check token timestamp (last activity time)
     const tokenTimestamp = localStorage.getItem('tokenTimestamp');
     if (!tokenTimestamp) {
@@ -417,31 +500,31 @@ export function isTokenValid(token: string | null): boolean {
       localStorage.setItem('tokenTimestamp', Date.now().toString());
       return true;
     }
-    
+
     // Token TTL: 7 days (in milliseconds)
     const TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
     const timestampNum = parseInt(tokenTimestamp, 10);
-    
+
     if (isNaN(timestampNum)) {
       // Invalid timestamp, reset it
       localStorage.setItem('tokenTimestamp', Date.now().toString());
       return true;
     }
-    
+
     const currentTime = Date.now();
     if (timestampNum > currentTime) {
       // Future timestamp, reset it
       localStorage.setItem('tokenTimestamp', currentTime.toString());
       return true;
     }
-    
+
     const isValid = (currentTime - timestampNum) < TOKEN_TTL;
-    
+
     // If token is still valid, update the timestamp to extend its life
     if (isValid) {
       localStorage.setItem('tokenTimestamp', currentTime.toString());
     }
-    
+
     return isValid;
   } catch (e) {
     console.error("Error validating token:", e);
@@ -455,7 +538,7 @@ export function isTokenValid(token: string | null): boolean {
 export function isAuthenticated(): boolean {
   const token = getAuthToken();
   if (!token) return false;
-  
+
   // Check if token is valid (not expired)
   return isTokenValid(token);
 }
@@ -467,7 +550,7 @@ export function isAuthenticated(): boolean {
 export function isAuthenticatedAsync(): boolean {
   const token = getAuthToken();
   if (!token) return false;
-  
+
   // Check if token is valid and extend its life if valid
   return isTokenValid(token);
 }
@@ -478,9 +561,9 @@ export function isAuthenticatedAsync(): boolean {
  */
 export function updateTokenActivity(): boolean {
   const token = getAuthToken();
-  
+
   if (!token) return false;
-  
+
   try {
     // Update the timestamp to current time to extend token life
     localStorage.setItem('tokenTimestamp', Date.now().toString());
@@ -498,12 +581,12 @@ export function updateTokenActivity(): boolean {
  */
 export function refreshTokenIfNeeded(): boolean {
   const token = getAuthToken();
-  
+
   if (!token) return false;
-  
+
   // If token is valid, return true
   if (isTokenValid(token)) return true;
-  
+
   // If token exists but is expired, we can't refresh it without an API
   // So we need to clear the data and require re-authentication
   console.log('❌ Token expired and no refresh API available, clearing auth data');
@@ -518,7 +601,7 @@ export function refreshTokenIfNeeded(): boolean {
 export function initializeAuth(): boolean {
   try {
     console.log('🔍 Initializing authentication...');
-    
+
     const token = getAuthToken();
     if (!token) {
       console.log('❌ No token found during initialization');
@@ -552,7 +635,7 @@ export function initializeAuth(): boolean {
 //               'Authorization': 'Bearer ' + access_token,
 //           },
 //       })
-      
+
 //       return isBlob ? await apiResponse.blob() : await apiResponse.json();
 //   } catch (err) {
 //       console.error('Err in ' + endpoint, err)
@@ -561,28 +644,28 @@ export function initializeAuth(): boolean {
 // }
 
 
-export const post=async(endpoint:any,access_token:any,body:any,options:any)=>{
- 
+export const post = async (endpoint: any, access_token: any, body: any, options: any) => {
+
   try {
-      const apiResponse = await fetch(`${API_URL}${endpoint}`, {
-          method:'POST',
-          credentials: 'include',
-          body: JSON.stringify(body),
-          headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + access_token,
-          },
-      })
-      updateAccessToken(apiResponse)
-      return  await apiResponse.json();
+    const apiResponse = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + access_token,
+      },
+    })
+    updateAccessToken(apiResponse)
+    return await apiResponse.json();
   } catch (err) {
-      console.error('Err in '+ endpoint, err)
-      return { data: null, success: false, message: 'Internal Server Error' };
+    console.error('Err in ' + endpoint, err)
+    return { data: null, success: false, message: 'Internal Server Error' };
   }
 }
 
 
-function updateAccessToken(res:any) {
+function updateAccessToken(res: any) {
   const authToken = res.headers.get("auth-token");
   const cookies = new Cookies(null, { path: '/' })
   if (authToken) cookies.set('access_token', authToken)
@@ -594,7 +677,7 @@ function updateAccessToken(res:any) {
  */
 export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
-  
+
   if (!token) {
     throw new Error('No authentication token available');
   }

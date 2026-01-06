@@ -52,7 +52,7 @@ function AstrologersPageContent() {
 
   const { walletBalance } = useWalletBalance();
 
-  
+
   const updateURL = useCallback(
     (
       page: number = 1,
@@ -61,7 +61,7 @@ function AstrologersPageContent() {
       language: string = languageFilter
     ) => {
       const skip = (page - 1) * 10;
-  
+
       const queryParts = [
         `skip=${skip}`,
         `limit=10`,
@@ -69,21 +69,21 @@ function AstrologersPageContent() {
         language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
         sort ? `sortBy=${encodeURIComponent(sort)}` : ""
       ];
-  
+
       const queryString = queryParts.filter(Boolean).join("&");
-  
+
       router.push(`${window.location.pathname}?${queryString}`, { scroll: false });
     },
     [router, searchQuery, sortBy, languageFilter]
   );
-  
+
 
 
   // 🔒 Redirect if "friend" role (but allow sample data viewing)
   useEffect(() => {
     const user = getUserDetails();
     const token = getAuthToken();
-    
+
     // Only redirect if user is authenticated and has friend role
     if (user?.role === "friend" && token) {
       router.push("/partner-info");
@@ -91,7 +91,7 @@ function AstrologersPageContent() {
     // If no token, allow viewing with sample data
   }, [router]);
 
-  
+
   const fetchAstrologers = useCallback(
     async (
       page: number = 1,
@@ -102,21 +102,21 @@ function AstrologersPageContent() {
     ) => {
       if (page === 1) setIsLoading(true);
       else setIsLoadingMore(true);
-  
+
       setError(null);
-  
+
       const skip = (page - 1) * 10;
       const limit = 10;
-  
+
       try {
         const token = getAuthToken();
         if (!token) {
           setError("Authentication required. Please log in to view astrologers.");
           return;
         }
-  
+
         let endpoint = "";
-  
+
         if (query) {
           endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`;
           if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
@@ -131,43 +131,43 @@ function AstrologersPageContent() {
           const queryString = queryParts.filter(Boolean).join("&");
           endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.USERS}?${queryString}`;
         }
-  
+
         const res = await fetch(endpoint, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           credentials: "include",
           cache: "no-store",
         });
-  
+
         if (!res.ok) throw new Error("Failed to fetch astrologers");
-  
+
         const data = await res.json();
-  
+
         const newAstrologers: Astrologer[] = query
           ? data.data?.list || data.users || data.data || []
           : data.data?.list || [];
-  
+
         // Count offline astrologers in new batch
         let updatedOfflineCount = offlineCount;
         if (!query) {
           const newOfflineCount = newAstrologers.filter(
             (a: any) => a.status === 'offline' || a.isOnline === false
           ).length;
-          
+
           if (append) {
             updatedOfflineCount = offlineCount + newOfflineCount;
           } else {
             updatedOfflineCount = newOfflineCount;
           }
-          
+
           setOfflineCount(updatedOfflineCount);
-          
+
           // If we've reached 5-7 offline astrologers, stop loading
           if (updatedOfflineCount >= 5) {
             setHasMore(false);
             setShowEndMessage(true);
           }
         }
-  
+
         setAllAstrologers(prev => {
           if (append && !query) {
             // ✅ filter out duplicates
@@ -177,11 +177,10 @@ function AstrologersPageContent() {
           }
           return newAstrologers;
         });
-  
-        // Only set hasMore if we haven't reached offline limit
-        if (!query && updatedOfflineCount < 5) {
-          setHasMore(newAstrologers.length === limit);
-        }
+
+        // Set hasMore based on returned results
+        setHasMore(newAstrologers.length === limit);
+
         if (!query) setCurrentPage(page);
       } catch (err) {
         console.error("Failed to fetch astrologers:", err);
@@ -193,14 +192,14 @@ function AstrologersPageContent() {
     },
     [searchQuery, languageFilter, sortBy]
   );
-  
-  
-  
+
+
+
   const handleSearchInputChange = (query: string) => {
     setSearchQuery(query);
   };
 
- 
+
   const handleSearchClick = (query: string) => {
     setSearchQuery(query);
     setCurrentPage(1);
@@ -210,7 +209,7 @@ function AstrologersPageContent() {
     fetchAstrologers(1, false,query,languageFilter,sortBy);
     updateURL(1, query,sortBy,languageFilter); 
   };
-  
+
 
   const handleSortChange = useCallback(
     (sort: { type: string; language?: string }) => {
@@ -220,14 +219,14 @@ function AstrologersPageContent() {
       setAllAstrologers([]);
       setOfflineCount(0);
       setShowEndMessage(false);
-  
+
       fetchAstrologers(1, false, searchQuery, sort.language || "All", sort.type);
       updateURL(1, searchQuery, sort.type, sort.language || "All");
     },
     [fetchAstrologers, searchQuery, updateURL]
   );
-  
-  
+
+
 
 
   const clearFilters = useCallback(() => {
@@ -261,7 +260,7 @@ function AstrologersPageContent() {
               onSearchClick={handleSearchClick}        // triggers fetch + URL
               onSortChange={handleSortChange}
               isLoading={isLoading}
-              
+
             />
           </div>
 
@@ -271,8 +270,8 @@ function AstrologersPageContent() {
                 setShowHistory(showHistory === "transactions" ? "none" : "transactions")
               }
               className={`flex items-center gap-2 px-6 py-2.5 h-14 rounded-full font-semibold border transition-all ${showHistory === "transactions"
-                  ? "bg-orange-500 text-white border-orange-500"
-                  : "bg-white text-orange-500 border-orange-200 hover:bg-orange-100"
+                ? "bg-orange-500 text-white border-orange-500"
+                : "bg-white text-orange-500 border-orange-200 hover:bg-orange-100"
                 }`}
             >
               <CreditCard className="w-5 h-5" />
@@ -284,8 +283,8 @@ function AstrologersPageContent() {
                 setShowHistory(showHistory === "calls" ? "none" : "calls")
               }
               className={`flex items-center gap-2 px-6 py-2.5 h-14 rounded-full font-semibold border transition-all ${showHistory === "calls"
-                  ? "bg-green-500 text-white border-green-500"
-                  : "bg-white text-green-600 border-green-200 hover:bg-green-100"
+                ? "bg-green-500 text-white border-green-500"
+                : "bg-white text-green-600 border-green-200 hover:bg-green-100"
                 }`}
             >
               <Phone className="w-5 h-5" />

@@ -11,6 +11,7 @@ import ChatConnectingModal from "../../components/ui/ChatConnectingModal";
 import CallConfirmationDialog from "../../components/ui/CallConfirmationDialog";
 import { useWalletBalance } from "./WalletBalanceContext";
 import { useSessionManager } from "./SessionManager";
+import { initiateCall } from "../../utils/call-utils";
 
 interface Astrologer {
   _id: string;
@@ -213,42 +214,41 @@ const AstrologerCard = React.memo(function AstrologerCard({
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [isCallMenuOpen]);
 
+  // ✅ Handle immediate call if redirected from login
+  useEffect(() => {
+    const immediateIntent = localStorage.getItem("immediateCallIntent");
+    const immediateAstroId = localStorage.getItem("immediateCallAstrologerId");
+
+    if (immediateIntent && immediateAstroId === _id && isAuthenticated()) {
+      localStorage.removeItem("immediateCallIntent");
+      localStorage.removeItem("immediateCallAstrologerId");
+
+      initiateCall({
+        astrologerId: _id,
+        callType: immediateIntent as 'audio' | 'video',
+        router,
+        setLoading: setIsCallProcessing
+      });
+    }
+  }, [_id, router]);
+
   // ✅ Call handlers
   const handleAudioCallButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-
     setIsCallMenuOpen(false);
 
     if (isAuthenticated()) {
-      // Show confirmation dialog first
-      setSelectedCallType('audio');
-      setShowCallConfirmDialog(true);
+      initiateCall({
+        astrologerId: _id,
+        callType: 'audio',
+        router,
+        setLoading: setIsCallProcessing
+      });
     } else {
       localStorage.setItem("callIntent", "audio");
       localStorage.setItem("selectedAstrologerId", _id);
       localStorage.setItem("callSource", source || "astrologerCard");
       router.push("/login");
     }
-  };
-
-  // Handle call confirmation
-  const handleCallConfirm = () => {
-    setIsCallProcessing(true);
-
-    // Store call type in localStorage for the destination page
-    localStorage.setItem("callIntent", selectedCallType);
-    localStorage.setItem("selectedAstrologerId", _id);
-    localStorage.setItem("callSource", source || "astrologerCard");
-
-    // Navigate to the call-with-astrologer profile page
-    router.push(`/call-with-astrologer/profile/${_id}?callType=${selectedCallType}`);
-
-    // Close dialog after a short delay
-    setTimeout(() => {
-      setShowCallConfirmDialog(false);
-      setIsCallProcessing(false);
-    }, 500);
   };
 
   const handleVideoCall = (e: React.MouseEvent) => {
@@ -258,9 +258,12 @@ const AstrologerCard = React.memo(function AstrologerCard({
     setIsCallMenuOpen(false);
 
     if (isAuthenticated()) {
-      // Show confirmation dialog first
-      setSelectedCallType('video');
-      setShowCallConfirmDialog(true);
+      initiateCall({
+        astrologerId: _id,
+        callType: 'video',
+        router,
+        setLoading: setIsCallProcessing
+      });
     } else {
       localStorage.setItem("callIntent", "video");
       localStorage.setItem("selectedAstrologerId", _id);
@@ -494,22 +497,22 @@ const AstrologerCard = React.memo(function AstrologerCard({
               <div className="flex items-center gap-1 mt-1">
                 <div
                   className={`w-2 h-2 rounded-full ${partner.status === "online"
-                      ? "bg-green-500"
-                      : partner.status === "busy"
-                        ? "bg-orange-500"
-                        : partner.status === "offline"
-                          ? "bg-red-500"
-                          : "bg-gray-500"
+                    ? "bg-green-500"
+                    : partner.status === "busy"
+                      ? "bg-orange-500"
+                      : partner.status === "offline"
+                        ? "bg-red-500"
+                        : "bg-gray-500"
                     }`}
                 ></div>
                 <span
                   className={`text-xs font-medium capitalize ${partner.status === "online"
-                      ? "text-green-600"
-                      : partner.status === "busy"
-                        ? "text-orange-600"
-                        : partner.status === "offline"
-                          ? "text-red-600"
-                          : "text-gray-600"
+                    ? "text-green-600"
+                    : partner.status === "busy"
+                      ? "text-orange-600"
+                      : partner.status === "offline"
+                        ? "text-red-600"
+                        : "text-gray-600"
                     }`}
                 >
                   {partner.status}
@@ -585,7 +588,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                       <img src="/call-icon.svg" alt="Call" className="w-4 h-4" />
                       Audio Call
                     </button>
-                    {(hasVideo || isVideoCallAllowed || isVideoCallAllowedAdmin || videoRpm) && (
+                    {(partner.isVideoCallAllowed || partner.isVideoCallAllowedAdmin) && (
                       <button
                         onClick={handleVideoCall}
                         className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-700 flex items-center gap-2"
@@ -599,7 +602,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
               </div>
 
               {/* Video Call Button - Shows after first call (only for logged-in users who have called and if astrologer supports video) */}
-              {isAuthenticated() && hasCompletedFreeCall && (hasVideo || isVideoCallAllowed || isVideoCallAllowedAdmin || videoRpm) && (
+              {isAuthenticated() && hasCompletedFreeCall && (partner.isVideoCallAllowed || partner.isVideoCallAllowedAdmin) && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -634,28 +637,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
       <ChatConnectingModal
         isOpen={showChatConnectingModal}
         astrologerName={name}
-      />
-
-      {/* Call Confirmation Dialog */}
-      <CallConfirmationDialog
-        isOpen={showCallConfirmDialog}
-        onClose={() => {
-          setShowCallConfirmDialog(false);
-          setIsCallProcessing(false);
-        }}
-        onConfirm={handleCallConfirm}
-        astrologer={{
-          _id: _id,
-          name: name,
-          languages: languages || [],
-          specializations: specializations || [],
-          experience: experience || "",
-          rating: rating,
-          profileImage: profileImage || "",
-        }}
-        isLoading={isCallProcessing}
-        callType={selectedCallType}
-        rate={selectedCallType === 'video' ? (videoRpm || 20) : (rpm || 15)}
       />
 
     </>

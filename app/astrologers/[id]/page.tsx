@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { 
-  ArrowLeft, 
-  Star, 
-  Phone, 
-  Video, 
-  Clock, 
-  Users, 
-  Award, 
-  MapPin, 
+import {
+  ArrowLeft,
+  Star,
+  Phone,
+  Video,
+  Clock,
+  Users,
+  Award,
+  MapPin,
   Languages,
   Heart,
   Gift,
@@ -112,13 +112,13 @@ interface ConfirmationDialogProps {
   icon?: React.ReactNode;
 }
 
-function ConfirmationDialog({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
-  message, 
-  confirmText, 
+function ConfirmationDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
   cancelText = "Cancel",
   type = 'default',
   isLoading = false,
@@ -162,7 +162,7 @@ function ConfirmationDialog({
             <p className="text-gray-600 text-sm mt-1">{message}</p>
           </div>
         </div>
-        
+
         <div className="flex gap-3 justify-end">
           <button
             onClick={onClose}
@@ -190,7 +190,7 @@ export default function AstrologerProfilePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const astrologerId = params?.id as string;
-  
+
   const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [gifts, setGifts] = useState<Gift[]>([]);
@@ -199,7 +199,7 @@ export default function AstrologerProfilePage() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [similarLoading, setSimilarLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Call states
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
   const [userHasCalledBefore, setUserHasCalledBefore] = useState(false);
@@ -208,7 +208,7 @@ export default function AstrologerProfilePage() {
   const [isVideoCallProcessing, setIsVideoCallProcessing] = useState(false);
   const [currentCallType, setCurrentCallType] = useState<'audio' | 'video' | null>(null);
   const [showCallInitiatedModal, setShowCallInitiatedModal] = useState(false);
-  
+
   // Gift/Dakshina states
   const [showGiftModal, setShowGiftModal] = useState(false);
   const [selectedGift, setSelectedGift] = useState<Gift | null>(null);
@@ -246,7 +246,7 @@ export default function AstrologerProfilePage() {
 
   useEffect(() => {
     console.log('🚀 Page useEffect triggered:', { astrologerId });
-    
+
     // Check user role first
     const user = getUserDetails();
     if (user && user.role === 'friend') {
@@ -254,11 +254,11 @@ export default function AstrologerProfilePage() {
       router.push('/partner-info');
       return;
     }
-    
+
     // Initialize auth with token validation and extension
     const isAuthValid = isAuthenticated();
     const token = getAuthToken();
-    
+
     if (!isAuthValid && !token) {
       // Require authentication
       if (shouldShowDebugLogs()) {
@@ -271,7 +271,7 @@ export default function AstrologerProfilePage() {
 
     // Clear any cached free call status to ensure fresh API check
     localStorage.removeItem(`freeCallUsed_${astrologerId}`);
-    
+
     console.log('✅ Authentication verified, starting data fetch for astrologer:', astrologerId);
     fetchAstrologerProfile();
     fetchReviews();
@@ -307,10 +307,10 @@ export default function AstrologerProfilePage() {
     const callType = searchParams?.get('callType');
     console.log('🔍 Astrologer profile: Checking for callType in query params:', callType);
     console.log('🔍 Astrologer profile: astrologer loaded:', !!astrologer);
-    
+
     if (callType && astrologer) {
       console.log('✅ Found callType in query params:', callType, 'for astrologer:', astrologer.name);
-      
+
       // Small delay to ensure page is fully loaded
       setTimeout(() => {
         if (callType === 'audio') {
@@ -320,7 +320,7 @@ export default function AstrologerProfilePage() {
           console.log('🎯 Showing video call confirmation dialog');
           setShowVideoCallConfirm(true);
         }
-        
+
         // Clear the query parameter from URL
         const newUrl = window.location.pathname;
         window.history.replaceState({}, '', newUrl);
@@ -355,7 +355,7 @@ export default function AstrologerProfilePage() {
 
       const result = await response.json();
       let allAstrologers: any[] = [];
-      
+
       if (result?.data?.list && Array.isArray(result.data.list)) {
         allAstrologers = result.data.list;
       } else if (result?.list && Array.isArray(result.list)) {
@@ -368,8 +368,8 @@ export default function AstrologerProfilePage() {
         .filter(ast => ast._id !== astrologerId) // Exclude current astrologer
         .filter(ast => {
           const astSpecializations = (ast.talksAbout || []).map((spec: string) => spec.toLowerCase());
-          return astSpecializations.some((spec: string) => 
-            currentSpecializations.some((currentSpec: string) => 
+          return astSpecializations.some((spec: string) =>
+            currentSpecializations.some((currentSpec: string) =>
               spec.includes(currentSpec) || currentSpec.includes(spec)
             )
           );
@@ -378,9 +378,9 @@ export default function AstrologerProfilePage() {
         .map((ast: any) => ({
           _id: ast._id || ast.id || ast.numericId?.toString() || '',
           name: ast.name || "Unknown Astrologer",
-          languages: Array.isArray(ast.language) 
-            ? ast.language 
-            : typeof ast.language === 'string' 
+          languages: Array.isArray(ast.language)
+            ? ast.language
+            : typeof ast.language === 'string'
               ? ast.language.split(',').map((lang: string) => lang.trim())
               : ["Hindi"],
           specializations: ast.talksAbout || [],
@@ -422,7 +422,7 @@ export default function AstrologerProfilePage() {
 
       // First try to get specific astrologer by ID if there's a specific endpoint
       let foundAstrologer = null;
-      
+
       try {
         // Try specific astrologer endpoint first
         const specificResponse = await fetch(
@@ -457,7 +457,7 @@ export default function AstrologerProfilePage() {
 
         while (!searchCompleted && !foundAstrologer) {
           console.log(`🔍 Searching for astrologer ${astrologerId} in batch starting at ${currentSkip}`);
-          
+
           const response = await fetch(
             `${getApiBaseUrl()}/user/api/users?skip=${currentSkip}&limit=${limit}`,
             {
@@ -476,7 +476,7 @@ export default function AstrologerProfilePage() {
 
           const result = await response.json();
           let astrologers: any[] = [];
-          
+
           if (result?.data?.list && Array.isArray(result.data.list)) {
             astrologers = result.data.list;
           } else if (result?.list && Array.isArray(result.list)) {
@@ -484,9 +484,9 @@ export default function AstrologerProfilePage() {
           }
 
           // Search for the astrologer in current batch
-          foundAstrologer = astrologers.find(ast => 
-            ast._id === astrologerId || 
-            ast.id === astrologerId || 
+          foundAstrologer = astrologers.find(ast =>
+            ast._id === astrologerId ||
+            ast.id === astrologerId ||
             ast.numericId?.toString() === astrologerId
           );
 
@@ -514,9 +514,9 @@ export default function AstrologerProfilePage() {
       const normalizedAstrologer: Astrologer = {
         _id: foundAstrologer._id || foundAstrologer.id || foundAstrologer.numericId?.toString() || '',
         name: foundAstrologer.name || "Unknown Astrologer",
-        languages: Array.isArray(foundAstrologer.language) 
-          ? foundAstrologer.language 
-          : typeof foundAstrologer.language === 'string' 
+        languages: Array.isArray(foundAstrologer.language)
+          ? foundAstrologer.language
+          : typeof foundAstrologer.language === 'string'
             ? foundAstrologer.language.split(',').map((lang: string) => lang.trim())
             : ["Hindi"],
         specializations: foundAstrologer.talksAbout || [],
@@ -551,7 +551,7 @@ export default function AstrologerProfilePage() {
     } catch (error) {
       console.error("Failed to fetch astrologer profile:", error);
       const errorMessage = error instanceof Error ? error.message : "Failed to load profile";
-      
+
       if (errorMessage.includes("not found")) {
         setError(`Astrologer with ID "${astrologerId}" was not found. Please check the URL or try browsing our astrologers.`);
       } else {
@@ -562,7 +562,7 @@ export default function AstrologerProfilePage() {
     }
   };
 
-    const fetchReviews = async () => {
+  const fetchReviews = async () => {
     try {
       const token = getAuthToken();
       const response = await fetch(`${getApiBaseUrl()}/user/api/top-reviews?partnerId=${astrologerId}`, {
@@ -576,7 +576,7 @@ export default function AstrologerProfilePage() {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Get reviews from response
         let allReviews = [];
         if (data.data && Array.isArray(data.data)) {
@@ -586,12 +586,12 @@ export default function AstrologerProfilePage() {
         } else if (Array.isArray(data)) {
           allReviews = data;
         }
-        
+
         // Filter reviews for this astrologer using the 'to' field
-        const astrologerReviews = allReviews.filter((review: any) => 
+        const astrologerReviews = allReviews.filter((review: any) =>
           review.to === astrologerId
         );
-        
+
         // Transform reviews to match our interface
         const transformedReviews = astrologerReviews.map((review: any) => ({
           _id: review._id,
@@ -602,7 +602,7 @@ export default function AstrologerProfilePage() {
           comment: review.message || '',
           createdAt: review.createdAt
         }));
-        
+
         setReviews(transformedReviews);
       }
     } catch (error) {
@@ -664,7 +664,7 @@ export default function AstrologerProfilePage() {
 
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      
+
       if (!token || !userDetails?.id) {
         return;
       }
@@ -685,11 +685,11 @@ export default function AstrologerProfilePage() {
       if (response.ok) {
         const callHistory = await response.json();
         console.log('Profile page - Call history response:', callHistory);
-        
+
         // Check if user has ANY previous calls (with any astrologer)
         const totalCalls = callHistory.data?.list?.length || 0;
         console.log('Profile page - Total calls found:', totalCalls);
-        
+
         if (totalCalls > 0) {
           console.log('Profile page - User has call history, hiding free call option');
           setHasCompletedFreeCall(true);
@@ -742,12 +742,12 @@ export default function AstrologerProfilePage() {
       setShowGiftConfirm(false);
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      console.log('🎁 Gift sending - Auth details:', { 
-        hasToken: !!token, 
-        userDetails, 
-        astrologerId: astrologer?._id 
+      console.log('🎁 Gift sending - Auth details:', {
+        hasToken: !!token,
+        userDetails,
+        astrologerId: astrologer?._id
       });
-      
+
       if (!token || !userDetails?.id) {
         throw new Error('Authentication required');
       }
@@ -787,7 +787,7 @@ export default function AstrologerProfilePage() {
       // Update wallet balance
       setWalletBalance(prev => prev - gift.price);
       setGiftSent(true);
-      
+
       // Close modal after 2 seconds
       setTimeout(() => {
         setShowGiftModal(false);
@@ -809,7 +809,7 @@ export default function AstrologerProfilePage() {
       setShowFreeCallConfirm(false);
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      
+
       if (!token || !userDetails?.id) {
         throw new Error('Authentication required');
       }
@@ -837,7 +837,7 @@ export default function AstrologerProfilePage() {
       // Mark free call as used globally
       localStorage.setItem('userHasCalledBefore', 'true');
       setUserHasCalledBefore(true);
-      
+
       // Show success state and then switch to paid call options
       setTimeout(() => {
         setIsCallRequested(false);
@@ -857,7 +857,7 @@ export default function AstrologerProfilePage() {
       setCurrentCallType('audio');
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      
+
       if (!token || !userDetails?.id) {
         throw new Error('Authentication required');
       }
@@ -878,10 +878,10 @@ export default function AstrologerProfilePage() {
         setCurrentCallType(null);
         return;
       }
-      
+
       // Fetch latest wallet balance
       const currentBalance = await fetchWalletPageData();
-      
+
       // Check wallet balance before proceeding
       const audioRpm = partner?.rpm || 15;
       const audioCost = audioRpm * 2; // Estimate 2 minutes minimum cost
@@ -895,7 +895,7 @@ export default function AstrologerProfilePage() {
         setShowInsufficientBalanceModal(true);
         return;
       }
-      
+
       // Generate unique channel ID with timestamp and retry count to avoid conflicts
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
@@ -914,10 +914,10 @@ export default function AstrologerProfilePage() {
         setCurrentCallType(null);
         return;
       }
-      
+
       const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
       const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      
+
       const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
@@ -927,7 +927,7 @@ export default function AstrologerProfilePage() {
         body: JSON.stringify(requestBody),
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         let errorMessage = 'Failed to initiate audio call';
         try {
@@ -967,27 +967,27 @@ export default function AstrologerProfilePage() {
         }
         throw new Error(errorMessage);
       }
-      
+
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to get audio call token');
       }
-      
+
       // Extract data from backend response structure (matches backend format)
       const { token: livekitToken, channel, livekitSocketURL } = data.data;
-      
+
       if (!livekitToken || !channel) {
         throw new Error('Missing token or channel in response');
       }
-      
+
       // Store astrologer ID and image in localStorage for navigation back and avatar display
       localStorage.setItem('lastAstrologerId', partner._id);
       localStorage.setItem('callSource', 'astrologerProfile');
       if (partner.avatar) {
         localStorage.setItem(`astrologer_image_${partner._id}`, partner.profileImage);
       }
-      
+
       // Open frontend audio call page with token and room
       const audioCallUrl = `/audio-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
       router.push(audioCallUrl);
@@ -995,7 +995,7 @@ export default function AstrologerProfilePage() {
         setIsAudioCallProcessing(false);
         setCurrentCallType(null);
       }, 1000);
-      
+
     } catch (error) {
       console.error('❌ Audio call error:', error);
       setIsAudioCallProcessing(false);
@@ -1045,7 +1045,7 @@ export default function AstrologerProfilePage() {
   const handleAudioCallClick = () => {
     // Check if user is authenticated
     const isAuthValid = isAuthenticated();
-    
+
     if (isAuthValid) {
       // If authenticated, directly initiate audio call
       handleAudioCall();
@@ -1061,7 +1061,7 @@ export default function AstrologerProfilePage() {
   const handleVideoCallClick = () => {
     // Check if user is authenticated
     const isAuthValid = isAuthenticated();
-    
+
     if (isAuthValid) {
       // If authenticated, directly initiate video call
       handleVideoCall();
@@ -1081,7 +1081,7 @@ export default function AstrologerProfilePage() {
       const token = getAuthToken();
       const userDetails = getUserDetails();
       const userId = userDetails?.id || userDetails?._id;
-      
+
       if (!token || !userId) {
         throw new Error('Authentication required');
       }
@@ -1102,10 +1102,10 @@ export default function AstrologerProfilePage() {
         setCurrentCallType(null);
         return;
       }
-      
+
       // Fetch latest wallet balance
       const currentBalance = await fetchWalletPageData();
-      
+
       // Check wallet balance before proceeding
       const videoRpm = partner?.videoRpm || 20;
       const videoCost = videoRpm * 2; // Estimate 2 minutes minimum cost
@@ -1119,7 +1119,7 @@ export default function AstrologerProfilePage() {
         setShowInsufficientBalanceModal(true);
         return;
       }
-      
+
       // Generate unique channel ID with timestamp and retry count to avoid conflicts
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
@@ -1138,10 +1138,10 @@ export default function AstrologerProfilePage() {
         setCurrentCallType(null);
         return;
       }
-      
+
       const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
       const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      
+
       const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
@@ -1151,7 +1151,7 @@ export default function AstrologerProfilePage() {
         body: JSON.stringify(requestBody),
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         let errorMessage = 'Failed to initiate video call';
         try {
@@ -1191,27 +1191,27 @@ export default function AstrologerProfilePage() {
         }
         throw new Error(errorMessage);
       }
-      
+
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.message || 'Failed to get video call token');
       }
-      
+
       // Extract data from backend response structure (matches backend format)
       const { token: livekitToken, channel, livekitSocketURL } = data.data;
-      
+
       if (!livekitToken || !channel) {
         throw new Error('Missing token or channel in response');
       }
-      
+
       // Store astrologer ID and image in localStorage for navigation back and avatar display
       localStorage.setItem('lastAstrologerId', partner._id);
       localStorage.setItem('callSource', 'astrologerProfile');
       if (partner.avatar) {
         localStorage.setItem(`astrologer_image_${partner._id}`, partner.profileImage);
       }
-      
+
       // Open frontend video call page with token and room
       const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
       router.push(videoCallUrl);
@@ -1219,7 +1219,7 @@ export default function AstrologerProfilePage() {
         setIsVideoCallProcessing(false);
         setCurrentCallType(null);
       }, 1000);
-      
+
     } catch (error) {
       console.error('❌ Video call error:', error);
       setIsVideoCallProcessing(false);
@@ -1271,15 +1271,15 @@ export default function AstrologerProfilePage() {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <X className="w-8 h-8 text-red-500" />
           </div>
-          
+
           <h2 className="text-2xl font-bold text-gray-800 mb-3" style={{ fontFamily: "EB Garamond" }}>
             {error?.includes("not found") ? "Astrologer Not Found" : "Something Went Wrong"}
           </h2>
-          
+
           <p className="text-gray-600 mb-8 leading-relaxed">
             {error || "The astrologer you're looking for could not be found. They may have been removed or the URL might be incorrect."}
           </p>
-          
+
           <div className="space-y-4">
             <button
               onClick={() => router.push('/astrologers')}
@@ -1290,7 +1290,7 @@ export default function AstrologerProfilePage() {
             >
               Browse All Astrologers
             </button>
-            
+
             <div className="flex gap-3">
               <button
                 onClick={() => window.location.reload()}
@@ -1298,7 +1298,7 @@ export default function AstrologerProfilePage() {
               >
                 Try Again
               </button>
-              
+
               <button
                 onClick={() => router.back()}
                 className="flex-1 border border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors"
@@ -1307,7 +1307,7 @@ export default function AstrologerProfilePage() {
               </button>
             </div>
           </div>
-          
+
           <div className="mt-8 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
               <strong>Need help?</strong> If you believe this is an error, please contact our support team.
@@ -1323,7 +1323,7 @@ export default function AstrologerProfilePage() {
       <CallInitiatedModal visible={showCallInitiatedModal} onClose={() => setShowCallInitiatedModal(false)} />
       <div className="min-h-screen bg-white">
         {/* Extended Cosmic Background Header */}
-        <div 
+        <div
           className="h-40 relative bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: "url('/cosmic image.png')"
@@ -1349,7 +1349,7 @@ export default function AstrologerProfilePage() {
                 src={astrologer?.avatar || astrologer?.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer?.name || 'Astrologer')}&background=f97316&color=fff&size=144`}
                 alt={astrologer?.name || 'Astrologer'}
                 className="w-32 h-32 md:w-36 md:h-36 rounded-full object-cover shadow-lg"
-                style={{ 
+                style={{
                   borderColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
                 }}
                 onError={(e) => {
@@ -1357,13 +1357,13 @@ export default function AstrologerProfilePage() {
                 }}
               />
               {/* Status indicator positioned on the image */}
-              <div 
+              <div
                 className="absolute bottom-2 right-2 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center"
                 style={{
                   backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444'
                 }}
               >
-                <div 
+                <div
                   className="w-2 h-2 md:w-3 md:h-3 rounded-full animate-pulse"
                   style={{ backgroundColor: 'white' }}
                 />
@@ -1379,23 +1379,23 @@ export default function AstrologerProfilePage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
               {/* Left Column - Main Profile Info */}
               <div className="lg:col-span-2 space-y-6">
-                           {/* Basic Info */}
-                 <div className="bg-white rounded-xl p-6 shadow-sm">
-                   <div className="flex items-center gap-3 mb-3">
-                     <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "EB Garamond" }}>{astrologer?.name}</h1>
-                     
-                     {/* Blue verification tick - Instagram style */}
-                     {/* <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                {/* Basic Info */}
+                <div className="bg-white rounded-xl p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-3">
+                    <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "EB Garamond" }}>{astrologer?.name}</h1>
+
+                    {/* Blue verification tick - Instagram style */}
+                    {/* <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                        <path 
                          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" 
                          fill="#1DA1F2"
                        />
                      </svg> */}
 
-                     <img src="/orange_tick.png" alt="Orange Tick" className="w-5 h-5" />
-                     
-                     {/* Status indicator */}
-                     {/* <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
+                    <img src="/orange_tick.png" alt="Orange Tick" className="w-5 h-5" />
+
+                    {/* Status indicator */}
+                    {/* <div className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium"
                        style={{
                          backgroundColor: astrologer?.status === 'online' ? '#22C55E' : astrologer?.status === 'busy' ? '#F59E0B' : '#EF4444',
                          color: 'white'
@@ -1409,7 +1409,7 @@ export default function AstrologerProfilePage() {
                          {astrologer?.status === 'online' ? 'Online' : astrologer?.status === 'busy' ? 'Busy' : 'Offline'}
                        </span>
                      </div> */}
-                   </div>
+                  </div>
                   <p className="text-gray-600 text-lg mb-1">
                     {astrologer?.specializations?.join(', ')}
                   </p>
@@ -1428,9 +1428,8 @@ export default function AstrologerProfilePage() {
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-5 w-5 ${
-                          i < Math.floor(getRatingDisplay(astrologer?.rating || 5)) ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                        }`}
+                        className={`h-5 w-5 ${i < Math.floor(getRatingDisplay(astrologer?.rating || 5)) ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                          }`}
                       />
                     ))}
                     <span className="text-gray-600 font-medium ml-2">
@@ -1453,7 +1452,7 @@ export default function AstrologerProfilePage() {
                       onClick={() => handleAudioCallClick()}
                       disabled={isAudioCallProcessing}
                       className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
-                      style={{ 
+                      style={{
                         borderColor: '#4A5568',
                         color: '#4A5568'
                       }}
@@ -1469,12 +1468,12 @@ export default function AstrologerProfilePage() {
                       <Phone className="w-4 h-4" />
                       {isAudioCallProcessing ? 'Connecting...' : 'Audio Call'}
                     </button>
-                    { (astrologer?.isVideoCallAllowed) && (
+                    {(astrologer?.isVideoCallAllowed || (astrologer as any)?.isVideoCallAllowedAdmin) && (
                       <button
                         onClick={() => handleVideoCallClick()}
                         disabled={isVideoCallProcessing}
                         className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
-                        style={{ 
+                        style={{
                           borderColor: '#4A5568',
                           color: '#4A5568'
                         }}
@@ -1532,7 +1531,7 @@ export default function AstrologerProfilePage() {
                 </div>
 
                 {/* Quick Info Card */}
-               
+
               </div>
             </div>
 
@@ -1541,7 +1540,7 @@ export default function AstrologerProfilePage() {
               <h2 className="text-5xl font-bold mb-8" style={{ color: '#745802', fontFamily: 'EB Garamond, serif' }}>
                 Check Similar {astrologer?.specializations?.[0] || 'Astrology'} Experts
               </h2>
-              
+
               {similarLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F7971E' }} />
@@ -1566,8 +1565,8 @@ export default function AstrologerProfilePage() {
                       <div key={ast._id || index} className="flex-shrink-0 w-56 bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
                         <div className="text-center">
                           <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 overflow-hidden">
-                            <img 
-                              src={ast.avatar || ast.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name)}&background=f97316&color=fff&size=80`} 
+                            <img
+                              src={ast.avatar || ast.profileImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(ast.name)}&background=f97316&color=fff&size=80`}
                               alt={ast.name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -1578,7 +1577,7 @@ export default function AstrologerProfilePage() {
                           <h4 className="font-bold text-gray-900 mb-2 text-base" style={{ fontFamily: "Poppins" }}>{ast.name}</h4>
                           <p className="text-sm text-gray-600 mb-2">{ast.specializations?.slice(0, 2).join(', ')}</p>
                           <p className="text-sm text-gray-500 mb-4">Exp: {ast.experience} years</p>
-                          <button 
+                          <button
                             onClick={() => router.push(`/astrologers/${ast._id}`)}
                             className="w-full text-black py-3 rounded-lg text-sm font-semibold transition-colors"
                             style={{ backgroundColor: '#F7971E' }}
@@ -1613,7 +1612,7 @@ export default function AstrologerProfilePage() {
             {/* Reviews Section */}
             <div className="bg-white">
               <h3 className="text-2xl font-bold text-gray-900 mb-8" style={{ fontFamily: "Poppins" }}>Reviews</h3>
-              
+
               {reviewsLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin" style={{ color: '#F7971E' }} />
@@ -1633,9 +1632,8 @@ export default function AstrologerProfilePage() {
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`h-5 w-5 ${
-                                  i < (review.rating || 0) ? 'text-yellow-500 fill-current' : 'text-gray-300'
-                                }`}
+                                className={`h-5 w-5 ${i < (review.rating || 0) ? 'text-yellow-500 fill-current' : 'text-gray-300'
+                                  }`}
                               />
                             ))}
                           </div>
@@ -1710,7 +1708,7 @@ export default function AstrologerProfilePage() {
                 <X className="h-5 w-5 text-gray-500" />
               </button>
             </div>
-            
+
             <div className="mb-4">
               <p className="text-gray-600 text-sm mb-4" style={{ fontFamily: "Poppins" }}>
                 Choose a gift to send to {astrologer?.name}. Your wallet balance: ₹{walletBalance}
@@ -1727,11 +1725,10 @@ export default function AstrologerProfilePage() {
                       setShowGiftConfirm(true);
                       setShowGiftModal(false);
                     }}
-                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                      selectedGift?._id === gift._id 
-                        ? 'border-orange-500 bg-orange-50' 
+                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${selectedGift?._id === gift._id
+                        ? 'border-orange-500 bg-orange-50'
                         : 'border-gray-200 hover:border-orange-300'
-                    } ${walletBalance < gift.price ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      } ${walletBalance < gift.price ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={walletBalance < gift.price}
                   >
                     <div className="flex flex-col items-center text-center">

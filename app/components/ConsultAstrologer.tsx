@@ -7,7 +7,6 @@ import { motion } from 'framer-motion';
 import { getApiBaseUrl } from '@/app/config/api';
 import { isAuthenticated, hasUserCalledBefore } from '@/app/utils/auth-utils';
 import { Video } from 'lucide-react';
-import { initiateCall } from '@/app/utils/call-utils';
 
 interface Astrologer {
   _id: string;
@@ -24,9 +23,6 @@ interface Astrologer {
   status: string;
   isLive: boolean;
   languages?: string[];
-  hasVideo?: boolean;
-  isVideoCallAllowed?: boolean;
-  isVideoCallAllowedAdmin?: boolean;
 }
 
 const AstrologerCarousel = () => {
@@ -181,15 +177,11 @@ const AstrologerCarousel = () => {
   // Handle call type selection
   const handleCallTypeSelection = (callType: 'audio' | 'video') => {
     if (selectedCallAstrologer) {
+      localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
+      localStorage.setItem("callIntent", callType);
+      localStorage.setItem("callSource", "consultAstrologer");
       setShowCallOptions(false);
-      initiateCall({
-        astrologerId: selectedCallAstrologer._id,
-        callType,
-        router,
-        setLoading: (loading) => {
-          if (loading) setLoading(true); // Optional: if carousel has loading state
-        }
-      });
+      router.push("/login");
     }
   };
 
@@ -470,18 +462,16 @@ const AstrologerCarousel = () => {
                 Audio Call
               </button>
 
-              {selectedCallAstrologer?.isVideoCallAllowed || (selectedCallAstrologer as any)?.isVideoCallAllowedAdmin ? (
-                <button
-                  onClick={() => handleCallTypeSelection('video')}
-                  className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
-                >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor" />
-                    <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor" />
-                  </svg>
-                  Video Call
-                </button>
-              ) : null}
+              <button
+                onClick={() => handleCallTypeSelection('video')}
+                className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor" />
+                  <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor" />
+                </svg>
+                Video Call
+              </button>
             </div>
 
             <button

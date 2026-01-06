@@ -45,8 +45,7 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
 
     if (!userId) return
 
-    const newSocket = io('https://micro.sobhagya.in', {
-      path: '/socket.io',
+    const newSocket = io('http://localhost:7001', {
       query: { userId, usertype: userRole },
       transports: ['websocket'],
       reconnection: true,

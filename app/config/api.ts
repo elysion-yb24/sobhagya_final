@@ -2,7 +2,7 @@
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost',
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:7002',
   BASE_URL_G: process.env.NEXT_PUBLIC_API_BASE_URL_G || 'https://micro.sobhagya.in',
   ENDPOINTS: {
     AUTH: {
@@ -11,7 +11,7 @@ export const API_CONFIG = {
       REFRESH_TOKEN: '/auth/api/refresh-token'
     },
     USER: {
-      USERS: '/user/api/users-list',
+      USERS: '/user/api/users',
       ASTROLOGERS: '/user/api/astrologers',
       WALLET_BALANCE: '/payment/api/transaction/wallet-balance',
       SEARCH: '/user/api/search',
@@ -39,12 +39,12 @@ export function getApiBaseUrl(): string {
 
   // 2️⃣ Fallbacks based on environment
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost'; // Local development
+    return 'http://localhost:7002'; // always use 9001 for dev
   }
   if (process.env.NODE_ENV === 'production') {
-    return 'https://micro.sobhagya.in'; // Production
+    return 'https://micro.sobhagya.in';
   }
 
   // Default fallback
-  return 'http://localhost';
+  return 'http://localhost:7002';
 }

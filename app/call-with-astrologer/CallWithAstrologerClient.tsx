@@ -26,8 +26,6 @@ interface Astrologer {
   rpm?: number;
   videoRpm?: number;
   talksAbout?: string[];
-  isVideoCallAllowed?: boolean;
-  isVideoCallAllowedAdmin?: boolean;
 }
 
 interface CallWithAstrologerClientProps {
@@ -398,7 +396,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
                   Audio Call
                 </button>
 
-                {(selectedCallAstrologer?.isVideoCallAllowed || (selectedCallAstrologer as any)?.isVideoCallAllowedAdmin) ? (
+                {((selectedCallAstrologer as any)?.hasVideo || (selectedCallAstrologer as any)?.isVideoCallAllowed || (selectedCallAstrologer as any)?.isVideoCallAllowedAdmin) ? (
                   <button
                     onClick={() => handleCallTypeSelection('video')}
                     className="w-full bg-[#F7971E] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"

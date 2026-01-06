@@ -171,8 +171,7 @@ export async function fetchUserProfile(): Promise<any> {
       try {
         const { getApiBaseUrl } = await import('../config/api');
         const baseUrl = getApiBaseUrl();
-        // Use the correct endpoint that exists on the backend
-        const response = await fetch(`${baseUrl}/user/data`, {
+        const response = await fetch(`${baseUrl}/user/api/users/${userId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -183,8 +182,7 @@ export async function fetchUserProfile(): Promise<any> {
 
         if (response.ok) {
           const result = await response.json();
-          // The response format is { success: true, data: {...}, message: "..." }
-          if (result?.success && result?.data) {
+          if (result?.data) {
             const freshProfile = result.data;
             // Merge with cached details to preserve any additional fields
             const enhancedProfile = {

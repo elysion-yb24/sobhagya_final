@@ -1468,7 +1468,7 @@ export default function AstrologerProfilePage() {
                       <Phone className="w-4 h-4" />
                       {isAudioCallProcessing ? 'Connecting...' : 'Audio Call'}
                     </button>
-                    {(astrologer?.isVideoCallAllowed || (astrologer as any)?.isVideoCallAllowedAdmin) && (
+                    {(astrologer?.isVideoCallAllowed) && (
                       <button
                         onClick={() => handleVideoCallClick()}
                         disabled={isVideoCallProcessing}

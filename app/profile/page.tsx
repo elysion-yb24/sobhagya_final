@@ -23,7 +23,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
-  
+
   // Family members state
   const [familyMembers, setFamilyMembers] = useState<Array<{
     id: string;
@@ -160,7 +160,7 @@ export default function ProfilePage() {
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
     selectedDate.setHours(0, 0, 0, 0);
-    
+
     if (selectedDate > currentDate) {
       return "Date of birth cannot be in the future";
     }
@@ -169,7 +169,7 @@ export default function ProfilePage() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error for this field
     if (errors[field]) {
       setErrors(prev => {
@@ -182,13 +182,13 @@ export default function ProfilePage() {
     // Handle place of birth autocomplete
     if (field === 'placeOfBirth') {
       if (value.trim()) {
-        const filtered = cityList.filter(city => 
+        const filtered = cityList.filter(city =>
           city.toLowerCase().includes(value.toLowerCase())
         );
         setFilteredCities(filtered);
         setShowCityDropdown(true);
-        
-        const exactMatch = cityList.find(city => 
+
+        const exactMatch = cityList.find(city =>
           city.toLowerCase() === value.toLowerCase()
         );
         if (exactMatch) {
@@ -220,7 +220,7 @@ export default function ProfilePage() {
     if (!formData.placeOfBirth.trim()) {
       newErrors.placeOfBirth = "Place of birth is required";
     } else {
-      const isValidCity = cityList.some(city => 
+      const isValidCity = cityList.some(city =>
         city.toLowerCase() === formData.placeOfBirth.toLowerCase()
       );
       if (!isValidCity) {
@@ -241,7 +241,7 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Please fill all required fields correctly");
       return;
@@ -252,7 +252,7 @@ export default function ProfilePage() {
     try {
       const token = localStorage.getItem('authToken') || localStorage.getItem('access_token');
       const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      
+
       // Prepare the data
       const nameParts = formData.name.trim().split(' ');
       const firstName = nameParts[0];
@@ -272,7 +272,7 @@ export default function ProfilePage() {
         const memberFormattedDob = memberDobDate.toISOString().split('T')[0];
         const memberTimeParts = member.timeOfBirth.split(':');
         const memberFormattedTime = `${memberTimeParts[0]}:${memberTimeParts[1]}`;
-        
+
         return {
           name: member.name.trim(),
           relationship: member.relationship.trim(),
@@ -323,11 +323,11 @@ export default function ProfilePage() {
 
           console.log('📤 Sending profile data to backend:', profileData);
           console.log('📤 User ID:', userId);
-          
+
           // Use Next.js API route to proxy the request (handles CORS and routing)
           const apiUrl = `/api/user/profile`;
           console.log('📤 API URL:', apiUrl);
-          
+
           const response = await fetch(apiUrl, {
             method: 'PUT',
             headers: {
@@ -344,12 +344,12 @@ export default function ProfilePage() {
           const responseClone = response.clone();
           let responseData: any;
           let responseText: string;
-          
+
           try {
             responseText = await response.text();
             console.log('📥 Backend response status:', response.status);
             console.log('📥 Backend response text (first 500 chars):', responseText.substring(0, 500));
-            
+
             // Try to parse as JSON
             try {
               responseData = JSON.parse(responseText);
@@ -358,13 +358,13 @@ export default function ProfilePage() {
               if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html>')) {
                 const errorMatch = responseText.match(/<pre>(.*?)<\/pre>/i);
                 const errorMsg = errorMatch ? errorMatch[1] : 'Server returned HTML error page';
-                responseData = { 
+                responseData = {
                   message: errorMsg,
                   error: 'Invalid endpoint or server error'
                 };
                 console.error('❌ Server returned HTML error page:', errorMsg);
               } else {
-                responseData = { 
+                responseData = {
                   message: responseText || 'Invalid response from server',
                   error: 'Failed to parse response'
                 };
@@ -372,13 +372,13 @@ export default function ProfilePage() {
             }
           } catch (readError) {
             console.error('❌ Failed to read response:', readError);
-            responseData = { 
+            responseData = {
               message: 'Failed to read server response',
               error: 'Network or server error'
             };
             responseText = '';
           }
-          
+
           if (response.ok) {
             console.log('✅ Profile successfully saved to MongoDB:', responseData);
             toast.success("Profile updated successfully and saved to database!");
@@ -389,7 +389,7 @@ export default function ProfilePage() {
               url: `${baseUrl}/user/api/users/${userId}`,
               data: responseData
             });
-            
+
             // Provide user-friendly error message
             let errorMsg = 'Failed to save to database';
             if (response.status === 404) {
@@ -403,7 +403,7 @@ export default function ProfilePage() {
             } else if (responseData?.error) {
               errorMsg = responseData.error;
             }
-            
+
             toast.error(errorMsg);
             // Still show success for local save, but warn about database
           }
@@ -416,7 +416,7 @@ export default function ProfilePage() {
         console.warn('⚠️ No authentication token found, profile saved locally only');
         toast.success("Profile updated locally (please login to save to database)");
       }
-      
+
       // Dispatch event to update header
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('user-auth-changed'));
@@ -476,7 +476,7 @@ export default function ProfilePage() {
 
   const handleFamilyInputChange = (field: string, value: string) => {
     setFamilyFormData(prev => ({ ...prev, [field]: value }));
-    
+
     if (familyErrors[field]) {
       setFamilyErrors(prev => {
         const newErrors = { ...prev };
@@ -487,13 +487,13 @@ export default function ProfilePage() {
 
     if (field === 'placeOfBirth') {
       if (value.trim()) {
-        const filtered = cityList.filter(city => 
+        const filtered = cityList.filter(city =>
           city.toLowerCase().includes(value.toLowerCase())
         );
         setFamilyFilteredCities(filtered);
         setShowFamilyCityDropdown(true);
-        
-        const exactMatch = cityList.find(city => 
+
+        const exactMatch = cityList.find(city =>
           city.toLowerCase() === value.toLowerCase()
         );
         if (exactMatch) {
@@ -529,7 +529,7 @@ export default function ProfilePage() {
     if (!familyFormData.placeOfBirth.trim()) {
       newErrors.placeOfBirth = "Place of birth is required";
     } else {
-      const isValidCity = cityList.some(city => 
+      const isValidCity = cityList.some(city =>
         city.toLowerCase() === familyFormData.placeOfBirth.toLowerCase()
       );
       if (!isValidCity) {
@@ -639,9 +639,8 @@ export default function ProfilePage() {
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                  errors.name ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${errors.name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter your full name"
               />
               {errors.name && (
@@ -703,16 +702,15 @@ export default function ProfilePage() {
                 onChange={(e) => handleInputChange('placeOfBirth', e.target.value)}
                 onFocus={() => {
                   if (formData.placeOfBirth) {
-                    const filtered = cityList.filter(city => 
+                    const filtered = cityList.filter(city =>
                       city.toLowerCase().includes(formData.placeOfBirth.toLowerCase())
                     );
                     setFilteredCities(filtered);
                     setShowCityDropdown(true);
                   }
                 }}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                  errors.placeOfBirth ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${errors.placeOfBirth ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Enter your place of birth"
               />
               {showCityDropdown && filteredCities.length > 0 && (
@@ -744,9 +742,8 @@ export default function ProfilePage() {
                 value={formData.dateOfBirth}
                 onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                 max={new Date().toISOString().split('T')[0]}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                  errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${errors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.dateOfBirth && (
                 <p className="text-red-500 text-sm mt-1">{errors.dateOfBirth}</p>
@@ -762,9 +759,8 @@ export default function ProfilePage() {
                 type="time"
                 value={formData.timeOfBirth}
                 onChange={(e) => handleInputChange('timeOfBirth', e.target.value)}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                  errors.timeOfBirth ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${errors.timeOfBirth ? 'border-red-500' : 'border-gray-300'
+                  }`}
               />
               {errors.timeOfBirth && (
                 <p className="text-red-500 text-sm mt-1">{errors.timeOfBirth}</p>
@@ -784,11 +780,10 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => openFamilyModal()}
                   disabled={familyMembers.length >= 4}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${
-                    familyMembers.length >= 4
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all ${familyMembers.length >= 4
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg'
+                    }`}
                 >
                   <Plus className="w-5 h-5" />
                   Add Member
@@ -857,215 +852,211 @@ export default function ProfilePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`flex-1 py-4 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                  isSubmitting
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl'
-                }`}
+                className={`flex-1 py-4 rounded-xl font-semibold text-lg transition-all duration-300 ${isSubmitting
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl'
+                  }`}
               >
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>
-        </motion.div>
-      </div>
+        </motion.div >
+      </div >
 
       {/* Family Member Modal */}
-      {showFamilyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                {editingFamilyIndex !== null ? 'Edit Family Member' : 'Add Family Member'}
-              </h2>
-              <button
-                onClick={closeFamilyModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-gray-600" />
-              </button>
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); handleAddFamilyMember(); }} className="space-y-4">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Full Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={familyFormData.name}
-                  onChange={(e) => handleFamilyInputChange('name', e.target.value)}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                    familyErrors.name ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter full name"
-                />
-                {familyErrors.name && (
-                  <p className="text-red-500 text-sm mt-1">{familyErrors.name}</p>
-                )}
-              </div>
-
-              {/* Relationship */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Relationship <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={familyFormData.relationship}
-                  onChange={(e) => handleFamilyInputChange('relationship', e.target.value)}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                    familyErrors.relationship ? 'border-red-500' : 'border-gray-300'
-                  }`}
+      {
+        showFamilyModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingFamilyIndex !== null ? 'Edit Family Member' : 'Add Family Member'}
+                </h2>
+                <button
+                  onClick={closeFamilyModal}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <option value="">Select relationship</option>
-                  <option value="spouse">Spouse</option>
-                  <option value="son">Son</option>
-                  <option value="daughter">Daughter</option>
-                  <option value="father">Father</option>
-                  <option value="mother">Mother</option>
-                  <option value="brother">Brother</option>
-                  <option value="sister">Sister</option>
-                  <option value="other">Other</option>
-                </select>
-                {familyErrors.relationship && (
-                  <p className="text-red-500 text-sm mt-1">{familyErrors.relationship}</p>
-                )}
+                  <X className="w-6 h-6 text-gray-600" />
+                </button>
               </div>
 
-              {/* Gender */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Gender <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-6">
-                  {[
-                    { value: "male", label: "Male" },
-                    { value: "female", label: "Female" },
-                    { value: "other", label: "Other" },
-                  ].map((option) => (
-                    <label key={option.value} className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="familyGender"
-                        value={option.value}
-                        checked={familyFormData.gender === option.value}
-                        onChange={(e) => handleFamilyInputChange('gender', e.target.value)}
-                        className="w-5 h-5 text-orange-500 focus:ring-orange-500"
-                      />
-                      <span className="ml-2 text-gray-700">{option.label}</span>
-                    </label>
-                  ))}
+              <form onSubmit={(e) => { e.preventDefault(); handleAddFamilyMember(); }} className="space-y-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={familyFormData.name}
+                    onChange={(e) => handleFamilyInputChange('name', e.target.value)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${familyErrors.name ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Enter full name"
+                  />
+                  {familyErrors.name && (
+                    <p className="text-red-500 text-sm mt-1">{familyErrors.name}</p>
+                  )}
                 </div>
-                {familyErrors.gender && (
-                  <p className="text-red-500 text-sm mt-1">{familyErrors.gender}</p>
-                )}
-              </div>
 
-              {/* Place of Birth */}
-              <div className="relative">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Place of Birth <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={familyFormData.placeOfBirth}
-                  onChange={(e) => handleFamilyInputChange('placeOfBirth', e.target.value)}
-                  onFocus={() => {
-                    if (familyFormData.placeOfBirth) {
-                      const filtered = cityList.filter(city => 
-                        city.toLowerCase().includes(familyFormData.placeOfBirth.toLowerCase())
-                      );
-                      setFamilyFilteredCities(filtered);
-                      setShowFamilyCityDropdown(true);
-                    }
-                  }}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                    familyErrors.placeOfBirth ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter place of birth"
-                />
-                {showFamilyCityDropdown && familyFilteredCities.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                    {familyFilteredCities.map((city) => (
-                      <button
-                        key={city}
-                        type="button"
-                        onClick={() => handleFamilyCitySelect(city)}
-                        className="w-full px-4 py-3 text-left hover:bg-orange-50 hover:text-orange-600 transition-colors border-b border-gray-100 last:border-b-0"
-                      >
-                        {city}
-                      </button>
+                {/* Relationship */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Relationship <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={familyFormData.relationship}
+                    onChange={(e) => handleFamilyInputChange('relationship', e.target.value)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${familyErrors.relationship ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                  >
+                    <option value="">Select relationship</option>
+                    <option value="spouse">Spouse</option>
+                    <option value="son">Son</option>
+                    <option value="daughter">Daughter</option>
+                    <option value="father">Father</option>
+                    <option value="mother">Mother</option>
+                    <option value="brother">Brother</option>
+                    <option value="sister">Sister</option>
+                    <option value="other">Other</option>
+                  </select>
+                  {familyErrors.relationship && (
+                    <p className="text-red-500 text-sm mt-1">{familyErrors.relationship}</p>
+                  )}
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-6">
+                    {[
+                      { value: "male", label: "Male" },
+                      { value: "female", label: "Female" },
+                      { value: "other", label: "Other" },
+                    ].map((option) => (
+                      <label key={option.value} className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="familyGender"
+                          value={option.value}
+                          checked={familyFormData.gender === option.value}
+                          onChange={(e) => handleFamilyInputChange('gender', e.target.value)}
+                          className="w-5 h-5 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="ml-2 text-gray-700">{option.label}</span>
+                      </label>
                     ))}
                   </div>
-                )}
-                {familyErrors.placeOfBirth && (
-                  <p className="text-red-500 text-sm mt-1">{familyErrors.placeOfBirth}</p>
-                )}
-              </div>
+                  {familyErrors.gender && (
+                    <p className="text-red-500 text-sm mt-1">{familyErrors.gender}</p>
+                  )}
+                </div>
 
-              {/* Date of Birth */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Date of Birth <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={familyFormData.dateOfBirth}
-                  onChange={(e) => handleFamilyInputChange('dateOfBirth', e.target.value)}
-                  max={new Date().toISOString().split('T')[0]}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                    familyErrors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {familyErrors.dateOfBirth && (
-                  <p className="text-red-500 text-sm mt-1">{familyErrors.dateOfBirth}</p>
-                )}
-              </div>
+                {/* Place of Birth */}
+                <div className="relative">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Place of Birth <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={familyFormData.placeOfBirth}
+                    onChange={(e) => handleFamilyInputChange('placeOfBirth', e.target.value)}
+                    onFocus={() => {
+                      if (familyFormData.placeOfBirth) {
+                        const filtered = cityList.filter(city =>
+                          city.toLowerCase().includes(familyFormData.placeOfBirth.toLowerCase())
+                        );
+                        setFamilyFilteredCities(filtered);
+                        setShowFamilyCityDropdown(true);
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${familyErrors.placeOfBirth ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    placeholder="Enter place of birth"
+                  />
+                  {showFamilyCityDropdown && familyFilteredCities.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                      {familyFilteredCities.map((city) => (
+                        <button
+                          key={city}
+                          type="button"
+                          onClick={() => handleFamilyCitySelect(city)}
+                          className="w-full px-4 py-3 text-left hover:bg-orange-50 hover:text-orange-600 transition-colors border-b border-gray-100 last:border-b-0"
+                        >
+                          {city}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {familyErrors.placeOfBirth && (
+                    <p className="text-red-500 text-sm mt-1">{familyErrors.placeOfBirth}</p>
+                  )}
+                </div>
 
-              {/* Time of Birth */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Time of Birth <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  value={familyFormData.timeOfBirth}
-                  onChange={(e) => handleFamilyInputChange('timeOfBirth', e.target.value)}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                    familyErrors.timeOfBirth ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-                {familyErrors.timeOfBirth && (
-                  <p className="text-red-500 text-sm mt-1">{familyErrors.timeOfBirth}</p>
-                )}
-              </div>
+                {/* Date of Birth */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={familyFormData.dateOfBirth}
+                    onChange={(e) => handleFamilyInputChange('dateOfBirth', e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${familyErrors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                  />
+                  {familyErrors.dateOfBirth && (
+                    <p className="text-red-500 text-sm mt-1">{familyErrors.dateOfBirth}</p>
+                  )}
+                </div>
 
-              {/* Buttons */}
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={closeFamilyModal}
-                  className="flex-1 py-3 rounded-xl font-semibold transition-all duration-300 bg-gray-200 hover:bg-gray-300 text-gray-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 rounded-xl font-semibold transition-all duration-300 bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl"
-                >
-                  {editingFamilyIndex !== null ? 'Update Member' : 'Add Member'}
-                </button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-    </div>
+                {/* Time of Birth */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Time of Birth <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="time"
+                    value={familyFormData.timeOfBirth}
+                    onChange={(e) => handleFamilyInputChange('timeOfBirth', e.target.value)}
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${familyErrors.timeOfBirth ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                  />
+                  {familyErrors.timeOfBirth && (
+                    <p className="text-red-500 text-sm mt-1">{familyErrors.timeOfBirth}</p>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={closeFamilyModal}
+                    className="flex-1 py-3 rounded-xl font-semibold transition-all duration-300 bg-gray-200 hover:bg-gray-300 text-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 rounded-xl font-semibold transition-all duration-300 bg-orange-500 hover:bg-orange-600 text-white shadow-lg hover:shadow-xl"
+                  >
+                    {editingFamilyIndex !== null ? 'Update Member' : 'Add Member'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )
+      }
+    </div >
   );
 }
 

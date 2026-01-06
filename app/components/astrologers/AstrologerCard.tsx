@@ -588,7 +588,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                       <img src="/call-icon.svg" alt="Call" className="w-4 h-4" />
                       Audio Call
                     </button>
-                    {(partner.isVideoCallAllowed || partner.isVideoCallAllowedAdmin) && (
+                    {(hasVideo || isVideoCallAllowed || isVideoCallAllowedAdmin || videoRpm) && (
                       <button
                         onClick={handleVideoCall}
                         className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-700 flex items-center gap-2"
@@ -602,7 +602,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
               </div>
 
               {/* Video Call Button - Shows after first call (only for logged-in users who have called and if astrologer supports video) */}
-              {isAuthenticated() && hasCompletedFreeCall && (partner.isVideoCallAllowed || partner.isVideoCallAllowedAdmin) && (
+              {isAuthenticated() && hasCompletedFreeCall && (partner.hasVideo || partner.isVideoCallAllowed || partner.isVideoCallAllowedAdmin || (partner.videoRpm && partner.videoRpm > 0)) && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

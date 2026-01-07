@@ -13,7 +13,7 @@ import {
   useRemoteParticipants
 } from '@livekit/components-react';
 import { Room, RoomEvent, Track } from 'livekit-client';
-import { 
+import {
   Users,
   Clock,
   X,
@@ -73,11 +73,11 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
 
   const renderAvatar = () => {
     const astrologerImage = localStorage.getItem(`astrologer_image_${partner?._id}`) || null;
-    
+
     if (astrologerImage) {
       return (
-        <img 
-          src={astrologerImage} 
+        <img
+          src={astrologerImage}
           alt={displayName}
           className="w-full h-full rounded-full object-cover"
           onError={(e) => {
@@ -87,7 +87,7 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
         />
       );
     }
-    
+
     if (displayName && displayName !== 'Astrologer') {
       return (
         <div className="w-full h-full rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center shadow-xl">
@@ -100,7 +100,7 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
       return (
         <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-xl">
           <svg className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
           </svg>
         </div>
       );
@@ -114,11 +114,11 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
         <div className="absolute top-0 left-0 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
         <div className="absolute top-0 right-0 w-72 h-72 bg-yellow-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
-        
+
         {/* Subtle gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/5 to-black/20"></div>
       </div>
-      
+
       <div className="text-center text-white w-full max-w-sm relative z-10 flex-1 flex flex-col justify-center">
         {isConnecting ? (
           // Connecting State - Better mobile design
@@ -129,31 +129,31 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
                 <div className="w-full h-full rounded-full bg-white/10 backdrop-blur-sm border-2 border-white/20 shadow-2xl flex items-center justify-center">
                   {renderAvatar()}
                 </div>
-                
+
                 {/* Pulsing connection indicator */}
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
                   <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
                 </div>
-                
+
                 {/* Animated rings */}
                 <div className="absolute inset-0 rounded-full border-2 border-yellow-400/30 animate-ping"></div>
                 <div className="absolute inset-2 rounded-full border-2 border-yellow-400/20 animate-ping animation-delay-1000"></div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                 Connecting...
               </h2>
               <p className="text-gray-300 text-lg">Waiting for {displayName} to join</p>
-              
+
               {/* Loading animation */}
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce"></div>
                 <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce animation-delay-200"></div>
                 <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-bounce animation-delay-400"></div>
               </div>
-              
+
               {/* Connection tip */}
               <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
                 <p className="text-sm text-gray-300 flex items-center justify-center gap-2">
@@ -172,20 +172,20 @@ function AudioDisplay({ astrologerName, partner }: { astrologerName?: string; pa
                 <div className="w-full h-full rounded-full bg-white/10 backdrop-blur-sm border-2 border-green-400/50 shadow-2xl flex items-center justify-center">
                   {renderAvatar()}
                 </div>
-                
+
                 {/* Success indicator */}
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
                   <div className="w-3 h-3 bg-white rounded-full"></div>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
                 Connected!
               </h2>
               <p className="text-gray-300 text-lg">Audio call with {displayName}</p>
-              
+
               {/* Enhanced call status */}
               <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-5 backdrop-blur-md border border-white/20 shadow-xl">
                 <h3 className="font-bold mb-3 text-white flex items-center justify-center gap-2">
@@ -241,11 +241,10 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
         {/* Microphone Toggle */}
         <button
           onClick={toggleAudio}
-          className={`p-4 rounded-full transition-all duration-200 ${
-            isAudioEnabled 
-              ? 'bg-gray-700/80 hover:bg-gray-600 text-white shadow-lg' 
+          className={`p-4 rounded-full transition-all duration-200 ${isAudioEnabled
+              ? 'bg-gray-700/80 hover:bg-gray-600 text-white shadow-lg'
               : 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/25'
-          }`}
+            }`}
           title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
         >
           {isAudioEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
@@ -281,7 +280,7 @@ function SettingsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
     <>
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={onClose}></div>
-      
+
       {/* Panel */}
       <div className="fixed top-4 right-4 z-50 bg-black/90 backdrop-blur-xl text-white rounded-2xl border border-white/20 shadow-2xl w-80 max-w-[calc(100vw-2rem)]">
         <div className="p-6">
@@ -294,7 +293,7 @@ function SettingsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium mb-3">Microphone</label>
@@ -303,7 +302,7 @@ function SettingsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                 className="w-full p-3 bg-white/20 rounded-xl hover:bg-white/25 transition-colors"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-3">Audio Output</label>
               <select className="w-full p-3 bg-white/20 rounded-xl text-white border-0 focus:ring-2 focus:ring-purple-500 focus:outline-none">
@@ -311,9 +310,9 @@ function SettingsPanel({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                 <option value="headphones">Headphones</option>
               </select>
             </div>
-            
+
             <div className="pt-4 border-t border-white/20">
-              <button 
+              <button
                 onClick={onClose}
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white py-3 rounded-xl transition-all duration-200"
               >
@@ -342,6 +341,16 @@ export default function AudioCallRoom({
   const [showSettings, setShowSettings] = useState(false);
   const [callStats, setCallStats] = useState<CallStats>({ duration: 0, isConnected: false });
   const isDisconnectingRef = useRef(false);
+  // Lock body scroll on mount, restore on unmount
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const router = useRouter();
 
   // Gift state
@@ -363,12 +372,12 @@ export default function AudioCallRoom({
 
     useEffect(() => {
       setParticipantCount(participants.length);
-      
+
       // Check if both user and broadcaster are in the room
       const remoteParticipants = participants.filter(p => p.identity !== localParticipant?.identity);
       const hasBroadcaster = remoteParticipants.length > 0;
       const hasUser = localParticipant && localParticipant.identity;
-      
+
       // Start timer only when both user and broadcaster are present
       if (hasBroadcaster && hasUser && !isTimerRunning) {
         setIsTimerRunning(true);
@@ -391,7 +400,7 @@ export default function AudioCallRoom({
 
     useEffect(() => {
       let interval: NodeJS.Timeout | null = null;
-      
+
       if (isTimerRunning) {
         interval = setInterval(() => {
           setCallDuration(prev => prev + 1);
@@ -423,16 +432,16 @@ export default function AudioCallRoom({
                   {astrologerName ? `${astrologerName}` : 'Audio Call'}
                 </span>
               </div>
-              
-                             <div className="flex items-center gap-2 text-sm text-gray-300">
-                 <Clock className={`w-4 h-4 ${isTimerRunning ? 'text-green-400' : 'text-gray-400'}`} />
-                 <span className={isTimerRunning ? 'text-white' : 'text-gray-400'}>
-                   {formatDuration(callDuration)}
-                 </span>
-                 {!isTimerRunning && (
-                   <span className="text-xs text-gray-500">(paused)</span>
-                 )}
-               </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <Clock className={`w-4 h-4 ${isTimerRunning ? 'text-green-400' : 'text-gray-400'}`} />
+                <span className={isTimerRunning ? 'text-white' : 'text-gray-400'}>
+                  {formatDuration(callDuration)}
+                </span>
+                {!isTimerRunning && (
+                  <span className="text-xs text-gray-500">(paused)</span>
+                )}
+              </div>
 
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-300">
                 <Users className="w-4 h-4" />
@@ -467,7 +476,7 @@ export default function AudioCallRoom({
       try {
         const token = getAuthToken();
         console.log('🎁 Fetching gifts with token:', token ? 'Token exists' : 'No token');
-        
+
         if (!token) {
           console.warn('🎁 No auth token available for gift fetch');
           setGifts([]);
@@ -487,7 +496,7 @@ export default function AudioCallRoom({
         for (const endpoint of apiEndpoints) {
           try {
             console.log('🎁 Trying gift API endpoint:', endpoint);
-            
+
             const res = await fetch(endpoint, {
               method: 'GET',
               headers: {
@@ -554,7 +563,7 @@ export default function AudioCallRoom({
   const handleRoomDisconnected = useCallback(() => {
     console.log('🎵 Audio call room disconnected');
     setRoom(null);
-    
+
     // Call onDisconnect when room is disconnected
     if (onDisconnect) {
       onDisconnect();
@@ -563,44 +572,44 @@ export default function AudioCallRoom({
 
   const handleError = useCallback((error: Error) => {
     console.error('🎵 Audio call room error:', error);
-    
+
     // Handle DataChannel errors gracefully (they're usually harmless)
     if (error.message.includes('DataChannel') || error.message.includes('lossy')) {
       console.warn('🎵 DataChannel error (usually harmless):', error.message);
       return; // Don't show alert for DataChannel errors
     }
-    
+
     // For other errors, show alert
     alert(`Audio call error: ${error.message}`);
   }, []);
 
   const handleLeaveCall = useCallback(async () => {
     console.log('🎵 Leaving audio call - START');
-    console.log('🎵 Current state:', { 
-      roomName, 
-      roomState: room?.state, 
+    console.log('🎵 Current state:', {
+      roomName,
+      roomState: room?.state,
       socketConnected: socketManager.isSocketConnected(),
       shouldConnect,
-      isDisconnecting: isDisconnectingRef.current 
+      isDisconnecting: isDisconnectingRef.current
     });
-    
+
     // Prevent multiple calls to handleLeaveCall
     if (isDisconnectingRef.current) {
       console.log('🎵 Already disconnecting, ignoring duplicate call');
       return;
     }
     isDisconnectingRef.current = true;
-    
+
     // Set shouldConnect to false immediately to prevent reconnection
     setShouldConnect(false);
     console.log('🎵 Set shouldConnect to false');
-    
+
     try {
       // Step 1: Emit end_call event via socket if available
       if (roomName && roomName.trim() !== '') {
         try {
           console.log('🎵 Step 1: Emitting end_call event for room:', roomName);
-          
+
           // Check if socket is connected before trying to emit
           if (socketManager.isSocketConnected()) {
             console.log('🎵 Socket is connected, using endCall method');
@@ -612,55 +621,55 @@ export default function AudioCallRoom({
             console.log('🎵 emitCallEnd method completed');
           }
           console.log('🎵 End call event emitted successfully');
-                  } catch (error: any) {
-            console.error('❌ Error ending call via socket:', error);
-            console.error('❌ Error details:', {
-              message: error?.message || 'Unknown error',
-              stack: error?.stack || 'No stack trace',
-              roomName,
-              socketConnected: socketManager.isSocketConnected()
+        } catch (error: any) {
+          console.error('❌ Error ending call via socket:', error);
+          console.error('❌ Error details:', {
+            message: error?.message || 'Unknown error',
+            stack: error?.stack || 'No stack trace',
+            roomName,
+            socketConnected: socketManager.isSocketConnected()
+          });
+
+          // Fallback to emitCallEnd if endCall fails
+          try {
+            console.log('🎵 Trying fallback emitCallEnd...');
+            socketManager.emitCallEnd(roomName, 'USER_ENDED_CALL');
+            console.log('🎵 Fallback emitCallEnd completed');
+          } catch (fallbackError: any) {
+            console.warn('🎵 Fallback emitCallEnd also failed:', fallbackError);
+            console.warn('🎵 Fallback error details:', {
+              message: fallbackError?.message || 'Unknown fallback error',
+              stack: fallbackError?.stack || 'No stack trace'
             });
-            
-            // Fallback to emitCallEnd if endCall fails
-            try {
-              console.log('🎵 Trying fallback emitCallEnd...');
-              socketManager.emitCallEnd(roomName, 'USER_ENDED_CALL');
-              console.log('🎵 Fallback emitCallEnd completed');
-            } catch (fallbackError: any) {
-              console.warn('🎵 Fallback emitCallEnd also failed:', fallbackError);
-              console.warn('🎵 Fallback error details:', {
-                message: fallbackError?.message || 'Unknown fallback error',
-                stack: fallbackError?.stack || 'No stack trace'
-              });
-            }
           }
+        }
       } else {
         console.warn('🎵 No roomName available for end call event');
       }
-      
+
       // Step 2: Add a small delay to ensure socket events are sent
       console.log('🎵 Step 2: Waiting for socket events to be sent...');
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // Step 3: Force disconnect socket manager
       try {
         console.log('🎵 Step 3: Disconnecting socket manager...');
         socketManager.disconnect();
         console.log('🎵 Socket manager disconnected successfully');
-              } catch (socketError: any) {
-          console.warn('🎵 Socket manager disconnect error:', socketError);
-          console.warn('🎵 Socket error details:', {
-            message: socketError?.message || 'Unknown socket error',
-            stack: socketError?.stack || 'No stack trace'
-          });
-        }
-      
+      } catch (socketError: any) {
+        console.warn('🎵 Socket manager disconnect error:', socketError);
+        console.warn('🎵 Socket error details:', {
+          message: socketError?.message || 'Unknown socket error',
+          stack: socketError?.stack || 'No stack trace'
+        });
+      }
+
       // Step 4: Disconnect from LiveKit room with error handling
       if (room) {
         try {
           console.log('🎵 Step 4: Disconnecting LiveKit room...');
           console.log('🎵 Room state before disconnect:', room.state);
-          
+
           // Use a more graceful disconnect approach
           if (room.state === 'connected') {
             console.log('🎵 Room is connected, performing graceful disconnect...');
@@ -680,7 +689,7 @@ export default function AudioCallRoom({
             stack: roomError?.stack || 'No stack trace',
             roomState: room.state
           });
-          
+
           // Even if disconnect fails, clean up listeners
           try {
             console.log('🎵 Cleaning up room listeners after error...');
@@ -693,12 +702,12 @@ export default function AudioCallRoom({
       } else {
         console.log('🎵 No room instance to disconnect');
       }
-      
+
       // Step 5: Force cleanup by setting room to null
       console.log('🎵 Step 5: Setting room to null...');
       setRoom(null);
       console.log('🎵 Room state set to null');
-      
+
       // Mark user as having called (hide offer after first call)
       try {
         markUserAsCalled();
@@ -706,7 +715,7 @@ export default function AudioCallRoom({
       } catch (markError) {
         console.warn('🎵 Error marking user as called:', markError);
       }
-      
+
       // Step 6: Add a small delay before calling onDisconnect to ensure cleanup is complete
       console.log('🎵 Step 6: Waiting before calling onDisconnect...');
       setTimeout(() => {
@@ -727,7 +736,7 @@ export default function AudioCallRoom({
           console.log('🎵 No onDisconnect callback provided');
         }
       }, 500); // Increased delay to ensure all cleanup is complete
-      
+
     } catch (error: any) {
       console.error('❌ Error during call disconnect:', error);
       console.error('❌ Main error details:', {
@@ -737,7 +746,7 @@ export default function AudioCallRoom({
         roomState: room?.state,
         socketConnected: socketManager.isSocketConnected()
       });
-      
+
       // Force cleanup even on error
       try {
         console.log('🎵 Force disconnecting socket manager due to error...');
@@ -745,10 +754,10 @@ export default function AudioCallRoom({
       } catch (socketError) {
         console.warn('🎵 Force socket disconnect error:', socketError);
       }
-      
+
       setRoom(null);
       setShouldConnect(false);
-      
+
       // Still call onDisconnect even if there's an error
       if (onDisconnect) {
         try {
@@ -768,7 +777,7 @@ export default function AudioCallRoom({
   // Function to handle gift requests from astrologer
   const handleGiftRequestFromAstrologer = useCallback((data: any) => {
     console.log('🎁 Processing gift request from astrologer:', data);
-    
+
     // Show gift request notification
     setGiftRequest({
       from: data.astrologerId || data.from || partner?._id,
@@ -777,7 +786,7 @@ export default function AudioCallRoom({
       giftType: data.giftType || 'any',
       timestamp: Date.now()
     });
-    
+
     // Auto-hide after 10 seconds
     setTimeout(() => {
       setGiftRequest((prev: any) => {
@@ -794,13 +803,13 @@ export default function AudioCallRoom({
     setSendingGift(true);
     try {
       console.log('🎁 Sending gift:', gift);
-      
+
       // Ensure socket is connected before sending gift
       if (!socketManager.isSocketConnected() || socketManager.getChannelId() !== roomName) {
         console.log('🎁 Connecting socket for gift sending...');
         await socketManager.connect(roomName);
       }
-      
+
       const user = getUserDetails();
       await socketManager.sendGift({
         channelId: roomName,
@@ -812,19 +821,19 @@ export default function AudioCallRoom({
         giftIcon: gift.icon,
         toName: partner?.name || 'Astrologer'
       });
-      
+
       // Don't close the gift panel automatically - let user choose when to close
       setShowGiftConfirm(false);
       setPendingGift(null);
-      
+
       // Show success message in the panel
       setGiftSuccessMessage(`Gift "${gift.name}" sent successfully!`);
-      
+
       // Clear success message after 3 seconds
       setTimeout(() => {
         setGiftSuccessMessage(null);
       }, 3000);
-      
+
     } catch (err) {
       console.error("Gift send error:", err);
       const errorMsg = err instanceof Error ? err.message : 'Failed to send gift';
@@ -918,7 +927,7 @@ export default function AudioCallRoom({
       socket.on('disconnect', handleSocketDisconnect);
       socket.on('gift_request', handleGiftRequest);
       socket.on('receive_gift', handleReceiveGift);
-      
+
       // Listen for custom gift request events
       socket.on('astrologer_gift_request', handleGiftRequestFromAstrologer);
 
@@ -978,14 +987,14 @@ export default function AudioCallRoom({
   useEffect(() => {
     const handleBeforeUnload = () => {
       console.log('🎵 AudioCallRoom: Page unloading, forcing cleanup...');
-      
+
       // Force disconnect socket manager
       try {
         socketManager.disconnect();
       } catch (error) {
         console.warn('🎵 Force socket disconnect on page unload error:', error);
       }
-      
+
       // Force disconnect room
       if (room) {
         try {
@@ -1001,17 +1010,17 @@ export default function AudioCallRoom({
 
     return () => {
       console.log('🎵 AudioCallRoom: Component unmounting, forcing cleanup...');
-      
+
       // Remove beforeunload event listener
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      
+
       // Force disconnect socket manager
       try {
         socketManager.disconnect();
       } catch (error) {
         console.warn('🎵 Force socket disconnect on unmount error:', error);
       }
-      
+
       // Force disconnect room
       if (room) {
         try {
@@ -1020,7 +1029,7 @@ export default function AudioCallRoom({
           console.warn('🎵 Force room disconnect on unmount error:', error);
         }
       }
-      
+
       setRoom(null);
     };
   }, [room]);
@@ -1033,7 +1042,7 @@ export default function AudioCallRoom({
           audio={true}
           token={token}
           serverUrl={wsURL}
-          
+
           style={{ height: '100vh', width: '100vw', position: 'relative' }}
           onConnected={handleRoomConnected}
           onDisconnected={handleRoomDisconnected}
@@ -1069,73 +1078,73 @@ export default function AudioCallRoom({
           {/* Enhanced Settings Panel */}
           <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
 
-                     {/* Enhanced Gift Panel - Fixed Layout */}
-           {showGiftPanel && (
-             <>
-               {/* Backdrop */}
-               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                 {/* Gift Panel */}
-                 <div className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-2xl max-h-[80vh] overflow-y-auto">
-                   <div className="flex items-center justify-between mb-4 sm:mb-6">
-                     <h3 className="text-lg sm:text-xl font-bold text-gray-800">Send a Gift</h3>
-                     <button 
-                       onClick={() => setShowGiftPanel(false)}
-                       className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                     >
-                       <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
-                     </button>
-                   </div>
-                   
-                   {/* Success Message */}
-                   {giftSuccessMessage && (
-                     <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-xl text-green-700 text-sm text-center">
-                       {giftSuccessMessage}
-                     </div>
-                   )}
-                   
-                   <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
-                     {gifts.map(gift => (
-                       <button
-                         key={gift._id}
-                         onClick={() => {
-                           setPendingGift(gift);
-                           setShowGiftConfirm(true);
-                         }}
-                         disabled={sendingGift}
-                         className="flex flex-col items-center p-3 sm:p-4 border-2 border-gray-200 rounded-xl sm:rounded-2xl hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 disabled:opacity-50"
-                       >
-                         {/* Handle both emoji and image URLs */}
-                         {gift.icon && typeof gift.icon === 'string' && gift.icon.startsWith('http') ? (
-                           <img 
-                             src={gift.icon} 
-                             alt={gift.name}
-                             className="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2 object-contain"
-                             onError={(e) => {
-                               // Fallback to emoji if image fails to load
-                               e.currentTarget.style.display = 'none';
-                               e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                             }}
-                           />
-                         ) : null}
-                         <span className={`text-2xl sm:text-3xl mb-1 sm:mb-2 ${gift.icon && typeof gift.icon === 'string' && gift.icon.startsWith('http') ? 'hidden' : ''}`}>
-                           {typeof gift.icon === 'string' ? gift.icon : '🎁'}
-                         </span>
-                         <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center">{gift.name}</span>
-                         <span className="text-xs text-gray-500 mt-1">₹{gift.price}</span>
-                       </button>
-                     ))}
-                   </div>
-                   
-                   <button 
-                     onClick={() => setShowGiftPanel(false)} 
-                     className="w-full py-2 sm:py-3 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl text-gray-700 font-medium transition-colors text-sm sm:text-base"
-                   >
-                     Cancel
-                   </button>
-                 </div>
-               </div>
-             </>
-           )}
+          {/* Enhanced Gift Panel - Fixed Layout */}
+          {showGiftPanel && (
+            <>
+              {/* Backdrop */}
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                {/* Gift Panel */}
+                <div className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-2xl max-h-[80vh] overflow-y-auto">
+                  <div className="flex items-center justify-between mb-4 sm:mb-6">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-800">Send a Gift</h3>
+                    <button
+                      onClick={() => setShowGiftPanel(false)}
+                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <X className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  {/* Success Message */}
+                  {giftSuccessMessage && (
+                    <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-xl text-green-700 text-sm text-center">
+                      {giftSuccessMessage}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                    {gifts.map(gift => (
+                      <button
+                        key={gift._id}
+                        onClick={() => {
+                          setPendingGift(gift);
+                          setShowGiftConfirm(true);
+                        }}
+                        disabled={sendingGift}
+                        className="flex flex-col items-center p-3 sm:p-4 border-2 border-gray-200 rounded-xl sm:rounded-2xl hover:border-purple-300 hover:bg-purple-50 transition-all duration-200 disabled:opacity-50"
+                      >
+                        {/* Handle both emoji and image URLs */}
+                        {gift.icon && typeof gift.icon === 'string' && gift.icon.startsWith('http') ? (
+                          <img
+                            src={gift.icon}
+                            alt={gift.name}
+                            className="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2 object-contain"
+                            onError={(e) => {
+                              // Fallback to emoji if image fails to load
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <span className={`text-2xl sm:text-3xl mb-1 sm:mb-2 ${gift.icon && typeof gift.icon === 'string' && gift.icon.startsWith('http') ? 'hidden' : ''}`}>
+                          {typeof gift.icon === 'string' ? gift.icon : '🎁'}
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center">{gift.name}</span>
+                        <span className="text-xs text-gray-500 mt-1">₹{gift.price}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={() => setShowGiftPanel(false)}
+                    className="w-full py-2 sm:py-3 bg-gray-100 hover:bg-gray-200 rounded-xl sm:rounded-2xl text-gray-700 font-medium transition-colors text-sm sm:text-base"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Enhanced Gift Notification */}
           {giftNotification && (
@@ -1168,7 +1177,7 @@ export default function AudioCallRoom({
                       {astrologerName || 'Astrologer'} would love to receive a gift
                     </p>
                   </div>
-                  
+
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
@@ -1220,7 +1229,7 @@ export default function AudioCallRoom({
           </div>
         </div>
       )}
-      
+
       {/* Custom CSS for animations */}
       <style jsx>{`
         @keyframes blob {

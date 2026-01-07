@@ -409,7 +409,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
   return (
     <>
       <div
-        className="relative bg-white rounded-xl border pt-4 px-4 pb-1 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col w-full mx-auto overflow-hidden"
+        className="relative bg-white rounded-xl border pt-4 px-3 pb-1 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col w-full mx-auto overflow-hidden"
         style={{
           borderColor: "#F7971E",
           boxShadow: "0 4px 16px rgba(247,151,30,0.15)",
@@ -532,19 +532,19 @@ const AstrologerCard = React.memo(function AstrologerCard({
             )}
 
             {/* 🎯 Action Buttons */}
-            <div className="flex gap-3 mt-2 relative z-10">
+            <div className="flex gap-2 mt-2 relative z-10">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
                   handleChatClick(e);
                 }}
-                className="flex-[1.4] border border-[#F7971D] text-[#F7971D] rounded-md py-2 font-medium flex items-center justify-center gap-1.5 hover:bg-orange-50 transition"
-                style={{ fontSize: '0.75rem' }}
+                className="flex-[1.4] border border-[#F7971D] text-[#F7971D] rounded-md py-1.5 font-medium flex items-center justify-center gap-1.5 hover:bg-orange-50 transition"
+                style={{ fontSize: '0.7rem' }}
                 title="Chat"
               >
-                <img src="/message.png" alt="Chat" className="w-[16px] h-[16px]" />
-                Chat
+                <img src="/message.png" alt="Chat" className="w-[14px] h-[14px]" />
+                {isAuthenticated() && hasCompletedFreeCall ? 'Chat' : 'FREE Chat'}
               </button>
 
               {/* Call Dropdown */}
@@ -563,7 +563,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                       setIsCallMenuOpen((prev) => !prev);
                     }
                   }}
-                  className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-1.5 text-white shadow-md transition"
+                  className="w-full rounded-lg py-1.5 text-[0.65rem] font-medium flex items-center justify-center gap-1.5 text-white shadow-md transition"
                   style={{
                     background: "linear-gradient(90deg, #F9A43A 0%, #F7971E 100%)",
                   }}

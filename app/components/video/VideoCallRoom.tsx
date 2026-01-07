@@ -14,7 +14,7 @@ import {
   useRemoteParticipants
 } from '@livekit/components-react';
 import { Room, RoomEvent, Track } from 'livekit-client';
-import { 
+import {
   Users,
   Clock,
   X,
@@ -65,11 +65,11 @@ const CustomVideoDisplay = () => {
   const { localParticipant } = useLocalParticipant();
   const [isLocalVideoMinimized, setIsLocalVideoMinimized] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Get video tracks
   const localVideoTracks = useTracks([Track.Source.Camera], { onlySubscribed: false })
     .filter(track => track.participant === localParticipant);
-  
+
   const remoteVideoTracks = useTracks([Track.Source.Camera], { onlySubscribed: true })
     .filter(track => track.participant !== localParticipant);
 
@@ -127,14 +127,14 @@ const CustomVideoDisplay = () => {
             <div key={track.participant.identity} className="h-full w-full">
               <VideoTrack
                 trackRef={track}
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
+                style={{
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
                   borderRadius: '0px'
                 }}
               />
-              
+
               {/* Enhanced participant name overlay */}
               <div className="absolute top-4 left-4 bg-black bg-opacity-80 backdrop-blur-sm rounded-xl px-4 py-2 text-white">
                 <div className="flex items-center gap-2">
@@ -173,23 +173,22 @@ const CustomVideoDisplay = () => {
       )}
 
       {/* Enhanced Local video - Picture in Picture */}
-      <div className={`absolute transition-all duration-300 ease-in-out ${
-        isLocalVideoMinimized 
-          ? 'top-4 right-4 w-24 h-32 sm:w-32 sm:h-40' 
+      <div className={`absolute transition-all duration-300 ease-in-out ${isLocalVideoMinimized
+          ? 'top-4 right-4 w-24 h-32 sm:w-32 sm:h-40'
           : 'top-4 right-4 w-32 h-24 sm:w-40 sm:h-32'
-      } bg-black rounded-2xl overflow-hidden z-20 border-2 border-white/20 shadow-2xl`}>
+        } bg-black rounded-2xl overflow-hidden z-20 border-2 border-white/20 shadow-2xl`}>
         {localVideoTracks.length > 0 ? (
           <div className="relative w-full h-full">
             <VideoTrack
               trackRef={localVideoTracks[0]}
-              style={{ 
-                width: '100%', 
-                height: '100%', 
+              style={{
+                width: '100%',
+                height: '100%',
                 objectFit: 'cover',
                 borderRadius: '12px'
               }}
             />
-            
+
             {/* Local video controls overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
               <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center">
@@ -285,20 +284,18 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
     : null;
 
   return (
-    <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ease-in-out ${
-      showControls ? 'translate-y-0' : 'translate-y-full'
-    }`}>
+    <div className={`absolute bottom-0 left-0 right-0 transition-all duration-300 ease-in-out ${showControls ? 'translate-y-0' : 'translate-y-full'
+      }`}>
       {/* Main control bar */}
       <div className="bg-gradient-to-t from-black/90 via-black/80 to-transparent backdrop-blur-sm px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex justify-center items-center gap-3 sm:gap-6">
           {/* Audio toggle */}
           <button
             onClick={toggleAudio}
-            className={`p-4 sm:p-5 rounded-full transition-all duration-200 shadow-lg ${
-              isAudioEnabled 
-                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30' 
+            className={`p-4 sm:p-5 rounded-full transition-all duration-200 shadow-lg ${isAudioEnabled
+                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
                 : 'bg-red-500 hover:bg-red-600 text-white border border-red-400'
-            }`}
+              }`}
             title={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
           >
             {isAudioEnabled ? <Mic className="w-5 h-5 sm:w-6 sm:h-6" /> : <MicOff className="w-5 h-5 sm:w-6 sm:h-6" />}
@@ -307,11 +304,10 @@ const CustomControlBar = ({ onEndCall, onGift }: { onEndCall: () => void, onGift
           {/* Video toggle */}
           <button
             onClick={toggleVideo}
-            className={`p-4 sm:p-5 rounded-full transition-all duration-200 shadow-lg ${
-              isVideoEnabled 
-                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30' 
+            className={`p-4 sm:p-5 rounded-full transition-all duration-200 shadow-lg ${isVideoEnabled
+                ? 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
                 : 'bg-red-500 hover:bg-red-600 text-white border border-red-400'
-            }`}
+              }`}
             title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
           >
             {isVideoEnabled ? <Video className="w-5 h-5 sm:w-6 sm:h-6" /> : <VideoOff className="w-5 h-5 sm:w-6 sm:h-6" />}
@@ -376,16 +372,26 @@ export default function VideoCallRoom({
   partner,
   onDisconnect,
 }: VideoCallRoomProps) {
+  // Lock body scroll on mount, restore on unmount
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   // Ensure astrologerId is always a string
   const astrologerId: string = (searchParams?.get('astrologerId') || partner?._id || '') as string;
-  
+
   const [callStats, setCallStats] = useState<CallStats>({
     duration: 0,
     isConnected: false,
   });
-  
+
   const [showSettings, setShowSettings] = useState(false);
   const [showGiftPanel, setShowGiftPanel] = useState(false);
   const [showGiftConfirm, setShowGiftConfirm] = useState(false);
@@ -393,7 +399,7 @@ export default function VideoCallRoom({
   const [sendingGift, setSendingGift] = useState(false);
   const [giftNotification, setGiftNotification] = useState<any>(null);
   const [giftRequest, setGiftRequest] = useState<any>(null);
-  
+
   const roomRef = useRef<Room | null>(null);
   const isDisconnectingRef = useRef(false);
 
@@ -496,7 +502,7 @@ export default function VideoCallRoom({
             publication.track.stop();
           }
         });
-        
+
         // Add a small delay to ensure socket events are sent
         setTimeout(async () => {
           if (roomRef.current) {
@@ -522,10 +528,10 @@ export default function VideoCallRoom({
       } catch (error) {
         console.error('Error during socket disconnect:', error);
       }
-      
+
       // Force cleanup room reference
       roomRef.current = null;
-      
+
       // Mark user as having called (hide offer after first call)
       try {
         markUserAsCalled();
@@ -533,12 +539,12 @@ export default function VideoCallRoom({
       } catch (markError) {
         console.warn('📞 Error marking user as called:', markError);
       }
-      
+
       // Navigate away
       setTimeout(() => {
         const callSource = localStorage.getItem('callSource');
         const astrologerId = localStorage.getItem('lastAstrologerId');
-        
+
         if (callSource === 'astrologerCard') {
           // If user came from astrologer card, go back to astrologers list
           router.push('/astrologers');
@@ -549,7 +555,7 @@ export default function VideoCallRoom({
           // Fallback to astrologers list
           router.push('/astrologers');
         }
-        
+
         // Clean up localStorage
         localStorage.removeItem('callSource');
       }, 100);
@@ -628,7 +634,7 @@ export default function VideoCallRoom({
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hrs > 0) {
       return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -639,9 +645,9 @@ export default function VideoCallRoom({
   const handleRoomConnected = useCallback(() => {
     console.log('Connected to room');
     isDisconnectingRef.current = false;
-    
-    setCallStats(prev => ({ 
-      ...prev, 
+
+    setCallStats(prev => ({
+      ...prev,
       isConnected: true
     }));
   }, []);
@@ -651,7 +657,7 @@ export default function VideoCallRoom({
     isDisconnectingRef.current = true;
     roomRef.current = null;
     setCallStats(prev => ({ ...prev, isConnected: false }));
-   
+
     setTimeout(() => {
       if (onDisconnect) {
         onDisconnect();
@@ -666,13 +672,13 @@ export default function VideoCallRoom({
 
   const handleError = useCallback((error: Error) => {
     console.error('Room error:', error);
-    
+
     // Handle DataChannel errors gracefully (they're usually harmless)
     if (error.message.includes('DataChannel') || error.message.includes('lossy')) {
       console.warn('📞 DataChannel error (usually harmless):', error.message);
       return; // Don't show alert for DataChannel errors
     }
-    
+
     // For other errors, log but don't automatically disconnect
     console.error('📞 Room error:', error);
   }, []);
@@ -681,14 +687,14 @@ export default function VideoCallRoom({
   useEffect(() => {
     const handleBeforeUnload = () => {
       console.log('📞 VideoCallRoom: Page unloading, forcing cleanup...');
-      
+
       // Force disconnect socket manager
       try {
         socketManager.disconnect();
       } catch (error) {
         console.warn('📞 Force socket disconnect on page unload error:', error);
       }
-      
+
       // Force disconnect room
       if (roomRef.current) {
         try {
@@ -704,10 +710,10 @@ export default function VideoCallRoom({
 
     return () => {
       console.log('📞 VideoCallRoom: Component unmounting, forcing cleanup...');
-      
+
       // Remove beforeunload event listener
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      
+
       if (roomRef.current && !isDisconnectingRef.current) {
         isDisconnectingRef.current = true;
         try {
@@ -716,14 +722,14 @@ export default function VideoCallRoom({
           console.error('Cleanup error:', error);
         }
       }
-      
+
       // Force disconnect socket manager
       try {
         socketManager.disconnect();
       } catch (error) {
         console.warn('📞 Force socket disconnect on unmount error:', error);
       }
-      
+
       // Force cleanup room reference
       roomRef.current = null;
     };
@@ -740,7 +746,7 @@ export default function VideoCallRoom({
               {astrologerName ? `Call with ${astrologerName}` : 'Video Call'}
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             <span className="font-mono">{formatDuration(callStats.duration)}</span>
@@ -764,7 +770,7 @@ export default function VideoCallRoom({
         >
           <Settings className="w-5 h-5" />
         </button>
-        
+
         <button
           onClick={handleLeaveCall}
           className="bg-red-500/90 backdrop-blur-sm rounded-2xl p-3 text-white hover:bg-red-600 transition-all disabled:opacity-50"
@@ -792,18 +798,18 @@ export default function VideoCallRoom({
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="space-y-4 text-sm">
           <div className="bg-gray-50 rounded-xl p-3">
             <span className="font-semibold text-gray-700">Room:</span>
             <span className="ml-2 text-gray-600 font-mono">{roomName}</span>
           </div>
-          
+
           <div className="bg-gray-50 rounded-xl p-3">
             <span className="font-semibold text-gray-700">Participant:</span>
             <span className="ml-2 text-gray-600">{participantName}</span>
           </div>
-          
+
           <div className="bg-gray-50 rounded-xl p-3">
             <span className="font-semibold text-gray-700">Status:</span>
             <span className={`ml-2 font-semibold ${callStats.isConnected ? 'text-green-600' : 'text-red-600'}`}>
@@ -831,7 +837,7 @@ export default function VideoCallRoom({
       }
 
       await socketManager.sendGift({
-        channelId: roomName, 
+        channelId: roomName,
         giftId: gift._id,
         from: user.id || user._id,
         fromName: user.name || user.displayName || "User",
@@ -905,7 +911,7 @@ export default function VideoCallRoom({
             <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Send a Gift</h3>
-                <button 
+                <button
                   onClick={() => setShowGiftPanel(false)}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors"
                 >

@@ -637,41 +637,41 @@ export default function ZodiacSignPage() {
   // Dynamic horoscope data based on planetary influences
   const horoscopeData = {
     daily: {
-      title: "Today's Insight",
+      title: "Today's Horoscope",
       content: currentSign.dailyInsight.content,
       tags: currentSign.dailyInsight.tags,
       icon: Calendar,
       color: "from-orange-500 to-red-500"
     },
     weekly: {
-      title: "Tomorrow's Guidance",
-      content: `This week brings ${currentSign.displayName} opportunities for growth and transformation. Your ruling planet influences your path, bringing positive energy to your endeavors. Focus on key aspects of your life while maintaining balance with your natural nature.`,
+      title: "Weekly Predictions",
+      content: `This week, the celestial movements bring a period of significant clarity for ${currentSign.displayName}. You'll find that your communication skills are heightened, allowing you to bridge gaps in both professional and personal relationships. Trust in your steady progress as the stars align to reward your recent efforts with unexpected opportunities for growth.`,
       tags: [
-        `Weekly Vibe: Positive`,
-        `Focus Area: Growth`,
-        `Best Day: ${getBestDay(currentSign.displayName)}`
+        `Weekly Vibe: Clarity`,
+        `Focus: Connection`,
+        `Lucky Day: ${getBestDay(currentSign.displayName)}`
       ],
       icon: Calendar,
       color: "from-blue-500 to-purple-500"
     },
     monthly: {
-      title: "Weekly Horoscope",
-      content: `This month marks a period of positive growth for ${currentSign.displayName}. Your key focus will bring unexpected breakthroughs. The planetary alignments favor your natural qualities. Trust your intuition guidance for important decisions.`,
+      title: "Monthly Forecast",
+      content: `The coming month marks a season of profound inner growth and external achievement for ${currentSign.displayName}. As lunar cycles refresh your chart's energy, you'll experience a renewed sense of purpose. It's an ideal time for long-term visioning and taking bold steps toward the professional milestones you've been contemplating.`,
       tags: [
-        `Monthly Theme: Positive & Growth`,
-        `Key Focus: Development`,
+        `Monthly Theme: Achievement`,
+        `Focus: Visioning`,
         `Lucky Month: ${getLuckyMonth(currentSign.displayName)}`
       ],
       icon: Calendar,
       color: "from-green-500 to-teal-500"
     },
     yearly: {
-      title: "Yearly Horoscope",
-      content: `This year represents a major turning point for ${currentSign.displayName}, bringing positive opportunities. Your key abilities will be recognized on a larger scale. Focus on building strong foundations using your natural nature. Your intuition influence will guide you toward success.`,
+      title: "Yearly Outlook",
+      content: `This year stands as a transformative milestone in your life's journey, ${currentSign.displayName}. Major planetary shifts provide a fertile ground for expanding your horizons and discovering untapped potential. Your resilience and natural wisdom will guide you through significant transitions, leading to a year characterized by substantial personal evolution and lasting success.`,
       tags: [
-        `Yearly Theme: Major Life Changes`,
-        `Career Focus: Growth & Innovation`,
-        `Personal Growth: Positive Development`
+        `Yearly Theme: Transformation`,
+        `Key Focus: Expansion`,
+        `Growth: Substantial`
       ],
       icon: Calendar,
       color: "from-purple-500 to-pink-500"
@@ -763,10 +763,10 @@ export default function ZodiacSignPage() {
                   <h3 className="text-xl font-bold text-black mb-6">Horoscopes</h3>
                   <nav className="space-y-1">
                     {[
-                      { id: 'daily', label: "Today's Insight", period: 'daily' },
-                      { id: 'weekly', label: "Tomorrow's Guidance", period: 'weekly' },
-                      { id: 'monthly', label: "Weekly Horoscope", period: 'monthly' },
-                      { id: 'yearly', label: "Yearly Horoscope", period: 'yearly' }
+                      { id: 'daily', label: "Today", period: 'daily' },
+                      { id: 'weekly', label: "This Week", period: 'weekly' },
+                      { id: 'monthly', label: "This Month", period: 'monthly' },
+                      { id: 'yearly', label: "This Year", period: 'yearly' }
                     ].map((item) => (
                       <button
                         key={item.id}
@@ -804,13 +804,13 @@ export default function ZodiacSignPage() {
                 {/* Love & Relationships Section */}
                 <div className="bg-white rounded-lg p-6 mb-6">
                   <h2 className="text-2xl font-bold text-[#745802] mb-4">
-                    {(currentSign.loveRelationships as any)[selectedPeriod]?.title || (currentSign.loveRelationships as any).title || "Love & Relationships"}
+                    {(currentSign.loveRelationships as any)[selectedPeriod]?.title || (currentSign.loveRelationships as any).title || (currentSign.loveRelationships as any).daily?.title || "Love & Relationships"}
                   </h2>
                   <p className="text-black leading-relaxed mb-6 text-lg">
-                    {(currentSign.loveRelationships as any)[selectedPeriod]?.content || (currentSign.loveRelationships as any).content || "Your relationships are influenced by your zodiac sign's natural characteristics."}
+                    {(currentSign.loveRelationships as any)[selectedPeriod]?.content || (currentSign.loveRelationships as any).content || (currentSign.loveRelationships as any).daily?.content || "Your relationships are influenced by your zodiac sign's natural characteristics."}
                   </p>
                   <div className="flex flex-wrap gap-3">
-                    {((currentSign.loveRelationships as any)[selectedPeriod]?.tags || (currentSign.loveRelationships as any).tags || []).map((tag: string, index: number) => (
+                    {((currentSign.loveRelationships as any)[selectedPeriod]?.tags || (currentSign.loveRelationships as any).tags || (currentSign.loveRelationships as any).daily?.tags || []).map((tag: string, index: number) => (
                       <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
                         {tag}
                       </span>
@@ -821,13 +821,13 @@ export default function ZodiacSignPage() {
                 {/* Personal Life Section */}
                 <div className="bg-white rounded-lg p-6">
                   <h2 className="text-2xl font-bold text-[#745802] mb-4">
-                    {(currentSign.personalLife as any)[selectedPeriod]?.title || (currentSign.personalLife as any).title || "Personal Life"}
+                    {(currentSign.personalLife as any)[selectedPeriod]?.title || (currentSign.personalLife as any).title || (currentSign.personalLife as any).daily?.title || "Personal Life"}
                   </h2>
                   <p className="text-black leading-relaxed mb-6 text-lg">
-                    {(currentSign.personalLife as any)[selectedPeriod]?.content || (currentSign.personalLife as any).content || "Your personal life is guided by your zodiac sign's unique characteristics and planetary influences."}
+                    {(currentSign.personalLife as any)[selectedPeriod]?.content || (currentSign.personalLife as any).content || (currentSign.personalLife as any).daily?.content || "Your personal life is guided by your zodiac sign's unique characteristics and planetary influences."}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {((currentSign.personalLife as any)[selectedPeriod]?.tags || (currentSign.personalLife as any).tags || []).map((tag: string, index: number) => (
+                    {((currentSign.personalLife as any)[selectedPeriod]?.tags || (currentSign.personalLife as any).tags || (currentSign.personalLife as any).daily?.tags || []).map((tag: string, index: number) => (
                       <span key={index} className="px-4 py-2 bg-[#FCF4E9] text-[#745802] rounded-lg text-sm font-medium">
                         {tag}
                       </span>

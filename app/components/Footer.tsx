@@ -121,9 +121,9 @@ const Footer: React.FC = () => {
                     className="text-white hover:text-[#F7971E] transition-colors duration-300"
                     aria-label="Follow us on Instagram"
                   >
-                    <img 
-                      src="/instagram.svg" 
-                      alt="Instagram" 
+                    <img
+                      src="/instagram.svg"
+                      alt="Instagram"
                       className="w-7 h-7 sm:w-8 sm:h-8"
                     />
                   </Link>
@@ -134,14 +134,14 @@ const Footer: React.FC = () => {
                     className="text-white hover:text-[#F7971E] transition-colors duration-300"
                     aria-label="Follow us on LinkedIn"
                   >
-                    <img 
-                      src="/linkedin.svg" 
-                      alt="LinkedIn" 
+                    <img
+                      src="/linkedin.svg"
+                      alt="LinkedIn"
                       className="w-7 h-7 sm:w-8 sm:h-8"
                     />
                   </Link>
                 </div>
-                
+
                 {/* Download Our App Section */}
                 <div className="pt-4 border-t border-white/20">
                   <p className="text-white text-sm sm:text-base opacity-90 mb-3">
@@ -162,20 +162,20 @@ const Footer: React.FC = () => {
                         className="w-160 h-160"
                       />
                     </Link>
-                  <Link
-                    href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
-                  >
-                    <Image
-                      src="/play-store.svg"
-                      alt="Download on Google Play"
-                      width={150}
-                      height={50}
-                      className="w-160 h-160"
-                    />
-                  </Link>
+                    <Link
+                      href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
+                    >
+                      <Image
+                        src="/play-store.svg"
+                        alt="Download on Google Play"
+                        width={150}
+                        height={50}
+                        className="w-160 h-160"
+                      />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -263,7 +263,7 @@ const Footer: React.FC = () => {
                 </Link>
               </div>
             </div>
-            
+
             {/* Download Our App Section */}
             <div className="pt-3 border-t border-white/20 text-center">
               <p className="text-white text-xs opacity-90 mb-2">
@@ -296,7 +296,7 @@ const Footer: React.FC = () => {
               </div>
               <span className={`text-white text-lg font-bold ${eagleLake.className}`}>SOBHAGYA</span>
             </div>
-            
+
             <p className="text-white text-sm opacity-80 tracking-tighter">
               © OWNED BY ELYSION SOFTWARES PRIVATE LIMITED
             </p>

@@ -23,8 +23,8 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NODE_ENV === 'production' 
-              ? 'https://sobhagya.in' 
+            value: process.env.NODE_ENV === 'production'
+              ? 'https://sobhagya.in'
               : 'http://localhost:3000',
           },
           {

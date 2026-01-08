@@ -18,8 +18,8 @@ export const API_CONFIG = {
     },
     BLOG: {
       // Frontend Next.js API routes
-      GET_BLOGS: '/api/blog/admin/get-blogs',
-      GET_BLOG: '/api/blog/admin/get-blog',
+      GET_BLOGS: '/api/blog',
+      GET_BLOG: '/api/blog', // Will be used as /api/blog/[id] or with ?id=
       // Backend API endpoints - following user-service admin route pattern
       GET_BLOGS_BACKEND: '/user/api/admin/get-blogs',
       GET_BLOG_BACKEND: '/user/api/admin/get-blog'

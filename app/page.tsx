@@ -3,7 +3,6 @@ import RashiSection from '@/app/components/RashiSection';
 import ConsultingSection from '@/app/components/ConsultingSection';
 import OurProducts from '@/app/components/OurProducts';
 import StatsBar from '@/app/components/StatsBar';
-import BlogSection from '@/app/components/BlogSection';
 import AppDownload from '@/app/components/AppDownload';
 import WhyConsult from '@/app/components/WhyConsult';
 import AstrologerCarousel from '@/app/components/ConsultAstrologer';
@@ -26,9 +25,6 @@ export default function Home() {
       </ScrollAnimation>
       <ScrollAnimation delay={0.2}>
         <AstrologerCarousel />
-      </ScrollAnimation>
-      <ScrollAnimation delay={0.4}>
-        <BlogSection />
       </ScrollAnimation>
       <ScrollAnimation delay={0.3}>
         <RashiSection />

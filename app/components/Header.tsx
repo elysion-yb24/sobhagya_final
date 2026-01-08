@@ -284,8 +284,8 @@ const Header = () => {
               <Link
                 href="/call-with-astrologer"
                 className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${(isActiveLink('/call-with-astrologer') || pathname === '/astrologers')
-                    ? 'text-orange-600 font-bold'
-                    : 'text-gray-700 hover:text-orange-600'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-gray-700 hover:text-orange-600'
                   }`}
                 style={{ lineHeight: '1.2' }}
               >
@@ -297,8 +297,8 @@ const Header = () => {
               <Link
                 href="/about"
                 className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${isActiveLink('/about')
-                    ? 'text-orange-600 font-bold'
-                    : 'text-gray-700 hover:text-orange-600'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-gray-700 hover:text-orange-600'
                   }`}
                 style={{ lineHeight: '1.2' }}
               >
@@ -310,8 +310,8 @@ const Header = () => {
               <Link
                 href="/services"
                 className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${isActiveLink('/services')
-                    ? 'text-orange-600 font-bold'
-                    : 'text-gray-700 hover:text-orange-600'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-gray-700 hover:text-orange-600'
                   }`}
                 style={{ lineHeight: '1.2' }}
               >
@@ -327,8 +327,8 @@ const Header = () => {
               <Link
                 href="/blog"
                 className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${isActiveLink('/blog')
-                    ? 'text-orange-600 font-bold'
-                    : 'text-gray-700 hover:text-orange-600'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-gray-700 hover:text-orange-600'
                   }`}
                 style={{ lineHeight: '1.2' }}
               >
@@ -442,8 +442,8 @@ const Header = () => {
               <Link
                 href="/call-with-astrologer"
                 className={`relative text-sm font-semibold px-2 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[160px] text-center ${(isActiveLink('/call-with-astrologer') || pathname === '/astrologers')
-                    ? 'text-orange-600 font-bold'
-                    : 'text-gray-700 hover:text-orange-600'
+                  ? 'text-orange-600 font-bold'
+                  : 'text-gray-700 hover:text-orange-600'
                   }`}
                 style={{ lineHeight: '1.2' }}
               >
@@ -583,8 +583,8 @@ const Header = () => {
                   onClick={handleLogout}
                   disabled={isLoggingOut}
                   className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 hover:scale-110 ${isLoggingOut
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-red-100 text-red-600 hover:bg-red-200'
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-red-100 text-red-600 hover:bg-red-200'
                     }`}
                   title={isLoggingOut ? "Logging out..." : "Logout"}
                 >
@@ -802,8 +802,8 @@ const Header = () => {
                         key={item.href}
                         href={item.href}
                         className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border transition-all duration-300 ${(isActiveLink(item.href) || (item.href === '/call-with-astrologer' && pathname === '/astrologers'))
-                            ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
-                            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
+                          ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
+                          : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
                           }`}
                         onClick={() => {
                           setIsOpen(false);
@@ -841,8 +841,8 @@ const Header = () => {
                       }}
                       disabled={isLoggingOut}
                       className={`flex items-center justify-center w-full py-4 rounded-2xl font-medium transition-all duration-300 text-base border-2 ${isLoggingOut
-                          ? 'text-gray-400 border-gray-300 cursor-not-allowed bg-gray-100'
-                          : 'text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50 hover:border-red-400'
+                        ? 'text-gray-400 border-gray-300 cursor-not-allowed bg-gray-100'
+                        : 'text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50 hover:border-red-400'
                         }`}
                     >
                       <LogOut className={`h-5 w-5 mr-2 transition-transform duration-300 ${isLoggingOut ? 'animate-spin' : ''}`} />

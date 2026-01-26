@@ -49,9 +49,27 @@ class GunMilanCalculator {
     { name: 'Pisces', element: 'Water', number: 12, lord: 'Jupiter' }
   ];
 
+  // Helper to normalize angles to 0-360 range
+  private normalizeAngle(angle: number): number {
+    let a = angle % 360;
+    if (a < 0) a += 360;
+    return a;
+  }
+
+  // Helper to normalize hours to 0-24 range
+  private normalizeHours(hours: number): number {
+    let h = hours % 24;
+    if (h < 0) h += 24;
+    return h;
+  }
+
   // Calculate Nakshatra from birth details (accurate calculation)
   private calculateNakshatra(dateOfBirth: string, timeOfBirth: string): any {
     const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
+    if (isNaN(birthDate.getTime())) {
+      console.error(`Invalid date/time for nakshatra calculation: ${dateOfBirth}T${timeOfBirth}`);
+      throw new Error(`Invalid date or time: ${dateOfBirth} ${timeOfBirth}`);
+    }
 
     // Calculate Julian Day Number
     const year = birthDate.getFullYear();
@@ -72,12 +90,11 @@ class GunMilanCalculator {
     const moonLongitude = this.calculateMoonLongitude(jd);
 
     // Use Moon's position for Nakshatra
-    let siderealLongitude = moonLongitude - ayanamsa;
-    if (siderealLongitude < 0) siderealLongitude += 360;
+    let siderealLongitude = this.normalizeAngle(moonLongitude - ayanamsa);
 
     // Calculate Nakshatra (27 nakshatras, each 13°20' = 13.3333°)
-    const nakshatraIndex = Math.floor(siderealLongitude / 13.3333);
-    return this.nakshatras[nakshatraIndex % 27];
+    const nakshatraIndex = Math.floor(siderealLongitude / (360 / 27));
+    return this.nakshatras[Math.min(26, Math.max(0, nakshatraIndex))];
   }
 
   // Calculate Moon's longitude using VSOP87 theory
@@ -108,6 +125,10 @@ class GunMilanCalculator {
   // Calculate Rashi (Zodiac sign) from birth details
   private calculateRashi(dateOfBirth: string, timeOfBirth: string): any {
     const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
+    if (isNaN(birthDate.getTime())) {
+      console.error(`Invalid date/time for rashi calculation: ${dateOfBirth}T${timeOfBirth}`);
+      throw new Error(`Invalid date or time: ${dateOfBirth} ${timeOfBirth}`);
+    }
 
     // Calculate Julian Day Number
     const year = birthDate.getFullYear();
@@ -128,12 +149,11 @@ class GunMilanCalculator {
     const sunLongitude = this.calculateSunLongitude(jd);
 
     // Calculate sidereal longitude
-    let siderealLongitude = sunLongitude - ayanamsa;
-    if (siderealLongitude < 0) siderealLongitude += 360;
+    let siderealLongitude = this.normalizeAngle(sunLongitude - ayanamsa);
 
     // Calculate Rashi (12 rashis, each 30°)
     const rashiIndex = Math.floor(siderealLongitude / 30);
-    return this.rashis[rashiIndex % 12];
+    return this.rashis[Math.min(11, Math.max(0, rashiIndex))];
   }
 
   // Calculate Sun's longitude using VSOP87 theory
@@ -157,6 +177,10 @@ class GunMilanCalculator {
   // Calculate Ascendant (Lagna) - simplified calculation
   private calculateAscendant(dateOfBirth: string, timeOfBirth: string, latitude: number, longitude: number): any {
     const birthDate = new Date(`${dateOfBirth}T${timeOfBirth}`);
+    if (isNaN(birthDate.getTime())) {
+      console.error(`Invalid date/time for ascendant calculation: ${dateOfBirth}T${timeOfBirth}`);
+      throw new Error(`Invalid date or time: ${dateOfBirth} ${timeOfBirth}`);
+    }
 
     // Calculate Julian Day Number
     const year = birthDate.getFullYear();
@@ -177,17 +201,17 @@ class GunMilanCalculator {
     const sunLongitude = this.calculateSunLongitude(jd);
 
     // Calculate sidereal time (simplified)
-    const siderealTime = (6.697374558 + 2400.051336 * t + 0.000025862 * t * t) % 24;
+    const siderealTime = this.normalizeHours(6.697374558 + 2400.051336 * t + 0.000025862 * t * t);
 
     // Calculate local sidereal time
-    const localSiderealTime = (siderealTime + (longitude / 15)) % 24;
+    const localSiderealTime = this.normalizeHours(siderealTime + (longitude / 15));
 
     // Calculate ascendant (simplified)
-    const ascendantLongitude = (localSiderealTime * 15 + latitude) % 360;
+    const ascendantLongitude = this.normalizeAngle(localSiderealTime * 15 + latitude);
 
     // Calculate Rashi for ascendant
     const rashiIndex = Math.floor(ascendantLongitude / 30);
-    return this.rashis[rashiIndex % 12];
+    return this.rashis[Math.min(11, Math.max(0, rashiIndex))];
   }
 
   // Calculate Gun Milan scores based on actual astronomical positions
@@ -629,8 +653,9 @@ class GunMilanCalculator {
           }
         }
       };
-    } catch (error) {
-      throw new Error('Failed to calculate Gun Milan compatibility');
+    } catch (error: any) {
+      console.error('GunMilanCalculator Error:', error);
+      throw new Error(`Failed to calculate Gun Milan compatibility: ${error.message}`);
     }
   }
 
@@ -700,9 +725,10 @@ export async function POST(request: NextRequest) {
     const result = calculator.calculateCompatibility(boyData, girlData);
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('API Route Error:', error);
     return NextResponse.json(
-      { error: 'Failed to calculate Gun Milan compatibility' },
+      { error: error.message || 'Failed to calculate Gun Milan compatibility' },
       { status: 500 }
     );
   }

@@ -109,14 +109,14 @@ export default function MatchmakingPage() {
 
   const calculateGunMilan = async () => {
     if (!boyData.name || !boyData.dateOfBirth || !boyData.timeOfBirth || !boyData.state ||
-        !girlData.name || !girlData.dateOfBirth || !girlData.timeOfBirth || !girlData.state) {
+      !girlData.name || !girlData.dateOfBirth || !girlData.timeOfBirth || !girlData.state) {
       setErrorMessage('✨ Please fill in all required fields to calculate your compatibility');
       setTimeout(() => setErrorMessage(null), 5000);
       return;
     }
 
     setIsCalculating(true);
-    
+
     try {
       // Call the proper API for accurate astronomical calculations
       const response = await fetch('/api/matchmaking/gun-milan', {
@@ -131,15 +131,16 @@ export default function MatchmakingPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to calculate Gun Milan');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to calculate Gun Milan');
       }
 
       const result = await response.json();
-      
+
       // Debug: Log the API response to see what's being returned
       console.log('API Response:', result);
       console.log('Birth Charts:', result.birthCharts);
-      
+
       // Transform API result to match our interface
       const gunMilanResult: GunMilanResult = {
         totalScore: result.totalScore,
@@ -154,16 +155,16 @@ export default function MatchmakingPage() {
         remedies: result.remedies,
         birthCharts: result.birthCharts // Include the birth charts data
       };
-      
+
       setGunMilanResult(gunMilanResult);
       setCurrentStep('results');
-      
+
       // Debug: Log the final result to see what's being set
       console.log('Final GunMilanResult:', gunMilanResult);
       console.log('Birth Charts in Final Result:', gunMilanResult.birthCharts);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error calculating Gun Milan:', error);
-      setErrorMessage('💫 Failed to calculate Gun Milan. Please try again.');
+      setErrorMessage(`💫 ${error.message || 'Failed to calculate Gun Milan. Please try again.'}`);
       setTimeout(() => setErrorMessage(null), 5000);
     } finally {
       setIsCalculating(false);
@@ -548,7 +549,7 @@ export default function MatchmakingPage() {
         <div className="bg-white shadow-sm border-b border-pink-100">
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
-              <button 
+              <button
                 onClick={resetForm}
                 className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors duration-200"
               >
@@ -596,20 +597,19 @@ export default function MatchmakingPage() {
                 <div className="text-6xl font-bold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent mb-3">
                   {gunMilanResult.totalScore}/36
                 </div>
-                <div className={`text-2xl font-bold mb-4 px-4 py-2 rounded-full inline-block ${
-                  gunMilanResult.totalScore >= 32 ? 'bg-green-100 text-green-700 border-2 border-green-300' :
+                <div className={`text-2xl font-bold mb-4 px-4 py-2 rounded-full inline-block ${gunMilanResult.totalScore >= 32 ? 'bg-green-100 text-green-700 border-2 border-green-300' :
                   gunMilanResult.totalScore >= 28 ? 'bg-blue-100 text-blue-700 border-2 border-blue-300' :
-                  gunMilanResult.totalScore >= 24 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300' :
-                  gunMilanResult.totalScore >= 20 ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' :
-                  gunMilanResult.totalScore >= 16 ? 'bg-red-100 text-red-700 border-2 border-red-300' :
-                  'bg-red-200 text-red-800 border-2 border-red-400'
-                }`}>
+                    gunMilanResult.totalScore >= 24 ? 'bg-yellow-100 text-yellow-700 border-2 border-yellow-300' :
+                      gunMilanResult.totalScore >= 20 ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' :
+                        gunMilanResult.totalScore >= 16 ? 'bg-red-100 text-red-700 border-2 border-red-300' :
+                          'bg-red-200 text-red-800 border-2 border-red-400'
+                  }`}>
                   {gunMilanResult.compatibilityLevel}
                 </div>
                 <div className="max-w-3xl mx-auto">
                   <p className="text-gray-700 text-base leading-relaxed">
-                  {gunMilanResult.compatibilityDescription}
-                </p>
+                    {gunMilanResult.compatibilityDescription}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -686,7 +686,7 @@ export default function MatchmakingPage() {
                   </svg>
                   Janma Chakra (Birth Charts)
                 </h3>
-                
+
                 <div className="grid lg:grid-cols-2 gap-6">
                   {/* Boy's Janma Chakra */}
                   <div className="space-y-3">
@@ -708,7 +708,7 @@ export default function MatchmakingPage() {
                           <div className="text-xs text-blue-600 font-semibold">House 3</div>
                           <div className="text-sm font-bold text-gray-800">Siblings</div>
                         </div>
-                        
+
                         {/* Houses 4-6 */}
                         <div className="bg-white p-2 rounded-lg border border-blue-200">
                           <div className="text-xs text-blue-600 font-semibold">House 4</div>
@@ -722,7 +722,7 @@ export default function MatchmakingPage() {
                           <div className="text-xs text-blue-600 font-semibold">House 6</div>
                           <div className="text-sm font-bold text-gray-800">Health</div>
                         </div>
-                        
+
                         {/* Houses 7-9 */}
                         <div className="bg-white p-2 rounded-lg border border-blue-200">
                           <div className="text-xs text-blue-600 font-semibold">House 7</div>
@@ -736,7 +736,7 @@ export default function MatchmakingPage() {
                           <div className="text-xs text-blue-600 font-semibold">House 9</div>
                           <div className="text-sm font-bold text-gray-800">Dharma</div>
                         </div>
-                        
+
                         {/* Houses 10-12 */}
                         <div className="bg-white p-2 rounded-lg border border-blue-200">
                           <div className="text-xs text-blue-600 font-semibold">House 10</div>
@@ -751,7 +751,7 @@ export default function MatchmakingPage() {
                           <div className="text-sm font-bold text-gray-800">Losses</div>
                         </div>
                       </div>
-                      
+
                       {/* Planetary Positions */}
                       <div className="mt-4 space-y-2">
                         <h5 className="font-semibold text-blue-800 text-center">Key Planetary Positions</h5>
@@ -821,7 +821,7 @@ export default function MatchmakingPage() {
                           <div className="text-xs text-pink-600 font-semibold">House 3</div>
                           <div className="text-sm font-bold text-gray-800">Siblings</div>
                         </div>
-                        
+
                         {/* Houses 4-6 */}
                         <div className="bg-white p-2 rounded-lg border border-pink-200">
                           <div className="text-xs text-pink-600 font-semibold">House 4</div>
@@ -835,7 +835,7 @@ export default function MatchmakingPage() {
                           <div className="text-xs text-pink-600 font-semibold">House 6</div>
                           <div className="text-sm font-bold text-gray-800">Health</div>
                         </div>
-                        
+
                         {/* Houses 7-9 */}
                         <div className="bg-white p-2 rounded-lg border border-pink-200">
                           <div className="text-xs text-pink-600 font-semibold">House 7</div>
@@ -849,7 +849,7 @@ export default function MatchmakingPage() {
                           <div className="text-xs text-pink-600 font-semibold">House 9</div>
                           <div className="text-sm font-bold text-gray-800">Dharma</div>
                         </div>
-                        
+
                         {/* Houses 10-12 */}
                         <div className="bg-white p-2 rounded-lg border border-pink-200">
                           <div className="text-xs text-pink-600 font-semibold">House 10</div>
@@ -864,7 +864,7 @@ export default function MatchmakingPage() {
                           <div className="text-sm font-bold text-gray-800">Losses</div>
                         </div>
                       </div>
-                      
+
                       {/* Planetary Positions */}
                       <div className="mt-4 space-y-2">
                         <h5 className="font-semibold text-pink-800 text-center">Key Planetary Positions</h5>
@@ -933,14 +933,14 @@ export default function MatchmakingPage() {
                       <div className="flex justify-between items-center mb-3">
                         <span className="font-bold text-gray-900 text-sm">{gun.name}</span>
                         <div className="flex items-center gap-1">
-                        <span className="text-lg font-bold text-pink-600">{gun.score}</span>
+                          <span className="text-lg font-bold text-pink-600">{gun.score}</span>
                           <span className="text-xs text-gray-500">/ {gun.name.includes('(') ? gun.name.match(/\((\d+)/)?.[1] || '0' : '0'}</span>
-                      </div>
+                        </div>
                       </div>
                       <p className="text-gray-700 text-xs leading-relaxed mb-3">{gun.description}</p>
                       <div className="pt-2 border-t border-pink-200">
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-gradient-to-r from-pink-500 to-orange-500 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${(gun.score / parseInt(gun.name.match(/\((\d+)/)?.[1] || '1')) * 100}%` }}
                           ></div>
@@ -1015,8 +1015,8 @@ export default function MatchmakingPage() {
       <div className="bg-white shadow-sm border-b border-pink-100">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link 
-              href="/services" 
+            <Link
+              href="/services"
               className="flex items-center gap-2 text-gray-600 hover:text-pink-600 transition-colors duration-200"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -1063,7 +1063,7 @@ export default function MatchmakingPage() {
               <span className="block text-pink-600">Vedic Compatibility Analysis</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Enter the birth details of both partners to calculate the traditional 
+              Enter the birth details of both partners to calculate the traditional
               36-point Gun Milan compatibility score based on Vedic astrology.
             </p>
           </motion.div>
@@ -1139,7 +1139,7 @@ export default function MatchmakingPage() {
                         </span>
                         <ChevronDown className={`w-4 h-4 transition-transform ${showBoyStateDropdown ? 'rotate-180' : ''}`} />
                       </button>
-                      
+
                       {showBoyStateDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
                           <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
@@ -1153,7 +1153,7 @@ export default function MatchmakingPage() {
                             />
                           </div>
                           {states
-                            .filter(state => 
+                            .filter(state =>
                               state.toLowerCase().includes(boyStateSearch.toLowerCase())
                             )
                             .map((state) => (
@@ -1237,7 +1237,7 @@ export default function MatchmakingPage() {
                         </span>
                         <ChevronDown className={`w-4 h-4 transition-transform ${showGirlStateDropdown ? 'rotate-180' : ''}`} />
                       </button>
-                      
+
                       {showGirlStateDropdown && (
                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
                           <div className="sticky top-0 bg-white p-2 border-b border-gray-200">
@@ -1251,7 +1251,7 @@ export default function MatchmakingPage() {
                             />
                           </div>
                           {states
-                            .filter(state => 
+                            .filter(state =>
                               state.toLowerCase().includes(girlStateSearch.toLowerCase())
                             )
                             .map((state) => (
@@ -1277,11 +1277,10 @@ export default function MatchmakingPage() {
               <button
                 onClick={calculateGunMilan}
                 disabled={isCalculating}
-                className={`inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold ${
-                  isCalculating
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:shadow-xl hover:scale-105'
-                }`}
+                className={`inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold ${isCalculating
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:shadow-xl hover:scale-105'
+                  }`}
               >
                 {isCalculating ? (
                   <>

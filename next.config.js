@@ -9,6 +9,10 @@ const nextConfig = {
         source: '/api/backend/:path*',
         destination: 'http://localhost:7002/api/:path*',
       },
+      {
+        source: '/blog/:slug*',
+        destination: 'https://blog.sobhagya.in/:slug*',
+      },
     ];
   },
   async headers() {

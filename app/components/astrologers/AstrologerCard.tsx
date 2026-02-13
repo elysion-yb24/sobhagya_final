@@ -400,7 +400,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
               </div>
             )}
             <p className="text-sm text-gray-600 mt-1 line-clamp-1">
-              {partner.talksAbout?.slice(0, 3).join(", ") ||
+              {partner.talksAbout?.slice(0, 3).join(", ").replace("tarrot reading","Card Reading") ||
                 specializations?.join(", ") ||
                 "Numerology, Vedic, Vastu"}
             </p>

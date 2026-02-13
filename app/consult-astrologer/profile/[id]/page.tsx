@@ -420,9 +420,9 @@ export default function CallAstrologerProfilePage() {
 
                                 {/* Specializations */}
                                 <p className="text-[#373737] mb-1 text-sm sm:text-base md:text-lg">
-                                    {astrologer.talksAbout?.slice(0, 3).join(", ") ||
+                                    {astrologer.talksAbout?.slice(0, 3).join(", ").replace("tarrot reading","Card Reading") ||
                                         astrologer.specializations?.join(", ") ||
-                                        "Tarrot reading, Pranic healing, Vedic, Horoscope Readings"}
+                                        "Card reading, Pranic healing, Vedic, Horoscope Readings"}
                                 </p>
 
                                 {/* Languages */}
@@ -467,7 +467,7 @@ export default function CallAstrologerProfilePage() {
                         {/* Description */}
                         <p className="text-gray-700 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 w-full">
                             {astrologer.about ||
-                                `Astrologer ${astrologer.name} is a renowned expert in ${(astrologer.talksAbout?.slice(0, 3) || astrologer.specializations || ["Tarrot reading", "Pranic healing", "Vedic astrology"]).join(", ")}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer.name} offers personalized consultations to align your life with cosmic energies.`}
+                                `Astrologer ${astrologer.name} is a renowned expert in ${(astrologer.talksAbout?.slice(0, 3) || astrologer.specializations || ["Card reading", "Pranic healing", "Vedic astrology"]).join(", ").replace("tarrot reading","Card Reading")}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer.name} offers personalized consultations to align your life with cosmic energies.`}
                         </p>
 
                         {/* Action Buttons */}
@@ -508,7 +508,7 @@ export default function CallAstrologerProfilePage() {
                                     fontFamily: 'EB Garamond'
                                 }}
                             >
-                                Check Similar {astrologer.talksAbout?.[0] || astrologer.specializations?.[0] || 'Astrology'} Experts
+                                Check Similar {astrologer.talksAbout?.[0].replace("tarrot reading","Card Reading") || astrologer.specializations?.[0] || 'Astrology'} Experts
                             </h2>
 
                             <div className="relative">
@@ -569,7 +569,7 @@ export default function CallAstrologerProfilePage() {
                                              
                                              {/* Expertise */}
                                              <p className="text-sm text-gray-600 mb-0.5 line-clamp-2 h-8 flex items-center justify-center text-center">
-                                                 {similar.talksAbout?.join(", ") || similar.specializations?.join(", ") || "Kp, Vedic, Vastu"}
+                                                 {similar.talksAbout?.join(", ").replace("tarrot reading","Card Reading") || similar.specializations?.join(", ") || "Kp, Vedic, Vastu"}
                                              </p>
                                              
                                              {/* Experience */}

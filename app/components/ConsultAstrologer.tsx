@@ -275,7 +275,7 @@ const AstrologerCarousel = () => {
                   
                   {/* Expertise */}
                   <p className="text-sm text-gray-600 mb-0 line-clamp-2 h-8 flex items-center justify-center text-center">
-                    {astrologer.talksAbout?.slice(0, 3).join(", ") || "Kp, Vedic, Vastu"}
+                    {astrologer.talksAbout?.slice(0, 3).join(", ").replace("tarrot reading","Card Reading") || "Kp, Vedic, Vastu"}
                   </p>
                   
                   {/* Experience */}

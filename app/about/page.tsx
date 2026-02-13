@@ -199,7 +199,7 @@ const AboutUs = () => {
               {[
                 "Love & Marriage Compatibility",
                 "Financial Astrology",
-                "Numerology & Tarot Readings",
+                "Numerology & Card Readings",
                 "Auspicious Muhurat Selection",
                 "Vastu Shastra Consultation"
               ].map((feature, index) => (

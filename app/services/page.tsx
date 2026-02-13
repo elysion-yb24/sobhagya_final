@@ -67,9 +67,9 @@ export default function Services() {
           link: "#" 
         },
         { 
-          name: "Tarot Reading", 
+          name: "Card Reading", 
           image: "/Group 13394.png", 
-          description: "Unlocking the mysteries of fate through tarot interpretations.", 
+          description: "Unlocking the mysteries of fate through Card interpretations.", 
           link: "#" 
         },
         { 

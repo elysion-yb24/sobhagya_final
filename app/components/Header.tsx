@@ -248,7 +248,7 @@ const Header = () => {
     window.location.href = '/profile/complete';
   };
 
-  if (pathname === '/audio-call' || pathname === '/video-call') {
+  if (pathname === '/audio-call' || pathname === '/video-call' || (pathname && pathname.startsWith('/m-'))) {
     return null;
   }
 

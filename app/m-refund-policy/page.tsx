@@ -11,12 +11,6 @@ export default function RefundPolicy() {
             <Link href="/" className="flex items-center space-x-2">
               <span className="text-2xl font-bold text-[#745802]">SOBHAGYA</span>
             </Link>
-            <Link
-              href="/"
-              className="text-[#F7971E] hover:text-[#E68A19] transition-colors duration-200"
-            >
-              ← Back to Home
-            </Link>
           </div>
         </div>
       </div>

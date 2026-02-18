@@ -15,12 +15,6 @@ export default function TermsAndConditions() {
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center space-x-2">
             </Link>
-            <Link
-              href="/"
-              className="text-[#F7971E] hover:text-[#E68A19] transition-colors duration-200"
-            >
-              ← Back to Home
-            </Link>
           </div>
         </div>
       </div>

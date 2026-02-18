@@ -16,12 +16,6 @@ export default function PrivacyPolicy() {
             <Link href="/" className="flex items-center space-x-2">
               <span className="text-2xl font-bold text-[#556B2F]"></span>
             </Link>
-            <Link
-              href="/"
-              className="text-[#F7971E] hover:text-[#E68A19] transition-colors duration-200"
-            >
-              ← Back to Home
-            </Link>
           </div>
         </div>
       </div>

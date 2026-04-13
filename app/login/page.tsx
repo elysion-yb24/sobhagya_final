@@ -20,7 +20,7 @@ import {
   Loader2
 } from 'lucide-react';
 import OtpVerificationScreen from '../components/auth/OtpVerificationScreen';
-import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails } from '../utils/auth-utils';
+import { getAuthToken, clearAuthData, isAuthenticated, getUserDetails, storeAuthToken } from '../utils/auth-utils';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import { getApiBaseUrl } from '../config/api';
 
@@ -110,8 +110,8 @@ export default function LoginPage() {
         
         console.log('🔍 Checking stored data:', { storedAstrologerId, callIntent, callSource });
         
-        if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-          console.log('✅ Found call intent from call-with-astrologer:', callIntent, 'for astrologer:', storedAstrologerId);
+        if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
+          console.log('✅ Found call intent from', callSource, ':', callIntent, 'for astrologer:', storedAstrologerId);
           // Clear the original intent data
           localStorage.removeItem('selectedAstrologerId');
           localStorage.removeItem('callIntent');
@@ -119,18 +119,6 @@ export default function LoginPage() {
           // Directly initiate call and navigate to call page
           await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
           return;
-        } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
-          console.log('✅ Found call intent from astrologer card:', callIntent, 'for astrologer:', storedAstrologerId);
-          // Store the call intent for immediate call initiation
-          localStorage.setItem('immediateCallIntent', callIntent);
-          localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
-          // Clear the original intent data
-          localStorage.removeItem('selectedAstrologerId');
-          localStorage.removeItem('callIntent');
-          localStorage.removeItem('callSource');
-          // Redirect to astrologers page for immediate call initiation
-          console.log('🚀 Redirecting to astrologers page for immediate call');
-          router.push('/astrologers');
         } else if (storedAstrologerId) {
           console.log('📞 Found stored astrologer ID:', storedAstrologerId);
           localStorage.removeItem('selectedAstrologerId');
@@ -260,11 +248,53 @@ export default function LoginPage() {
         return;
       }
 
+      console.log('🔄 Resolving numericId for astrologer:', astrologerId);
+      let numericId = '';
+      let astrologerName = 'Astrologer';
+
+      // 1. Try direct fetch
+      try {
+        const profileRes = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          numericId = profileData?.data?.numericId?.toString() || '';
+          astrologerName = profileData?.data?.name || 'Astrologer';
+        }
+      } catch (err) {
+        console.warn('Direct profile fetch failed, using fallback search');
+      }
+
+      // 2. Fallback to list search if direct fetch failed to find numericId
+      if (!numericId) {
+        try {
+          const listRes = await fetch(`${getApiBaseUrl()}/user/api/users-list?skip=0&limit=50`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (listRes.ok) {
+            const listData = await listRes.json();
+            const foundHead = (listData.data?.users || []).find((u: any) => u._id === astrologerId);
+            if (foundHead) {
+              numericId = foundHead.numericId?.toString() || '';
+              astrologerName = foundHead.name || 'Astrologer';
+            }
+          }
+        } catch (err) {
+          console.warn('Fallback search failed');
+        }
+      }
+
+      // If we still don't have a numericId, we might have to use the original ID and hope for the best, 
+      // but the backend usually returns ERROR for MongoDB IDs.
+      // IMPORTANT: Calling backend uses getUserData(_id) from user-service, so we MUST send the MongoDB ID.
+      const receiverId = astrologerId; 
+      console.log('🎯 Using MongoDB ID for call initiation:', receiverId);
+
       const channelId = Date.now().toString();
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
       const body = {
-        receiverUserId: astrologerId,
+        receiverUserId: receiverId,
         type: callType === 'audio' ? 'call' : 'video',
         appVersion: '1.0.0'
       };
@@ -283,8 +313,6 @@ export default function LoginPage() {
       if (!response.ok || !data?.data?.token || !data?.data?.channel) {
         throw new Error(data?.message || 'Failed to initiate call');
       }
-
-      const astrologerName = await fetchAstrologerName(astrologerId, token);
 
       // Keep source for back nav, drop intent keys
       localStorage.setItem('lastAstrologerId', astrologerId);
@@ -402,8 +430,8 @@ export default function LoginPage() {
             }
           }
 
-          if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-            console.log('🚀 Initiating direct call after OTP success');
+          if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
+            console.log('🚀 Initiating direct call after OTP success from', callSource);
             localStorage.removeItem('selectedAstrologerId');
             localStorage.removeItem('callIntent');
             localStorage.removeItem('callSource');
@@ -453,10 +481,8 @@ export default function LoginPage() {
       
       if (response.ok) {
         if (responseData.token) {
-          localStorage.setItem('authToken', responseData.token);
-          
-          document.cookie = `authToken=${responseData.token}; path=/; max-age=${60*60*24*7}`; // 7 days
-          
+          storeAuthToken(responseData.token);
+
           console.log("Token saved successfully:", responseData.token);
         } else {
           console.error("No token found in response:", responseData);
@@ -508,9 +534,9 @@ export default function LoginPage() {
           }
         }
 
-        // Handle call intent from astrologer card or Call with Astrologer page
-        if (storedAstrologerId && callIntent && callSource === 'callWithAstrologer') {
-          console.log('📞 Found call intent from call-with-astrologer:', callIntent, 'for astrologer:', storedAstrologerId);
+        // Handle call intent from any call source
+        if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
+          console.log('📞 Found call intent from', callSource, ':', callIntent, 'for astrologer:', storedAstrologerId);
           
           // Clear the original intent data
           localStorage.removeItem('selectedAstrologerId');
@@ -519,26 +545,6 @@ export default function LoginPage() {
           
           // Directly initiate call and navigate to call page
           await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
-          return;
-        } else if (storedAstrologerId && callIntent && callSource === 'astrologerCard') {
-          console.log('📞 Found call intent from astrologer card:', callIntent, 'for astrologer:', storedAstrologerId);
-          
-          // Store the call intent for immediate call initiation
-          localStorage.setItem('immediateCallIntent', callIntent);
-          localStorage.setItem('immediateCallAstrologerId', storedAstrologerId);
-          
-          // Clear the original intent data
-          localStorage.removeItem('selectedAstrologerId');
-          localStorage.removeItem('callIntent');
-          localStorage.removeItem('callSource');
-          
-          // Redirect to astrologers page where immediate call will be initiated
-          console.log('🚀 Post-OTP: Redirecting to astrologers page for immediate call');
-          console.log('🔍 Stored immediate call data:', {
-            immediateCallIntent: callIntent,
-            immediateCallAstrologerId: storedAstrologerId
-          });
-          router.push('/astrologers');
           return;
         }
 

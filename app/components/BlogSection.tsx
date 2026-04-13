@@ -27,7 +27,7 @@ const BlogSection = () => {
         }
 
         const response = await fetch(
-          buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS) + "?skip=0&limit=10",
+          "/api/blog/admin/get-blogs?skip=0&limit=10",
           { headers }
         );
 

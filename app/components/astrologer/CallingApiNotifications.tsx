@@ -49,7 +49,7 @@ export default function CallingApiNotifications({
     try {
       console.log('📱 Fetching pending calls for astrologer:', currentAstrologerId);
       
-      const response = await fetch(`/api/calling/call/call-token-livekit?action=get_active_calls&astrologerId=${currentAstrologerId}`, {
+      const response = await fetch(`/api/calling/call-token-livekit?action=get_active_calls&astrologerId=${currentAstrologerId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -125,7 +125,7 @@ export default function CallingApiNotifications({
 
       try {
         // Update call status via calling API
-        const updateResponse = await fetch('/api/calling/call/call-token-livekit', {
+        const updateResponse = await fetch('/api/calling/call-token-livekit', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -260,7 +260,7 @@ export default function CallingApiNotifications({
         // Generate a web device token (in production, use actual push notification service)
         const deviceToken = `web_${currentAstrologerId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        const response = await fetch('/api/calling/call/call-token-livekit', {
+        const response = await fetch('/api/calling/call-token-livekit', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

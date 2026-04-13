@@ -357,10 +357,10 @@ html, body {
     overflow: hidden;
   }
   
-  /* Better touch targets for mobile */
-  button, a {
-    min-height: 44px;
-    min-width: 44px;
+  /* Better touch targets for mobile - only for standalone buttons */
+  button:not(.inline-btn),
+  a:not(.inline-link) {
+    min-height: 40px;
   }
 }
 
@@ -484,4 +484,84 @@ img, video {
 
 .animate-glow {
   animation: glow 2s ease-in-out infinite;
+}
+
+/* ===== Astrology-Themed Animations ===== */
+
+/* Slow rotation for mandala / zodiac circles */
+@keyframes rotateSlow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-rotate-slow {
+  animation: rotateSlow 30s linear infinite;
+}
+
+/* Sacred glow for astrology elements */
+@keyframes sacredGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(247, 151, 30, 0.2), 0 0 30px rgba(247, 151, 30, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(247, 151, 30, 0.4), 0 0 50px rgba(247, 151, 30, 0.2);
+  }
+}
+.animate-sacred-glow {
+  animation: sacredGlow 3s ease-in-out infinite;
+}
+
+/* Fade in with scale for modals */
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-fadeInScale {
+  animation: fadeInScale 0.3s ease-out forwards;
+}
+
+/* Cosmic shimmer for premium elements */
+@keyframes cosmicShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.animate-cosmic-shimmer {
+  background-size: 200% auto;
+  animation: cosmicShimmer 3s linear infinite;
+}
+
+/* Gentle breathing animation for avatars during call */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Staggered fade-in for lists */
+.animate-stagger-in > * {
+  opacity: 0;
+  transform: translateY(12px);
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+.animate-stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
+.animate-stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
+.animate-stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
+.animate-stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
+.animate-stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
+.animate-stagger-in > *:nth-child(6) { animation-delay: 0.3s; }
+
+/* Scrollbar hide utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

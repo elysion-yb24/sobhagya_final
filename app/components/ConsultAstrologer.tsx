@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { getApiBaseUrl } from '@/app/config/api';
-import { isAuthenticated } from '@/app/utils/auth-utils';
+import { isAuthenticated, getAuthToken, getUserDetails } from '@/app/utils/auth-utils';
 
 interface Astrologer {
   _id: string;
@@ -141,14 +141,73 @@ const AstrologerCarousel = () => {
     setShowCallOptions(true);
   };
 
+  // Direct call initiation for authenticated users
+  const initiateDirectCall = async (astrologerId: string, astrologerName: string, callType: 'audio' | 'video') => {
+    try {
+      const token = getAuthToken();
+      const user = getUserDetails();
+      if (!token || !user?.id) {
+        localStorage.setItem("selectedAstrologerId", astrologerId);
+        localStorage.setItem("callIntent", callType);
+        localStorage.setItem("callSource", "consultAstrologer");
+        router.push("/login");
+        return;
+      }
+
+      if (user.role === 'friend') {
+        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
+        return;
+      }
+
+      const channelId = Date.now().toString();
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+      const body = {
+        receiverUserId: astrologerId,
+        type: callType === 'audio' ? 'call' : 'video',
+        appVersion: '1.0.0'
+      };
+
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
+        throw new Error(data?.message || 'Failed to initiate call');
+      }
+
+      localStorage.setItem('lastAstrologerId', astrologerId);
+      localStorage.setItem('callSource', 'consultAstrologer');
+
+      const dest = callType === 'audio'
+        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
+        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+
+      router.push(dest);
+    } catch (err) {
+      console.error('❌ Direct call initiation failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to initiate call');
+    }
+  };
+
   // Handle call type selection
   const handleCallTypeSelection = (callType: 'audio' | 'video') => {
     if (selectedCallAstrologer) {
-      localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
-      localStorage.setItem("callIntent", callType);
-      localStorage.setItem("callSource", "consultAstrologer");
       setShowCallOptions(false);
-      router.push("/login");
+      if (isAuthenticated()) {
+        initiateDirectCall(selectedCallAstrologer._id, selectedCallAstrologer.name, callType);
+      } else {
+        localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
+        localStorage.setItem("callIntent", callType);
+        localStorage.setItem("callSource", "consultAstrologer");
+        router.push("/login");
+      }
     }
   };
 
@@ -163,7 +222,7 @@ const AstrologerCarousel = () => {
          backgroundImage: "url('/bg-image.svg')",
         }}>
         <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-center text-white text-5xl md:text-4xl font-bold mb-10" style={{
+          <h2 className="text-center text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-10" style={{
             fontFamily: 'EB Garamond',
           }}>
             Consult with <em>India's</em> best Astrologers
@@ -192,7 +251,7 @@ const AstrologerCarousel = () => {
     >
       <div className="max-w-6xl mx-auto px-4">
         <h2
-          className="text-center text-white text-5xl md:text-4xl font-bold mb-10"
+          className="text-center text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-10"
           style={{ fontFamily: "EB Garamond" }}
         >
           Consult with <em>India's</em> best Astrologers
@@ -223,7 +282,7 @@ const AstrologerCarousel = () => {
                 }}
               >
                 <div
-                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-[221px] mx-auto"
+                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-full max-w-[221px] mx-auto"
                   onClick={() => handleAstrologerClick(astrologer._id)}
                 >
                   {/* Profile Picture */}

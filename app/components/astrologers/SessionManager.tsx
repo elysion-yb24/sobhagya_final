@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { io, Socket } from 'socket.io-client'
-import { getUserDetails } from '../../utils/auth-utils'
+import { getUserDetails, getAuthToken } from '../../utils/auth-utils'
 
 interface SessionManagerContextType {
   socket: Socket | null
@@ -45,17 +45,37 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
 
     if (!userId) return
 
-    const newSocket = io('http://localhost:7001', {
-      query: { userId, usertype: userRole },
-      transports: ['websocket'],
+    const token = getAuthToken();
+    const backendBase = 'https://micro.sobhagya.in';
+    const newSocket = io(backendBase, {
+      path: '/socket.io', // Removed trailing slash
+      query: { 
+        userId, 
+        usertype: userRole,
+        token: token || '' 
+      },
+      transports: ['polling'], // Forced polling temporarily for debugging
+      secure: true,
+      rejectUnauthorized: false, // Sometimes needed for microservices with complex certs
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 20, // Increase attempts
     })
 
-    newSocket.on('connect', () => setIsConnected(true))
-    newSocket.on('disconnect', () => setIsConnected(false))
-    newSocket.on('connect_error', () => setIsConnected(false))
+    newSocket.on('connect', () => {
+      console.log('✅ [SessionManager] Socket connected successfully:', newSocket.id);
+      setIsConnected(true);
+    });
+    
+    newSocket.on('disconnect', (reason) => {
+      console.log('⚠️ [SessionManager] Socket disconnected:', reason);
+      setIsConnected(false);
+    });
+    
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ [SessionManager] Socket connection error:', error.message);
+      setIsConnected(false);
+    });
 
     // ✅ Session events
     newSocket.on('session_created', (data) => {

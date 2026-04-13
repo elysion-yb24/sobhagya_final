@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildApiUrl, API_CONFIG } from '../../../../config/api';
+import { API_CONFIG, getApiBaseUrl } from '../../../../config/api';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     console.log('Authorization header:', authHeader);
     console.log('Token from query:', token);
     
-    // Build the target URL using config
-    let targetUrl = buildApiUrl(API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS);
+    // Build the target URL using resilient helper and microservice prefix
+    const apiBaseUrl = getApiBaseUrl();
+    let targetUrl = `${apiBaseUrl}/user${API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS}`;
     const queryParams = new URLSearchParams();
     
     // Add query parameters from request if any

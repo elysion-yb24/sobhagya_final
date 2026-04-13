@@ -180,7 +180,7 @@ const HeroSection: React.FC = () => {
       <div className="relative">
         {/* Navigation cards: positioned half on orange background */}
         <div className="relative z-20 -mt-1 sm:-mt-28 md:-mt-9 lg:-mt-16 mb-12">
-          <div className="w-[100vw] mx-auto px-4 sm:px-6 md:px-8">
+          <div className="w-full mx-auto px-4 sm:px-6 md:px-8">
             {/* Mobile: Horizontal small buttons */}
             <div className="flex flex-row justify-center gap-2 sm:hidden mb-6 px-2">
               {navigationCards.map((card) => (

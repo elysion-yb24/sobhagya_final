@@ -7,7 +7,7 @@ import Image from "next/image";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import { WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
 import { getApiBaseUrl } from "../config/api";
-import { isAuthenticated } from "../utils/auth-utils";
+import { isAuthenticated, getAuthToken, getUserDetails } from "../utils/auth-utils";
 
 interface Astrologer {
   _id: string;
@@ -135,13 +135,72 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
     setShowCallOptions(true);
   };
 
+  // Direct call initiation for authenticated users
+  const initiateDirectCall = async (astrologer: Astrologer, callType: 'audio' | 'video') => {
+    try {
+      const token = getAuthToken();
+      const user = getUserDetails();
+      if (!token || !user?.id) {
+        localStorage.setItem("selectedAstrologerId", astrologer._id);
+        localStorage.setItem("callIntent", callType);
+        localStorage.setItem("callSource", "callWithAstrologer");
+        router.push("/login");
+        return;
+      }
+
+      if (user.role === 'friend') {
+        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
+        return;
+      }
+
+      const channelId = Date.now().toString();
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+      const body = {
+        receiverUserId: astrologer._id,
+        type: callType === 'audio' ? 'call' : 'video',
+        appVersion: '1.0.0'
+      };
+
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
+        throw new Error(data?.message || 'Failed to initiate call');
+      }
+
+      localStorage.setItem('lastAstrologerId', astrologer._id);
+      localStorage.setItem('callSource', 'callWithAstrologer');
+
+      const dest = callType === 'audio'
+        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
+        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+
+      router.push(dest);
+    } catch (err) {
+      console.error('\u274c Direct call initiation failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to initiate call');
+    }
+  };
+
   const handleCallTypeSelection = (callType: 'audio' | 'video') => {
     if (selectedCallAstrologer) {
-      localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
-      localStorage.setItem("callIntent", callType);
-      localStorage.setItem("callSource", "callWithAstrologer");
       setShowCallOptions(false);
-      router.push("/login");
+      if (isAuthenticated()) {
+        initiateDirectCall(selectedCallAstrologer, callType);
+      } else {
+        localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
+        localStorage.setItem("callIntent", callType);
+        localStorage.setItem("callSource", "callWithAstrologer");
+        router.push("/login");
+      }
     }
   };
 
@@ -150,7 +209,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
       <div className="w-full bg-white min-h-screen">
         {/* 🟠 Hero Section */}
         <motion.div
-          className="relative h-[200px] overflow-hidden mb-8"
+          className="relative h-[160px] sm:h-[180px] md:h-[200px] overflow-hidden mb-6 sm:mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
@@ -164,7 +223,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
           <div className="relative flex flex-col items-center justify-center h-full text-center px-6">
             <motion.h1
-              className="text-white text-6xl sm:text-4xl md:text-6xl font-bold mb-2"
+              className="text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2"
               style={{ fontFamily: "EB Garamond" }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

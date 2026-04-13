@@ -205,216 +205,152 @@ const Header = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl shadow-lg transition-all duration-300 animate-fadeIn">
-      {/* DESKTOP HEADER */}
-      <div className="hidden lg:block">
-        <div className="max-w-8xl mx-auto px-4 lg:px-8">
-          <div className="flex items-center h-20 justify-between">
-            {/* Left: Logo/Brand, responsive width */}
-            <Link href="/" className={`flex items-center gap-3 flex-shrink-0 min-w-[170px] justify-start transition-all duration-200 cursor-pointer ${
-              isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
-            }`}>
-              <Image
-                src="/sobhagya-logo.svg"
-                alt="Sobhagya"
-                width={56}
-                height={56}
-                className="w-14 h-14 object-contain"
-                priority
-                quality={100}
-              />
-              <div className="flex flex-col justify-center">
-                <span className={`text-2xl font-extrabold text-orange-500 tracking-tight ${eagleLake.className}`} style={{ letterSpacing: '0.01em' }}>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-all duration-300 animate-fadeIn font-sans">
+      {/* DESKTOP HEADER — two-row layout with logo spanning full height */}
+      <div className="hidden lg:block bg-white">
+        <div className="max-w-[1400px] mx-auto px-8">
+          <div className="flex">
+            {/* Left: Logo spanning both rows */}
+            <div className="flex items-center pr-10 border-r border-gray-200 py-3 self-stretch">
+              <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+                <Image
+                  src="/sobhagya-logo.svg"
+                  alt="Sobhagya"
+                  width={64}
+                  height={64}
+                  className="w-14 h-14 object-contain"
+                  priority
+                />
+                <span className={`text-2xl font-medium text-orange-500 tracking-tight ${eagleLake.className}`}>
                   Sobhagya
                 </span>
-                <span className="text-xs text-gray-400 font-medium tracking-wide mt-0.5" style={{ letterSpacing: '0.02em' }}>
-                  Your Trusted Astrology Platform
-                </span>
-              </div>
-            </Link>
-            {/* Center: Navigation, flex-1, centered */}
-            <nav className="flex-1 flex items-center justify-center gap-6 lg:gap-8">
-              <Link
-                href="/call-with-astrologer"
-                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
-                  isActiveLink('/call-with-astrologer') 
-                    ? 'text-orange-600 font-bold' 
-                    : 'text-gray-700 hover:text-orange-600'
-                }`}
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">Call with Astrologer</span>
-                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/call-with-astrologer') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                }`} />
               </Link>
-              
-              <Link
-                href="/about"
-                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
-                  isActiveLink('/about') 
-                    ? 'text-orange-600 font-bold' 
-                    : 'text-gray-700 hover:text-orange-600'
-                }`}
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">About</span>
-                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/about') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                }`} />
-              </Link>
-              
-              <Link
-                href="/services"
-                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
-                  isActiveLink('/services') 
-                    ? 'text-orange-600 font-bold' 
-                    : 'text-gray-700 hover:text-orange-600'
-                }`}
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">Services</span>
-                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/services') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                }`} />
-              </Link>
-              
+            </div>
 
-              
-
-              
-              <Link
-                href="/blog"
-                className={`relative text-base font-semibold px-3 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[200px] text-center ${
-                  isActiveLink('/blog') 
-                    ? 'text-orange-600 font-bold' 
-                    : 'text-gray-700 hover:text-orange-600'
-                }`}
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">Blog</span>
-                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/blog') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                }`} />
-              </Link>
-              
-
-            </nav>
-            {/* Right: User/Login, responsive width */}
-            <div className="flex items-center gap-2 flex-shrink-0 min-w-[210px] justify-end">
-              {isAuthenticatedUser ? (
-                <div className="flex items-center gap-2 bg-orange-50/70 border border-orange-100 rounded-full px-3 py-1.5 shadow-sm">
-                  <div className="w-8 h-8 rounded-full bg-orange-200 flex items-center justify-center">
-                    <User className="w-5 h-5 text-orange-600" />
+            {/* Right: Two stacked rows */}
+            <div className="flex-1 flex flex-col pl-10">
+              {/* Top row: CTA + Signup/Login */}
+              <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  {/* User Pill when authenticated */}
+                  {isAuthenticatedUser && (
+                    <div className="flex items-center gap-3 bg-orange-50/50 border border-orange-100 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
+                        <User className="w-3.5 h-3.5 text-orange-600" />
+                      </div>
+                      <span className="text-gray-700 font-semibold text-sm">
+                        {userProfile?.phoneNumber || getDisplayName()}
+                      </span>
+                      <button
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        className="w-7 h-7 rounded-full bg-white border border-orange-100 flex items-center justify-center hover:bg-red-50 hover:border-red-100 transition-colors group"
+                        title="Logout"
+                      >
+                        <LogOut className="w-3.5 h-3.5 text-red-500 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                  <span className="text-gray-700 font-medium text-sm max-w-[100px] truncate">{getDisplayName()}</span>
-                    <button
-                      onClick={handleLogout}
-                    className="ml-1 p-2 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
-                      disabled={isLoggingOut}
-                    title="Logout"
+
+                {/* Right: Signup/Login */}
+                <div>
+                  {!isAuthenticatedUser ? (
+                    <Link href="/login" className="text-orange-500 font-bold text-sm hover:underline transition-all">
+                      Signup/Login
+                    </Link>
+                  ) : (
+                    <span className="text-sm text-transparent select-none">placeholder</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom row: Navigation links */}
+              <div className="flex items-center justify-between py-3">
+                <nav className="flex items-center gap-4 xl:gap-8 text-sm font-medium text-gray-600">
+                  {[
+                    { label: "About Us", href: "/about" },
+                    { label: "Services", href: "/services" },
+                    { label: "Live Sessions", href: "/astrologers" },
+                    { label: "Call with Astrologer", href: "/call-with-astrologer" },
+                    { label: "Shop", href: "/services" },
+                    { label: "Blog", href: "/blog" },
+                    { label: "Contact Us", href: "/contact" },
+                  ].map((link) => (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className={`relative py-1 transition-colors hover:text-orange-500 ${
+                        isActiveLink(link.href)
+                          ? "text-orange-600 font-semibold"
+                          : ""
+                      }`}
                     >
-                    <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/login"
-                  className="px-5 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-base shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  >
-                    Signup/Login
-                  </Link>
-                )}
+                      {link.label}
+                    </Link>
+                  ))}
+                </nav>
+
+                {/* Language selector */}
+                <div className="flex items-center gap-1 cursor-pointer group text-orange-500 hover:text-orange-600 transition-colors text-sm font-medium">
+                  <span>EN</span>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
         </div>
+        {/* Bottom border for entire header */}
+        <div className="border-b border-gray-200" />
       </div>
 
       {/* TABLET HEADER */}
-      <div className="hidden md:block lg:hidden">
+      <div className="hidden md:block lg:hidden bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex items-center h-16 justify-between">
-            {/* Left: Logo/Brand */}
-            <Link href="/" className={`flex items-center gap-2 flex-shrink-0 min-w-[140px] justify-start transition-all duration-200 cursor-pointer ${
-              isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
-            }`}>
+            {/* Left: Logo */}
+            <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/sobhagya-logo.svg"
                 alt="Sobhagya"
-                width={48}
-                height={48}
-                className="w-12 h-12 object-contain"
+                width={40}
+                height={40}
+                className="w-10 h-10 object-contain"
                 priority
-                quality={100}
               />
-              <div className="flex flex-col justify-center">
-                <span className={`text-xl font-extrabold text-orange-500 tracking-tight ${eagleLake.className}`} style={{ letterSpacing: '0.01em' }}>
-                  Sobhagya
-                </span>
-              </div>
+              <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
+                Sobhagya
+              </span>
             </Link>
-            {/* Center: Navigation */}
-            <nav className="flex-1 flex items-center justify-center gap-4">
-              <Link
-                href="/call-with-astrologer"
-                className={`relative text-sm font-semibold px-2 py-1 transition-all duration-200 focus:outline-none group whitespace-nowrap max-w-[160px] text-center ${
-                  isActiveLink('/call-with-astrologer') 
-                    ? 'text-orange-600 font-bold' 
-                    : 'text-gray-700 hover:text-orange-600'
-                }`}
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">Call with Astrologer</span>
-                <span className={`absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 transition-transform origin-left duration-200 rounded-full ${
-                  isActiveLink('/call-with-astrologer') ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                }`} />
-              </Link>
-              
-              <Link
-                href="/about"
-                className="relative text-sm font-semibold text-gray-700 px-2 py-1 transition-colors duration-200 hover:text-orange-600 focus:outline-none group whitespace-nowrap max-w-[160px] text-center"
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">About</span>
-                <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
-              </Link>
-              
-              <Link
-                href="/services"
-                className="relative text-sm font-semibold text-gray-700 px-2 py-1 transition-colors duration-200 hover:text-orange-600 focus:outline-none group whitespace-nowrap max-w-[160px] text-center"
-                style={{ lineHeight: '1.2' }}
-              >
-                <span className="block w-full">Services</span>
-                <span className="absolute left-0 -bottom-1 w-full h-0.5 bg-gradient-to-r from-orange-400 to-orange-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-200 rounded-full" />
-              </Link>
-              
 
-            </nav>
-            {/* Right: User/Login */}
-            <div className="flex items-center gap-2 flex-shrink-0 min-w-[160px] justify-end">
+            {/* Right: User Action */}
+            <div className="flex items-center gap-4">
               {isAuthenticatedUser ? (
-                <div className="flex items-center gap-1 bg-orange-50/70 border border-orange-100 rounded-full px-2 py-1.5 shadow-sm">
-                  <div className="w-6 h-6 rounded-full bg-orange-200 flex items-center justify-center">
-                    <User className="w-4 h-4 text-orange-600" />
+                <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-full px-3 py-1 shadow-sm">
+                  <User className="w-4 h-4 text-orange-600" />
+                  <span className="text-gray-700 font-medium text-xs truncate max-w-[100px]">
+                    {userProfile?.phoneNumber || 'User'}
+                  </span>
+                  <button onClick={handleLogout} className="text-red-500 hover:scale-110 transition-transform">
+                    <LogOut className="w-4 h-4" />
+                  </button>
                 </div>
-                  <span className="text-gray-700 font-medium text-xs max-w-[80px] truncate">{getDisplayName()}</span>
-                    <button
-                      onClick={handleLogout}
-                    className="ml-1 p-1 rounded-full border border-red-100 text-red-500 bg-white hover:bg-red-50 transition-colors duration-200 flex items-center"
-                      disabled={isLoggingOut}
-                    title="Logout"
-                    >
-                    <LogOut className="w-3 h-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/login"
-                  className="px-3 py-2 rounded-full bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold text-sm shadow-md hover:from-orange-500 hover:to-orange-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-200"
-                  >
-                    Signup/Login
-                  </Link>
-                )}
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-4 py-1.5 rounded-full bg-orange-500 text-white text-sm font-bold shadow-sm hover:bg-orange-600 transition-colors"
+                >
+                  Login
+                </Link>
+              )}
+              <button 
+                onClick={() => setIsOpen(!isOpen)} 
+                className="p-2 rounded-full bg-gray-50 text-gray-700"
+              >
+                {isOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
             </div>
           </div>
         </div>
@@ -616,10 +552,13 @@ const Header = () => {
                 <h3 className="text-sm font-semibold text-gray-500 mb-3">Navigation</h3>
                 <nav className="space-y-2">
                   {[
-                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
-                    { href: "/about", label: "About", icon: "✨", bgColor: "bg-indigo-100" },
+                    { href: "/about", label: "About Us", icon: "✨", bgColor: "bg-indigo-100" },
                     { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
+                    { href: "/astrologers", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100" },
+                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
+                    { href: "/services", label: "Shop", icon: "🛍️", bgColor: "bg-pink-100" },
                     { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
+                    { href: "/contact", label: "Contact Us", icon: "📧", bgColor: "bg-blue-100" },
                   ].map((item, index) => (
                     <Link 
                       key={item.href}

@@ -291,21 +291,18 @@ export default function AstrologerProfilePage() {
     if (callType && astrologer) {
       console.log('✅ Found callType in query params:', callType, 'for astrologer:', astrologer.name);
       
-      // Small delay to ensure page is fully loaded
-      setTimeout(() => {
-        if (callType === 'audio') {
-          console.log('🎯 Showing audio call confirmation dialog');
-          setShowAudioCallConfirm(true);
-        } else if (callType === 'video') {
-          console.log('🎯 Showing video call confirmation dialog');
-          setShowVideoCallConfirm(true);
-        }
-        
-        // Clear the query parameter from URL
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-        console.log('🧹 Cleared callType from URL');
-      }, 1000);
+      // Clear the query parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Directly initiate call without confirmation dialog
+      if (callType === 'audio') {
+        console.log('🎯 Directly initiating audio call (no confirmation)');
+        handleAudioCall();
+      } else if (callType === 'video') {
+        console.log('🎯 Directly initiating video call (no confirmation)');
+        handleVideoCall();
+      }
     }
   }, [searchParams, astrologer]);
 
@@ -866,12 +863,14 @@ export default function AstrologerProfilePage() {
       const randomId = Math.random().toString(36).substring(2, 15);
       const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
       const channelId = Date.now().toString();
+      const receiverId = partner._id;
       const requestBody = {
-        receiverUserId: partner._id,
+        receiverUserId: receiverId,
         type: 'call',
-        appVersion: '1.0.0'
+        appVersion: '1.0.0',
+        isScreenShareCall: false
       };
-      // --- IMPORTANT DEBUG LOG ---
+      
       console.log('🚨 SENDING receiverUserId:', partner._id, '| requestBody:', requestBody);
       if (!requestBody.receiverUserId) {
         alert('receiverUserId is missing. Cannot initiate audio call.');
@@ -880,9 +879,10 @@ export default function AstrologerProfilePage() {
         return;
       }
       
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+
+      console.log('🔗 Fetching livekit token via proxy:', livekitUrl);
+
       const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
@@ -895,52 +895,54 @@ export default function AstrologerProfilePage() {
       
       if (!response.ok) {
         let errorMessage = 'Failed to initiate audio call';
+        const status = response.status;
         try {
           const errorData = await response.json();
-          // Handle specific backend error messages
-          if (errorData.message === 'DONT_HAVE_ENOUGH_BALANCE') {
+          console.error(`❌ Backend error (${status}):`, JSON.stringify(errorData));
+
+          const msgFromError =
+            errorData && typeof errorData === 'object'
+              ? errorData.message || errorData.error || JSON.stringify(errorData)
+              : String(errorData || '');
+
+          if (msgFromError === 'DONT_HAVE_ENOUGH_BALANCE') {
             errorMessage = 'Insufficient wallet balance for audio call';
-          } else if (errorData.message === 'User not online') {
+          } else if (msgFromError === 'User not online') {
             errorMessage = 'Astrologer is currently offline';
-          } else if (errorData.message === 'User not available for audio call') {
-            errorMessage = 'Audio calls are not available with this astrologer';
-          } else if (errorData.message === 'User already on another call, wait for a few minutes') {
+          } else if (msgFromError === 'User already on another call, wait for a few minutes') {
             errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
-          } else if (errorData.message === 'User Not Found') {
-            errorMessage = 'Astrologer not found';
-          } else if (errorData.message === 'You have been blocked by Partner') {
-            errorMessage = 'You have been blocked by this astrologer';
-          } else if (errorData.message === 'This user cannot initiate a call. Please create a new account.') {
-            errorMessage = 'Your account needs to be verified to make audio calls';
-          } else if (errorData.message === 'Channel ID has to be unique each time, check it') {
-            // Retry with a new channel ID if we haven't retried too many times
-            if (retryCount < 3) {
-              setIsAudioCallProcessing(false);
-              setCurrentCallType(null);
-              setTimeout(() => {
-                handleAudioCall(retryCount + 1);
-              }, 1000);
-              return;
-            } else {
-              errorMessage = 'Unable to start audio call due to session conflicts. Please try again later.';
-            }
           } else {
-            errorMessage = errorData.error || errorData.message || errorMessage;
+            errorMessage = msgFromError || errorMessage;
           }
-        } catch (parseError) {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        } catch (e) {
+          console.error(`❌ HTTP error (${status}):`, response.statusText);
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        console.error('[audio call] livekit token response:', JSON.stringify(data));
+        if (data._debug) console.error('[audio call] 🔍 BACKEND DEBUG:', JSON.stringify(data._debug, null, 2));
+        const msg = data.message || '';
+        let errorMessage = msg || 'Failed to get audio call token';
+        if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
+          errorMessage = 'Insufficient wallet balance for audio call';
+        } else if (msg === 'User not online') {
+          errorMessage = 'Astrologer is currently offline';
+        } else if (msg.includes('already on another call')) {
+          errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
+        } else if (msg === 'Call already in progress') {
+          errorMessage = 'A call is already in progress. Please wait a moment and try again.';
+        } else if (msg === 'User Not Found') {
+          errorMessage = 'Astrologer not found. Please refresh the page and try again.';
         }
         throw new Error(errorMessage);
       }
       
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to get audio call token');
-      }
-      
       // Extract data from backend response structure (matches backend format)
-      const { token: livekitToken, channel, livekitSocketURL } = data.data;
+      const { token: livekitToken, channel, livekitSocketURL, rpm, balance } = data.data;
       
       if (!livekitToken || !channel) {
         throw new Error('Missing token or channel in response');
@@ -954,7 +956,7 @@ export default function AstrologerProfilePage() {
       }
       
       // Open frontend audio call page with token and room
-      const audioCallUrl = `/audio-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
+      const audioCallUrl = `/audio-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}&avatar=${encodeURIComponent(partner.avatar || partner.profileImage || '')}&rpm=${rpm || 0}&balance=${balance || 0}`;
       router.push(audioCallUrl);
       setTimeout(() => {
         setIsAudioCallProcessing(false);
@@ -1090,12 +1092,14 @@ export default function AstrologerProfilePage() {
       const randomId = Math.random().toString(36).substring(2, 15);
       const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
       const channelId = Date.now().toString();
+      const receiverId = partner._id;
       const requestBody = {
-        receiverUserId: partner._id,
+        receiverUserId: receiverId,
         type: 'video',
-        appVersion: '1.0.0'
+        appVersion: '1.0.0',
+        isScreenShareCall: false
       };
-      // --- IMPORTANT DEBUG LOG ---
+      
       console.log('🚨 SENDING receiverUserId:', partner._id, '| requestBody:', requestBody);
       if (!requestBody.receiverUserId) {
         alert('receiverUserId is missing. Cannot initiate video call.');
@@ -1104,9 +1108,10 @@ export default function AstrologerProfilePage() {
         return;
       }
       
-      const baseUrl = getApiBaseUrl() || 'https://micro.sobhagya.in';
-      const livekitUrl = `${baseUrl}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+
+      console.log('🔗 Fetching livekit token via proxy:', livekitUrl);
+
       const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
@@ -1119,40 +1124,27 @@ export default function AstrologerProfilePage() {
       
       if (!response.ok) {
         let errorMessage = 'Failed to initiate video call';
+        const status = response.status;
         try {
           const errorData = await response.json();
-          // Handle specific backend error messages
-          if (errorData.message === 'DONT_HAVE_ENOUGH_BALANCE') {
+          console.error(`❌ Backend error (${status}):`, JSON.stringify(errorData));
+
+          const msgFromError =
+            errorData && typeof errorData === 'object'
+              ? errorData.message || errorData.error || JSON.stringify(errorData)
+              : String(errorData || '');
+
+          if (msgFromError === 'DONT_HAVE_ENOUGH_BALANCE') {
             errorMessage = 'Insufficient wallet balance for video call';
-          } else if (errorData.message === 'User not online') {
+          } else if (msgFromError === 'User not online') {
             errorMessage = 'Astrologer is currently offline';
-          } else if (errorData.message === 'User not available for video call') {
-            errorMessage = 'Video calls are not available with this astrologer';
-          } else if (errorData.message === 'User already on another call, wait for a few minutes') {
+          } else if (msgFromError === 'User already on another call, wait for a few minutes') {
             errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
-          } else if (errorData.message === 'User Not Found') {
-            errorMessage = 'Astrologer not found';
-          } else if (errorData.message === 'You have been blocked by Partner') {
-            errorMessage = 'You have been blocked by this astrologer';
-          } else if (errorData.message === 'This user cannot initiate a call. Please create a new account.') {
-            errorMessage = 'Your account needs to be verified to make video calls';
-          } else if (errorData.message === 'Channel ID has to be unique each time, check it') {
-            // Retry with a new channel ID if we haven't retried too many times
-            if (retryCount < 3) {
-              setIsVideoCallProcessing(false);
-              setCurrentCallType(null);
-              setTimeout(() => {
-                handleVideoCall(retryCount + 1);
-              }, 1000);
-              return;
-            } else {
-              errorMessage = 'Unable to start video call due to session conflicts. Please try again later.';
-            }
           } else {
-            errorMessage = errorData.error || errorData.message || errorMessage;
+            errorMessage = msgFromError || errorMessage;
           }
-        } catch (parseError) {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        } catch (e) {
+          console.error(`❌ HTTP error (${status}):`, response.statusText);
         }
         throw new Error(errorMessage);
       }
@@ -1160,11 +1152,26 @@ export default function AstrologerProfilePage() {
       const data = await response.json();
       
       if (!data.success) {
-        throw new Error(data.message || 'Failed to get video call token');
+        console.error('[video call] livekit token response:', JSON.stringify(data));
+        if (data._debug) console.error('[video call] 🔍 BACKEND DEBUG:', JSON.stringify(data._debug, null, 2));
+        const msg = data.message || '';
+        let errorMessage = msg || 'Failed to get video call token';
+        if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
+          errorMessage = 'Insufficient wallet balance for video call';
+        } else if (msg === 'User not online') {
+          errorMessage = 'Astrologer is currently offline';
+        } else if (msg.includes('already on another call')) {
+          errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
+        } else if (msg === 'Call already in progress') {
+          errorMessage = 'A call is already in progress. Please wait a moment and try again.';
+        } else if (msg === 'User Not Found') {
+          errorMessage = 'Astrologer not found. Please refresh the page and try again.';
+        }
+        throw new Error(errorMessage);
       }
       
       // Extract data from backend response structure (matches backend format)
-      const { token: livekitToken, channel, livekitSocketURL } = data.data;
+      const { token: livekitToken, channel, livekitSocketURL, rpm, balance } = data.data;
       
       if (!livekitToken || !channel) {
         throw new Error('Missing token or channel in response');
@@ -1178,7 +1185,7 @@ export default function AstrologerProfilePage() {
       }
       
       // Open frontend video call page with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}`;
+      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}&avatar=${encodeURIComponent(partner.avatar || partner.profileImage || '')}&rpm=${rpm || 0}&balance=${balance || 0}`;
       router.push(videoCallUrl);
       setTimeout(() => {
         setIsVideoCallProcessing(false);
@@ -1291,7 +1298,7 @@ export default function AstrologerProfilePage() {
         <div 
           className="h-40 relative bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: "url('/cosmic image.png')"
+            backgroundImage: "url('/cosmic%20image.png')"
           }}
         >
           {/* Back button */}
@@ -1434,28 +1441,26 @@ export default function AstrologerProfilePage() {
                       <Phone className="w-4 h-4" />
                       {isAudioCallProcessing ? 'Connecting...' : 'Audio Call'}
                     </button>
-                    { (astrologer?.isVideoCallAllowed) && (
-                      <button
-                        onClick={() => handleVideoCallClick()}
-                        disabled={isVideoCallProcessing}
-                        className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
-                        style={{ 
-                          borderColor: '#4A5568',
-                          color: '#4A5568'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#4A5568';
-                          e.currentTarget.style.color = 'white';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'white';
-                          e.currentTarget.style.color = '#4A5568';
-                        }}
-                      >
-                        <Video className="w-4 h-4" />
-                        {isVideoCallProcessing ? 'Connecting...' : 'Video Call'}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleVideoCallClick()}
+                      disabled={isVideoCallProcessing}
+                      className="bg-white border-2 text-black px-6 py-2.5 rounded-lg font-medium transition-all duration-300 disabled:opacity-50 text-sm flex items-center gap-2 hover:shadow-lg hover:scale-105"
+                      style={{ 
+                        borderColor: '#4A5568',
+                        color: '#4A5568'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#4A5568';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'white';
+                        e.currentTarget.style.color = '#4A5568';
+                      }}
+                    >
+                      <Video className="w-4 h-4" />
+                      {isVideoCallProcessing ? 'Connecting...' : 'Video Call'}
+                    </button>
 
                   </div>
                 </div>
@@ -1662,60 +1667,87 @@ export default function AstrologerProfilePage() {
         isLoading={isVideoCallProcessing}
       />
 
-      {/* Gift Selection Modal */}
+      {/* Gift Selection Modal - Astrology Themed */}
       {showGiftModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-xl p-6 shadow-lg max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Send Dakshina</h2>
-              <button
-                onClick={() => setShowGiftModal(false)}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden animate-fadeInScale">
+            {/* Themed header */}
+            <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-6 py-5 relative overflow-hidden">
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-2 text-5xl">🙏</div>
+                <div className="absolute bottom-0 left-2 text-3xl">✨</div>
+                <div className="absolute top-1 left-1/2 w-20 h-20 border border-white/20 rounded-full animate-rotate-slow" />
+              </div>
+              <div className="flex justify-between items-center relative z-10">
+                <div>
+                  <h2 className="text-xl font-bold text-white">🙏 Send Dakshina</h2>
+                  <p className="text-white/80 text-xs mt-1">Offer divine blessings to {astrologer?.name}</p>
+                </div>
+                <button
+                  onClick={() => setShowGiftModal(false)}
+                  className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                >
+                  <X className="h-4 w-4 text-white" />
+                </button>
+              </div>
             </div>
             
-            <div className="mb-4">
-              <p className="text-gray-600 text-sm mb-4">
-                Choose a gift to send to {astrologer?.name}. Your wallet balance: ₹{walletBalance}
-              </p>
-            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {/* Wallet balance bar */}
+              <div className="flex items-center justify-between mb-5 px-4 py-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl border border-orange-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                    <span className="text-sm">💰</span>
+                  </div>
+                  <span className="text-sm text-gray-600">Wallet Balance</span>
+                </div>
+                <span className="font-bold text-lg" style={{ color: '#F7971E' }}>₹{walletBalance}</span>
+              </div>
 
-            {gifts.length > 0 ? (
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {gifts.map((gift) => (
-                  <button
-                    key={gift._id}
-                    onClick={() => {
-                      setSelectedGift(gift);
-                      setShowGiftConfirm(true);
-                      setShowGiftModal(false);
-                    }}
-                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${
-                      selectedGift?._id === gift._id 
-                        ? 'border-orange-500 bg-orange-50' 
-                        : 'border-gray-200 hover:border-orange-300'
-                    } ${walletBalance < gift.price ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={walletBalance < gift.price}
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-2" />
-                      <h3 className="font-semibold text-gray-900 text-sm mb-1">{gift.name}</h3>
-                      <p className="text-orange-600 font-bold">₹{gift.price}</p>
-                      {walletBalance < gift.price && (
-                        <p className="text-red-500 text-xs mt-1">Insufficient balance</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Gift className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No gifts available at the moment.</p>
-              </div>
-            )}
+              {gifts.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {gifts.map((gift) => (
+                    <button
+                      key={gift._id}
+                      onClick={() => {
+                        setSelectedGift(gift);
+                        setShowGiftConfirm(true);
+                        setShowGiftModal(false);
+                      }}
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 hover:shadow-md ${
+                        selectedGift?._id === gift._id 
+                          ? 'border-orange-500 bg-orange-50 shadow-md scale-[1.02]' 
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
+                      } ${walletBalance < gift.price ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.03]'}`}
+                      disabled={walletBalance < gift.price}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <div className="relative mb-2">
+                          <img src={gift.icon} alt={gift.name} className="w-12 h-12" />
+                          {selectedGift?._id === gift._id && (
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
+                              <CheckCircle className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <h3 className="font-semibold text-gray-900 text-sm mb-0.5">{gift.name}</h3>
+                        <p className="font-bold text-sm" style={{ color: '#F7971E' }}>₹{gift.price}</p>
+                        {walletBalance < gift.price && (
+                          <p className="text-red-500 text-[10px] mt-1 font-medium">Low balance</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Gift className="h-8 w-8 text-gray-300" />
+                  </div>
+                  <p className="text-gray-500">No gifts available at the moment.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

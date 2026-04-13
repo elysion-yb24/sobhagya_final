@@ -86,6 +86,8 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
   // Free call check
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
+  // Direct call initiation state
+  const [isInitiatingCall, setIsInitiatingCall] = useState(false);
   const { walletBalance } = useWalletBalance();
   const { createOrJoinSession, isConnected } = useSessionManager();
 
@@ -175,13 +177,77 @@ const AstrologerCard = React.memo(function AstrologerCard({
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [isCallMenuOpen]);
 
+  // ✅ Direct call initiation (skip profile page & confirmation)
+  const initiateDirectCall = async (callType: 'audio' | 'video') => {
+    try {
+      setIsInitiatingCall(true);
+      const token = getAuthToken();
+      const user = getUserDetails();
+      if (!token || !user?.id) {
+        router.push('/login');
+        return;
+      }
+
+      if (user.role === 'friend') {
+        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
+        setIsInitiatingCall(false);
+        return;
+      }
+
+      const channelId = Date.now().toString();
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
+      const body = {
+        receiverUserId: _id,
+        type: callType === 'audio' ? 'call' : 'video',
+        appVersion: '1.0.0'
+      };
+
+      const response = await fetch(livekitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
+        const msg = data?.message || 'Failed to initiate call';
+        if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
+          setInsufficientBalanceData({ requiredAmount: (rpm || 15) * 2, serviceType: 'call' });
+          setShowInsufficientBalanceModal(true);
+          setIsInitiatingCall(false);
+          return;
+        }
+        throw new Error(msg);
+      }
+
+      localStorage.setItem('lastAstrologerId', _id);
+      localStorage.setItem('callSource', 'astrologerCard');
+      localStorage.removeItem('selectedAstrologerId');
+      localStorage.removeItem('callIntent');
+
+      const dest = callType === 'audio'
+        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(name)}&astrologerId=${encodeURIComponent(_id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
+        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(name)}&astrologerId=${encodeURIComponent(_id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+
+      router.push(dest);
+    } catch (err) {
+      console.error('❌ Direct call initiation failed:', err);
+      alert(err instanceof Error ? err.message : 'Failed to initiate call');
+      setIsInitiatingCall(false);
+    }
+  };
+
   // ✅ Call handlers
   const handleAudioCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsCallMenuOpen(false);
 
     if (isAuthenticated()) {
-      router.push(`/astrologers/${_id}?callType=audio`);
+      initiateDirectCall('audio');
     } else {
       localStorage.setItem("callIntent", "audio");
       localStorage.setItem("selectedAstrologerId", _id);
@@ -195,7 +261,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
     setIsCallMenuOpen(false);
 
     if (isAuthenticated()) {
-      router.push(`/astrologers/${_id}?callType=video`);
+      initiateDirectCall('video');
     } else {
       localStorage.setItem("callIntent", "video");
       localStorage.setItem("selectedAstrologerId", _id);
@@ -444,7 +510,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                 background: "linear-gradient(90deg, #F9A43A 0%, #F7971E 100%)",
               }}
             >
-              {hasCompletedFreeCall ? "Call" : "OFFER: 1st FREE Call"}
+              {isInitiatingCall ? "Connecting..." : hasCompletedFreeCall ? "Call" : "OFFER: 1st FREE Call"}
             </button>
 
             {isCallMenuOpen && (

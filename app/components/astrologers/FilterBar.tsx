@@ -29,9 +29,9 @@ const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-center w-full">
+    <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap gap-3 sm:gap-4 lg:gap-6 items-stretch sm:items-center w-full">
       {/* 🔎 Search */}
-      <div className="flex w-full lg:w-auto items-center gap-2 border border-gray-300 rounded-full px-4 py-2.5 bg-white shadow-sm">
+      <div className="flex w-full sm:w-auto sm:flex-1 lg:flex-initial items-center gap-2 border border-gray-300 rounded-full px-3 sm:px-4 py-2.5 bg-white shadow-sm">
         <Search className="w-5 h-5 text-gray-400" />
         <input
           type="text"
@@ -51,7 +51,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
       </div>
 
       {/* 🎧 Audio & 🎥 Video Buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-2 sm:gap-3">
         <button
           onClick={() => onSortChange({ type: "audio" })}
           className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all ${

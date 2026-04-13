@@ -208,7 +208,7 @@ function AstrologersPageContent() {
   return (
     <>
       <section className="w-full flex justify-center py-3">
-        <div className="w-full max-w-7xl mx-auto px-10 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-8">
           <div className="flex-1 min-w-0">
             <FilterBar
               searchQuery={searchQuery}

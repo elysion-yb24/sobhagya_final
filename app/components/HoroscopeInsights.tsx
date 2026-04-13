@@ -11,7 +11,7 @@ const HoroscopeInsights: React.FC = () => {
   };
   
   return (
-    <section className="min-h-[300px] py-20 sm:py-28 relative overflow-hidden">
+    <section className="min-h-[250px] sm:min-h-[300px] py-12 sm:py-16 md:py-20 lg:py-28 relative overflow-hidden">
 
 
       <div className="container mx-auto px-4 relative z-10 max-w-screen-xl">

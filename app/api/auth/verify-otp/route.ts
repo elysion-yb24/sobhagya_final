@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Proxying verify-otp request body:', body);
 
-    const { phone, otp, notifyToken, session_id } = body;
+    const { phone, otp, notifyToken, session_id, name, gender, dob, placeOfBirth, timeOfBirth, languages, interests } = body;
 
     // Validate required fields
     if (!phone) {
@@ -39,9 +39,16 @@ export async function POST(request: NextRequest) {
     };
 
     // Add session_id if provided
-    if (session_id) {
-      requestBody.session_id = session_id;
-    }
+    if (session_id) requestBody.session_id = session_id;
+
+    // Forward user details for RabbitMQ userRegistration (fixes missing profile)
+    if (name) requestBody.name = name;
+    if (gender) requestBody.gender = gender;
+    if (dob) requestBody.dob = dob;
+    if (placeOfBirth) requestBody.placeOfBirth = placeOfBirth;
+    if (timeOfBirth) requestBody.timeOfBirth = timeOfBirth;
+    if (languages) requestBody.languages = languages;
+    if (interests) requestBody.interests = interests;
 
     // Prepare request headers
     const headers = new Headers(request.headers);

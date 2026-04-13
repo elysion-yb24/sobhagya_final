@@ -133,17 +133,26 @@ export default function OtpVerificationScreen({
         notifyToken = "placeholder_token";
       }
 
+      // Include user details from sessionStorage so auth-service can forward
+      // them to the RabbitMQ userRegistration message for profile creation
+      const capturedName = sessionStorage.getItem('capturedUserName') || '';
+      const capturedGender = sessionStorage.getItem('capturedUserGender') || '';
+
+      const verifyBody: Record<string, string> = {
+        phone: phoneNumber,
+        otp: otpValue,
+        notifyToken: notifyToken,
+      };
+      if (capturedName) verifyBody.name = capturedName;
+      if (capturedGender) verifyBody.gender = capturedGender;
+
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: 'include',
-        body: JSON.stringify({
-          phone: phoneNumber,
-          otp: otpValue,
-          notifyToken: notifyToken
-        }),
+        body: JSON.stringify(verifyBody),
       });
 
       console.log("OTP verification response status:", response.status);

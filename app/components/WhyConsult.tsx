@@ -91,7 +91,7 @@ const WhyConsult: React.FC = () => {
     <section className="bg-white w-full">
       {/* Hero Section */}
       <motion.div
-        className="relative py-20 overflow-hidden"
+        className="relative py-10 sm:py-14 md:py-20 overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -114,7 +114,7 @@ const WhyConsult: React.FC = () => {
           </motion.div>
           
           <motion.h1 
-            className="text-5xl md:text-7xl font-bold text-[#745802] mb-6 leading-tight"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold text-[#745802] mb-4 sm:mb-6 leading-tight"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
@@ -127,7 +127,7 @@ const WhyConsult: React.FC = () => {
           </motion.h1>
           
           <motion.p 
-            className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
+            className="text-base sm:text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-2"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.7 }}
@@ -142,7 +142,7 @@ const WhyConsult: React.FC = () => {
       <div className="container mx-auto px-4">
         {/* Section 1: The Power of Astrology */}
         <motion.div 
-          className="max-w-5xl mx-auto mb-20"
+          className="max-w-5xl mx-auto mb-10 sm:mb-16 md:mb-20"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -193,7 +193,7 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 2: Benefits with Animated Icons */}
         <motion.div 
-          className="max-w-6xl mx-auto mb-20"
+          className="max-w-6xl mx-auto mb-10 sm:mb-16 md:mb-20"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -309,26 +309,26 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 3: Call to Action */}
         <motion.div 
-          className="text-center mb-20"
+          className="text-center mb-10 sm:mb-16 md:mb-20"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
           <motion.div 
-            className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-3xl p-12 border-2 border-orange-200 max-w-4xl mx-auto shadow-lg"
+            className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 border-2 border-orange-200 max-w-4xl mx-auto shadow-lg"
             whileHover={{ scale: 1.02 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "EB Garamond" }}>
+            <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-4 sm:mb-6" style={{ fontFamily: "EB Garamond" }}>
               Ready to Discover Your Cosmic Path?
             </h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto" style={{ fontFamily: "Poppins" }}>
+            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 max-w-2xl mx-auto px-2" style={{ fontFamily: "Poppins" }}>
               Connect with our certified astrologers and unlock the secrets written in your stars. Begin your journey of self-discovery today.
             </p>
             
             <motion.button 
-              className="bg-[#F7971D] text-white px-8 py-4 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center mx-auto group hover:bg-orange-600"
+              className="bg-[#F7971D] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center mx-auto group hover:bg-orange-600"
               style={{ fontFamily: "Poppins" }}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}

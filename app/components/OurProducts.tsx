@@ -74,8 +74,8 @@ const OurProducts = () => {
     <section className="bg-white w-full py-16">
       <div className="max-w-7xl mx-auto px-4">
         {/* Enhanced Main Heading */}
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-4xl font-bold mb-4 relative">
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative">
             <span className="text-[#F7971E]">
               Our Products
             </span>
@@ -94,7 +94,7 @@ const OurProducts = () => {
                 setProductIndex(prev => prev === 0 ? 1 : 0);
               }
             }}
-            className="absolute left-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
+            className="absolute left-1 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
             aria-label="Previous products"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -167,7 +167,7 @@ const OurProducts = () => {
                   {/* First 3 Products */}
                   <div className="min-w-full flex gap-6 justify-center">
                     {products.slice(0, 3).map((product, index) => (
-                      <div key={index} className="group w-80">
+                      <div key={index} className="group w-full max-w-[320px]">
                         <div
                           className="bg-white rounded-xl border border-gray-200 h-96 transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#F7971E] cursor-pointer"
                           onClick={() => window.open(product.link, '_blank')}
@@ -278,7 +278,7 @@ const OurProducts = () => {
                 setProductIndex(prev => prev === 0 ? 1 : 0);
               }
             }}
-            className="absolute right-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
+            className="absolute right-1 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
             aria-label="Next products"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -287,14 +287,14 @@ const OurProducts = () => {
           </button>
 
           {/* Enhanced Dots indicator */}
-          <div className="flex justify-center mt-12 mb-6 space-x-2">
+          <div className="flex justify-center mt-8 sm:mt-12 mb-4 sm:mb-6 space-x-2">
             {isMobile ? (
               // Mobile: Show dots for each product (smaller)
               products.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setProductIndex(index)}
-                  className={`rounded-full transition-all duration-300 ${productIndex === index
+                  className={`rounded-full w-2.5 h-2.5 sm:w-3 sm:h-3 transition-all duration-300 ${productIndex === index
                       ? 'bg-[#F7971E]' 
                       : 'bg-gray-300 hover:bg-gray-400' 
                     }`}
@@ -307,12 +307,12 @@ const OurProducts = () => {
               <>
                 <button
                   onClick={() => setProductIndex(0)}
-                  className={`rounded-full transition-all duration-300 ${productIndex === 0 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
+                  className={`rounded-full w-3 h-3 transition-all duration-300 ${productIndex === 0 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
                   aria-label="Go to first set of products"
                 />
                 <button
                   onClick={() => setProductIndex(1)}
-                  className={`rounded-full transition-all duration-300 ${productIndex === 1 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
+                  className={`rounded-full w-3 h-3 transition-all duration-300 ${productIndex === 1 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
                   aria-label="Go to second set of products"
                 />
               </>

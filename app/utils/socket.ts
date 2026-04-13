@@ -47,20 +47,14 @@ class SocketManager {
         reconnection: true,
         timeout: 60000,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5
+        reconnectionDelayMax: 10000,
+        reconnectionAttempts: Infinity
       });
 
       this.socket.on('connect', () => {
         console.log('Socket connected successfully');
         this.isConnected = true;
-        
-        if (this.channelId && this.userId) {
-          this.socket?.emit('register', {
-            userId: this.userId,
-            channelId: this.channelId
-          });
-        }
-        
+        // Note: register is now handled by useCallSocket hook to capture call data from response
         resolve();
       });
 
@@ -111,13 +105,10 @@ class SocketManager {
         throw new Error('User not authenticated - no token found');
       }
 
-      console.log('📡 Making LiveKit API call to: ' + buildApiUrl('/calling/api/call/call-token-livekit'));
-      console.log('📋 Request payload:', {
-        ...params,
-        token: params.token ? params.token.substring(0, 20) + '...' : 'null'
-      });
+      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(params.channel)}`;
+      console.log('📡 Making LiveKit API call to:', livekitUrl);
 
-      const response = await fetch(buildApiUrl(`/calling/api/call/call-token-livekit?channel=${params.channel}`), {
+      const response = await fetch(livekitUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

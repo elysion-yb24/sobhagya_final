@@ -158,7 +158,7 @@ const Footer: React.FC = () => {
                         alt="Download on App Store"
                         width={150}
                         height={50}
-                        className="w-160 h-160"
+                        className="w-[130px] sm:w-[150px] h-auto"
                       />
                     </Link>
                   <Link
@@ -172,7 +172,7 @@ const Footer: React.FC = () => {
                       alt="Download on Google Play"
                       width={150}
                       height={50}
-                      className="w-160 h-160"
+                      className="w-[130px] sm:w-[150px] h-auto"
                     />
                   </Link>
                   </div>
@@ -235,7 +235,7 @@ const Footer: React.FC = () => {
                 <p className="text-white text-xs opacity-90 mb-2 text-center">
                   Download our app for instant astrology guidance on the go!
                 </p>
-                <div className="flex flex-row space-x-3">
+                <div className="flex flex-row space-x-3 justify-center">
                   <Link
                     href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
                     target="_blank"

@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/call6/page6.jsx", "app/wallet/page.jsx"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "Baatein_web_app"]
 }

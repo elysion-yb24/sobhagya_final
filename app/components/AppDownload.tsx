@@ -40,7 +40,7 @@ const DownloadAppSection = () => {
 
             {/* App Store Buttons - Change flex direction on very small screens */}
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-6 mt-6">
-              <a href="#" className="w-40 sm:w-44">
+              <a href="https://apps.apple.com/in/app/sobhagya/id6755958411" target="_blank" rel="noopener noreferrer" className="w-40 sm:w-44">
                 <Image
                   src="/app-store.svg"
                   alt="App Store"

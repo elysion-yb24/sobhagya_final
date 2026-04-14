@@ -261,7 +261,7 @@ const Contact = () => {
 
             {/* App Store */}
             <motion.a
-              href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
+              href="https://apps.apple.com/in/app/sobhagya/id6755958411"
               target="_blank"
               rel="noopener noreferrer"
               className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center cursor-pointer"

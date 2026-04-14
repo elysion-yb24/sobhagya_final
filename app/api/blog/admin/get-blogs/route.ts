@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     
     // Build the target URL using resilient helper and microservice prefix
     const apiBaseUrl = getApiBaseUrl();
-    let targetUrl = `${apiBaseUrl}/user${API_CONFIG.ENDPOINTS.BLOG.GET_BLOGS}`;
+    let targetUrl = `${apiBaseUrl}/user/api/blog/admin/get-blogs`;
     const queryParams = new URLSearchParams();
     
     // Add query parameters from request if any
@@ -47,12 +47,31 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers,
     });
-    
-    const data = await response.json();
+
     console.log('Blog API response status:', response.status);
+
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error('Blog API returned non-JSON response:', text.substring(0, 500));
+      return NextResponse.json(
+        { success: false, error: 'Backend returned non-JSON response', data: [] },
+        {
+          status: 502,
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          }
+        }
+      );
+    }
+
     console.log('Blog API response data:', data);
-    
-    return NextResponse.json(data, { 
+
+    return NextResponse.json(data, {
       status: response.status,
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -62,14 +81,16 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('Blog API error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Blog API error:', message, error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Internal server error',
-        message: 'Failed to fetch blogs'
-      }, 
-      { 
+        message: `Failed to fetch blogs: ${message}`,
+        data: []
+      },
+      {
         status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*',

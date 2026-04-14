@@ -146,7 +146,7 @@ export default function OtpVerificationScreen({
       if (capturedName) verifyBody.name = capturedName;
       if (capturedGender) verifyBody.gender = capturedGender;
 
-      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP), {
+      const response = await fetch('/api/auth/verify-otp', {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -284,19 +284,16 @@ export default function OtpVerificationScreen({
         notifyToken = "placeholder_token";
       }
 
-      const response = await fetch(
-        buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.SEND_OTP),
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone: phoneNumber,
-            notifyToken: notifyToken 
-          }),
-        }
-      );
+      const response = await fetch('/api/auth/send-otp', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: phoneNumber,
+          notifyToken: notifyToken
+        }),
+      });
 
       const data = await response.json();
       console.log("Resend OTP response:", data);

@@ -48,18 +48,18 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
     const token = getAuthToken();
     const backendBase = 'https://micro.sobhagya.in';
     const newSocket = io(backendBase, {
-      path: '/socket.io', // Removed trailing slash
+      path: '/chat-socket/socket.io/',
       query: { 
         userId, 
         usertype: userRole,
         token: token || '' 
       },
-      transports: ['polling'], // Forced polling temporarily for debugging
+      transports: ['websocket', 'polling'],
       secure: true,
-      rejectUnauthorized: false, // Sometimes needed for microservices with complex certs
+      rejectUnauthorized: false,
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 20, // Increase attempts
+      reconnectionAttempts: 20,
     })
 
     newSocket.on('connect', () => {
@@ -119,7 +119,7 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
     }
   }, [])
 
-  // ✅ One function to rule them all
+  // ✅ One function to rule them all — with timeout to prevent infinite hang
   const createOrJoinSession = async (providerId: string): Promise<string | null> => {
     return new Promise((resolve) => {
       if (!socketRef.current || !isConnected) {
@@ -136,17 +136,29 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
         return
       }
 
+      let resolved = false
+      const safeResolve = (val: string | null) => {
+        if (!resolved) { resolved = true; resolve(val) }
+      }
+
+      // Timeout after 10s to prevent infinite hanging
+      const timeout = setTimeout(() => {
+        console.error('⏰ createOrJoinSession timed out after 10s')
+        safeResolve(null)
+      }, 10000)
+
       // 1️⃣ Check existing sessions first
       socketRef.current.emit('get_all_sessions', { userId, role: 'user' }, (resp: any) => {
-        if (resp.success && resp.data?.sessions) {
+        if (resolved) return
+        if (resp?.success && resp.data?.sessions) {
           const existing = resp.data.sessions.find(
             (s: any) => s.providerId?._id === providerId && ['pending', 'active'].includes(s.status)
           )
 
           if (existing) {
             console.log('✅ Reusing existing session:', existing.sessionId)
-            // Just join existing session room
-            joinSessionRoom(existing.sessionId, providerId).then(() => resolve(existing.sessionId))
+            clearTimeout(timeout)
+            joinSessionRoom(existing.sessionId, providerId).then(() => safeResolve(existing.sessionId))
             return
           }
         }
@@ -157,12 +169,13 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
           'session_update',
           { userId, providerId, role: 'user' },
           (response: any) => {
+            clearTimeout(timeout)
             if (!response.error && response.data?.sessionId) {
               console.log('✅ New session created:', response.data.sessionId)
-              resolve(response.data.sessionId)
+              safeResolve(response.data.sessionId)
             } else {
               console.error('❌ Session creation failed:', response.message)
-              resolve(null)
+              safeResolve(null)
             }
           }
         )

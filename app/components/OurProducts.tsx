@@ -71,16 +71,14 @@ const OurProducts = () => {
   ];
 
   return (
-    <section className="bg-white w-full py-16">
-      <div className="max-w-7xl mx-auto px-4">
+    <section className="bg-white w-full section-spacing om-watermark">
+      <div className="section-container">
         {/* Enhanced Main Heading */}
-        <div className="text-center mb-8 sm:mb-12 md:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 relative">
-            <span className="text-[#F7971E]">
-              Our Products
-            </span>
+        <div className="text-center mb-6 sm:mb-10 md:mb-14">
+          <h2 className="section-heading text-[#F7971E] mb-3 sm:mb-4">
+            Our Products
           </h2>
-          <div className="w-24 h-1 bg-[#F7971E] rounded-full mx-auto"></div>
+          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px]" />
         </div>
 
         {/* Products Slider - 3 Cards at a Time */}
@@ -94,10 +92,10 @@ const OurProducts = () => {
                 setProductIndex(prev => prev === 0 ? 1 : 0);
               }
             }}
-            className="absolute left-1 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
+            className="absolute left-0 xs:left-1 sm:left-3 md:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
             aria-label="Previous products"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
@@ -113,14 +111,14 @@ const OurProducts = () => {
               {isMobile ? (
                 // Mobile: Single card view
                 products.map((product, index) => (
-                  <div key={index} className="min-w-full flex justify-center px-4">
-                    <div className="group w-full max-w-sm">
+                  <div key={index} className="min-w-full flex justify-center px-6 sm:px-4">
+                    <div className="group w-full max-w-[320px] xs:max-w-sm">
                       <div
-                        className="bg-white rounded-xl border border-gray-200 h-96 transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#F7971E] cursor-pointer"
+                        className="bg-white rounded-xl border border-gray-200 h-[340px] xs:h-[360px] sm:h-96 transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#F7971E] cursor-pointer astro-card"
                         onClick={() => window.open(product.link, '_blank')}
                       >
                         {/* Product Image */}
-                        <div className="w-full h-72 overflow-hidden relative">
+                        <div className="w-full h-[260px] xs:h-[280px] sm:h-72 overflow-hidden relative">
                           <img
                             src={product.image}
                             alt={product.name}
@@ -278,16 +276,16 @@ const OurProducts = () => {
                 setProductIndex(prev => prev === 0 ? 1 : 0);
               }
             }}
-            className="absolute right-1 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
+            className="absolute right-0 xs:right-1 sm:right-3 md:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
             aria-label="Next products"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
 
           {/* Enhanced Dots indicator */}
-          <div className="flex justify-center mt-8 sm:mt-12 mb-4 sm:mb-6 space-x-2">
+          <div className="flex justify-center mt-6 sm:mt-10 mb-2 sm:mb-4 space-x-2">
             {isMobile ? (
               // Mobile: Show dots for each product (smaller)
               products.map((_, index) => (

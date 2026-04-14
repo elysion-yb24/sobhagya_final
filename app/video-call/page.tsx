@@ -102,22 +102,14 @@ export default function VideoCallPage() {
   const handleDisconnect = () => {
     console.log('📞 Video call page: handleDisconnect called');
 
+    const callSource = typeof window !== 'undefined' ? localStorage.getItem('callSource') : null;
+    if (typeof window !== 'undefined') localStorage.removeItem('callSource');
+
     setTimeout(() => {
-      const callSource = typeof window !== 'undefined' ? localStorage.getItem('callSource') : null;
-
-      if (callSource === 'astrologerCard') {
-        window.history.replaceState(null, '', '/astrologers');
-        window.location.href = '/astrologers';
-      } else if (callSource === 'astrologerProfile' && astrologerId) {
-        window.history.replaceState(null, '', `/astrologers/${astrologerId}`);
-        window.location.href = `/astrologers/${astrologerId}`;
+      if (callSource === 'astrologerProfile' && astrologerId) {
+        router.replace(`/astrologers/${astrologerId}`);
       } else {
-        window.history.replaceState(null, '', '/astrologers');
-        window.location.href = '/astrologers';
-      }
-
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('callSource');
+        router.replace('/astrologers');
       }
     }, 100);
   };
@@ -128,22 +120,41 @@ export default function VideoCallPage() {
 
   if (isCheckingBalance) {
     return (
-      <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-        <div className="text-center text-white">
+      <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-[#1a0a2e] via-[#16213e] to-[#0f0c29] z-50">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-[20%] left-[10%] w-56 h-56 bg-blue-500/10 rounded-full blur-[100px]" />
+          <div className="absolute bottom-[25%] right-[10%] w-64 h-64 bg-indigo-400/8 rounded-full blur-[120px]" />
+        </div>
+        <div className="relative z-10 text-center">
           <div className="mb-6">
-            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mb-4">
-              <div className="w-10 h-10 bg-white rounded-full animate-pulse"></div>
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-2xl shadow-blue-500/30">
+              <svg className="w-9 h-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M23 7l-7 5 7 5V7z" />
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+              </svg>
             </div>
           </div>
-
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
-            <span className="text-xl font-semibold">Checking balance...</span>
+          <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Setting up Video Call</h2>
+          <p className="text-white/50 text-sm mb-6">Verifying wallet balance...</p>
+          <div className="flex items-center justify-center gap-1.5">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="w-1.5 rounded-full bg-gradient-to-t from-blue-500 to-indigo-300"
+                style={{
+                  animation: 'wave-load 1.4s ease-in-out infinite',
+                  animationDelay: `${i * 0.15}s`,
+                  height: '6px',
+                }}
+              />
+            ))}
           </div>
-
-          <p className="text-gray-300 text-sm">
-            Verifying wallet balance for video call
-          </p>
+          <style jsx global>{`
+            @keyframes wave-load {
+              0%, 100% { height: 6px; opacity: 0.4; }
+              50% { height: 18px; opacity: 1; }
+            }
+          `}</style>
         </div>
       </div>
     );

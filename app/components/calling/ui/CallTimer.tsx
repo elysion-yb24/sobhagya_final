@@ -19,7 +19,9 @@ const CallTimer: React.FC<CallTimerProps> = ({ isConnected, balance = "0", rpm =
         }
 
         const totalSeconds = Math.max(0, Math.floor((balanceVal / rpmVal) * 60));
-        const anchorMs = startTime ? Date.parse(startTime) : NaN;
+
+        // startTime might be empty string or "0" before call fully starts
+        const anchorMs = (startTime && startTime !== '0' && startTime.length > 1) ? Date.parse(startTime) : NaN;
 
         if (!Number.isFinite(anchorMs)) {
             return totalSeconds;
@@ -57,19 +59,15 @@ const CallTimer: React.FC<CallTimerProps> = ({ isConnected, balance = "0", rpm =
 
     if (!isConnected) return null;
 
-    return (
-        <div className="relative flex flex-col items-center justify-center w-14 h-14 rounded-full bg-white/90 backdrop-blur-md border border-white/50 shadow-2xl mb-4 text-black overflow-hidden p-1 select-none z-50">
-            <div className={`text-xs font-bold leading-tight drop-shadow-sm ${timeLeft < 60 ? 'text-red-500' : 'text-gray-800'}`}>
-                {formatTime(timeLeft)}
-            </div>
-            <div className="text-[9px] opacity-60 uppercase font-black tracking-tighter mt-0.5 scale-90">
-                mins
-            </div>
+    const isLowTime = timeLeft < 60 && timeLeft > 0;
 
-            {timeLeft < 60 && timeLeft > 0 && (
-                <div className="absolute inset-0 rounded-full border-2 border-red-500/50 animate-ping pointer-events-none" />
-            )}
-        </div>
+    return (
+        <span className={`inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums select-none ${
+            isLowTime ? 'text-red-400' : 'text-white/80'
+        } ${isLowTime ? 'animate-pulse' : ''}`}>
+            <span>{formatTime(timeLeft)}</span>
+            <span className={`text-[10px] uppercase tracking-wider ${isLowTime ? 'text-red-400/70' : 'text-white/40'}`}>left</span>
+        </span>
     );
 };
 

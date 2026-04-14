@@ -204,11 +204,16 @@ const Header = () => {
     window.location.href = '/calls/call2?profile=complete';
   };
 
+  // Hide header on call pages
+  if (pathname?.startsWith('/video-call') || pathname?.startsWith('/audio-call')) {
+    return null;
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-all duration-300 animate-fadeIn font-sans">
       {/* DESKTOP HEADER — two-row layout with logo spanning full height */}
       <div className="hidden lg:block bg-white">
-        <div className="max-w-[1400px] mx-auto px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="flex">
             {/* Left: Logo spanning both rows */}
             <div className="flex items-center pr-10 border-r border-gray-200 py-3 self-stretch">
@@ -267,7 +272,7 @@ const Header = () => {
 
               {/* Bottom row: Navigation links */}
               <div className="flex items-center justify-between py-3">
-                <nav className="flex items-center gap-4 xl:gap-8 text-sm font-medium text-gray-600">
+                <nav className="flex items-center gap-3 lg:gap-4 xl:gap-6 2xl:gap-8 text-sm font-medium text-gray-600">
                   {[
                     { label: "About Us", href: "/about" },
                     { label: "Services", href: "/services" },
@@ -308,7 +313,7 @@ const Header = () => {
 
       {/* TABLET HEADER */}
       <div className="hidden md:block lg:hidden bg-white border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center h-16 justify-between">
             {/* Left: Logo */}
             <Link href="/" className="flex items-center gap-2">
@@ -358,7 +363,7 @@ const Header = () => {
 
       {/* MOBILE HEADER with enhanced animations */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3">
           {/* Mobile Logo */}
           <Link href="/" className={`group flex items-center gap-2 transition-all duration-300 ${
             isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
@@ -563,7 +568,7 @@ const Header = () => {
                     <Link 
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border transition-all duration-300 ${
+                      className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border ${
                         isActiveLink(item.href)
                           ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
                           : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'

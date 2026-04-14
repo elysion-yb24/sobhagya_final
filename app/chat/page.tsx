@@ -229,7 +229,11 @@ export default function ChatPage() {
 
     // Handle incoming messages
     socket.on('receive_message', (msg: any) => {
-      if (msg.sessionId !== selectedSessionRef.current?.sessionId) return;
+      // The frontend's sessionId is actually a threadId from get_all_sessions
+      const currentSessionId = selectedSessionRef.current?.sessionId;
+      const msgThreadId = msg.threadId?.toString() || msg._doc?.threadId?.toString();
+      const msgSessionId = msg.sessionId?.toString() || msg._doc?.sessionId?.toString();
+      if (currentSessionId && msgThreadId !== currentSessionId && msgSessionId !== currentSessionId) return;
 
       // ✅ FIX: Check if this is a duplicate message from sender
       if (msg.clientMessageId && sentMessageIds.current.has(msg.clientMessageId)) {
@@ -345,7 +349,13 @@ export default function ChatPage() {
     });
 
     socket.on('session_ended', (data: any) => {
-      if (selectedSessionRef.current?.sessionId === data.sessionId) {
+      // Backend sends { success, data: endedSession, message }
+      // endedSession has threadId which matches frontend's sessionId
+      const endedSession = data.data || data;
+      const matchId = endedSession?.threadId?.toString() || data.sessionId || endedSession?._id?.toString();
+      const currentSessionId = selectedSessionRef.current?.sessionId;
+
+      if (currentSessionId && (currentSessionId === matchId || currentSessionId === data.sessionId)) {
         setSelectedSession(prev => prev ? { ...prev, status: 'ended' } : prev);
         setShowRating(true);
         toast.success('Session ended');
@@ -358,12 +368,12 @@ export default function ChatPage() {
         }
 
         // Clear session start time from localStorage
-        localStorage.removeItem(`session_${data.sessionId}_start`);
+        localStorage.removeItem(`session_${currentSessionId}_start`);
       }
 
       // Update session in sidebar
       setSessions(prev => prev.map(session =>
-        session.sessionId === data.sessionId
+        (session.sessionId === matchId || session.sessionId === data.sessionId)
           ? { ...session, status: 'ended' }
           : session
       ));
@@ -1139,7 +1149,12 @@ export default function ChatPage() {
 
   const confirmEndSession = () => {
     if (!selectedSession || !socket || !userId) return;
-    socket.emit('end_session', { sessionId: selectedSession.sessionId, userId });
+    socket.emit('end_session', { 
+      threadId: selectedSession.sessionId, 
+      sessionId: (selectedSession as any).lastSessionId || selectedSession.sessionId, 
+      role: userRole === 'friend' ? 'friend' : 'user',
+      reason: 'user_ended' 
+    });
     setShowEndSessionDialog(false);
   };
 

@@ -1,8 +1,30 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['baatein.blob.core.windows.net', 'sobhagya.blob.core.windows.net', 'ui-avatars.com'],
+  // Enable SWC minification (faster than Terser)
+  swcMinify: true,
+
+  // Compiler optimizations
+  compiler: {
+    // Remove console.log in production
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
+
+  // Optimize page loading
+  reactStrictMode: false, // Avoid double-renders in dev
+
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'baatein.blob.core.windows.net' },
+      { protocol: 'https', hostname: 'sobhagya.blob.core.windows.net' },
+      { protocol: 'https', hostname: 'ui-avatars.com' },
+    ],
+    // Optimize image sizes for common breakpoints
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256],
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60 * 60 * 24, // 24 hours
+  },
+
   async rewrites() {
     return [
       {
@@ -14,7 +36,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Apply these headers to all routes
         source: '/(.*)',
         headers: [
           {
@@ -37,8 +58,15 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // Cache static assets aggressively
+        source: '/(.*)\\.(svg|png|jpg|jpeg|gif|webp|ico)',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
     ];
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

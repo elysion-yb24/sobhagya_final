@@ -92,7 +92,8 @@ export async function POST(req: NextRequest) {
 
     // Construct proper Cookie header for backend auth middleware
     // Backend expects: req.cookies.token (refresh token) via cookie-parser
-    // Fallback: req.headers['cookies'] (bare JWT value)
+    // Fallback: req.h
+    // eaders['cookies'] (bare JWT value)
     if (bearerToken) {
       forwardHeaders['Cookie'] = `token=${bearerToken}`;
       forwardHeaders['cookies'] = bearerToken;

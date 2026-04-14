@@ -66,22 +66,19 @@ const BlogSection = () => {
 
   if (loading) {
     return (
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2
-              className="mb-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#745802] tracking-tight"
-              style={{ fontFamily: "EB Garamond" }}
-            >
+      <section className="section-spacing bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
+        <div className="section-container relative z-10">
+          <div className="text-center mb-8 sm:mb-12 md:mb-14">
+            <h2 className="section-heading text-[#745802] mb-3 sm:mb-4">
               Our Blogs
-              <span className="block w-16 sm:w-20 md:w-24 h-1 bg-orange-400 mx-auto mt-2 sm:mt-4"></span>
             </h2>
-            <p className="text-[#745802] text-sm sm:text-base font-medium mt-4">
+            <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-3 sm:mb-4" />
+            <p className="text-[#745802] text-sm sm:text-base font-medium">
               Your daily source for astrology insights & guidance
             </p>
           </div>
           {/* Skeleton Loader */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
@@ -111,30 +108,23 @@ const BlogSection = () => {
   }
 
   return (
-    <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
-      {/* Faded astrology icon background (optional) */}
-      {/* <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
-        <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={600} height={600} className="object-contain" />
-      </div> */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-12 sm:mb-16">
-          <h2
-            className="mb-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-[#745802] tracking-tight"
-            style={{ fontFamily: "EB Garamond" }}
-          >
+    <section className="section-spacing bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden sacred-pattern">
+      <div className="section-container relative z-10">
+        <div className="text-center mb-8 sm:mb-12 md:mb-14">
+          <h2 className="section-heading text-[#745802] mb-3 sm:mb-4">
             Our Blogs
-            <span className="block w-16 sm:w-20 md:w-24 h-1 bg-orange-400 mx-auto mt-2 sm:mt-4"></span>
           </h2>
-          <p className="text-[#745802] text-sm sm:text-base font-medium mt-4">
+          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-3 sm:mb-4" />
+          <p className="text-[#745802] text-sm sm:text-base font-medium">
             Your daily source for astrology insights & guidance
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto">
           {blogs.map((blog) => (
             <div
               key={blog.id}
-              className="bg-white shadow-lg overflow-hidden cursor-pointer transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl group relative animate-fade-in-up"
+              className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl group relative animate-fade-in-up astro-card border border-gray-100"
               onClick={() => router.push(`/blog/${blog.id}`)}
             >
               <div className="relative h-[180px] sm:h-[200px] group-hover:scale-105 transition-transform duration-300">

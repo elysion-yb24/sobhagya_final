@@ -41,77 +41,77 @@ const ConsultingSection: React.FC = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-10 sm:py-14 md:py-20 bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
-      {/* Faded astrology icon background (optional) */}
-      <div className="absolute inset-0 flex justify-center items-center opacity-5 pointer-events-none select-none z-0">
-        <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={400} height={400} className="object-contain animate-rotate-slow" />
+    <section ref={sectionRef} className="section-spacing bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden sacred-pattern">
+      {/* Faded astrology icon background */}
+      <div className="absolute inset-0 flex justify-center items-center opacity-[0.03] pointer-events-none select-none z-0">
+        <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={400} height={400} className="object-contain animate-mandala-spin" />
       </div>
 
-      {/* Floating decorative elements */}
-      <div className="absolute top-10 left-10 w-20 h-20 rounded-full bg-gradient-to-br from-orange-200/30 to-amber-200/20 animate-float pointer-events-none" />
-      <div className="absolute bottom-16 right-16 w-16 h-16 rounded-full bg-gradient-to-br from-yellow-200/20 to-orange-200/20 animate-float pointer-events-none" style={{ animationDelay: '1.5s' }} />
-      <div className="absolute top-1/2 right-8 w-8 h-8 rounded-full border border-orange-300/30 animate-pulse pointer-events-none" />
+      {/* Floating decorative orbs */}
+      <div className="absolute top-10 left-6 sm:left-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-orange-200/30 to-amber-200/20 animate-float-y pointer-events-none" />
+      <div className="absolute bottom-12 right-6 sm:right-16 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-yellow-200/20 to-orange-200/20 animate-float-y pointer-events-none" style={{ animationDelay: '1.5s' }} />
+      <div className="hidden sm:block absolute top-1/2 right-8 w-8 h-8 rounded-full border border-orange-300/30 animate-glow-pulse pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="section-container relative z-10">
         <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 className="text-center mb-4 sm:mb-6 text-[#745802] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight" style={{ fontFamily: 'EB Garamond' }}>
+          <h2 className="section-heading text-center mb-3 sm:mb-4 md:mb-6 text-[#745802]">
             Problems and Consulting
-            <span className="block w-24 h-1 bg-gradient-to-r from-orange-400 to-amber-500 mx-auto mt-4 rounded-full"></span>
           </h2>
-          <p className="text-center mb-8 sm:mb-14 text-[#745802] text-sm sm:text-base md:text-lg font-medium max-w-2xl mx-auto px-2">
+          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-4 sm:mb-6" />
+          <p className="text-center mb-8 sm:mb-12 md:mb-14 text-[#745802] text-sm sm:text-base md:text-lg font-medium max-w-2xl mx-auto px-2" style={{ fontFamily: 'Poppins' }}>
             Solve Your Life&apos;s Biggest Problems with Astrologers
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 lg:gap-16 items-start max-w-8xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
+          {/* Left: Palm reading image */}
           <div className={`relative flex justify-center items-center transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
-            {/* Soft glow behind image */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-64 h-64 bg-orange-200/30 rounded-full blur-3xl" />
+              <div className="w-48 h-48 sm:w-64 sm:h-64 bg-orange-200/30 rounded-full blur-3xl" />
             </div>
             <Image
               src="/palm-reading.svg"
               alt="Palm Reading"
               width={400}
               height={400}
-              className="w-full max-w-lg mix-blend-multiply relative z-10 animate-float"
+              className="w-full max-w-[280px] sm:max-w-[350px] md:max-w-[400px] lg:max-w-lg mix-blend-multiply relative z-10 animate-float-y devotional-glow"
               priority
             />
           </div>
 
-          <div className={`relative transition-all duration-1000 delay-400 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
-            {/* Vertical timeline line with gradient */}
-            <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#E69126] via-[#F7971E] to-[#E69126]/30"></div>
+          {/* Right: Topics timeline */}
+          <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
+            <div className="absolute left-5 sm:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#E69126] via-[#F7971E] to-[#E69126]/30" />
             
-            <div className="space-y-8 sm:space-y-12">
+            <div className="space-y-6 sm:space-y-8 md:space-y-10">
               {consultingTopics.map((topic, index) => (
                 <div
                   key={topic.title}
-                  className={`flex items-start gap-4 sm:gap-6 relative group transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                  className={`flex items-start gap-3 sm:gap-5 relative group transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
                   style={{ transitionDelay: isVisible ? `${500 + index * 200}ms` : '0ms' }}
                 >
-                  {/* Animated orange dot on timeline */}
-                  <div className="absolute left-6 top-4 -translate-x-1/2 z-10">
-                    <div className="w-4 h-4 bg-[#E69126] rounded-full relative">
+                  {/* Animated timeline dot */}
+                  <div className="absolute left-5 sm:left-6 top-4 -translate-x-1/2 z-10">
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#E69126] rounded-full relative">
                       <div className="absolute inset-0 bg-[#E69126] rounded-full animate-ping opacity-30" />
                     </div>
                   </div>
                   
-                  {/* Icon with hover effect */}
-                  <div className="flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20 ml-10 -mt-4 rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-orange-200/50">
+                  {/* Icon */}
+                  <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 ml-9 sm:ml-10 rounded-xl transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-orange-200/50 flex-shrink-0">
                     <Image
                       src={topic.image}
                       alt={topic.title}
                       width={40}
                       height={40}
-                      className="object-contain"
+                      className="w-8 h-8 sm:w-10 sm:h-10 object-contain"
                     />
                   </div>
                 
-                  {/* Content with hover highlight */}
-                  <div className="flex-1 pt-1 transition-all duration-300 group-hover:translate-x-1">
-                    <h3 className="text-base sm:text-lg md:text-xl font-bold mb-1 sm:mb-2 text-gray-800 group-hover:text-[#E69126] transition-colors duration-300">{topic.title}</h3>
-                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed">{topic.description}</p>
+                  {/* Content */}
+                  <div className="flex-1 pt-0.5 sm:pt-1 transition-all duration-300 group-hover:translate-x-1">
+                    <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-1 sm:mb-2 text-gray-800 group-hover:text-[#E69126] transition-colors duration-300">{topic.title}</h3>
+                    <p className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed">{topic.description}</p>
                   </div>
                 </div>
               ))}

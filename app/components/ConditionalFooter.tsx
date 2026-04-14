@@ -6,8 +6,8 @@ import Footer from './Footer';
 export default function ConditionalFooter() {
   const pathname = usePathname();
   
-  // Hide footer on chat page
-  if (pathname === '/chat') {
+  // Hide footer on chat page and call pages
+  if (pathname === '/chat' || pathname?.startsWith('/video-call') || pathname?.startsWith('/audio-call')) {
     return null;
   }
   

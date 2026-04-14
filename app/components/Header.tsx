@@ -199,11 +199,6 @@ const Header = () => {
     return 'User';
   };
 
-  const handleProfileCompletion = () => {
-    // Redirect to call pages flow for profile completion
-    window.location.href = '/calls/call2?profile=complete';
-  };
-
   // Hide header on call pages
   if (pathname?.startsWith('/video-call') || pathname?.startsWith('/audio-call')) {
     return null;
@@ -240,12 +235,14 @@ const Header = () => {
                   {/* User Pill when authenticated */}
                   {isAuthenticatedUser && (
                     <div className="flex items-center gap-3 bg-orange-50/50 border border-orange-100 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
-                        <User className="w-3.5 h-3.5 text-orange-600" />
-                      </div>
-                      <span className="text-gray-700 font-semibold text-sm">
-                        {userProfile?.phoneNumber || getDisplayName()}
-                      </span>
+                      <Link href="/my-profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                        <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
+                          <User className="w-3.5 h-3.5 text-orange-600" />
+                        </div>
+                        <span className="text-gray-700 font-semibold text-sm">
+                          {userProfile?.phoneNumber || getDisplayName()}
+                        </span>
+                      </Link>
                       <button
                         onClick={handleLogout}
                         disabled={isLoggingOut}
@@ -334,10 +331,12 @@ const Header = () => {
             <div className="flex items-center gap-4">
               {isAuthenticatedUser ? (
                 <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-full px-3 py-1 shadow-sm">
-                  <User className="w-4 h-4 text-orange-600" />
-                  <span className="text-gray-700 font-medium text-xs truncate max-w-[100px]">
-                    {userProfile?.phoneNumber || 'User'}
-                  </span>
+                  <Link href="/my-profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                    <User className="w-4 h-4 text-orange-600" />
+                    <span className="text-gray-700 font-medium text-xs truncate max-w-[100px]">
+                      {userProfile?.phoneNumber || 'User'}
+                    </span>
+                  </Link>
                   <button onClick={handleLogout} className="text-red-500 hover:scale-110 transition-transform">
                     <LogOut className="w-4 h-4" />
                   </button>
@@ -461,7 +460,11 @@ const Header = () => {
               {mounted && isAuthenticatedUser ? (
                 <div className="space-y-4">
                   {/* User Profile Card */}
-                  <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200 shadow-sm">
+                  <Link
+                    href="/my-profile"
+                    className="block bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200 shadow-sm hover:shadow-md transition-shadow"
+                    onClick={() => setIsOpen(false)}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
                         <User className="h-6 w-6 text-white" />
@@ -472,16 +475,16 @@ const Header = () => {
                           {getDisplayName()}
                         </p>
                         {needsProfileCompletion() && (
-                          <button
-                            onClick={handleProfileCompletion}
-                            className="text-xs text-orange-600 hover:text-orange-700 underline mt-1"
-                          >
+                          <p className="text-xs text-orange-600 underline mt-1">
                             Complete profile
-                          </button>
+                          </p>
                         )}
                       </div>
+                      <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
-                  </div>
+                  </Link>
                 </div>
               ) : (
                 <Link
@@ -516,7 +519,21 @@ const Header = () => {
                     
                     {/* Account Menu Items */}
                     <div className="space-y-3">
-                      <Link 
+                      <Link
+                        href="/my-profile"
+                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <span className="flex-1">My Profile</span>
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                          →
+                        </div>
+                      </Link>
+
+                      <Link
                         href="/astrologers?openHistory=transactions"
                         className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-blue-200"
                         onClick={() => setIsOpen(false)}

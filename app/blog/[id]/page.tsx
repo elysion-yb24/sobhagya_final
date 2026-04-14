@@ -60,12 +60,15 @@ export default function BlogPage({ params }: { params: Promise<{ id: string }> }
         
         const data = await response.json();
         
+        // Normalize _id to id for MongoDB compatibility
+        const normalize = (b: any) => b ? { ...b, id: b.id || b._id } : null;
+
         if (data.success && data.data) {
-          setBlog(data.data);
+          setBlog(normalize(data.data));
         } else if (data.blog) {
-          setBlog(data.blog);
-        } else if (data) {
-          setBlog(data);
+          setBlog(normalize(data.blog));
+        } else if (data && data.title) {
+          setBlog(normalize(data));
         } else {
           throw new Error('Blog not found');
         }

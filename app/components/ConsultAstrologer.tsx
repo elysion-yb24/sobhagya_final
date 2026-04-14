@@ -282,7 +282,7 @@ const AstrologerCarousel = () => {
                 }}
               >
                 <div
-                  className="bg-white rounded-xl border border-[#F7971E] p-3 sm:p-4 text-center cursor-pointer hover:shadow-lg transition-all duration-300 w-full max-w-[200px] xs:max-w-[210px] sm:max-w-[221px] mx-auto astro-card"
+                  className="bg-white rounded-xl border border-[#F7971E] p-3 sm:p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full max-w-[200px] xs:max-w-[210px] sm:max-w-[221px] mx-auto"
                   onClick={() => handleAstrologerClick(astrologer._id)}
                 >
                   {/* Profile Picture */}
@@ -346,7 +346,7 @@ const AstrologerCarousel = () => {
                   <div className="flex justify-center">
                     <button
                       onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                      className="w-full max-w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 hover:text-white transition-colors uppercase flex items-center justify-center rounded-md"
                     >
                       OFFER: FREE 1st call
                     </button>

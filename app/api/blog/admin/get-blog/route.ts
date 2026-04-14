@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     
     // Build the target URL using resilient helper and microservice prefix
     const apiBaseUrl = getApiBaseUrl();
-    let targetUrl = `${apiBaseUrl}/user${API_CONFIG.ENDPOINTS.BLOG.GET_BLOG}?id=${blogId}`;
+    let targetUrl = `${apiBaseUrl}/user/api/blog/admin/get-blog?id=${blogId}`;
     
     console.log('Making request to:', targetUrl);
     

@@ -185,7 +185,8 @@ export function captureUserName(name: string): boolean {
 }
 
 /**
- * Gets user profile with enhanced display name logic
+ * Gets user profile with enhanced display name logic.
+ * Now actually calls the backend /user/api/data endpoint.
  */
 export async function fetchUserProfile(): Promise<any> {
   try {
@@ -195,19 +196,61 @@ export async function fetchUserProfile(): Promise<any> {
       return getUserDetails();
     }
 
-    // Get cached user details
+    // Get cached user details as fallback
     const cachedDetails = getUserDetails();
-    
-    // For now, we'll work with the cached data since the backend user profile API isn't available
-    // In the future, when the backend supports user profile API, we can add that call here
-    
+
+    // Actually fetch from backend
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.data) {
+          const backendUser = data.data;
+          const name = backendUser.name || '';
+          const nameParts = name.split(' ');
+
+          const mergedProfile = {
+            ...cachedDetails,
+            ...backendUser,
+            userId: backendUser._id || backendUser.id || cachedDetails?.userId,
+            name: name,
+            firstName: nameParts[0] || cachedDetails?.firstName || '',
+            lastName: nameParts.slice(1).join(' ') || cachedDetails?.lastName || '',
+            phoneNumber: backendUser.phoneNumber || cachedDetails?.phoneNumber,
+            email: backendUser.email || cachedDetails?.email,
+            avatar: backendUser.avatar || cachedDetails?.avatar,
+            gender: backendUser.gender || cachedDetails?.gender,
+            age: backendUser.age || cachedDetails?.age,
+            displayName: name ||
+                        (nameParts[0] ? `${nameParts[0]} ${nameParts.slice(1).join(' ')}`.trim() : '') ||
+                        backendUser.phoneNumber || cachedDetails?.phoneNumber || 'User',
+            profileCompleted: !!name,
+            timestamp: new Date().getTime(),
+          };
+
+          storeUserDetails(mergedProfile);
+          console.log('✅ Profile fetched from backend:', mergedProfile.displayName);
+          return mergedProfile;
+        }
+      } else {
+        console.warn('Backend profile fetch returned:', res.status);
+      }
+    } catch (fetchErr) {
+      console.warn('Backend profile fetch failed, using cached data:', fetchErr);
+    }
+
+    // Fallback: use cached data with session storage enhancements
     if (cachedDetails) {
-      // Check for captured name from session storage
       const capturedName = sessionStorage.getItem('capturedUserName');
-      
       let enhancedProfile = { ...cachedDetails };
-      
-      // If we have a captured name and no existing name, use it
+
       if (capturedName && !cachedDetails.name && !cachedDetails.firstName) {
         const nameParts = capturedName.split(' ');
         enhancedProfile = {
@@ -217,33 +260,28 @@ export async function fetchUserProfile(): Promise<any> {
           lastName: nameParts.slice(1).join(' '),
           profileCompleted: true
         };
-        
-        // Clear from session storage and update stored details
         sessionStorage.removeItem('capturedUserName');
         storeUserDetails(enhancedProfile);
       }
-      
-      // Enhance the cached data with better display logic
+
       const finalProfile = {
         ...enhancedProfile,
-        displayName: enhancedProfile.name || 
+        displayName: enhancedProfile.name ||
                     (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
                     enhancedProfile.phoneNumber || 'User',
         timestamp: new Date().getTime(),
       };
-      
-      // Update the stored details with enhanced info
+
       storeUserDetails(finalProfile);
       return finalProfile;
     }
 
-    // If no cached data, return a basic profile
     return {
       phoneNumber: 'User',
       displayName: 'User',
       timestamp: new Date().getTime(),
     };
-    
+
   } catch (error) {
     console.error('Error processing user profile:', error);
     return getUserDetails() || {
@@ -251,6 +289,118 @@ export async function fetchUserProfile(): Promise<any> {
       displayName: 'User',
       timestamp: new Date().getTime(),
     };
+  }
+}
+
+/**
+ * Updates user profile on the backend.
+ * Calls POST /api/user/update-profile which proxies to /user/api/edit-profile
+ */
+export async function updateUserProfile(profileData: {
+  name?: string;
+  age?: number;
+  gender?: string;
+  topic?: string | string[];
+  aboutUs?: string;
+  language?: string | string[];
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      return { success: false, message: 'Not authenticated' };
+    }
+
+    const res = await fetch('/api/user/update-profile', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      // Update local cache with new data
+      const cached = getUserDetails();
+      if (cached) {
+        const updated = { ...cached, ...profileData, updatedAt: Date.now() };
+        if (profileData.name) {
+          const parts = profileData.name.split(' ');
+          updated.firstName = parts[0];
+          updated.lastName = parts.slice(1).join(' ');
+          updated.displayName = profileData.name;
+          updated.profileCompleted = true;
+        }
+        storeUserDetails(updated);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-auth-changed'));
+      }
+    }
+
+    return { success: data.success, message: data.message || (data.success ? 'Profile updated' : 'Update failed') };
+  } catch (error: any) {
+    console.error('Error updating profile:', error);
+    return { success: false, message: error.message || 'Failed to update profile' };
+  }
+}
+
+/**
+ * Saves profile after first sign-up with extended fields.
+ * Calls POST /api/user/profile-after-signup
+ */
+export async function saveProfileAfterSignup(profileData: {
+  name?: string;
+  age?: number;
+  gender?: string;
+  dob?: string;
+  placeOfBirth?: string;
+  timeOfBirth?: string;
+  languages?: string[];
+  interests?: string[];
+  topic?: string[];
+  aboutUs?: string;
+}): Promise<{ success: boolean; message: string }> {
+  try {
+    const token = getAuthToken();
+    if (!token) {
+      return { success: false, message: 'Not authenticated' };
+    }
+
+    const res = await fetch('/api/user/profile-after-signup', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      const cached = getUserDetails();
+      if (cached) {
+        const updated = { ...cached, ...profileData, profileCompleted: true, updatedAt: Date.now() };
+        if (profileData.name) {
+          const parts = profileData.name.split(' ');
+          updated.firstName = parts[0];
+          updated.lastName = parts.slice(1).join(' ');
+          updated.displayName = profileData.name;
+        }
+        storeUserDetails(updated);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('user-auth-changed'));
+      }
+    }
+
+    return { success: data.success, message: data.message || (data.success ? 'Profile saved' : 'Save failed') };
+  } catch (error: any) {
+    console.error('Error saving profile after signup:', error);
+    return { success: false, message: error.message || 'Failed to save profile' };
   }
 }
 

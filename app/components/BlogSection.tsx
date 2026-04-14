@@ -37,12 +37,15 @@ const BlogSection = () => {
 
         const data = await response.json();
 
+        // Normalize _id to id for MongoDB compatibility
+        const normalizeBlog = (b: any) => ({ ...b, id: b.id || b._id });
+
         if (data.success && Array.isArray(data.data)) {
-          setBlogs(data.data);
+          setBlogs(data.data.map(normalizeBlog));
         } else if (Array.isArray(data.blogs)) {
-          setBlogs(data.blogs);
+          setBlogs(data.blogs.map(normalizeBlog));
         } else if (Array.isArray(data)) {
-          setBlogs(data);
+          setBlogs(data.map(normalizeBlog));
         } else {
           console.warn("Unexpected blog data structure:", data);
           setBlogs([]);

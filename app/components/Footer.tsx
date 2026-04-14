@@ -148,7 +148,7 @@ const Footer: React.FC = () => {
                   </p>
                   <div className="flex flex-row space-x-4">
                     <Link
-                      href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
+                      href="https://apps.apple.com/in/app/sobhagya/id6755958411"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
@@ -237,7 +237,7 @@ const Footer: React.FC = () => {
                 </p>
                 <div className="flex flex-row space-x-3 justify-center">
                   <Link
-                    href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
+                    href="https://apps.apple.com/in/app/sobhagya/id6755958411"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"

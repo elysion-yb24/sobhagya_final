@@ -343,113 +343,72 @@ export default function LoginPage() {
       console.log("OTP verification completed successfully by child component");
       setError(null);
       
-      // Add a small delay to ensure localStorage and user details are properly set
-      setTimeout(async () => {
-        try {
-          // Check user role first
-          const user = getUserDetails();
-          console.log('👤 User details after OTP:', user);
-          
-          if (user && user.role === 'friend') {
-            console.log('👥 User is a friend, checking call intent...');
-            console.log('👤 User object:', JSON.stringify(user, null, 2));
-            setIsVerifyingOtp(false);
-            
-            // Check if there was a call intent - only show modal if user was trying to make a call
-            const callIntent = localStorage.getItem('callIntent');
-            const callSource = localStorage.getItem('callSource');
-            
-            console.log('🔍 Call intent check:', { callIntent, callSource });
-            console.log('📋 All localStorage after OTP:', Object.keys(localStorage).reduce((acc, key) => {
-              acc[key] = localStorage.getItem(key);
-              return acc;
-            }, {} as any));
-            
-            // For debugging: Always show modal for friend users if there was any call intent
-            if (callIntent) {
-              console.log('✅ Partner user with call intent - showing restriction modal');
-              console.log('Call intent details:', { callIntent, callSource });
-              // Clear call-related localStorage items
-              localStorage.removeItem('selectedAstrologerId');
-              localStorage.removeItem('callIntent');
-              localStorage.removeItem('callSource');
-              
-              // Show the partner restriction modal
-              setShowPartnerRestrictionModal(true);
-              return;
-            } else {
-              console.log('❌ Partner user without call intent - redirecting to partner info');
-              console.log('Call intent missing or invalid source. callIntent:', callIntent, 'callSource:', callSource);
-              // If no call intent, redirect to partner info page
-              router.push('/partner-info');
-              return;
-            }
-          }
-
-          // After OTP success, route based on intent
-          const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-          const chatIntent = localStorage.getItem('chatIntent');
+      // Immediately route after OTP success — no delay needed since localStorage is already set by OtpVerificationScreen
+      try {
+        const user = getUserDetails();
+        
+        if (user && user.role === 'friend') {
+          setIsVerifyingOtp(false);
           const callIntent = localStorage.getItem('callIntent');
-          const callSource = localStorage.getItem('callSource');
-          
-          console.log('🔍 Routing based on intent:', { storedAstrologerId, chatIntent, callIntent, callSource });
-          console.log('📋 All localStorage items:', Object.keys(localStorage).reduce((acc, key) => {
-            acc[key] = localStorage.getItem(key);
-            return acc;
-          }, {} as any));
-          
-          // Check if user details are present in database response
-          const userDetails = getUserDetails();
-          const hasUserDetails = userDetails && (userDetails.name || userDetails.displayName) && (userDetails.name || userDetails.displayName).trim() !== '';
-          
-          console.log('👤 User details check after OTP verification:', { userDetails, hasUserDetails });
-          
-          // If user details are not present and there's a call intent, redirect to call pages
-          if (!hasUserDetails && (callIntent || storedAstrologerId)) {
-            console.log('📝 User details not present in database, redirecting to call flow for data collection');
-            setIsVerifyingOtp(false);
-            router.push('/calls/call1');
-            return;
-          }
-          
-          if (storedAstrologerId && chatIntent === '1') {
-            // Open chat with deterministic room id
-            const profile = getUserDetails();
-            const currentUserId = profile?.id || profile?._id || '';
-            const currentUserName = profile?.displayName || profile?.name || 'User';
-            if (currentUserId) {
-              const a = currentUserId;
-              const b = storedAstrologerId;
-              const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
-              // Clear intent keys
-              localStorage.removeItem('selectedAstrologerId');
-              localStorage.removeItem('chatIntent');
-              setIsVerifyingOtp(false);
-              window.location.href = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(storedAstrologerId)}`;
-              return;
-            }
-          }
-
-          if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
-            console.log('🚀 Initiating direct call after OTP success from', callSource);
+          if (callIntent) {
             localStorage.removeItem('selectedAstrologerId');
             localStorage.removeItem('callIntent');
             localStorage.removeItem('callSource');
-            await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
-            setIsVerifyingOtp(false);
+            setShowPartnerRestrictionModal(true);
+            return;
+          } else {
+            router.replace('/partner-info');
             return;
           }
-
-          // Otherwise go to astrologers as before
-          console.log('🏠 Redirecting to astrologers page');
-          setIsVerifyingOtp(false);
-          router.push('/astrologers');
-        } catch (error) {
-          console.error('❌ Error in post-OTP routing:', error);
-          setIsVerifyingOtp(false);
-          router.push('/astrologers');
         }
-      }, 300); // Reduced delay for faster redirect
+
+        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+        const chatIntent = localStorage.getItem('chatIntent');
+        const callIntent = localStorage.getItem('callIntent');
+        const callSource = localStorage.getItem('callSource');
+        
+        const userDetails = getUserDetails();
+        const hasUserDetails = userDetails && (userDetails.name || userDetails.displayName) && (userDetails.name || userDetails.displayName).trim() !== '';
+        
+        if (!hasUserDetails && (callIntent || storedAstrologerId)) {
+          setIsVerifyingOtp(false);
+          router.replace('/calls/call1');
+          return;
+        }
+        
+        if (storedAstrologerId && chatIntent === '1') {
+          const profile = getUserDetails();
+          const currentUserId = profile?.id || profile?._id || '';
+          const currentUserName = profile?.displayName || profile?.name || 'User';
+          if (currentUserId) {
+            const a = currentUserId;
+            const b = storedAstrologerId;
+            const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
+            localStorage.removeItem('selectedAstrologerId');
+            localStorage.removeItem('chatIntent');
+            setIsVerifyingOtp(false);
+            router.replace(`/chat`);
+            return;
+          }
+        }
+
+        if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
+          localStorage.removeItem('selectedAstrologerId');
+          localStorage.removeItem('callIntent');
+          localStorage.removeItem('callSource');
+          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+          setIsVerifyingOtp(false);
+          return;
+        }
+
+        // Default: redirect to astrologers page immediately
+        setIsVerifyingOtp(false);
+        router.replace('/astrologers');
+      } catch (error) {
+        console.error('Error in post-OTP routing:', error);
+        setIsVerifyingOtp(false);
+        router.replace('/astrologers');
+      }
       return;
     }
 

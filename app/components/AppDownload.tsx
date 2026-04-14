@@ -4,15 +4,15 @@ import Image from "next/image";
 const DownloadAppSection = () => {
   return (
     <section
-      className="py-8 sm:py-12 px-4 sm:px-6"
+      className="py-8 sm:py-12 md:py-16 lg:py-20 px-4 sm:px-6"
       style={{
         backgroundImage: "url('/orange.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      <div className="container mx-auto">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-12">
+      <div className="section-container">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-8 lg:gap-12 xl:gap-16">
           {/* Image Section - Smaller on mobile, balanced on desktop */}
           <div className="w-full lg:w-1/2 flex justify-center mb-8 lg:mb-0">
             <Image
@@ -20,7 +20,7 @@ const DownloadAppSection = () => {
               alt="Meditation"
               width={500}
               height={563}
-              className="w-4/5 sm:w-3/4 md:w-2/3 lg:w-auto max-w-lg h-auto object-contain"
+              className="w-3/4 xs:w-4/5 sm:w-3/4 md:w-2/3 lg:w-auto max-w-md xl:max-w-lg h-auto object-contain devotional-glow"
               priority
             />
           </div>

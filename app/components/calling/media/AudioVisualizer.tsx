@@ -11,9 +11,20 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
     speakerName = "",
     className = ""
 }) => {
+    // Gradient colors for each group: orange -> amber -> gold -> amber -> orange
+    const groupColors = [
+        ['#F97316', '#FB923C'], // orange
+        ['#F59E0B', '#FBBF24'], // amber
+        ['#EAB308', '#FDE047'], // gold (center)
+        ['#F59E0B', '#FBBF24'], // amber
+        ['#F97316', '#FB923C'], // orange
+    ];
+
     // 5 groups of 5 bars each
     const barGroups = Array.from({ length: 5 }).map((_, groupIndex) => {
         const xOffset = groupIndex * 48;
+        const [colorStart, colorEnd] = groupColors[groupIndex];
+        const gradientId = `bar-grad-${groupIndex}`;
 
         const barsData = [
             { rx: 2.5, y: 15, h: 12.5 },   // Outer Left
@@ -23,26 +34,34 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
             { rx: 42.5, y: 15, h: 12.5 }   // Outer Right
         ];
 
-        return barsData.map((bar, barIndex) => {
-            const delay = (groupIndex * 5 + barIndex) * 0.05;
-            return (
-                <rect
-                    key={`bar-${groupIndex}-${barIndex}`}
-                    x={xOffset + bar.rx - 2.5}
-                    y={bar.y}
-                    width="5"
-                    height={bar.h}
-                    rx="2.5"
-                    fill="white"
-                    className={`transition-all duration-300 ${isSpeaking ? 'animate-svg-wave' : 'opacity-40'}`}
-                    style={{
-                        animationDelay: `${delay}s`,
-                        transformOrigin: `${xOffset + bar.rx}px ${bar.y + bar.h / 2}px`,
-                        willChange: 'transform'
-                    } as any}
-                />
-            );
-        });
+        return [
+            <defs key={`defs-${groupIndex}`}>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={colorEnd} />
+                    <stop offset="100%" stopColor={colorStart} />
+                </linearGradient>
+            </defs>,
+            ...barsData.map((bar, barIndex) => {
+                const delay = (groupIndex * 5 + barIndex) * 0.05;
+                return (
+                    <rect
+                        key={`bar-${groupIndex}-${barIndex}`}
+                        x={xOffset + bar.rx - 2.5}
+                        y={bar.y}
+                        width="5"
+                        height={bar.h}
+                        rx="2.5"
+                        fill={isSpeaking ? `url(#${gradientId})` : 'rgba(255,255,255,0.3)'}
+                        className={`transition-all duration-300 ${isSpeaking ? 'animate-svg-wave' : ''}`}
+                        style={{
+                            animationDelay: `${delay}s`,
+                            transformOrigin: `${xOffset + bar.rx}px ${bar.y + bar.h / 2}px`,
+                            willChange: 'transform'
+                        } as any}
+                    />
+                );
+            })
+        ];
     });
 
     return (
@@ -51,21 +70,20 @@ const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
                 <g>
                     {barGroups}
                 </g>
-
-                {isSpeaking && speakerName && (
-                    <text
-                        x="118.5"
-                        y="68"
-                        textAnchor="middle"
-                        fill="white"
-                        fillOpacity="0.66"
-                        className="text-[12px] font-medium tracking-wide pointer-events-none animate-in fade-in slide-in-from-bottom-1 duration-300"
-                        style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-                    >
-                        {speakerName} is speaking
-                    </text>
-                )}
             </svg>
+
+            {/* Speaker name below visualizer */}
+            {isSpeaking && speakerName && (
+                <p className="mt-3 text-xs font-semibold text-white/50 tracking-wider uppercase">
+                    {speakerName} is speaking
+                </p>
+            )}
+
+            {!isSpeaking && (
+                <p className="mt-3 text-xs font-medium text-white/30 tracking-wider uppercase">
+                    Listening...
+                </p>
+            )}
 
             <style jsx global>{`
                 @keyframes svg-wave {

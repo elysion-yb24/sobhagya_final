@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { Socket } from 'socket.io-client';
 import { getUserDetails } from '../utils/auth-utils';
 import { socketManager } from '../utils/socket';
@@ -12,10 +12,12 @@ export const useCallSocket = (
     callbacks?: {
         onCallEnd?: (data: any) => void;
         onGiftRequest?: (data: any) => void;
+        onGiftReceived?: (data: any) => void;
         onCallDataUpdate?: (data: any) => void;
     }
 ) => {
     const socketRef = useRef<Socket | null>(null);
+    const [gifts, setGifts] = useState<any[]>([]);
 
     const userDetails = getUserDetails();
     const userId = userDetails?.id || userDetails?._id;
@@ -79,7 +81,7 @@ export const useCallSocket = (
                 s.emit('get_call', { channelId }, (response: any) => {
                     console.log('[useCallSocket] Get call ACK response:', response);
                     const callInfo = response?.data ?? response;
-                    if (callInfo && typeof callInfo === 'object' && callInfo.startTime) {
+                    if (callInfo && typeof callInfo === 'object' && (callInfo.balance || callInfo.rpm || callInfo.startTime || callInfo.userJoinTime)) {
                         callbacksRef.current?.onCallDataUpdate?.(callInfo);
                     }
                     const callStatus = response?.status ?? callInfo?.status;
@@ -172,6 +174,9 @@ export const useCallSocket = (
 
         const handleReceiveGift = (data: any) => {
             console.log('[useCallSocket] Received receive_gift:', data);
+            if (callbacksRef.current?.onGiftReceived) {
+                callbacksRef.current.onGiftReceived(data);
+            }
         };
 
         const handleGiftRequest = (data: any) => {
@@ -227,11 +232,25 @@ export const useCallSocket = (
         };
     }, [userId, channelId]);
 
+    const fetchGifts = useCallback(() => {
+        const s = socketRef.current ?? socketManager?.getSocket();
+        if (s && s.connected) {
+            s.emit('get_gifts', {}, (response: any) => {
+                console.log('[useCallSocket] get_gifts response:', response);
+                if (!response?.error && response?.data) {
+                    setGifts(response.data);
+                }
+            });
+        }
+    }, []);
+
     return useMemo(() => ({
         socket: socketRef.current,
         endCall,
         sendGift,
         requestGift,
         emitGetCallInfo,
-    }), [endCall, sendGift, requestGift, emitGetCallInfo]);
+        gifts,
+        fetchGifts,
+    }), [endCall, sendGift, requestGift, emitGetCallInfo, gifts, fetchGifts]);
 };

@@ -1,48 +1,119 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useTracks, useLocalParticipant } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import React, { useState, useEffect, useRef } from 'react';
+import { useTracks, useLocalParticipant, useRemoteParticipants, useRoomContext } from "@livekit/components-react";
+import { Track, RoomEvent } from "livekit-client";
 import LocalVideo from '../media/LocalVideo';
 import RemoteVideo from '../media/RemoteVideo';
 import CallControls from '../controls/CallControls';
 import CallTimer from '../ui/CallTimer';
 import ParticipantAvatar from '../ui/ParticipantAvatar';
+import DakshinaModal from '../ui/DakshinaModal';
 
 interface VideoCallViewProps {
     onDisconnect: () => void;
     receiverName: string;
     receiverAvatar?: string;
     callData?: { balance: string; rpm: string; startTime: string; userJoinTime?: string };
+    sendGift?: (gift: any, receiverId: string, receiverName: string) => Promise<void>;
+    receiverId?: string;
+    gifts?: any[];
+    fetchGifts?: () => void;
 }
 
-const VideoCallView: React.FC<VideoCallViewProps> = ({ onDisconnect, receiverName, receiverAvatar, callData }) => {
-    const [isMobile, setIsMobile] = useState(false);
-    const [layout, setLayout] = useState<'pip' | 'split'>('pip');
-    const [controlsVisible, setControlsVisible] = useState(true);
-    const controlsTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+const VideoCallView: React.FC<VideoCallViewProps> = ({ onDisconnect, receiverName, receiverAvatar, callData, sendGift, receiverId, gifts, fetchGifts }) => {
+    const [showDakshina, setShowDakshina] = useState(false);
     const { localParticipant } = useLocalParticipant();
+    const remoteParticipants = useRemoteParticipants();
+    const remoteParticipant = remoteParticipants[0];
 
-    const tracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
+    let room: any;
+    try { room = useRoomContext(); } catch (e) {}
+
+    // Primary: useTracks hook
+    const tracks = useTracks(
+        [{ source: Track.Source.Camera, withPlaceholder: true },
+         { source: Track.Source.ScreenShare, withPlaceholder: false }],
+        { onlySubscribed: false }
+    );
     const localTrack = tracks.find(t => t.participant.isLocal && t.source === Track.Source.Camera);
-    const remoteTrack = tracks.find(t => !t.participant.isLocal);
+    const remoteCameraTrack = tracks.find(t => !t.participant.isLocal && t.source === Track.Source.Camera);
+    const remoteScreenTrack = tracks.find(t => !t.participant.isLocal && t.source === Track.Source.ScreenShare);
+    const hookRemoteTrack = remoteCameraTrack || remoteScreenTrack;
+
+    // Fallback: direct room event listener for remote video tracks
+    const [directRemoteTrack, setDirectRemoteTrack] = useState<any>(null);
+    const directTrackRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (!room) return;
+
+        const scanForRemoteVideo = () => {
+            let found: any = null;
+            room.remoteParticipants.forEach((participant: any) => {
+                if (found) return;
+                const cameraPub = participant.getTrackPublication(Track.Source.Camera);
+                if (cameraPub?.isSubscribed && cameraPub.track) {
+                    found = { participant, publication: cameraPub, source: Track.Source.Camera };
+                }
+                if (!found) {
+                    const screenPub = participant.getTrackPublication(Track.Source.ScreenShare);
+                    if (screenPub?.isSubscribed && screenPub.track) {
+                        found = { participant, publication: screenPub, source: Track.Source.ScreenShare };
+                    }
+                }
+            });
+            if (found !== directTrackRef.current) {
+                directTrackRef.current = found;
+                setDirectRemoteTrack(found);
+            }
+        };
+
+        const onTrackSubscribed = () => { scanForRemoteVideo(); };
+        const onTrackUnsubscribed = () => { scanForRemoteVideo(); };
+
+        room.on(RoomEvent.TrackSubscribed, onTrackSubscribed);
+        room.on(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+        room.on(RoomEvent.TrackPublished, onTrackSubscribed);
+        room.on(RoomEvent.ParticipantConnected, onTrackSubscribed);
+
+        // Scan immediately
+        scanForRemoteVideo();
+
+        return () => {
+            room.off(RoomEvent.TrackSubscribed, onTrackSubscribed);
+            room.off(RoomEvent.TrackUnsubscribed, onTrackUnsubscribed);
+            room.off(RoomEvent.TrackPublished, onTrackSubscribed);
+            room.off(RoomEvent.ParticipantConnected, onTrackSubscribed);
+        };
+    }, [room]);
+
+    // Use hook result first, fallback to direct room scan
+    const remoteTrack = hookRemoteTrack || directRemoteTrack;
 
     const isMuted = !localParticipant?.isMicrophoneEnabled;
     const isVideoOff = !localParticipant?.isCameraEnabled;
-    const isConnected = !!remoteTrack;
+    const isConnected = !!remoteParticipant;
+    const hasRemoteVideo = !!remoteTrack;
+
+    // Debug logging
+    useEffect(() => {
+        console.log('[VideoCallView] Track state:', {
+            tracksFromHook: tracks.length,
+            hookTracks: tracks.map(t => `${t.participant?.identity}:${t.source}:local=${t.participant?.isLocal}`),
+            hookRemoteTrack: !!hookRemoteTrack,
+            directRemoteTrack: !!directRemoteTrack,
+            finalRemoteTrack: !!remoteTrack,
+            isConnected,
+            remoteParticipantIdentity: remoteParticipant?.identity,
+            remoteParticipantCamera: remoteParticipant?.isCameraEnabled,
+            remotePubs: remoteParticipant
+                ? Array.from(remoteParticipant.trackPublications.values()).map((p: any) =>
+                    `${p.source}:kind=${p.kind}:sub=${p.isSubscribed}:track=${!!p.track}`
+                ) : [],
+        });
+    }, [tracks, hookRemoteTrack, directRemoteTrack, remoteTrack, isConnected, remoteParticipant]);
 
     const hasConnected = React.useRef(false);
 
-    // Detect mobile
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    // Set default layout based on screen size
-    useEffect(() => {
-        setLayout(isMobile ? 'pip' : 'split');
-    }, [isMobile]);
 
     useEffect(() => {
         if (isConnected) {
@@ -50,23 +121,6 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onDisconnect, receiverNam
         }
     }, [isConnected]);
 
-    // Auto-hide controls on mobile
-    const showControlsTemporarily = useCallback(() => {
-        setControlsVisible(true);
-        if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-        if (isMobile) {
-            controlsTimeoutRef.current = setTimeout(() => {
-                setControlsVisible(false);
-            }, 6000);
-        }
-    }, [isMobile]);
-
-    useEffect(() => {
-        showControlsTemporarily();
-        return () => {
-            if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
-        };
-    }, [showControlsTemporarily]);
 
     // Handle connecting audio
     useEffect(() => {
@@ -92,162 +146,155 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onDisconnect, receiverNam
         await localParticipant?.setCameraEnabled(!!isVideoOff);
     };
 
-    const handleContainerTap = useCallback(() => {
-        if (isMobile) {
-            if (controlsVisible) {
-                setControlsVisible(false);
-                if (controlsTimeoutRef.current) {
-                    clearTimeout(controlsTimeoutRef.current);
-                    controlsTimeoutRef.current = null;
-                }
-            } else {
-                showControlsTemporarily();
-            }
+    const handleDakshinaSend = async (gift: any) => {
+        if (sendGift && receiverId) {
+            await sendGift(gift, receiverId, receiverName);
         }
-    }, [isMobile, controlsVisible, showControlsTemporarily]);
+    };
 
     return (
-        <div
-            className="relative w-full h-full overflow-hidden rounded-none md:rounded-[2.5rem]"
-            onClick={handleContainerTap}
-        >
-            {/* Background */}
-            <>
-                {receiverAvatar ? (
-                    <img
-                        src={receiverAvatar}
-                        alt=""
-                        className="absolute inset-0 w-full h-full object-cover scale-110 blur-3xl opacity-60 pointer-events-none"
-                    />
-                ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-amber-900 via-orange-900 to-black pointer-events-none" />
-                )}
-                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
-            </>
+        <div className="relative w-full h-full overflow-hidden bg-black">
+            {/* ═══ BACKGROUND ═══ */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a2e] via-[#1a0e2e] to-[#0d0819] pointer-events-none" />
 
-            {/* Astrology decorative overlay */}
-            <div className="absolute inset-0 pointer-events-none z-[1] opacity-10">
-                <div className="absolute top-4 left-4 w-16 h-16 border border-white/30 rounded-full animate-rotate-slow" />
-                <div className="absolute bottom-20 right-4 w-12 h-12 border border-white/20 rounded-full animate-rotate-slow" style={{ animationDirection: 'reverse' }} />
+            {/* Subtle mandala rings */}
+            <div className="absolute inset-0 pointer-events-none z-[1] opacity-[0.03]">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-amber-300 rounded-full" style={{ animation: 'vcv-spin 80s linear infinite' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] border border-orange-400 rounded-full" style={{ animation: 'vcv-spin 55s linear infinite reverse' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[260px] border border-amber-200 rounded-full" style={{ animation: 'vcv-spin 35s linear infinite' }} />
             </div>
 
-            <div
-                className={`relative z-10 w-full h-full ${layout === "split" ? "flex items-center gap-3 md:gap-5 p-3 md:p-5" : ""}`}
-            >
-                {/* Remote / Connecting */}
-                <div
-                    className={`${layout === "split"
-                        ? "flex-1 h-full rounded-2xl md:rounded-[2rem] overflow-hidden relative"
-                        : "w-full h-full flex items-center justify-center relative"
-                    } transition-all duration-500`}
-                >
-                    {isConnected ? (
-                        <RemoteVideo
-                            remoteTrack={remoteTrack}
-                            receiverName={receiverName}
-                            layout={layout}
+            {/* Golden floating particles */}
+            <div className="absolute inset-0 pointer-events-none z-[1]">
+                <div className="absolute top-[15%] left-[10%] w-1 h-1 bg-amber-400/30 rounded-full" style={{ animation: 'vcv-float 8s ease-in-out infinite' }} />
+                <div className="absolute top-[30%] right-[15%] w-1.5 h-1.5 bg-orange-300/20 rounded-full" style={{ animation: 'vcv-float 11s ease-in-out infinite 2s' }} />
+                <div className="absolute bottom-[25%] left-[20%] w-1 h-1 bg-amber-300/25 rounded-full" style={{ animation: 'vcv-float 9s ease-in-out infinite 4s' }} />
+                <div className="absolute top-[60%] right-[8%] w-0.5 h-0.5 bg-orange-400/30 rounded-full" style={{ animation: 'vcv-float 7s ease-in-out infinite 1s' }} />
+                <div className="absolute top-[45%] left-[5%] w-1 h-1 bg-amber-400/20 rounded-full" style={{ animation: 'vcv-float 10s ease-in-out infinite 3s' }} />
+            </div>
+
+            {/* ═══ REMOTE VIDEO / STATES ═══ */}
+            {isConnected && hasRemoteVideo ? (
+                <div className="absolute inset-0 z-[2]">
+                    <RemoteVideo remoteTrack={remoteTrack} receiverName={receiverName} layout="pip" />
+                </div>
+            ) : (
+                /* Connecting or Camera-Off — centred avatar */
+                <div className="absolute inset-0 z-[2] flex flex-col items-center justify-center px-6">
+                    {/* Subtle background glow */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-orange-500/5 rounded-full blur-[100px] pointer-events-none" />
+
+                    <div className="relative mb-6" style={{ animation: 'vcv-fadeSlideIn 0.5s ease-out' }}>
+                        {!isConnected && (
+                            <>
+                                <div className="absolute -inset-3 rounded-full border-2 border-orange-400/25" style={{ animation: 'vcv-ping-ring 2s cubic-bezier(0,0,0.2,1) infinite' }} />
+                                <div className="absolute -inset-6 rounded-full border border-orange-400/10" style={{ animation: 'vcv-ping-ring 3s cubic-bezier(0,0,0.2,1) infinite' }} />
+                            </>
+                        )}
+                        <ParticipantAvatar
+                            src={receiverAvatar}
+                            name={receiverName}
+                            size="xl"
+                            isSpeaking={isConnected ? (remoteParticipant?.isSpeaking || false) : false}
                         />
-                    ) : (
-                        <div className="relative flex items-center justify-center w-full h-full overflow-hidden">
-                            {receiverAvatar ? (
-                                <img
-                                    src={receiverAvatar}
-                                    alt=""
-                                    className="absolute inset-0 w-full h-full object-cover blur-xl opacity-80"
-                                />
-                            ) : (
-                                <div className="absolute inset-0 bg-gradient-to-br from-amber-900/80 via-orange-900/80 to-black/80" />
-                            )}
-                            <div className="absolute inset-0 bg-black/30" />
-
-                            <div className="relative z-10 flex flex-col items-center animate-fade-in">
-                                {/* Animated connecting ring */}
-                                <div className="relative mb-6">
-                                    <div className="absolute -inset-3 rounded-full border-2 border-orange-400/40 animate-ping" />
-                                    <div className="absolute -inset-6 rounded-full border border-orange-300/20 animate-pulse" />
-                                    <ParticipantAvatar
-                                        src={receiverAvatar}
-                                        name={receiverName}
-                                        size="xl"
-                                        isSpeaking={false}
-                                        className="shadow-2xl ring-4 ring-orange-400/30"
-                                    />
-                                </div>
-                                <h2 className="text-2xl md:text-4xl font-extrabold text-white mb-2 drop-shadow-md">
-                                    {receiverName}
-                                </h2>
-                                <div className="flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                                    <div className="w-2 h-2 rounded-full bg-orange-400 animate-pulse" />
-                                    <p className="text-white/90 font-semibold tracking-wide uppercase text-xs">
-                                        {localTrack ? "connecting..." : "loading..."}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Local PIP */}
-                <div
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        setLayout(layout === "pip" ? "split" : "pip");
-                    }}
-                    className={layout === 'pip'
-                        ? 'absolute top-4 right-4 md:left-6 md:bottom-6 md:top-auto md:right-auto w-[90px] h-[130px] md:w-40 md:h-56 z-40 rounded-xl md:rounded-2xl shadow-2xl border-2 border-white/40 overflow-hidden cursor-pointer transition-all duration-500'
-                        : 'cursor-pointer'
-                    }
-                >
-                    <LocalVideo
-                        localTrack={localTrack}
-                        isVideoOff={isVideoOff}
-                        isMuted={isMuted}
-                        layout={layout === 'pip' ? 'mobile' : layout}
-                        onToggleLayout={() => setLayout(layout === "pip" ? "split" : "pip")}
-                    />
-                </div>
-            </div>
-
-            {/* Timer - top left */}
-            <div className={`absolute top-4 left-4 z-20 transition-all duration-500 ${controlsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-                <CallTimer
-                    isConnected={isConnected}
-                    balance={callData?.balance}
-                    rpm={callData?.rpm}
-                    startTime={callData?.userJoinTime || callData?.startTime}
-                />
-            </div>
-
-            {/* Controls */}
-            <div
-                className={`absolute z-20 transition-all duration-500 ease-in-out ${
-                    isMobile
-                        ? `bottom-0 left-0 right-0 flex justify-center pb-8 ${controlsVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`
-                        : 'bottom-6 right-6 flex flex-col items-center'
-                }`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                <CallControls
-                    isMuted={isMuted}
-                    isVideoOff={isVideoOff}
-                    onToggleMute={toggleMute}
-                    onToggleVideo={toggleVideo}
-                    onDisconnect={onDisconnect}
-                    showVideoControl={true}
-                />
-            </div>
-
-            {/* Bottom info bar - mobile only */}
-            {isMobile && isConnected && (
-                <div className={`absolute bottom-0 left-0 right-0 z-10 transition-all duration-500 ${controlsVisible ? 'opacity-0' : 'opacity-100'}`}>
-                    <div className="bg-gradient-to-t from-black/60 to-transparent px-6 py-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                            <span className="text-white/70 text-xs font-medium uppercase tracking-wider">Live Session with {receiverName}</span>
-                        </div>
                     </div>
+
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight drop-shadow-lg" style={{ animation: 'vcv-fadeSlideIn 0.6s ease-out' }}>
+                        {receiverName}
+                    </h2>
+
+                    <p className="text-white/50 text-sm font-medium" style={{ animation: 'vcv-fadeSlideIn 0.7s ease-out' }}>
+                        {isConnected ? 'Camera Off' : (localTrack ? 'Calling...' : 'Initializing camera...')}
+                    </p>
                 </div>
             )}
+
+            {/* ═══ TOP BAR — timer pill ═══ */}
+            <div className="absolute top-0 inset-x-0 z-30">
+                <div className="bg-gradient-to-b from-black/60 to-transparent pt-4 pb-8 px-5 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.6)]" />
+                        <span className="text-white/80 text-xs font-medium">{receiverName}</span>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/[0.1]">
+                        {isConnected ? (
+                            <CallTimer
+                                isConnected={isConnected}
+                                balance={callData?.balance}
+                                rpm={callData?.rpm}
+                                startTime={callData?.userJoinTime || callData?.startTime}
+                            />
+                        ) : (
+                            <span className="text-white/60 text-xs font-medium animate-pulse">Connecting...</span>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ═══ LOCAL PIP ═══ */}
+            <div
+                className="absolute top-20 right-4 w-[100px] h-[140px] md:w-[130px] md:h-[180px] z-40 rounded-2xl shadow-2xl border-2 border-white/15 overflow-hidden transition-all duration-500"
+            >
+                <LocalVideo
+                    localTrack={localTrack}
+                    isVideoOff={isVideoOff}
+                    isMuted={isMuted}
+                    layout="mobile"
+                />
+            </div>
+
+            {/* ═══ BOTTOM CONTROLS + DAKSHINA ═══ */}
+            <div className="absolute bottom-0 inset-x-0 z-30">
+                <div className="bg-gradient-to-t from-black/70 to-transparent pt-10 pb-8 flex flex-col items-center gap-4">
+                    {/* Dakshina button — shown when connected */}
+                    {isConnected && (
+                        <button
+                            onClick={() => setShowDakshina(true)}
+                            className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/15 border border-amber-400/25 backdrop-blur-md hover:from-amber-500/30 hover:to-orange-500/25 transition-all duration-300 group"
+                            style={{ animation: 'vcv-fadeSlideIn 0.6s ease-out' }}
+                        >
+                            <span className="text-base group-hover:scale-110 transition-transform">🙏</span>
+                            <span className="text-amber-200/90 text-xs font-semibold tracking-wide">Offer Dakshina</span>
+                        </button>
+                    )}
+                    <CallControls
+                        isMuted={isMuted}
+                        isVideoOff={isVideoOff}
+                        onToggleMute={toggleMute}
+                        onToggleVideo={toggleVideo}
+                        onDisconnect={onDisconnect}
+                        showVideoControl={true}
+                    />
+                </div>
+            </div>
+
+            {/* ═══ DAKSHINA MODAL ═══ */}
+            <DakshinaModal
+                isOpen={showDakshina}
+                onClose={() => setShowDakshina(false)}
+                onSend={handleDakshinaSend}
+                receiverName={receiverName}
+                gifts={gifts}
+                onFetchGifts={fetchGifts}
+            />
+
+            <style jsx global>{`
+                @keyframes vcv-ping-ring {
+                    75%, 100% { transform: scale(1.4); opacity: 0; }
+                }
+                @keyframes vcv-fadeSlideIn {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes vcv-spin {
+                    from { transform: translate(-50%, -50%) rotate(0deg); }
+                    to { transform: translate(-50%, -50%) rotate(360deg); }
+                }
+                @keyframes vcv-float {
+                    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+                    50% { transform: translateY(-20px) translateX(8px); opacity: 0.7; }
+                }
+            `}</style>
         </div>
     );
 

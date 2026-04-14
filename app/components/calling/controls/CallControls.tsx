@@ -15,7 +15,6 @@ interface CallControlsProps {
     onToggleVideo?: () => void;
     onDisconnect: () => void;
     showVideoControl?: boolean;
-    showFilterControl?: boolean;
 }
 
 const CallControls: React.FC<CallControlsProps> = ({
@@ -25,7 +24,6 @@ const CallControls: React.FC<CallControlsProps> = ({
     onToggleVideo,
     onDisconnect,
     showVideoControl = true,
-    showFilterControl = false
 }) => {
     let room: Room | undefined;
     try {
@@ -86,63 +84,55 @@ const CallControls: React.FC<CallControlsProps> = ({
         }
     };
 
-    const baseControlButtonClass =
-        "rounded-full flex items-center justify-center transition-all w-[clamp(2.1rem,4vw,2.75rem)] h-[clamp(2.1rem,4vw,2.75rem)] [&>svg]:w-[clamp(1.1rem,2.2vw,1.65rem)] [&>svg]:h-[clamp(1.1rem,2.2vw,1.65rem)]";
-
     return (
-        <div className="relative flex flex-col items-center gap-2">
-            {/* Speaker Menu */}
+        <div className="relative">
+            {/* Speaker Menu — dark theme, opens upward */}
             {showSpeakerMenu && (
                 <div
                     ref={menuRef}
-                    className="absolute bottom-full mb-3 bg-white/90 backdrop-blur-xl rounded-2xl p-2 shadow-xl border border-white/50 min-w-[clamp(160px,24vw,200px)] z-50 animate-fade-in"
+                    className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 bg-[#1c1033]/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-white/10 min-w-[220px] z-50"
                 >
-                    <div className="text-[11px] sm:text-xs font-bold text-gray-500 px-3 py-2 uppercase tracking-wide">
-                        Select Speaker
+                    <div className="text-[10px] font-bold text-white/40 px-3 py-2 uppercase tracking-[0.2em]">
+                        Audio Output
                     </div>
-                    <div className="flex flex-col gap-1 max-h-[200px] overflow-y-auto">
+                    <div className="flex flex-col gap-0.5 max-h-[180px] overflow-y-auto">
                         {audioDevices.length > 0 ? (
                             audioDevices.map((device) => (
                                 <button
                                     key={device.deviceId}
                                     onClick={() => handleDeviceSelect(device.deviceId)}
-                                    className={`text-left px-3 py-2 rounded-xl text-xs sm:text-sm transition-all truncate flex items-center justify-between group ${selectedDeviceId === device.deviceId
-                                        ? 'bg-blue-500 text-white shadow-md'
-                                        : 'text-gray-700 hover:bg-white/80 hover:shadow-sm'
-                                        }`}
+                                    className={`text-left px-3 py-2.5 rounded-xl text-xs transition-all truncate flex items-center gap-2 ${
+                                        selectedDeviceId === device.deviceId
+                                            ? 'bg-orange-500/15 text-orange-300'
+                                            : 'text-white/60 hover:bg-white/5 hover:text-white/80'
+                                    }`}
                                 >
-                                    <span className="truncate">{device.label || `Speaker ${device.deviceId.slice(0, 5)}...`}</span>
                                     {selectedDeviceId === device.deviceId && (
-                                        <span className="w-2 h-2 rounded-full bg-white ml-2 shrink-0 animate-pulse" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
                                     )}
+                                    <span className="truncate">{device.label || `Speaker ${device.deviceId.slice(0, 5)}...`}</span>
                                 </button>
                             ))
                         ) : (
-                            <div className="px-3 py-2 text-sm text-gray-500 italic">No speakers found</div>
-                        )}
-                        {audioDevices.length === 0 && (
-                            <div className="px-3 py-2 text-xs text-red-400">
-                                Note: Speaker switching requires browser permission.
-                            </div>
+                            <div className="px-3 py-2 text-xs text-white/30">Default speaker</div>
                         )}
                     </div>
                 </div>
             )}
 
-            <div className="flex flex-col items-center gap-[clamp(0.35rem,1.2vw,0.5rem)] p-[clamp(0.2rem,0.8vw,0.375rem)] bg-white/25 backdrop-blur-2xl rounded-full border border-white/40 z-40">
-                {/* Speaker Toggle */}
+            {/* Horizontal controls — SVGs provide their own circular backgrounds */}
+            <div className="flex items-center gap-5">
                 <button
                     onClick={() => setShowSpeakerMenu(!showSpeakerMenu)}
-                    className={`${baseControlButtonClass} ${showSpeakerMenu ? 'bg-white text-blue-600 shadow-lg scale-105' : 'bg-white/90 text-gray-800 hover:bg-white'
-                        }`}
-                    title="Change Speaker"
+                    className={`w-14 h-14 flex items-center justify-center rounded-full transition-all duration-200 ${showSpeakerMenu ? 'opacity-100 scale-105 bg-white/10' : 'opacity-80 hover:opacity-100 hover:bg-white/5'}`}
+                    title="Speaker"
                 >
                     <Speaker />
                 </button>
 
                 <button
                     onClick={onToggleMute}
-                    className={`${baseControlButtonClass} ${isMuted ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/90 text-gray-800 hover:bg-white'}`}
+                    className={`w-14 h-14 flex items-center justify-center rounded-full transition-all duration-200 ${isMuted ? 'opacity-100 scale-105 bg-white/10' : 'opacity-80 hover:opacity-100 hover:bg-white/5'}`}
                     title={isMuted ? "Unmute" : "Mute"}
                 >
                     {isMuted ? <MuteIcon /> : <UnMuteIcon />}
@@ -151,8 +141,8 @@ const CallControls: React.FC<CallControlsProps> = ({
                 {showVideoControl && onToggleVideo && (
                     <button
                         onClick={onToggleVideo}
-                        className={`${baseControlButtonClass} ${isVideoOff ? 'bg-red-500 text-white shadow-lg shadow-red-500/30' : 'bg-white/90 text-gray-800 hover:bg-white'}`}
-                        title={isVideoOff ? "Turn Video On" : "Turn Video Off"}
+                        className={`w-14 h-14 flex items-center justify-center rounded-full transition-all duration-200 ${isVideoOff ? 'opacity-100 scale-105 bg-white/10' : 'opacity-80 hover:opacity-100 hover:bg-white/5'}`}
+                        title={isVideoOff ? "Camera On" : "Camera Off"}
                     >
                         {isVideoOff ? <VideoOffIcon /> : <VideoOnIcon />}
                     </button>
@@ -160,7 +150,8 @@ const CallControls: React.FC<CallControlsProps> = ({
 
                 <button
                     onClick={onDisconnect}
-                    className={`${baseControlButtonClass} bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/30`}
+                    className="w-14 h-14 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
+                    title="End Call"
                 >
                     <CallEndIcon />
                 </button>

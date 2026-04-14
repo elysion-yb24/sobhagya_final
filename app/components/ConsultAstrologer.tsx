@@ -218,11 +218,11 @@ const AstrologerCarousel = () => {
 
   if (loading) {
     return (
-        <div className="w-full py-12 relative" style={{
+        <div className="w-full section-spacing relative" style={{
          backgroundImage: "url('/bg-image.svg')",
         }}>
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-center text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-10" style={{
+        <div className="section-container">
+          <h2 className="section-heading text-center text-white mb-6 sm:mb-10" style={{
             fontFamily: 'EB Garamond',
           }}>
             Consult with <em>India's</em> best Astrologers
@@ -243,15 +243,15 @@ const AstrologerCarousel = () => {
 
   return (
     <div
-      className="w-full py-12"
+      className="w-full section-spacing"
       style={{
         backgroundImage: "url('/bg-image.svg')",
         position: "relative",
       }}
     >
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="section-container">
         <h2
-          className="text-center text-white text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-6 sm:mb-10"
+          className="section-heading text-center text-white mb-6 sm:mb-10"
           style={{ fontFamily: "EB Garamond" }}
         >
           Consult with <em>India's</em> best Astrologers
@@ -262,7 +262,7 @@ const AstrologerCarousel = () => {
           {/* Previous button */}
           <button
             onClick={prevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+            className="absolute left-0 xs:left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-200 hover:border-orange-400"
             aria-label="Previous astrologer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -275,14 +275,14 @@ const AstrologerCarousel = () => {
             {astrologers.map((astrologer, index) => (
               <div
                 key={astrologer._id}
-                className="w-full md:w-1/2 lg:w-1/3 xl:w-1/4 flex-shrink-0 px-1 md:px-2"
+                className="w-full xs:w-1/2 sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/4 flex-shrink-0 px-1 sm:px-2"
                 style={{
                   transform: `translateX(-${currentIndex * 100}%)`,
                   transition: 'transform 300ms ease-out'
                 }}
               >
                 <div
-                  className="bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 w-full max-w-[221px] mx-auto"
+                  className="bg-white rounded-xl border border-[#F7971E] p-3 sm:p-4 text-center cursor-pointer hover:shadow-lg transition-all duration-300 w-full max-w-[200px] xs:max-w-[210px] sm:max-w-[221px] mx-auto astro-card"
                   onClick={() => handleAstrologerClick(astrologer._id)}
                 >
                   {/* Profile Picture */}
@@ -359,7 +359,7 @@ const AstrologerCarousel = () => {
           {/* Next button */}
           <button
             onClick={nextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+            className="absolute right-0 xs:right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-200 hover:border-orange-400"
             aria-label="Next astrologer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -88,10 +88,10 @@ const WhyConsult: React.FC = () => {
   ];
 
   return (
-    <section className="bg-white w-full">
+    <section className="bg-white w-full sacred-pattern">
       {/* Hero Section */}
       <motion.div
-        className="relative py-10 sm:py-14 md:py-20 overflow-hidden"
+        className="relative section-spacing overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -102,7 +102,7 @@ const WhyConsult: React.FC = () => {
           <div className="absolute top-20 left-10 w-32 h-32 bg-[#F7971D] opacity-5 rounded-full"></div>
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 text-center">
+        <div className="relative z-10 section-container text-center">
           <motion.div 
             className="inline-flex items-center px-6 py-3 bg-[#F7971D] text-white rounded-full text-sm font-medium mb-6"
             initial={{ scale: 0 }}
@@ -139,10 +139,10 @@ const WhyConsult: React.FC = () => {
       </motion.div>
 
       {/* Main Content with Flowing Text and Animations */}
-      <div className="container mx-auto px-4">
+      <div className="section-container">
         {/* Section 1: The Power of Astrology */}
         <motion.div 
-          className="max-w-5xl mx-auto mb-10 sm:mb-16 md:mb-20"
+          className="max-w-5xl mx-auto mb-8 sm:mb-14 md:mb-18"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -193,7 +193,7 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 2: Benefits with Animated Icons */}
         <motion.div 
-          className="max-w-6xl mx-auto mb-10 sm:mb-16 md:mb-20"
+          className="max-w-6xl mx-auto mb-8 sm:mb-14 md:mb-18"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
@@ -309,7 +309,7 @@ const WhyConsult: React.FC = () => {
 
         {/* Section 3: Call to Action */}
         <motion.div 
-          className="text-center mb-10 sm:mb-16 md:mb-20"
+          className="text-center mb-8 sm:mb-14 md:mb-18"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}

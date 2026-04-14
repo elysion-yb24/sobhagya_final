@@ -11,24 +11,22 @@ const HoroscopeInsights: React.FC = () => {
   };
   
   return (
-    <section className="min-h-[250px] sm:min-h-[300px] py-12 sm:py-16 md:py-20 lg:py-28 relative overflow-hidden">
+    <section className="min-h-[250px] sm:min-h-[300px] section-spacing relative overflow-hidden om-watermark">
 
 
-      <div className="container mx-auto px-4 relative z-10 max-w-screen-xl">
-        <h2
-          className="mb-4 text-[#745802] text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center font-extrabold tracking-tight"
-          style={{ fontFamily: "EB Garamond" }}
-        >
+      <div className="section-container relative z-10">
+        <h2 className="section-heading text-[#745802] text-center mb-3 sm:mb-4">
           Horoscope Insights
         </h2>
+        <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-4 sm:mb-6" />
         <p 
-          className="mb-10 sm:mb-12 text-gray-600 text-sm sm:text-base md:text-lg text-center max-w-xl sm:max-w-2xl mx-auto font-medium px-2"
+          className="mb-8 sm:mb-10 md:mb-12 text-gray-600 text-sm sm:text-base md:text-lg text-center max-w-xl sm:max-w-2xl mx-auto font-medium px-2"
           style={{ fontFamily: "Poppins" }}
         >
           Get accurate daily, weekly, and yearly horoscope predictions to guide your life's journey
         </p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 sm:gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-5 gap-4 xs:gap-5 sm:gap-6 md:gap-8 max-w-5xl mx-auto">
           {[
             { img: "/daily-horoscope.svg", label: "Today's Horoscope" },
             { img: "/tomorrows-horoscope.svg", label: "Tomorrow Horoscope" },
@@ -43,7 +41,7 @@ const HoroscopeInsights: React.FC = () => {
               transition={{ duration: 0.2 }}
               onClick={() => handleHoroscopeClick(item.label)}
             >
-              <div className="w-16 sm:w-20 h-16 sm:h-20 mb-3 flex items-center justify-center">
+              <div className="w-14 xs:w-16 sm:w-20 h-14 xs:h-16 sm:h-20 mb-2 sm:mb-3 flex items-center justify-center">
                 <Image 
                   src={item.img}
                   alt={item.label}

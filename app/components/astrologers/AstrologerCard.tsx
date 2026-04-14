@@ -516,20 +516,25 @@ const AstrologerCard = React.memo(function AstrologerCard({
             {isCallMenuOpen && (
               <div
                 ref={callMenuRef}
-                className="absolute bottom-full left-0 mb-2 w-full bg-white border rounded-lg shadow-lg z-50 overflow-hidden"
+                className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-xl shadow-xl z-50 overflow-hidden border border-gray-100"
               >
                 <button
                   onClick={handleAudioCallButtonClick}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-700 flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left hover:bg-orange-50 text-gray-700 flex items-center gap-2.5 transition-colors duration-150 text-sm font-medium"
                 >
-                  <Phone className="w-4 h-4 text-green-500" />
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-sm">
+                    <Phone className="w-3.5 h-3.5 text-white" />
+                  </div>
                   Audio Call
                 </button>
+                <div className="h-px bg-gray-100 mx-3" />
                 <button
                   onClick={handleVideoCall}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-100 text-gray-700 flex items-center gap-2"
+                  className="w-full px-4 py-2.5 text-left hover:bg-blue-50 text-gray-700 flex items-center gap-2.5 transition-colors duration-150 text-sm font-medium"
                 >
-                  <Video className="w-4 h-4 text-blue-500" />
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
+                    <Video className="w-3.5 h-3.5 text-white" />
+                  </div>
                   Video Call
                 </button>
               </div>

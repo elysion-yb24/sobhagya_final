@@ -1,21 +1,22 @@
+import dynamic from 'next/dynamic';
 import HeroSection from '@/app/components/HeroSection';
-
-import RashiSection from '@/app/components/RashiSection';
 import ConsultingSection from '@/app/components/ConsultingSection';
-import OurProducts from '@/app/components/OurProducts';
 import StatsBar from '@/app/components/StatsBar';
-import BlogSection from '@/app/components/BlogSection';
-import AppDownload from '@/app/components/AppDownload';
-import WhyConsult from '@/app/components/WhyConsult';
-import AstrologerCarousel from '@/app/components/ConsultAstrologer';
-import HoroscopeInsights from '@/app/components/HoroscopeInsights'
 
+const OurProducts = dynamic(() => import('@/app/components/OurProducts'), { ssr: true });
+const AstrologerCarousel = dynamic(() => import('@/app/components/ConsultAstrologer'), { ssr: true });
+const BlogSection = dynamic(() => import('@/app/components/BlogSection'), { ssr: true });
+const RashiSection = dynamic(() => import('@/app/components/RashiSection'), { ssr: true });
+const HoroscopeInsights = dynamic(() => import('@/app/components/HoroscopeInsights'), { ssr: true });
+const AppDownload = dynamic(() => import('@/app/components/AppDownload'), { ssr: true });
+const WhyConsult = dynamic(() => import('@/app/components/WhyConsult'), { ssr: true });
 
 export default function Home() {
   return (
-    <main>
+    <main className="overflow-x-hidden">
       <HeroSection />
-      <div className="h-16 bg-white"></div>
+      {/* Sacred divider between hero and consulting */}
+      <div className="sacred-divider mx-auto max-w-xs sm:max-w-md md:max-w-lg my-0" />
       <ConsultingSection />
       <StatsBar />
       <OurProducts />
@@ -26,6 +27,5 @@ export default function Home() {
       <AppDownload />
       <WhyConsult />
     </main>
-    
   );
 }

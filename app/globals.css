@@ -565,3 +565,210 @@ img, video {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ===== Astrology & Devotional Special Effects ===== */
+
+/* Twinkling Stars Background */
+.stars-bg {
+  position: relative;
+  overflow: hidden;
+}
+.stars-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, rgba(247,151,30,0.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 40% 70%, rgba(255,200,100,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 20%, rgba(255,220,150,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 50%, rgba(247,151,30,0.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 10% 80%, rgba(255,180,80,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 10%, rgba(255,210,130,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 90%, rgba(247,151,30,0.3) 0%, transparent 100%),
+    radial-gradient(2px 2px at 70% 40%, rgba(255,230,170,0.4) 0%, transparent 100%);
+  animation: twinkleField 4s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes twinkleField {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Sacred Om Pattern Overlay */
+.sacred-pattern {
+  position: relative;
+}
+.sacred-pattern::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(247,151,30,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(247,151,30,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(247,151,30,0.02) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Devotional Golden Border */
+.golden-border {
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+}
+.golden-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #F7971E, #FFD700, #F7971E, #FFD700);
+  border-radius: inherit;
+  z-index: -1;
+  animation: goldenShift 3s linear infinite;
+  background-size: 200% 200%;
+}
+
+@keyframes goldenShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Section Divider - Sacred Line */
+.sacred-divider {
+  position: relative;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #F7971E, #FFD700, #F7971E, transparent);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sacred-divider::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+  animation: sacredLine 2.5s ease-in-out infinite;
+}
+@keyframes sacredLine {
+  0% { left: -50%; }
+  100% { left: 150%; }
+}
+
+/* Scroll-triggered reveal */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+.reveal-on-scroll.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive Container Utility */
+.section-container {
+  @apply w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12;
+}
+
+/* Section Spacing - Consistent across all pages */
+.section-spacing {
+  @apply py-10 sm:py-14 md:py-16 lg:py-20 xl:py-24;
+}
+
+/* Astrology Card Hover Effect */
+.astro-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.astro-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(247,151,30,0.08) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.astro-card:hover::before {
+  opacity: 1;
+}
+.astro-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -8px rgba(247,151,30,0.18);
+}
+
+/* Devotional Glow Effect for Images */
+.devotional-glow {
+  filter: drop-shadow(0 0 8px rgba(247,151,30,0.2));
+  transition: filter 0.3s ease;
+}
+.devotional-glow:hover {
+  filter: drop-shadow(0 0 16px rgba(247,151,30,0.4));
+}
+
+/* Om Symbol Watermark Utility */
+.om-watermark {
+  position: relative;
+}
+.om-watermark::before {
+  content: 'ॐ';
+  position: absolute;
+  font-size: 12rem;
+  color: rgba(247,151,30,0.03);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  font-family: serif;
+}
+
+/* Consistent Section Heading */
+.section-heading {
+  @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
+  font-family: 'EB Garamond', serif;
+}
+
+/* Responsive Text Scale */
+.text-responsive-sm { @apply text-xs sm:text-sm; }
+.text-responsive-base { @apply text-sm sm:text-base; }
+.text-responsive-lg { @apply text-base sm:text-lg md:text-xl; }
+.text-responsive-xl { @apply text-lg sm:text-xl md:text-2xl lg:text-3xl; }
+
+/* Smooth entrance for page sections */
+@keyframes sectionEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.section-enter {
+  animation: sectionEntrance 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Fix for consistent max-width on large screens */
+@media (min-width: 1920px) {
+  .container {
+    max-width: 1440px;
+  }
+}
+
+/* Ensure nothing overflows on tiny screens */
+@media (max-width: 374px) {
+  .container, .section-container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

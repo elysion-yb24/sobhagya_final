@@ -67,7 +67,6 @@ interface Astrologer {
   offerRpm?: number;
   payoutAudioRpm?: number;
   payoutVideoRpm?: number;
-  phone?: string;
   priority?: number;
   reportCount?: number;
   role?: string;
@@ -75,7 +74,6 @@ interface Astrologer {
   sample?: string;
   status?: string;
   talksAbout?: string[];
-  upi?: string;
   videoRpm?: number;
 }
 
@@ -390,7 +388,6 @@ export default function AstrologerProfilePage() {
         router.push("/");
         return;
       }
-      console.log("✅ Authentication token found:", token.substring(0, 20) + "...");
 
       // First try to get specific astrologer by ID if there's a specific endpoint
       let foundAstrologer = null;
@@ -509,13 +506,11 @@ export default function AstrologerProfilePage() {
         isVideoCallAllowed: foundAstrologer.isVideoCallAllowed,
         numericId: foundAstrologer.numericId,
         offerRpm: foundAstrologer.offerRpm,
-        phone: foundAstrologer.phone,
         priority: foundAstrologer.priority,
         role: foundAstrologer.role,
         rpm: foundAstrologer.rpm,
         status: foundAstrologer.status,
         talksAbout: foundAstrologer.talksAbout,
-        upi: foundAstrologer.upi,
         videoRpm: foundAstrologer.videoRpm
       };
 
@@ -704,11 +699,6 @@ export default function AstrologerProfilePage() {
       setShowGiftConfirm(false);
       const token = getAuthToken();
       const userDetails = getUserDetails();
-      console.log('🎁 Gift sending - Auth details:', { 
-        hasToken: !!token, 
-        userDetails, 
-        astrologerId: astrologer?._id 
-      });
       
       if (!token || !userDetails?.id) {
         throw new Error('Authentication required');
@@ -721,7 +711,6 @@ export default function AstrologerProfilePage() {
         amount: gift.price,
       };
 
-      console.log('🎁 Sending gift data:', giftData);
 
       const response = await fetch(`${getApiBaseUrl()}/calling/api/gift/send-gift`, {
         method: 'POST',
@@ -819,8 +808,9 @@ export default function AstrologerProfilePage() {
       setCurrentCallType('audio');
       const token = getAuthToken();
       const userDetails = getUserDetails();
+      const userId = userDetails?.id || userDetails?._id;
       
-      if (!token || !userDetails?.id) {
+      if (!token || !userId) {
         throw new Error('Authentication required');
       }
 
@@ -871,7 +861,6 @@ export default function AstrologerProfilePage() {
         isScreenShareCall: false
       };
       
-      console.log('🚨 SENDING receiverUserId:', partner._id, '| requestBody:', requestBody);
       if (!requestBody.receiverUserId) {
         alert('receiverUserId is missing. Cannot initiate audio call.');
         setIsAudioCallProcessing(false);
@@ -880,8 +869,6 @@ export default function AstrologerProfilePage() {
       }
       
       const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      console.log('🔗 Fetching livekit token via proxy:', livekitUrl);
 
       const response = await fetch(livekitUrl, {
         method: 'POST',
@@ -924,7 +911,6 @@ export default function AstrologerProfilePage() {
       
       if (!data.success) {
         console.error('[audio call] livekit token response:', JSON.stringify(data));
-        if (data._debug) console.error('[audio call] 🔍 BACKEND DEBUG:', JSON.stringify(data._debug, null, 2));
         const msg = data.message || '';
         let errorMessage = msg || 'Failed to get audio call token';
         if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
@@ -1100,7 +1086,6 @@ export default function AstrologerProfilePage() {
         isScreenShareCall: false
       };
       
-      console.log('🚨 SENDING receiverUserId:', partner._id, '| requestBody:', requestBody);
       if (!requestBody.receiverUserId) {
         alert('receiverUserId is missing. Cannot initiate video call.');
         setIsVideoCallProcessing(false);
@@ -1109,8 +1094,6 @@ export default function AstrologerProfilePage() {
       }
       
       const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      console.log('🔗 Fetching livekit token via proxy:', livekitUrl);
 
       const response = await fetch(livekitUrl, {
         method: 'POST',
@@ -1127,7 +1110,6 @@ export default function AstrologerProfilePage() {
         const status = response.status;
         try {
           const errorData = await response.json();
-          console.error(`❌ Backend error (${status}):`, JSON.stringify(errorData));
 
           const msgFromError =
             errorData && typeof errorData === 'object'
@@ -1144,7 +1126,7 @@ export default function AstrologerProfilePage() {
             errorMessage = msgFromError || errorMessage;
           }
         } catch (e) {
-          console.error(`❌ HTTP error (${status}):`, response.statusText);
+          // Parse error fallback
         }
         throw new Error(errorMessage);
       }
@@ -1152,8 +1134,6 @@ export default function AstrologerProfilePage() {
       const data = await response.json();
       
       if (!data.success) {
-        console.error('[video call] livekit token response:', JSON.stringify(data));
-        if (data._debug) console.error('[video call] 🔍 BACKEND DEBUG:', JSON.stringify(data._debug, null, 2));
         const msg = data.message || '';
         let errorMessage = msg || 'Failed to get video call token';
         if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
@@ -1193,7 +1173,7 @@ export default function AstrologerProfilePage() {
       }, 1000);
       
     } catch (error) {
-      console.error('❌ Video call error:', error);
+      console.error('Video call error:', error);
       setIsVideoCallProcessing(false);
       setCurrentCallType(null);
       const errorMessage = error instanceof Error ? error.message : 'Failed to initiate video call';

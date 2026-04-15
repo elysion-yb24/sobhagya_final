@@ -305,7 +305,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
       const currentUserId = profile?.id || profile?._id;
       const currentUserName = profile?.displayName || profile?.name || "User";
 
-      console.log('User details:', { currentUserId, currentUserName });
 
       if (!currentUserId) {
         localStorage.setItem("initiateChatWithAstrologerId", _id);

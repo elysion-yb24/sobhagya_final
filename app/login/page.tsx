@@ -84,8 +84,6 @@ export default function LoginPage() {
         
         // Check user role first
         const user = getUserDetails();
-        console.log('🔍 checkAuthAndRedirect - User details:', user);
-        console.log('🔍 checkAuthAndRedirect - Call data:', { storedAstrologerId, callIntent, callSource });
         
         if (user && user.role === 'friend') {
           console.log('👥 checkAuthAndRedirect - User is a friend, checking for call intent');
@@ -184,7 +182,6 @@ export default function LoginPage() {
       if (capturedLanguages) requestBody.languages = capturedLanguages;
       if (capturedInterests) requestBody.interests = capturedInterests;
 
-      console.log('Sending OTP with user details:', requestBody);
 
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
@@ -467,11 +464,9 @@ export default function LoginPage() {
         // Check if user details are present in database response (legacy)
         const hasUserDetails = user && (user.name || user.displayName) && (user.name || user.displayName).trim() !== '';
         
-        console.log('👤 User details check (legacy):', { user, hasUserDetails });
         
         // If user details are not present and there's a call intent, redirect to call pages
         if (!hasUserDetails && (callIntent || storedAstrologerId)) {
-          console.log('📝 User details not present in database (legacy), redirecting to call flow for data collection');
           router.push('/calls/call1');
           return;
         }

@@ -122,9 +122,6 @@ export default function OtpVerificationScreen({
     setError(null);
 
     try {
-      console.log("Verifying OTP:", otpValue, "for phone:", phoneNumber, "with session ID:",);
-      console.log("Making request to:", "/api/auth/verify-otp");
-
       let notifyToken = "";
       try {
         notifyToken = localStorage.getItem('fcmToken') || "placeholder_token";
@@ -155,8 +152,6 @@ export default function OtpVerificationScreen({
         body: JSON.stringify(verifyBody),
       });
 
-      console.log("OTP verification response status:", response.status);
-      console.log("Response headers auth-token:", response.headers.get('auth-token'));
       
       let headerToken = response.headers.get('auth-token');
       let data;
@@ -170,9 +165,6 @@ export default function OtpVerificationScreen({
       let finalToken = headerToken || data.token;
       if (response.ok && finalToken) {
         setVerificationStatus('success');
-        
-        console.log("OTP verification successful");
-        console.log("Full Response data:", JSON.stringify(data, null, 2));
         
         // Store token in localStorage for all future API calls
         localStorage.setItem('authToken', finalToken);
@@ -228,7 +220,6 @@ export default function OtpVerificationScreen({
           }
         });
         
-        console.log("Storing user details:", userDetails);
         storeUserDetails(userDetails);
         
         // Dispatch multiple events for instant updates across all components
@@ -244,7 +235,6 @@ export default function OtpVerificationScreen({
         }
         
         // Call onVerify only to notify success, don't pass data that would trigger another verification
-        console.log("Calling onVerify - parent will handle redirect...");
         onVerify({ success: true, verified: true, userDetails });
         
         // Let the parent component handle the redirect based on stored astrologer ID
@@ -274,7 +264,6 @@ export default function OtpVerificationScreen({
     setError(null);
 
     try {
-      console.log("Resending OTP for phone:", phoneNumber);
       
       let notifyToken = "";
       try {
@@ -345,7 +334,7 @@ export default function OtpVerificationScreen({
           </p>
           <div className="inline-flex items-center px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-200">
             <span className="text-orange-700 font-semibold text-sm sm:text-base md:text-lg">
-              {countryCode} {phoneNumber}
+              {countryCode} {phoneNumber ? `${phoneNumber.slice(0, 2)}${'•'.repeat(Math.max(0, phoneNumber.length - 4))}${phoneNumber.slice(-2)}` : ''}
             </span>
           </div>
         </div>

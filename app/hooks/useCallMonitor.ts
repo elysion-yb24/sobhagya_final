@@ -32,6 +32,7 @@ export const useCallMonitor = ({ channelId, emitGetCallInfo, endCall, onCallEndP
 
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const participantTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hasSetupDevicesRef = useRef(false);
 
     const cleanup = useCallback(() => {
         console.log('[useCallMonitor] Running cleanup...');
@@ -86,45 +87,48 @@ export const useCallMonitor = ({ channelId, emitGetCallInfo, endCall, onCallEndP
             setIsReconnecting(false);
             setError(null);
 
-            // Enable microphone (always) and camera (video calls only)
-            try {
-                await localParticipant.setMicrophoneEnabled(true);
-                if (callType === 'video') {
-                    console.log('[useCallMonitor] Enabling camera for video call...');
-                    await localParticipant.setCameraEnabled(true);
+            // Enable microphone (always) and camera (video calls only) — only on first connect
+            if (!hasSetupDevicesRef.current) {
+                hasSetupDevicesRef.current = true;
+                try {
+                    await localParticipant.setMicrophoneEnabled(true);
+                    if (callType === 'video') {
+                        console.log('[useCallMonitor] Enabling camera for video call...');
+                        await localParticipant.setCameraEnabled(true);
 
-                    // Verify camera track is published, retry if not
-                    setTimeout(async () => {
-                        try {
-                            if (!localParticipant.isCameraEnabled) {
-                                console.log('[useCallMonitor] Camera not enabled after initial attempt, retrying...');
-                                await localParticipant.setCameraEnabled(true);
+                        // Verify camera track is published, retry if not
+                        setTimeout(async () => {
+                            try {
+                                if (!localParticipant.isCameraEnabled) {
+                                    console.log('[useCallMonitor] Camera not enabled after initial attempt, retrying...');
+                                    await localParticipant.setCameraEnabled(true);
+                                }
+                                // Check if camera track exists and is published
+                                const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
+                                console.log('[useCallMonitor] Camera track status:', {
+                                    enabled: localParticipant.isCameraEnabled,
+                                    hasPublication: !!camPub,
+                                    isMuted: camPub?.isMuted,
+                                    trackExists: !!camPub?.track,
+                                });
+                            } catch (retryErr) {
+                                console.log('[useCallMonitor] Camera retry failed:', retryErr);
                             }
-                            // Check if camera track exists and is published
-                            const camPub = localParticipant.getTrackPublication(Track.Source.Camera);
-                            console.log('[useCallMonitor] Camera track status:', {
-                                enabled: localParticipant.isCameraEnabled,
-                                hasPublication: !!camPub,
-                                isMuted: camPub?.isMuted,
-                                trackExists: !!camPub?.track,
-                            });
-                        } catch (retryErr) {
-                            console.log('[useCallMonitor] Camera retry failed:', retryErr);
-                        }
-                    }, 2000);
-                }
-            } catch (err) {
-                console.log('[useCallMonitor] Failed to enable devices:', err);
-                // Retry camera after a delay on failure
-                if (callType === 'video') {
-                    setTimeout(async () => {
-                        try {
-                            console.log('[useCallMonitor] Retrying camera enable after failure...');
-                            await localParticipant.setCameraEnabled(true);
-                        } catch (retryErr) {
-                            console.log('[useCallMonitor] Camera retry also failed:', retryErr);
-                        }
-                    }, 3000);
+                        }, 2000);
+                    }
+                } catch (err) {
+                    console.log('[useCallMonitor] Failed to enable devices:', err);
+                    // Retry camera after a delay on failure
+                    if (callType === 'video') {
+                        setTimeout(async () => {
+                            try {
+                                console.log('[useCallMonitor] Retrying camera enable after failure...');
+                                await localParticipant.setCameraEnabled(true);
+                            } catch (retryErr) {
+                                console.log('[useCallMonitor] Camera retry also failed:', retryErr);
+                            }
+                        }, 3000);
+                    }
                 }
             }
 

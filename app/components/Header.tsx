@@ -2,13 +2,27 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Eagle_Lake } from "next/font/google";
-import { Menu, X, Phone, User, LogOut } from "lucide-react";
+import { Menu, X, Phone, User, LogOut, ChevronDown, Wallet, History, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../utils/production-api';
+
+// Inlined to avoid webpack import resolution issues
+function looksLikePhone(value: string | undefined | null): boolean {
+  if (!value) return false;
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;
+}
+
+function maskPhone(phone: string | number | undefined | null): string {
+  if (!phone) return '';
+  const str = phone.toString().replace(/\D/g, '');
+  if (str.length < 4) return '••••';
+  return `+91 ••••••••${str.slice(-2)}`;
+}
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 
@@ -24,7 +38,21 @@ const Header = () => {
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProfileDropdown]);
 
   // Helper function to check if a link is active
   const isActiveLink = (href: string) => {
@@ -88,16 +116,13 @@ const Header = () => {
       setIsAuthenticatedUser(authenticated);
       if (authenticated) {
         let userDetails = getUserDetails();
-        console.log('👤 Event handler - User details:', userDetails);
           setUserProfile(userDetails);
         fetchUserProfile().then(freshProfile => {
-          console.log('🔄 Event handler - Fresh profile:', freshProfile);
-          if (freshProfile) setUserProfile(freshProfile);
+            if (freshProfile) setUserProfile(freshProfile);
         });
         // Fetch wallet balance
         fetchWalletBalance();
       } else {
-        console.log('❌ Event handler - Not authenticated, clearing profile');
         setUserProfile(null);
         setWalletBalance(0);
       }
@@ -172,35 +197,47 @@ const Header = () => {
   const getDisplayName = () => {
     if (!userProfile) return 'User';
     
-    // Use enhanced displayName if available
+    // Use enhanced displayName if available, but mask if it looks like a phone number
     if (userProfile.displayName && userProfile.displayName !== 'User') {
+      if (looksLikePhone(userProfile.displayName)) {
+        return maskPhone(userProfile.displayName);
+      }
       return userProfile.displayName;
     }
     
-    // Fallback priority: name > firstName lastName > firstName > phoneNumber
+    // Fallback priority: name > firstName lastName > firstName > masked phone
     if (userProfile.name && userProfile.name.trim() !== '') {
+      if (looksLikePhone(userProfile.name)) {
+        return maskPhone(userProfile.name);
+      }
       return userProfile.name;
     }
     
     if (userProfile.firstName && userProfile.firstName.trim() !== '') {
+      if (looksLikePhone(userProfile.firstName)) {
+        return maskPhone(userProfile.firstName);
+      }
       const lastName = userProfile.lastName ? ` ${userProfile.lastName}` : '';
       return `${userProfile.firstName}${lastName}`;
     }
     
     if (userProfile.phoneNumber) {
-      // Format phone number for display
-      const phone = userProfile.phoneNumber.toString();
-      if (phone.length >= 10) {
-        return `+91 ${phone.slice(-10).replace(/(\d{3})(\d{3})(\d{4})/, '$1 $2 $3')}`;
-      }
-      return phone;
+      return maskPhone(userProfile.phoneNumber);
     }
     
     return 'User';
   };
 
-  // Hide header on call pages
-  if (pathname?.startsWith('/video-call') || pathname?.startsWith('/audio-call')) {
+  const getAvatarInitial = () => {
+    const name = getDisplayName();
+    const ch = name.charAt(0);
+    // If masked phone (starts with +) or 'User', show 'U'
+    if (ch === '+' || ch === '•') return 'U';
+    return ch.toUpperCase();
+  };
+
+  // Hide header on call pages and active live sessions
+  if (pathname?.startsWith('/video-call') || pathname?.startsWith('/audio-call') || (pathname?.startsWith('/live-sessions/') && pathname !== '/live-sessions')) {
     return null;
   }
 
@@ -229,42 +266,94 @@ const Header = () => {
 
             {/* Right: Two stacked rows */}
             <div className="flex-1 flex flex-col pl-10">
-              {/* Top row: CTA + Signup/Login */}
-              <div className="flex items-center justify-between py-3 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  {/* User Pill when authenticated */}
-                  {isAuthenticatedUser && (
-                    <div className="flex items-center gap-3 bg-orange-50/50 border border-orange-100 rounded-full px-4 py-1.5 shadow-sm hover:shadow-md transition-shadow">
-                      <Link href="/my-profile" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                        <div className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
-                          <User className="w-3.5 h-3.5 text-orange-600" />
-                        </div>
-                        <span className="text-gray-700 font-semibold text-sm">
-                          {userProfile?.phoneNumber || getDisplayName()}
+              {/* Top row: User Profile / Signup */}
+              <div className="flex items-center justify-end py-3 border-b border-gray-100">
+                {!isAuthenticatedUser ? (
+                  <Link href="/login" className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm hover:shadow-md">
+                    <User className="w-4 h-4" />
+                    Signup/Login
+                  </Link>
+                ) : (
+                  <div className="relative" ref={profileDropdownRef}>
+                    <button
+                      onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+                      className="flex items-center gap-3 px-4 py-2 rounded-full border border-gray-200 hover:border-orange-200 hover:bg-orange-50/50 transition-all group"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-sm">
+                        <span className="text-white text-sm font-bold">
+                          {getAvatarInitial()}
                         </span>
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        disabled={isLoggingOut}
-                        className="w-7 h-7 rounded-full bg-white border border-orange-100 flex items-center justify-center hover:bg-red-50 hover:border-red-100 transition-colors group"
-                        title="Logout"
-                      >
-                        <LogOut className="w-3.5 h-3.5 text-red-500 group-hover:scale-110 transition-transform" />
-                      </button>
-                    </div>
-                  )}
-                </div>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-gray-800 leading-tight">{getDisplayName()}</p>
+                        <p className="text-[11px] text-gray-400 leading-tight">₹{walletBalance?.toFixed(0) || '0'} Balance</p>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180' : ''}`} />
+                    </button>
 
-                {/* Right: Signup/Login */}
-                <div>
-                  {!isAuthenticatedUser ? (
-                    <Link href="/login" className="text-orange-500 font-bold text-sm hover:underline transition-all">
-                      Signup/Login
-                    </Link>
-                  ) : (
-                    <span className="text-sm text-transparent select-none">placeholder</span>
-                  )}
-                </div>
+                    {/* Dropdown Menu */}
+                    {showProfileDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[999] animate-fadeIn">
+                        {/* User Info Header */}
+                        <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-4 border-b border-orange-100/60">
+                          <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-md">
+                              <span className="text-white text-lg font-bold">{getAvatarInitial()}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-gray-900 truncate">{getDisplayName()}</p>
+                              <p className="text-xs text-gray-500 truncate">{userProfile?.email || (userProfile?.phoneNumber ? `+91 •••••••${userProfile.phoneNumber.toString().slice(-2)}` : '')}</p>
+                            </div>
+                          </div>
+                          {/* Wallet Balance */}
+                          <div className="mt-3 flex items-center gap-2 bg-white/80 rounded-xl px-3 py-2 border border-orange-100/60">
+                            <Wallet className="w-4 h-4 text-green-600" />
+                            <span className="text-xs text-gray-500">Wallet</span>
+                            <span className="ml-auto text-sm font-bold text-green-700">₹{walletBalance?.toFixed(2) || '0.00'}</span>
+                          </div>
+                        </div>
+                        {/* Menu Items */}
+                        <div className="py-2 px-2">
+                          <Link
+                            href="/my-profile"
+                            onClick={() => setShowProfileDropdown(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                          >
+                            <User className="w-4 h-4" />
+                            <span className="text-sm font-medium">My Profile</span>
+                          </Link>
+                          <Link
+                            href="/astrologers?openHistory=transactions"
+                            onClick={() => setShowProfileDropdown(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                          >
+                            <History className="w-4 h-4" />
+                            <span className="text-sm font-medium">Transaction History</span>
+                          </Link>
+                          <Link
+                            href="/astrologers?openHistory=calls"
+                            onClick={() => setShowProfileDropdown(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                          >
+                            <Phone className="w-4 h-4" />
+                            <span className="text-sm font-medium">Call History</span>
+                          </Link>
+                        </div>
+                        {/* Logout */}
+                        <div className="border-t border-gray-100 px-2 py-2">
+                          <button
+                            onClick={() => { setShowProfileDropdown(false); handleLogout(); }}
+                            disabled={isLoggingOut}
+                            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span className="text-sm font-medium">{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Bottom row: Navigation links */}
@@ -273,7 +362,7 @@ const Header = () => {
                   {[
                     { label: "About Us", href: "/about" },
                     { label: "Services", href: "/services" },
-                    { label: "Live Sessions", href: "/astrologers" },
+                    { label: "Live Sessions", href: "/live-sessions" },
                     { label: "Call with Astrologer", href: "/call-with-astrologer" },
                     { label: "Shop", href: "/services" },
                     { label: "Blog", href: "/blog" },
@@ -334,7 +423,7 @@ const Header = () => {
                   <Link href="/my-profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <User className="w-4 h-4 text-orange-600" />
                     <span className="text-gray-700 font-medium text-xs truncate max-w-[100px]">
-                      {userProfile?.phoneNumber || 'User'}
+                      {getDisplayName()}
                     </span>
                   </Link>
                   <button onClick={handleLogout} className="text-red-500 hover:scale-110 transition-transform">
@@ -576,7 +665,7 @@ const Header = () => {
                   {[
                     { href: "/about", label: "About Us", icon: "✨", bgColor: "bg-indigo-100" },
                     { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
-                    { href: "/astrologers", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100" },
+                    { href: "/live-sessions", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100" },
                     { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
                     { href: "/services", label: "Shop", icon: "🛍️", bgColor: "bg-pink-100" },
                     { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },

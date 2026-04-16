@@ -242,7 +242,7 @@ const Header = () => {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm transition-all duration-300 animate-fadeIn font-sans">
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-white shadow-sm transition-all duration-300 animate-fadeIn font-sans">
       {/* DESKTOP HEADER — two-row layout with logo spanning full height */}
       <div className="hidden lg:block bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
@@ -323,7 +323,7 @@ const Header = () => {
                             <span className="text-sm font-medium">My Profile</span>
                           </Link>
                           <Link
-                            href="/astrologers?openHistory=transactions"
+                            href="/history/Transaction-history"
                             onClick={() => setShowProfileDropdown(false)}
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
                           >
@@ -331,7 +331,7 @@ const Header = () => {
                             <span className="text-sm font-medium">Transaction History</span>
                           </Link>
                           <Link
-                            href="/astrologers?openHistory=calls"
+                            href="/history/call-history"
                             onClick={() => setShowProfileDropdown(false)}
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
                           >
@@ -623,7 +623,7 @@ const Header = () => {
                       </Link>
 
                       <Link
-                        href="/astrologers?openHistory=transactions"
+                        href="/history/Transaction-history"
                         className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-blue-200"
                         onClick={() => setIsOpen(false)}
                       >
@@ -638,8 +638,8 @@ const Header = () => {
                         </div>
                       </Link>
                       
-                      <Link 
-                        href="/astrologers?openHistory=calls"
+                      <Link
+                        href="/history/call-history"
                         className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-green-200"
                         onClick={() => setIsOpen(false)}
                       >

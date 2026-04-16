@@ -17,6 +17,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'baatein.blob.core.windows.net' },
       { protocol: 'https', hostname: 'sobhagya.blob.core.windows.net' },
       { protocol: 'https', hostname: 'ui-avatars.com' },
+      { protocol: 'https', hostname: 'blog.sobhagya.in' },
     ],
     // Optimize image sizes for common breakpoints
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],

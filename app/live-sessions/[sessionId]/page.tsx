@@ -230,12 +230,7 @@ export default function LiveSessionViewPage() {
       }
       
       // Emit real-time effect
-      emitSendGift({
-        giftId: gift._id,
-        receiverUserId: sessionData?.broadcasterId,
-        amount: gift.price,
-        sessionId
-      }, () => {});
+      emitSendGift(sessionId, gift, sessionData?.broadcasterName || 'Astrologer');
 
       setWalletBalance(prev => prev - gift.price);
       setGiftToast({ gift, senderName: 'You' });

@@ -242,11 +242,19 @@ export async function fetchUserProfile(): Promise<any> {
             name: name,
             firstName: nameParts[0] || cachedDetails?.firstName || '',
             lastName: nameParts.slice(1).join(' ') || cachedDetails?.lastName || '',
-            phoneNumber: backendUser.phoneNumber || cachedDetails?.phoneNumber,
+            phoneNumber: backendUser.phone || backendUser.phoneNumber || cachedDetails?.phoneNumber,
             email: backendUser.email || cachedDetails?.email,
             avatar: backendUser.avatar || cachedDetails?.avatar,
             gender: backendUser.gender || cachedDetails?.gender,
             age: backendUser.age || cachedDetails?.age,
+            // Normalize backend field names to frontend conventions
+            topic: backendUser.talksAbout || backendUser.topic || cachedDetails?.topic,
+            aboutUs: backendUser.about || backendUser.aboutUs || cachedDetails?.aboutUs,
+            language: backendUser.language || cachedDetails?.language,
+            dob: backendUser.dob || cachedDetails?.dob,
+            placeOfBirth: backendUser.placeOfBirth || cachedDetails?.placeOfBirth,
+            timeOfBirth: backendUser.timeOfBirth || cachedDetails?.timeOfBirth,
+            createdAt: backendUser.createdAt || cachedDetails?.createdAt,
             displayName: name ||
                         (nameParts[0] ? `${nameParts[0]} ${nameParts.slice(1).join(' ')}`.trim() : '') ||
                         'User',

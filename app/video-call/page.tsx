@@ -107,9 +107,9 @@ export default function VideoCallPage() {
 
     setTimeout(() => {
       if (callSource === 'astrologerProfile' && astrologerId) {
-        router.replace(`/astrologers/${astrologerId}`);
+        router.replace(`/call-with-astrologer/profile/${astrologerId}`);
       } else {
-        router.replace('/astrologers');
+        router.replace('/call-with-astrologer');
       }
     }, 100);
   };

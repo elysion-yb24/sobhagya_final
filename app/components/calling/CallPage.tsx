@@ -67,7 +67,7 @@ export default function CallPage({ token, serverUrl, receiverName, channelId, re
     const hasNavigatedAwayRef = React.useRef(false);
     const hasSentEndCallRef = React.useRef(false);
 
-    const exitRoute = "/astrologers";
+    const exitRoute = "/call-with-astrologer";
 
     const closeCall = React.useCallback(() => {
         if (hasNavigatedAwayRef.current) {

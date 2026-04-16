@@ -81,13 +81,17 @@ export default function MyProfilePage() {
   }, [mounted, router]);
 
   const populateForm = (data: any) => {
+    // Handle both frontend field names (topic/aboutUs) and backend field names (talksAbout/about)
+    const topicData = data.topic || data.talksAbout;
+    const aboutData = data.aboutUs || data.about;
+    const langData = data.language || data.languages;
     setEditForm({
       name: data.name || data.displayName || "",
       age: data.age?.toString() || "",
       gender: data.gender || "",
-      topic: Array.isArray(data.topic) ? data.topic.join(", ") : data.topic || "",
-      aboutUs: data.aboutUs || "",
-      language: Array.isArray(data.language) ? data.language.join(", ") : data.language || "",
+      topic: Array.isArray(topicData) ? topicData.join(", ") : topicData || "",
+      aboutUs: aboutData || "",
+      language: Array.isArray(langData) ? langData.join(", ") : langData || "",
       dob: data.dob || "",
       placeOfBirth: data.placeOfBirth || "",
       timeOfBirth: data.timeOfBirth || "",
@@ -305,17 +309,17 @@ export default function MyProfilePage() {
             <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-2">
               <Wallet className="w-5 h-5 text-green-600" />
             </div>
-            <p className="text-xl sm:text-2xl font-bold text-gray-900">{walletBalance?.toFixed(0) || '0'}</p>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">₹{walletBalance?.toFixed(0) || '0'}</p>
             <p className="text-xs text-gray-400 mt-0.5">Wallet Balance</p>
           </div>
-          <Link href="/astrologers?openHistory=calls" className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 text-center hover:shadow-xl transition-shadow group">
+          <Link href="/history/call-history" className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 text-center hover:shadow-xl transition-shadow group">
             <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-100 transition-colors">
               <PhoneCall className="w-5 h-5 text-blue-600" />
             </div>
             <p className="text-xl sm:text-2xl font-bold text-gray-900">{profile.totalCalls || '0'}</p>
             <p className="text-xs text-gray-400 mt-0.5">Total Calls</p>
           </Link>
-          <Link href="/astrologers?openHistory=transactions" className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 text-center hover:shadow-xl transition-shadow group">
+          <Link href="/history/Transaction-history" className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-5 text-center hover:shadow-xl transition-shadow group">
             <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center mx-auto mb-2 group-hover:bg-purple-100 transition-colors">
               <History className="w-5 h-5 text-purple-600" />
             </div>
@@ -542,28 +546,28 @@ export default function MyProfilePage() {
                       </svg>
                     }
                     label="Language"
-                    value={
-                      Array.isArray(profile.language)
-                        ? profile.language.join(", ")
-                        : profile.language || "Not set"
-                    }
+                    value={(() => {
+                      const l = profile.language || profile.languages;
+                      if (!l) return "Not set";
+                      return Array.isArray(l) ? l.join(", ") : l;
+                    })()}
                     color="indigo"
                   />
                   <ProfileRow
                     icon={<Star className="w-5 h-5" />}
                     label="Topics of Interest"
-                    value={
-                      Array.isArray(profile.topic)
-                        ? profile.topic.join(", ")
-                        : profile.topic || "Not set"
-                    }
+                    value={(() => {
+                      const t = profile.topic || profile.talksAbout;
+                      if (!t) return "Not set";
+                      return Array.isArray(t) ? t.join(", ") : t;
+                    })()}
                     color="amber"
                   />
                 </div>
-                {profile.aboutUs && (
+                {(profile.aboutUs || profile.about) && (
                   <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">About</p>
-                    <p className="text-gray-700 text-sm leading-relaxed">{profile.aboutUs}</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">{profile.aboutUs || profile.about}</p>
                   </div>
                 )}
               </div>
@@ -632,7 +636,7 @@ export default function MyProfilePage() {
                 <h3 className="text-sm font-bold text-gray-700">Quick Actions</h3>
               </div>
               <div className="divide-y divide-gray-50">
-                <Link href="/astrologers" className="flex items-center gap-4 px-5 py-4 hover:bg-orange-50/40 transition-colors group">
+                <Link href="/call-with-astrologer" className="flex items-center gap-4 px-5 py-4 hover:bg-orange-50/40 transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
                     <PhoneCall className="w-5 h-5 text-orange-500" />
                   </div>
@@ -642,7 +646,7 @@ export default function MyProfilePage() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300" />
                 </Link>
-                <Link href="/astrologers?openHistory=calls" className="flex items-center gap-4 px-5 py-4 hover:bg-blue-50/40 transition-colors group">
+                <Link href="/history/call-history" className="flex items-center gap-4 px-5 py-4 hover:bg-blue-50/40 transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                     <History className="w-5 h-5 text-blue-500" />
                   </div>
@@ -652,7 +656,7 @@ export default function MyProfilePage() {
                   </div>
                   <ChevronRight className="w-4 h-4 text-gray-300" />
                 </Link>
-                <Link href="/astrologers?openHistory=transactions" className="flex items-center gap-4 px-5 py-4 hover:bg-green-50/40 transition-colors group">
+                <Link href="/history/Transaction-history" className="flex items-center gap-4 px-5 py-4 hover:bg-green-50/40 transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center group-hover:bg-green-100 transition-colors">
                     <Wallet className="w-5 h-5 text-green-500" />
                   </div>

@@ -19,6 +19,7 @@ interface AudioCallViewProps {
 
 const AudioCallView: React.FC<AudioCallViewProps> = ({ onDisconnect, receiverName, receiverId, receiverAvatar, callData, sendGift, gifts, fetchGifts }) => {
     const [showDakshina, setShowDakshina] = useState(false);
+    const [isWidgetOpen, setIsWidgetOpen] = useState(false);
     const { localParticipant } = useLocalParticipant();
 
     const remoteParticipants = useRemoteParticipants();
@@ -145,23 +146,94 @@ const AudioCallView: React.FC<AudioCallViewProps> = ({ onDisconnect, receiverNam
 
                 {/* ── BOTTOM: Dakshina + Controls ── */}
                 <div className="flex-shrink-0 pb-6 pt-4 flex flex-col items-center gap-4">
-                    {/* Dakshina button */}
-                    {isConnected && (
-                        <button
-                            onClick={() => setShowDakshina(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/15 border border-amber-400/25 backdrop-blur-md hover:from-amber-500/30 hover:to-orange-500/25 transition-all duration-300 group"
-                            style={{ animation: 'acv-fadeIn 0.6s ease-out' }}
-                        >
-                            <span className="text-base group-hover:scale-110 transition-transform">🙏</span>
-                            <span className="text-amber-200/90 text-xs font-semibold tracking-wide">Offer Dakshina</span>
-                        </button>
-                    )}
+                    {/* Actions Row */}
+                    <div className="flex items-center gap-3">
+                        {/* Dakshina button */}
+                        {isConnected && (
+                            <button
+                                onClick={() => setShowDakshina(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/15 border border-amber-400/25 backdrop-blur-md hover:from-amber-500/30 hover:to-orange-500/25 transition-all duration-300 group"
+                                style={{ animation: 'acv-fadeIn 0.6s ease-out' }}
+                            >
+                                <span className="text-base group-hover:scale-110 transition-transform">🙏</span>
+                                <span className="text-amber-200/90 text-xs font-semibold tracking-wide">Offer Dakshina</span>
+                            </button>
+                        )}
+                        {/* Scrollable Widget Toggle */}
+                        {isConnected && (
+                            <button
+                                onClick={() => setIsWidgetOpen(true)}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all duration-300 group xl:hidden"
+                                style={{ animation: 'acv-fadeIn 0.6s ease-out', animationDelay: '0.1s', animationFillMode: 'both' }}
+                            >
+                                <span className="text-base group-hover:scale-110 transition-transform">📝</span>
+                                <span className="text-white/90 text-xs font-semibold tracking-wide">Notes</span>
+                            </button>
+                        )}
+                    </div>
                     <CallControls
                         isMuted={isMuted}
                         onToggleMute={toggleMute}
                         onDisconnect={onDisconnect}
                         showVideoControl={false}
                     />
+                </div>
+            </div>
+
+            {/* ═══ SCROLLABLE WIDGET (BOTTOM SHEET) ═══ */}
+            <div 
+                className={`absolute bottom-0 left-0 right-0 bg-[#16082a]/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl transition-transform duration-500 ease-in-out z-30 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${
+                    isWidgetOpen ? 'translate-y-0' : 'translate-y-full'
+                }`}
+                style={{ height: '65vh' }}
+            >
+                {/* Drag Handle / Header */}
+                <div className="flex-shrink-0 flex flex-col items-center pt-3 pb-4 px-6 border-b border-white/5 relative">
+                    <div className="w-12 h-1.5 bg-white/20 rounded-full mb-4" />
+                    <h3 className="text-white font-semibold text-lg tracking-wide">Consultation Notes</h3>
+                    <button 
+                        onClick={() => setIsWidgetOpen(false)}
+                        className="absolute right-5 top-5 w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-white/70 transition-colors"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 custom-scrollbar">
+                    {/* Simulated Content */}
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <h4 className="text-amber-400 text-sm font-medium mb-1">Current Transit Insights</h4>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                            Focusing on relationships and inner harmony as major planetary transits align in your house of partnership. Keep emotions grounded during the call.
+                        </p>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <h4 className="text-amber-400 text-sm font-medium mb-1">Suggested Remedies</h4>
+                        <ul className="text-white/70 text-sm leading-relaxed list-disc list-inside space-y-1 mt-2">
+                            <li>Morning meditation for 10 minutes.</li>
+                            <li>Offer water to the Sun daily.</li>
+                            <li>Wear lighter colors on Thursdays.</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <h4 className="text-amber-400 text-sm font-medium mb-1">Caller Details</h4>
+                        <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-white/70">
+                            <div><span className="text-white/40">Status:</span> Premium Active</div>
+                            <div><span className="text-white/40">Language:</span> Hindi/English</div>
+                            <div><span className="text-white/40">Topic:</span> Career & Love</div>
+                            <div><span className="text-white/40">Mood:</span> Anxious / Seeking Clarity</div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+                        <h4 className="text-amber-400 text-sm font-medium mb-1">Previous Session</h4>
+                        <p className="text-white/70 text-sm leading-relaxed">
+                            In the last physical meeting, discussed long-term goals. Caller mentioned a potential job relocation. Worth asking for a follow-up.
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -190,6 +262,16 @@ const AudioCallView: React.FC<AudioCallViewProps> = ({ onDisconnect, receiverNam
                 @keyframes acv-float {
                     0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
                     50% { transform: translateY(-18px) translateX(6px); opacity: 0.7; }
+                }
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
                 }
             `}</style>
         </div>

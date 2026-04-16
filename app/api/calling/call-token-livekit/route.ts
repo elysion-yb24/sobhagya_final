@@ -146,16 +146,6 @@ export async function POST(req: NextRequest) {
       parsed = { success: false, message: text };
     }
 
-    // If backend returned an error, inject diagnostic info so browser console shows it
-    if (parsed && parsed.success === false) {
-      parsed._debug = {
-        backendStatus: res.status,
-        backendHeaders: Object.fromEntries(res.headers),
-        proxyTimestamp: new Date().toISOString(),
-        requestedUrl: backendUrl,
-      };
-    }
-
     return NextResponse.json(parsed, { 
       status: res.status,
       headers: getCorsHeaders(req)

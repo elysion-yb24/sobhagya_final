@@ -18,18 +18,7 @@ const BlogSection = () => {
         setLoading(true);
         setError(null);
 
-        const token = getAuthToken();
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-        if (token) {
-          headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(
-          "/api/blog/admin/get-blogs?skip=0&limit=10",
-          { headers }
-        );
+        const response = await fetch("/api/blog/wp?per_page=3");
 
         if (!response.ok) {
           throw new Error(`Failed to fetch blogs: ${response.status}`);
@@ -37,15 +26,8 @@ const BlogSection = () => {
 
         const data = await response.json();
 
-        // Normalize _id to id for MongoDB compatibility
-        const normalizeBlog = (b: any) => ({ ...b, id: b.id || b._id });
-
         if (data.success && Array.isArray(data.data)) {
-          setBlogs(data.data.map(normalizeBlog));
-        } else if (Array.isArray(data.blogs)) {
-          setBlogs(data.blogs.map(normalizeBlog));
-        } else if (Array.isArray(data)) {
-          setBlogs(data.map(normalizeBlog));
+          setBlogs(data.data);
         } else {
           console.warn("Unexpected blog data structure:", data);
           setBlogs([]);
@@ -128,7 +110,7 @@ const BlogSection = () => {
             <div
               key={blog.id}
               className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl group relative animate-fade-in-up astro-card border border-gray-100"
-              onClick={() => router.push(`/blog/${blog.id}`)}
+              onClick={() => router.push(`/blog/${blog.slug || blog.id}`)}
             >
               <div className="relative h-[180px] sm:h-[200px] group-hover:scale-105 transition-transform duration-300">
                 <Image

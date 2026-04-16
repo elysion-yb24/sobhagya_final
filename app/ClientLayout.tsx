@@ -18,12 +18,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     }
   }, [pathname]);
 
+  const isFullScreenPage = pathname?.startsWith('/live-sessions/') || 
+                           pathname?.startsWith('/video-call') || 
+                           pathname?.startsWith('/audio-call');
+
   return (
     <>
-      <div className="min-h-screen">
+      <main className={`min-h-screen ${isFullScreenPage ? '' : 'pt-[56px] md:pt-16 lg:pt-[88px]'}`}>
         {children}
-      </div>
-      {showFooter && <footer />}
+      </main>
+      {showFooter && <div />}
     </>
   );
 }

@@ -5,6 +5,26 @@ import Cookies from "universal-cookie";
 const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:7002";
 
 /**
+ * Returns true if a string looks like a raw phone number (7+ consecutive digits).
+ */
+export function looksLikePhone(value: string | undefined | null): boolean {
+  if (!value) return false;
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;
+}
+
+/**
+ * Masks a phone number for safe display. Shows only last 2 digits.
+ * e.g. "9876543210" => "+91 ••••••••10"
+ */
+export function maskPhone(phone: string | number | undefined | null): string {
+  if (!phone) return '';
+  const str = phone.toString().replace(/\D/g, '');
+  if (str.length < 4) return '••••';
+  return `+91 ••••••••${str.slice(-2)}`;
+}
+
+/**
  * Gets the authentication token from xxlocalStorage and cookies
  */
 export function getAuthToken(): string | null {
@@ -192,7 +212,6 @@ export async function fetchUserProfile(): Promise<any> {
   try {
     const token = getAuthToken();
     if (!token) {
-      console.log('No authentication token found, using cached data');
       return getUserDetails();
     }
 
@@ -223,20 +242,27 @@ export async function fetchUserProfile(): Promise<any> {
             name: name,
             firstName: nameParts[0] || cachedDetails?.firstName || '',
             lastName: nameParts.slice(1).join(' ') || cachedDetails?.lastName || '',
-            phoneNumber: backendUser.phoneNumber || cachedDetails?.phoneNumber,
+            phoneNumber: backendUser.phone || backendUser.phoneNumber || cachedDetails?.phoneNumber,
             email: backendUser.email || cachedDetails?.email,
             avatar: backendUser.avatar || cachedDetails?.avatar,
             gender: backendUser.gender || cachedDetails?.gender,
             age: backendUser.age || cachedDetails?.age,
+            // Normalize backend field names to frontend conventions
+            topic: backendUser.talksAbout || backendUser.topic || cachedDetails?.topic,
+            aboutUs: backendUser.about || backendUser.aboutUs || cachedDetails?.aboutUs,
+            language: backendUser.language || cachedDetails?.language,
+            dob: backendUser.dob || cachedDetails?.dob,
+            placeOfBirth: backendUser.placeOfBirth || cachedDetails?.placeOfBirth,
+            timeOfBirth: backendUser.timeOfBirth || cachedDetails?.timeOfBirth,
+            createdAt: backendUser.createdAt || cachedDetails?.createdAt,
             displayName: name ||
                         (nameParts[0] ? `${nameParts[0]} ${nameParts.slice(1).join(' ')}`.trim() : '') ||
-                        backendUser.phoneNumber || cachedDetails?.phoneNumber || 'User',
+                        'User',
             profileCompleted: !!name,
             timestamp: new Date().getTime(),
           };
 
           storeUserDetails(mergedProfile);
-          console.log('✅ Profile fetched from backend:', mergedProfile.displayName);
           return mergedProfile;
         }
       } else {
@@ -268,7 +294,7 @@ export async function fetchUserProfile(): Promise<any> {
         ...enhancedProfile,
         displayName: enhancedProfile.name ||
                     (enhancedProfile.firstName ? `${enhancedProfile.firstName} ${enhancedProfile.lastName || ''}`.trim() : '') ||
-                    enhancedProfile.phoneNumber || 'User',
+                    'User',
         timestamp: new Date().getTime(),
       };
 

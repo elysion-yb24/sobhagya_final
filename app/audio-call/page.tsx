@@ -91,9 +91,9 @@ export default function AudioCallPage() {
 
     setTimeout(() => {
       if (callSource === 'astrologerProfile' && astrologerId) {
-        router.replace(`/astrologers/${astrologerId}`);
+        router.replace(`/call-with-astrologer/profile/${astrologerId}`);
       } else {
-        router.replace('/astrologers');
+        router.replace('/call-with-astrologer');
       }
     }, 100);
   };
@@ -123,6 +123,7 @@ export default function AudioCallPage() {
               </svg>
             </div>
           </div>
+          
           <h2 className="text-xl font-bold text-white mb-2 tracking-tight">Setting up Audio Call</h2>
           <p className="text-white/50 text-sm mb-6">Verifying wallet balance...</p>
           <div className="flex items-center justify-center gap-1.5">

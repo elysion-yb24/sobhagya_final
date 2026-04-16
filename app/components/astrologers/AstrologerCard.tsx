@@ -111,22 +111,29 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
   // ✅ Check free call history
   useEffect(() => {
-    // For non-logged-in users, always show the free call offer
-    if (!isAuthenticated()) {
-      setHasCompletedFreeCall(false);
-      return;
-    }
+    const runCheck = () => {
+      if (!isAuthenticated()) {
+        setHasCompletedFreeCall(false);
+        return;
+      }
 
-    const cachedHasCalledBefore = localStorage.getItem("userHasCalledBefore");
-    const lastCheckTime = localStorage.getItem("lastCallHistoryCheck");
-    const now = Date.now();
+      const cachedHasCalledBefore = localStorage.getItem("userHasCalledBefore");
+      const lastCheckTime = localStorage.getItem("lastCallHistoryCheck");
+      const now = Date.now();
 
-    if (cachedHasCalledBefore === "true") {
-      setHasCompletedFreeCall(true);
-    } else if (!lastCheckTime || now - parseInt(lastCheckTime) > 300000) {
-      checkCallHistory();
-      localStorage.setItem("lastCallHistoryCheck", now.toString());
-    }
+      if (cachedHasCalledBefore === "true") {
+        setHasCompletedFreeCall(true);
+      } else if (!lastCheckTime || now - parseInt(lastCheckTime) > 300000) {
+        checkCallHistory();
+        localStorage.setItem("lastCallHistoryCheck", now.toString());
+      }
+    };
+
+    runCheck();
+
+    // Re-check automatically if authentication state changes in this session
+    window.addEventListener('user-auth-changed', runCheck);
+    return () => window.removeEventListener('user-auth-changed', runCheck);
   }, []);
 
   const checkCallHistory = async () => {
@@ -137,7 +144,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
       if (!token || !userDetails?.id) return;
 
       const response = await fetch(
-        `${getApiBaseUrl()}/calling/api/call/call-log?skip=0&limit=10&role=user`,
+        `/api/calling/call-log?skip=0&limit=10&role=user`,
         {
           method: "GET",
           headers: {
@@ -149,8 +156,13 @@ const AstrologerCard = React.memo(function AstrologerCard({
       );
 
       if (response.ok) {
-        const callHistory = await response.json();
-        const totalCalls = callHistory.data?.list?.length || 0;
+        const data = await response.json();
+        let totalCalls = 0;
+        
+        if (data.data?.list && Array.isArray(data.data.list)) totalCalls = data.data.list.length;
+        else if (data.list && Array.isArray(data.list)) totalCalls = data.list.length;
+        else if (Array.isArray(data.data)) totalCalls = data.data.length;
+        else if (Array.isArray(data)) totalCalls = data.length;
 
         if (totalCalls > 0) {
           setHasCompletedFreeCall(true);
@@ -305,7 +317,6 @@ const AstrologerCard = React.memo(function AstrologerCard({
       const currentUserId = profile?.id || profile?._id;
       const currentUserName = profile?.displayName || profile?.name || "User";
 
-      console.log('User details:', { currentUserId, currentUserName });
 
       if (!currentUserId) {
         localStorage.setItem("initiateChatWithAstrologerId", _id);

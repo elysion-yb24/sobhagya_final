@@ -84,8 +84,6 @@ export default function LoginPage() {
         
         // Check user role first
         const user = getUserDetails();
-        console.log('🔍 checkAuthAndRedirect - User details:', user);
-        console.log('🔍 checkAuthAndRedirect - Call data:', { storedAstrologerId, callIntent, callSource });
         
         if (user && user.role === 'friend') {
           console.log('👥 checkAuthAndRedirect - User is a friend, checking for call intent');
@@ -125,8 +123,8 @@ export default function LoginPage() {
           // Redirect to the specific astrologer profile
           router.push(`/astrologers/${storedAstrologerId}`);
         } else {
-          console.log('🏠 No stored astrologer ID, redirecting to astrologers page');
-          router.push('/astrologers');
+          console.log('🏠 No stored astrologer ID, redirecting to call-with-astrologer page');
+          router.push('/call-with-astrologer');
         }
       }
     } catch (error) {
@@ -184,7 +182,6 @@ export default function LoginPage() {
       if (capturedLanguages) requestBody.languages = capturedLanguages;
       if (capturedInterests) requestBody.interests = capturedInterests;
 
-      console.log('Sending OTP with user details:', requestBody);
 
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
@@ -327,7 +324,7 @@ export default function LoginPage() {
       router.replace(dest);
     } catch (err) {
       console.error('❌ Direct call initiation failed:', err);
-      router.replace('/astrologers');
+      router.replace('/call-with-astrologer');
     }
   };
 
@@ -401,13 +398,13 @@ export default function LoginPage() {
           return;
         }
 
-        // Default: redirect to astrologers page immediately
+        // Default: redirect to call-with-astrologer page immediately
         setIsVerifyingOtp(false);
-        router.replace('/astrologers');
+        router.replace('/call-with-astrologer');
       } catch (error) {
         console.error('Error in post-OTP routing:', error);
         setIsVerifyingOtp(false);
-        router.replace('/astrologers');
+        router.replace('/call-with-astrologer');
       }
       return;
     }
@@ -467,11 +464,9 @@ export default function LoginPage() {
         // Check if user details are present in database response (legacy)
         const hasUserDetails = user && (user.name || user.displayName) && (user.name || user.displayName).trim() !== '';
         
-        console.log('👤 User details check (legacy):', { user, hasUserDetails });
         
         // If user details are not present and there's a call intent, redirect to call pages
         if (!hasUserDetails && (callIntent || storedAstrologerId)) {
-          console.log('📝 User details not present in database (legacy), redirecting to call flow for data collection');
           router.push('/calls/call1');
           return;
         }
@@ -513,8 +508,8 @@ export default function LoginPage() {
           localStorage.removeItem('selectedAstrologerId');
           router.push(`/astrologers/${storedAstrologerId}`);
         } else {
-          console.log('🏠 Post-OTP: No stored astrologer ID, redirecting to astrologers page');
-          router.push('/astrologers');
+          console.log('🏠 Post-OTP: No stored astrologer ID, redirecting to call-with-astrologer page');
+          router.push('/call-with-astrologer');
         }
       } else {
         setError(responseData.message || 'Failed to verify OTP. Please try again.');

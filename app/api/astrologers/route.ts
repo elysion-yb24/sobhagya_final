@@ -29,6 +29,14 @@ export async function GET(request: NextRequest) {
     const response = await fetch(targetUrl, { method: "GET", headers });
     const data = await response.json();
 
+    // Strip sensitive fields from astrologer list before sending to client
+    if (data?.data?.list && Array.isArray(data.data.list)) {
+      data.data.list = data.data.list.map((a: any) => {
+        const { phone, upi, pan, vpa, panImage, ...safe } = a;
+        return safe;
+      });
+    }
+
     return NextResponse.json(data, {
       status: response.status,
       headers: {

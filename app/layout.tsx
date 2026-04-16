@@ -48,10 +48,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SessionManagerProvider>  {/* 👈 wrap everything inside */}
               <AuthErrorHandler />
               <Header />
-              <ClientLayout>
-                <main className="min-h-screen pt-[56px] md:pt-16 lg:pt-[88px]">
-                  {children}
-                </main>
+               <ClientLayout>
+                {children}
               </ClientLayout>
               <ConditionalFooter />
             </SessionManagerProvider>

@@ -7,8 +7,8 @@ import { Eagle_Lake } from "next/font/google";
 import { Menu, X, Phone, User, LogOut, ChevronDown, Wallet, History, Settings } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import { getAuthToken, isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
-import { fetchWalletBalance as simpleFetchWalletBalance } from '../utils/production-api';
+import { isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
+import { useWalletBalance } from './astrologers/WalletBalanceContext';
 
 // Inlined to avoid webpack import resolution issues
 function looksLikePhone(value: string | undefined | null): boolean {
@@ -37,7 +37,7 @@ const Header = () => {
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const { walletBalance, refreshWalletBalance } = useWalletBalance();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -75,82 +75,40 @@ const Header = () => {
     setMounted(true);
   }, []);
 
-  // Fetch wallet balance
-  const fetchWalletBalance = async () => {
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        console.log('No auth token found in Header, setting wallet balance to 0');
-        setWalletBalance(0);
-        return;
-      }
-
-      // Use simple API function (works same in dev and production)
-      console.log('Fetching wallet balance in Header...');
-      const balance = await simpleFetchWalletBalance();
-      setWalletBalance(balance);
-      
-    } catch (error: any) {
-      console.error('Error fetching wallet balance in Header:', error);
-      if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        console.log('401 error in Header - clearing auth data');
-        clearAuthData();
-        setWalletBalance(0);
-        // Trigger auth change event
-        window.dispatchEvent(new CustomEvent('user-auth-changed'));
-      } else {
-        setWalletBalance(0);
-      }
-    }
-  };
-
-
-
   // Listen for custom user-auth-changed event for instant header update
   useEffect(() => {
     const handler = () => {
-      console.log('📡 Header received user-auth-changed event');
-      // Re-run auth check
       const authenticated = isAuthenticated();
-      console.log('🔐 Event handler - Is authenticated:', authenticated);
       setIsAuthenticatedUser(authenticated);
       if (authenticated) {
         let userDetails = getUserDetails();
-          setUserProfile(userDetails);
+        setUserProfile(userDetails);
         fetchUserProfile().then(freshProfile => {
-            if (freshProfile) setUserProfile(freshProfile);
+          if (freshProfile) setUserProfile(freshProfile);
         });
-        // Fetch wallet balance
-        fetchWalletBalance();
       } else {
         setUserProfile(null);
-        setWalletBalance(0);
       }
     };
     window.addEventListener('user-auth-changed', handler);
     return () => window.removeEventListener('user-auth-changed', handler);
   }, []);
 
-  // Always check auth state on mount to ensure correct display after redirects
   useEffect(() => {
     if (mounted) {
-      // Prevent duplicate fetch if already loaded
       if (userProfile) return;
       const authenticated = isAuthenticated();
       setIsAuthenticatedUser(authenticated);
       if (authenticated) {
         let userDetails = getUserDetails();
         setUserProfile(userDetails);
-        // Only fetch if not present or outdated (older than 5 min)
         if (!userDetails || !userDetails.timestamp || Date.now() - userDetails.timestamp > 5 * 60 * 1000) {
           fetchUserProfile().then(freshProfile => {
             if (freshProfile) setUserProfile(freshProfile);
           });
         }
-        fetchWalletBalance();
       } else {
         setUserProfile(null);
-        setWalletBalance(0);
       }
     }
   }, [mounted, userProfile]);
@@ -274,6 +232,23 @@ const Header = () => {
                     Signup/Login
                   </Link>
                 ) : (
+                  <div className="flex items-center gap-3">
+                  <Link
+                    href="/wallet"
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 hover:border-green-400 hover:shadow-md transition-all group"
+                    title="Go to Wallet"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                      <Wallet className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="text-left leading-tight">
+                      <p className="text-[10px] text-gray-500 font-medium">Wallet</p>
+                      <p className="text-sm font-bold text-green-700">₹{Number(walletBalance || 0).toFixed(2)}</p>
+                    </div>
+                    <span className="ml-1 text-xs font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full group-hover:bg-orange-100">
+                      + Recharge
+                    </span>
+                  </Link>
                   <div className="relative" ref={profileDropdownRef}>
                     <button
                       onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -286,7 +261,7 @@ const Header = () => {
                       </div>
                       <div className="text-left">
                         <p className="text-sm font-semibold text-gray-800 leading-tight">{getDisplayName()}</p>
-                        <p className="text-[11px] text-gray-400 leading-tight">₹{walletBalance?.toFixed(0) || '0'} Balance</p>
+                        <p className="text-[11px] text-gray-400 leading-tight">₹{Number(walletBalance || 0).toFixed(0)} Balance</p>
                       </div>
                       <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180' : ''}`} />
                     </button>
@@ -305,12 +280,17 @@ const Header = () => {
                               <p className="text-xs text-gray-500 truncate">{userProfile?.email || (userProfile?.phoneNumber ? `+91 •••••••${userProfile.phoneNumber.toString().slice(-2)}` : '')}</p>
                             </div>
                           </div>
-                          {/* Wallet Balance */}
-                          <div className="mt-3 flex items-center gap-2 bg-white/80 rounded-xl px-3 py-2 border border-orange-100/60">
+                          {/* Wallet Balance — click to recharge */}
+                          <Link
+                            href="/wallet"
+                            onClick={() => setShowProfileDropdown(false)}
+                            className="mt-3 flex items-center gap-2 bg-white/80 hover:bg-white rounded-xl px-3 py-2 border border-orange-100/60 hover:border-orange-300 transition-colors"
+                          >
                             <Wallet className="w-4 h-4 text-green-600" />
                             <span className="text-xs text-gray-500">Wallet</span>
-                            <span className="ml-auto text-sm font-bold text-green-700">₹{walletBalance?.toFixed(2) || '0.00'}</span>
-                          </div>
+                            <span className="ml-auto text-sm font-bold text-green-700">₹{Number(walletBalance || 0).toFixed(2)}</span>
+                            <span className="text-xs text-orange-600 font-semibold">Recharge →</span>
+                          </Link>
                         </div>
                         {/* Menu Items */}
                         <div className="py-2 px-2">
@@ -353,6 +333,7 @@ const Header = () => {
                       </div>
                     )}
                   </div>
+                  </div>
                 )}
               </div>
 
@@ -364,7 +345,7 @@ const Header = () => {
                     { label: "Services", href: "/services" },
                     { label: "Live Sessions", href: "/live-sessions" },
                     { label: "Call with Astrologer", href: "/call-with-astrologer" },
-                    { label: "Shop", href: "/services" },
+                    { label: "Shop", href: "https://www.ramvarna.com" },
                     { label: "Blog", href: "/blog" },
                     { label: "Contact Us", href: "/contact" },
                   ].map((link) => (
@@ -417,7 +398,19 @@ const Header = () => {
             </Link>
 
             {/* Right: User Action */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {isAuthenticatedUser && (
+                <Link
+                  href="/wallet"
+                  className="flex items-center gap-2 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-full px-3 py-1.5 shadow-sm hover:shadow-md hover:border-green-400 transition-all"
+                  title="Wallet — tap to recharge"
+                >
+                  <Wallet className="w-4 h-4 text-green-600" />
+                  <span className="text-xs font-bold text-green-700">
+                    ₹{Number(walletBalance || 0).toFixed(0)}
+                  </span>
+                </Link>
+              )}
               {isAuthenticatedUser ? (
                 <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 rounded-full px-3 py-1 shadow-sm">
                   <Link href="/my-profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -478,7 +471,18 @@ const Header = () => {
           >
               <Phone size={16} />
           </Link>
-          
+
+          {mounted && isAuthenticatedUser && (
+            <Link
+              href="/wallet"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 border border-green-200 text-green-700 hover:from-green-200 hover:to-emerald-200 transition-all duration-300"
+              title="Wallet"
+            >
+              <Wallet size={14} />
+              <span className="text-xs font-bold">₹{Number(walletBalance || 0).toFixed(0)}</span>
+            </Link>
+          )}
+
           {mounted && isAuthenticatedUser ? (
             <button
               onClick={handleLogout}
@@ -591,20 +595,25 @@ const Header = () => {
                   <div className="border-t border-gray-100 pt-4">
                     <h3 className="text-sm font-semibold text-gray-500 mb-3">My Account</h3>
                     
-                    {/* Wallet Balance */}
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200 shadow-sm mb-4">
+                    {/* Wallet Balance — tap to recharge */}
+                    <Link
+                      href="/wallet"
+                      onClick={() => setIsOpen(false)}
+                      className="block bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200 shadow-sm mb-4 hover:shadow-md transition-shadow"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                          </svg>
+                          <Wallet className="w-6 h-6 text-white" />
                         </div>
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm text-green-700 font-medium">Wallet Balance</p>
-                          <p className="text-xl font-bold text-green-800">₹{walletBalance?.toFixed(2) || '0.00'}</p>
+                          <p className="text-xl font-bold text-green-800">₹{Number(walletBalance || 0).toFixed(2)}</p>
                         </div>
+                        <span className="text-sm font-semibold text-white bg-orange-500 px-3 py-1.5 rounded-full shadow">
+                          + Recharge
+                        </span>
                       </div>
-                    </div>
+                    </Link>
                     
                     {/* Account Menu Items */}
                     <div className="space-y-3">
@@ -667,7 +676,7 @@ const Header = () => {
                     { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
                     { href: "/live-sessions", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100" },
                     { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
-                    { href: "/services", label: "Shop", icon: "🛍️", bgColor: "bg-pink-100" },
+                    { href: "https://www.ramvarna.com", label: "Shop", icon: "🛍️", bgColor: "bg-pink-100" },
                     { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
                     { href: "/contact", label: "Contact Us", icon: "📧", bgColor: "bg-blue-100" },
                   ].map((item, index) => (

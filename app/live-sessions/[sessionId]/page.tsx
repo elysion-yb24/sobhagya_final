@@ -189,6 +189,7 @@ export default function LiveSessionViewPage() {
 
   /* ── call invite & in-call state ── */
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteCallData, setInviteCallData] = useState<any>(null);
   const [isWaitlisted, setIsWaitlisted] = useState(false);
   const [inviteCallType, setInviteCallType] = useState<'private' | 'public'>('public');
   const [isJoiningCall, setIsJoiningCall] = useState(false);
@@ -312,6 +313,8 @@ export default function LiveSessionViewPage() {
       setInQueue(false);
       setIsWaitlisted(false);
       setCallTimer(0);
+      setShowInviteModal(false);
+      setInviteCallData(null);
 
       if (callTimerRef.current) clearInterval(callTimerRef.current);
       callTimerRef.current = setInterval(() => {
@@ -326,7 +329,7 @@ export default function LiveSessionViewPage() {
   }, [isJoiningCall, isInCall, sessionData, sessionId, livekitUrl, joinRoomParticipant, acceptInvite, activeCall]);
 
   useEffect(() => {
-    if (isInCall || isJoiningCall) return;
+    if (isInCall || isJoiningCall || showInviteModal) return;
     if (!activeCall) return;
     const myId = getMyId();
     const ud = getUserDetails();
@@ -350,22 +353,29 @@ export default function LiveSessionViewPage() {
         const n = String(c.userName || '').trim().toLowerCase();
         return !n || (!!myName && n === myName);
       });
-      if (myEntry) dlog('auto-accept widened match via name/empty:', myEntry);
     }
 
-    if (!myEntry) {
-      dlog('auto-accept: no match. myId=', myId, 'activeCall=', activeCall);
-      return;
-    }
+    if (!myEntry) return;
 
+    // INSTEAD of handleAcceptInvite, show the modal
     const isPrivate = typeof myEntry.isPrivate === 'string'
       ? myEntry.isPrivate === 'true'
       : !!myEntry.isPrivate;
     const cType: 'private' | 'public' = (isPrivate || queueType === 'private') ? 'private' : 'public';
-    dlog('auto-accept firing, cType=', cType, 'entry=', myEntry);
+    
+    dlog('Invitation detected via polling/activeCall match:', myEntry);
+    setInviteCallData(myEntry);
     setInviteCallType(cType);
-    handleAcceptInvite(cType);
-  }, [activeCall, isInCall, isJoiningCall, isWaitlisted, queueType, handleAcceptInvite]);
+    setShowInviteModal(true);
+  }, [activeCall, isInCall, isJoiningCall, isWaitlisted, queueType, showInviteModal]);
+
+  const handleDeclineInvite = async () => {
+    setShowInviteModal(false);
+    setInviteCallData(null);
+    dlog('User declined invite. Leaving queue...');
+    await handleLeaveQueue();
+    setIsWaitlisted(false);
+  };
 
   const handleEndCall = async () => {
     if (callTimerRef.current) {
@@ -522,7 +532,11 @@ export default function LiveSessionViewPage() {
           const isPrivate = typeof callData.isPrivate === 'string'
             ? callData.isPrivate === 'true'
             : !!callData.isPrivate;
-          acceptRef.current(isPrivate ? 'private' : 'public');
+          
+          // INSTEAD of auto-accepting, show modal
+          setInviteCallData(callData);
+          setInviteCallType(isPrivate ? 'private' : 'public');
+          setShowInviteModal(true);
         }
       }),
       onCallEnd(() => {
@@ -953,6 +967,74 @@ export default function LiveSessionViewPage() {
       </div>
 
 
+
+      {/* ═══════ LIVE INVITATION MODAL (Manual Join) ═══════ */}
+      {showInviteModal && inviteCallData && (
+        <>
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[250] animate-in fade-in duration-300" />
+          <div className="fixed inset-0 flex items-center justify-center z-[251] p-6">
+            <div className="bg-white rounded-[40px] p-8 shadow-2xl max-w-sm w-full relative overflow-hidden border-4 border-orange-100 animate-scale-in">
+              {/* Decorative elements */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-orange-50 rounded-full opacity-50" />
+              <div className="absolute top-4 right-6 text-2xl animate-wiggle">✨</div>
+
+              <div className="flex flex-col items-center">
+                <div className="relative mb-6">
+                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-orange-400 to-amber-500 p-1 shadow-lg">
+                    <div className="w-full h-full rounded-[20px] overflow-hidden bg-white border-2 border-white">
+                      {broadcasterAvatar ? (
+                        <img src={broadcasterAvatar} alt={broadcasterName} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-orange-100">
+                          <span className="text-3xl font-bold text-orange-500">{broadcasterName.charAt(0)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 bg-green-500 text-white rounded-full p-1.5 shadow-md border-2 border-white">
+                    <Phone className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+
+                <p className="text-orange-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Live Invitation</p>
+                <h3 className="text-2xl font-black text-gray-900 mb-1 text-center">{broadcasterName}</h3>
+                <p className="text-gray-500 text-xs font-medium mb-8 text-center leading-relaxed">
+                  has invited you for a live call.<br />How would you like to join?
+                </p>
+
+                <div className="grid grid-cols-1 gap-3 w-full">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleAcceptInvite('public')}
+                      disabled={isJoiningCall}
+                      className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Public
+                    </button>
+                    <button
+                      onClick={() => handleAcceptInvite('private')}
+                      disabled={isJoiningCall}
+                      className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-purple-500/30 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Lock className="w-4 h-4" />
+                      Private
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={handleDeclineInvite}
+                    disabled={isJoiningCall}
+                    className="w-full py-3 rounded-2xl bg-transparent text-gray-400 font-bold hover:bg-gray-50 transition-colors text-[10px] uppercase tracking-widest"
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ═══════ CALL TYPE MODAL ═══════ */}
       {showCallTypeModal && (

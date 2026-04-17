@@ -1,26 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight,
-  Home,
-  Phone,
   Wallet as WalletIcon,
   Clock,
-  Check,
-  AlertCircle,
   X,
   ArrowDownCircle,
   ArrowUpCircle,
   ChevronDown,
-  ChevronUp,
   Plus,
-  ListFilter,
-  CreditCard,
-  Smartphone,
-  DollarSign,
-  Gift,
   Sparkles,
   TrendingUp,
   Star,
@@ -29,172 +19,355 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
-  Copy,
   CheckCircle,
   XCircle,
-  Info
+  Info,
+  Gift,
+  Phone,
+  Video,
+  CreditCard,
+  IndianRupee,
+  Loader2,
 } from "lucide-react";
+import { useWalletBalance } from "../components/astrologers/WalletBalanceContext";
+import { getAuthToken } from "../utils/auth-utils";
+
+/* ────────────────── constants & helpers ────────────────── */
+
+const DEFAULT_PLANS = [
+  { price: 79, additional: 20 },
+  { price: 109, additional: 30 },
+  { price: 199, additional: 40 },
+  { price: 399, additional: 50 },
+  { price: 999, additional: 50 },
+  { price: 1499, additional: 50 },
+];
+
+const formatDate = (date) =>
+  new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+async function sha256Hex(str) {
+  const data = new TextEncoder().encode(str);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+const getPaymentIcon = (paymentFor) => {
+  switch (paymentFor) {
+    case "recharge":
+      return <IndianRupee className="h-5 w-5" />;
+    case "cashback":
+      return <Gift className="h-5 w-5" />;
+    case "video":
+      return <Video className="h-5 w-5" />;
+    case "call":
+    case "audio":
+      return <Phone className="h-5 w-5" />;
+    case "gift":
+      return <Gift className="h-5 w-5" />;
+    default:
+      return <CreditCard className="h-5 w-5" />;
+  }
+};
+
+const getPaymentLabel = (tx) => {
+  const pf = tx.paymentFor || tx.description || "";
+  switch (pf) {
+    case "recharge":
+      return "Wallet Recharge";
+    case "cashback":
+      return "Cashback Bonus";
+    case "video":
+      return `Video Call${tx.notes?.receiverName ? ` — ${tx.notes.receiverName}` : ""}`;
+    case "call":
+    case "audio":
+      return `Audio Call${tx.notes?.receiverName ? ` — ${tx.notes.receiverName}` : ""}`;
+    case "gift":
+      return "Gift Sent";
+    default:
+      return pf || "Transaction";
+  }
+};
+
+/* ────────────────── main component ────────────────── */
 
 const WalletPage = () => {
-  const [balance, setBalance] = useState("₹0.0");
-  const [selectedAmount, setSelectedAmount] = useState("₹59");
+  const { walletBalance, isFetching, refreshWalletBalance } = useWalletBalance();
+
+  const [plans, setPlans] = useState(DEFAULT_PLANS);
+  const [selectedPlanIdx, setSelectedPlanIdx] = useState(1);
   const [customAmount, setCustomAmount] = useState("");
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [notification, setNotification] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [transactions, setTransactions] = useState([]);
+  const [isTxLoading, setIsTxLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("recharge");
   const [mounted, setMounted] = useState(false);
   const [showBalance, setShowBalance] = useState(true);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("upi");
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null); // null | "pending" | "success" | "failed" | "timeout"
 
-  // Enhanced recharge options with better UI data
-  const rechargeOptions = [
-    { 
-      amount: "₹59", 
-      extra: "20% extra", 
-      popular: false,
-      savings: "₹12",
-      color: "from-blue-500 to-blue-600"
-    },
-    { 
-      amount: "₹99", 
-      extra: "30% extra", 
-      popular: true,
-      savings: "₹30",
-      color: "from-green-500 to-green-600"
-    },
-    { 
-      amount: "₹199", 
-      extra: "30% extra", 
-      popular: false,
-      savings: "₹60",
-      color: "from-purple-500 to-purple-600"
-    },
-  ];
-
-  const paymentMethods = [
-    { id: "upi", name: "UPI", icon: Smartphone, description: "Instant & Secure" },
-    { id: "card", name: "Cards", icon: CreditCard, description: "Visa, MasterCard" },
-    { id: "wallet", name: "Wallet", icon: WalletIcon, description: "Digital Wallets" },
-  ];
-
-  useEffect(() => {
-    setMounted(true);
-    // Simulate loading wallet data
-    const timer = setTimeout(() => {
-      setBalance("₹247.50");
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Calculate values based on selected amount
-  const baseAmount = parseInt(
-    showCustomInput && customAmount
-      ? customAmount
-      : selectedAmount.replace("₹", "")
-  );
-  const gstRate = 18.0;
-  const gstAmount = ((baseAmount * gstRate) / 100).toFixed(2);
-  const payableAmount = (baseAmount + parseFloat(gstAmount)).toFixed(2);
-
-  // Calculate bonus based on selection
-  const getBonusRate = () => {
-    if (showCustomInput && customAmount) {
-      const amount = parseInt(customAmount);
-      if (amount >= 200) return 30;
-      if (amount >= 90) return 30;
-      if (amount >= 50) return 20;
-      return 10;
-    }
-    const option = rechargeOptions.find((opt) => opt.amount === selectedAmount);
-    return option ? parseInt(option.extra.split("%")[0]) : 0;
-  };
-
-  const bonusRate = getBonusRate();
-  const bonusAmount = ((baseAmount * bonusRate) / 100).toFixed(1);
-  const totalAmount = (baseAmount + parseFloat(bonusAmount)).toFixed(1);
-
-  const showNotification = (message, type = "success") => {
+  const showNotification = useCallback((message, type = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
+  }, []);
+
+  /* ── load plans on mount ── */
+  useEffect(() => {
+    setMounted(true);
+    const token = getAuthToken();
+    if (!token) return;
+    const authHeader = { Authorization: `Bearer ${token}` };
+
+    fetch("/api/payment/wallet-page-data", { headers: authHeader })
+      .then((r) => r.json())
+      .then((res) => {
+        if (
+          res?.success &&
+          Array.isArray(res?.data?.balances) &&
+          res.data.balances.length
+        ) {
+          setPlans(res.data.balances);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  /* ── fetch transactions ── */
+  const fetchTransactions = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    setIsTxLoading(true);
+    try {
+      const res = await fetch("/api/transaction-history?skip=0&limit=20", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      const list = json?.data?.transactions || json?.data || [];
+      setTransactions(Array.isArray(list) ? list : []);
+    } catch {
+      setTransactions([]);
+    } finally {
+      setIsTxLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "transactions") fetchTransactions();
+  }, [activeTab, fetchTransactions]);
+
+  /* ── derived values ── */
+  const selectedPlan = plans[selectedPlanIdx] || plans[0];
+  const baseAmount =
+    showCustomInput && customAmount
+      ? parseInt(customAmount, 10) || 0
+      : selectedPlan?.price || 0;
+
+  const getBonusRate = () => {
+    if (showCustomInput && customAmount) {
+      const amount = parseInt(customAmount, 10);
+      if (amount >= 999) return 50;
+      if (amount >= 399) return 50;
+      if (amount >= 199) return 40;
+      if (amount >= 109) return 30;
+      if (amount >= 79) return 20;
+      return 10;
+    }
+    return selectedPlan?.additional || selectedPlan?.cashback || 0;
   };
+  const bonusRate = getBonusRate();
+  const bonusAmount = ((baseAmount * bonusRate) / 100).toFixed(1);
+  const totalWalletCredit = (baseAmount + parseFloat(bonusAmount || 0)).toFixed(1);
+  const gstAmount = ((baseAmount * 18) / 100).toFixed(2);
+  const payableAmount = (baseAmount + parseFloat(gstAmount)).toFixed(2);
+  const displayAmount = showCustomInput ? `₹${customAmount || "0"}` : `₹${baseAmount}`;
 
   const handleCustomAmountChange = (e) => {
-    const value = e.target.value;
-    if (value === "" || /^\d+$/.test(value)) {
-      setCustomAmount(value);
+    const v = e.target.value;
+    if (v === "" || /^\d+$/.test(v)) setCustomAmount(v);
+  };
+
+  /* ── poll PhonePe status ── */
+  const pollStatus = useCallback(
+    async (transactionId) => {
+      const token = getAuthToken();
+      let attempts = 0;
+      const maxAttempts = 20;
+      const delay = 2500;
+      setPaymentStatus("pending");
+      while (attempts < maxAttempts) {
+        await new Promise((r) => setTimeout(r, delay));
+        try {
+          const resp = await fetch("/api/payment/phonepe/status-check", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ transactionId }),
+            credentials: "include",
+          });
+          const json = await resp.json();
+          const status = json?.data?.status;
+          if (status === "done" || status === "SUCCESS") {
+            setPaymentStatus("success");
+            showNotification(
+              `🎉 Recharge successful! ₹${totalWalletCredit} credited.`
+            );
+            await refreshWalletBalance();
+            setActiveTab("transactions");
+            fetchTransactions();
+            return;
+          }
+          if (status === "failed" || status === "FAILED") {
+            setPaymentStatus("failed");
+            showNotification("Payment failed. Please try again.", "error");
+            return;
+          }
+        } catch {
+          /* keep polling */
+        }
+        attempts++;
+      }
+      setPaymentStatus("timeout");
+      showNotification(
+        "Still waiting on payment confirmation — check Transactions tab.",
+        "error"
+      );
+    },
+    [fetchTransactions, refreshWalletBalance, showNotification, totalWalletCredit]
+  );
+
+  /* ── initiate PhonePe payment ── */
+  const handleRecharge = async () => {
+    if (!baseAmount || baseAmount < 1) {
+      showNotification("Please select a valid amount.", "error");
+      return;
+    }
+    const token = getAuthToken();
+    if (!token) {
+      showNotification("Please log in to recharge.", "error");
+      return;
+    }
+
+    const saltKey = process.env.NEXT_PUBLIC_PHONEPE_SALT_KEY;
+    const saltIndex = process.env.NEXT_PUBLIC_PHONEPE_SALT_INDEX || "1";
+    const phonePeEndpoint =
+      process.env.NEXT_PUBLIC_PHONEPE_API_END_POINT || "/pg/v1/pay";
+    const phonePeBaseUrl =
+      process.env.NEXT_PUBLIC_PHONEPE_BASE_URL ||
+      "https://api-preprod.phonepe.com/apis/pg-sandbox";
+    const callbackUrl = process.env.NEXT_PUBLIC_PHONEPE_CALLBACK_URL;
+
+    if (!saltKey) {
+      showNotification(
+        "PhonePe is not configured (missing salt key).",
+        "error"
+      );
+      return;
+    }
+
+    setIsLoading(true);
+    setPaymentStatus(null);
+
+    try {
+      console.log("[Recharge] initiate — amount:", baseAmount, "extra%:", bonusRate);
+
+      // Step 1: create transaction record on our backend
+      const initResp = await fetch("/api/payment/phonepe/initiate", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          amount: baseAmount,
+          extra: bonusRate,
+          paymentFor: "recharge",
+          isWeb: false,
+          chatPlanName: "",
+        }),
+        credentials: "include",
+      });
+      const initJson = await initResp.json();
+      console.log("[Recharge] initiate response:", initResp.status, initJson);
+
+      if (!initJson?.success || !initJson?.data?.transactionId) {
+        showNotification(
+          initJson?.message || "Failed to initiate payment.",
+          "error"
+        );
+        return;
+      }
+
+      const { transactionId, amount: amountWithGst, userId } = initJson.data;
+
+      // Step 2: Call our secure server-side route that handles PhonePe hashing & API call
+      console.log("[Recharge] fetching payload from /pay...");
+      const payResp = await fetch("/api/payment/phonepe/pay", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          transactionId: transactionId,
+          amount: amountWithGst,
+          userId: userId,
+          extra: bonusRate
+        }),
+      });
+      
+      const payJson = await payResp.json();
+      console.log("[Recharge] /pay response:", payResp.status, payJson);
+
+      if (!payJson.success || !payJson.redirectUrl) {
+        showNotification(payJson.message || "Failed to initiate PhonePe payment.", "error");
+        return;
+      }
+
+      // Step 3: Open PhonePe payment page in popup
+      const paymentUrl = payJson.redirectUrl;
+      const paymentWindow = window.open(
+        paymentUrl,
+        "_blank",
+        "width=800,height=600,scrollbars=yes,resizable=yes"
+      );
+
+      if (!paymentWindow) {
+        showNotification("Popup blocked! Please allow popups to continue.", "error");
+        // Fallback: redirect if popup blocked
+        setTimeout(() => {
+          window.location.href = paymentUrl;
+        }, 2000);
+      } else {
+        showNotification("Complete the payment in the popup…");
+      }
+      
+      await pollStatus(transactionId);
+    } catch (err) {
+      console.error("[Recharge] error:", err);
+      showNotification(err?.message || "Something went wrong.", "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsRefreshing(false);
-      showNotification("Wallet refreshed successfully!");
-    }, 1500);
-  };
-
-  const handleRecharge = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-
-      const newTransaction = {
-        id: `TXN${Math.floor(Math.random() * 1000000)}`,
-        type: "credit",
-        amount: totalAmount,
-        baseAmount: baseAmount,
-        bonusAmount: bonusAmount,
-        status: Math.random() > 0.9 ? "failed" : "success",
-        date: new Date(),
-        description: `Wallet Recharge ${
-          showCustomInput ? `₹${customAmount}` : selectedAmount
-        }`,
-        paymentMethod: selectedPaymentMethod.toUpperCase(),
-      };
-
-      setTransactions((prevTransactions) => [
-        newTransaction,
-        ...prevTransactions,
-      ]);
-
-      if (newTransaction.status === "success") {
-        showNotification("🎉 Recharge successful! Your wallet has been updated.");
-        const newBalance = (
-          parseFloat(balance.replace("₹", "")) + parseFloat(totalAmount)
-        ).toFixed(1);
-        setBalance(`₹${newBalance}`);
-        setTimeout(() => setActiveTab("transactions"), 500);
-      } else {
-        showNotification("❌ Recharge failed. Please try again.", "error");
-        setTimeout(() => setActiveTab("transactions"), 500);
-      }
-    }, 2000);
-  };
-
-  const displayAmount = showCustomInput
-    ? `₹${customAmount || "0"}`
-    : selectedAmount;
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  /* ── initial loading state ── */
   if (!mounted) {
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 to-white">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
             <p className="text-orange-600 font-medium">Loading your wallet...</p>
           </div>
         </div>
@@ -202,147 +375,170 @@ const WalletPage = () => {
     );
   }
 
+  const balanceDisplay = `₹${Number(walletBalance || 0).toFixed(2)}`;
+
+  /* ────────────────── RENDER ────────────────── */
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 relative">
-      {/* Enhanced Notification */}
+    <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-50 via-amber-50/30 to-white relative">
+      {/* ── notification toast ── */}
       <AnimatePresence>
-      {notification && (
+        {notification && (
           <motion.div
             initial={{ opacity: 0, y: -100, scale: 0.8 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -100, scale: 0.8 }}
             className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-2xl shadow-2xl flex items-center max-w-md ${
-            notification.type === "success"
-                ? "bg-gradient-to-r from-green-500 to-green-600 text-white"
-                : "bg-gradient-to-r from-red-500 to-red-600 text-white"
-          }`}
-        >
+              notification.type === "success"
+                ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white"
+                : "bg-gradient-to-r from-red-500 to-rose-600 text-white"
+            }`}
+          >
             <div className="flex items-center">
-          {notification.type === "success" ? (
-                <CheckCircle className="h-6 w-6 mr-3" />
-          ) : (
-                <XCircle className="h-6 w-6 mr-3" />
-          )}
-              <span className="font-medium">{notification.message}</span>
+              {notification.type === "success" ? (
+                <CheckCircle className="h-6 w-6 mr-3 flex-shrink-0" />
+              ) : (
+                <XCircle className="h-6 w-6 mr-3 flex-shrink-0" />
+              )}
+              <span className="font-medium text-sm">{notification.message}</span>
             </div>
-            <button 
+            <button
               className="ml-4 p-1 rounded-full hover:bg-white/20 transition-colors"
               onClick={() => setNotification(null)}
             >
-            <X className="h-4 w-4" />
-          </button>
+              <X className="h-4 w-4" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Enhanced Wallet Header */}
-      <motion.div 
-        className="relative overflow-hidden bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 text-white"
+      {/* ── wallet balance hero ── */}
+      <motion.div
+        className="relative overflow-hidden bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white"
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent"></div>
+        {/* decorative pattern */}
+        <div className="absolute inset-0 opacity-[0.07]">
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='20' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='30' cy='30' r='12' fill='none' stroke='white' stroke-width='0.5'/%3E%3Ccircle cx='30' cy='30' r='4' fill='white'/%3E%3C/svg%3E")`,
+              backgroundSize: "60px 60px",
+            }}
+          />
         </div>
 
-        <div className="relative p-6">
-          <div className="flex justify-between items-center mb-4">
+        <div className="relative p-6 pb-8">
+          <div className="flex justify-between items-center mb-5">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-white/20 rounded-full">
+              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
                 <WalletIcon className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">My Wallet</h1>
-                <p className="text-white/80 text-sm">Manage your balance & transactions</p>
-        </div>
+                <h1 className="text-2xl font-bold tracking-tight">My Wallet</h1>
+                <p className="text-white/80 text-sm">
+                  Manage your balance & consultations
+                </p>
+              </div>
             </div>
             <motion.button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors disabled:opacity-50"
+              onClick={refreshWalletBalance}
+              disabled={isFetching}
+              className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors disabled:opacity-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-5 w-5 ${isFetching ? "animate-spin" : ""}`}
+              />
             </motion.button>
-      </div>
+          </div>
 
-          {/* Enhanced Balance Display */}
-          <motion.div 
+          <motion.div
             className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.01 }}
             transition={{ duration: 0.2 }}
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-full">
-                  <DollarSign className="h-5 w-5" />
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-white/20 rounded-xl">
+                  <IndianRupee className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-white/80 text-sm">Current Balance</p>
+                  <p className="text-white/80 text-sm font-medium">
+                    Current Balance
+                  </p>
                   <div className="flex items-center gap-2">
                     <AnimatePresence mode="wait">
                       <motion.span
-                        key={balance}
+                        key={balanceDisplay}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="text-3xl font-bold"
+                        className="text-3xl font-bold tracking-tight"
                       >
-                        {showBalance ? balance : "₹***.**"}
+                        {showBalance ? balanceDisplay : "₹***.**"}
                       </motion.span>
                     </AnimatePresence>
-        <button
+                    <button
                       onClick={() => setShowBalance(!showBalance)}
-                      className="p-1 rounded-full hover:bg-white/20 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
                     >
-                      {showBalance ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
+                      {showBalance ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
                   </div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="flex items-center gap-2 text-green-300">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">+12.5%</span>
+                  <span className="text-sm font-medium">Live</span>
                 </div>
-                <p className="text-white/60 text-xs">This month</p>
+                <p className="text-white/50 text-xs mt-1">Synced with server</p>
               </div>
             </div>
           </motion.div>
         </div>
       </motion.div>
 
-      {/* Enhanced Navigation Tabs */}
-      <div className="bg-white shadow-sm border-b border-gray-100">
+      {/* ── tab bar ── */}
+      <div className="bg-white shadow-sm border-b border-orange-100 sticky top-0 z-30">
         <div className="flex">
           {[
             { id: "recharge", label: "Recharge", icon: Plus, count: null },
-            { id: "transactions", label: "Transactions", icon: Clock, count: transactions.length }
-          ].map((tab, index) => (
+            {
+              id: "transactions",
+              label: "Transactions",
+              icon: Clock,
+              count: transactions.length,
+            },
+          ].map((tab) => (
             <motion.button
               key={tab.id}
               className={`flex-1 py-4 font-medium flex justify-center items-center gap-2 relative ${
                 activeTab === tab.id
                   ? "text-orange-600"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
               onClick={() => setActiveTab(tab.id)}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-        >
+            >
               <tab.icon className="h-5 w-5" />
               <span>{tab.label}</span>
               {tab.count > 0 && (
-                <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">
+                <span className="bg-orange-100 text-orange-600 text-xs px-2 py-0.5 rounded-full font-semibold">
                   {tab.count}
-            </span>
-          )}
+                </span>
+              )}
               {activeTab === tab.id && (
                 <motion.div
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500"
                   layoutId="activeTab"
                 />
               )}
@@ -351,10 +547,11 @@ const WalletPage = () => {
         </div>
       </div>
 
-      {/* Enhanced Content */}
-      <div className="flex-1 p-4">
+      {/* ── tab content ── */}
+      <div className="flex-1 p-4 max-w-4xl mx-auto w-full">
         <AnimatePresence mode="wait">
-      {activeTab === "recharge" && (
+          {/* ──────── RECHARGE TAB ──────── */}
+          {activeTab === "recharge" && (
             <motion.div
               key="recharge"
               initial={{ opacity: 0, x: -20 }}
@@ -363,139 +560,151 @@ const WalletPage = () => {
               transition={{ duration: 0.3 }}
               className="space-y-6"
             >
-              {/* Enhanced Recharge Options */}
+              {/* plan grid */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-orange-500" />
                   Quick Recharge Options
                 </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {rechargeOptions.map((option, index) => (
-                    <motion.div
-                      key={option.amount}
-                      className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
-                        selectedAmount === option.amount && !showCustomInput
-                          ? "border-orange-500 bg-orange-50 shadow-lg"
-                          : "border-gray-200 hover:border-orange-300 hover:shadow-md"
-                }`}
-                onClick={() => {
-                  setSelectedAmount(option.amount);
-                  setShowCustomInput(false);
-                }}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      {option.popular && (
-                        <div className="absolute -top-2 -right-2">
-                          <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                            <Star className="h-3 w-3" />
-                            Popular
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {plans.map((plan, index) => {
+                    const price = plan.price;
+                    const extra = plan.additional || plan.cashback || 0;
+                    const active = selectedPlanIdx === index && !showCustomInput;
+                    const isBest = extra >= 40;
+                    return (
+                      <motion.div
+                        key={`${price}-${index}`}
+                        className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                          active
+                            ? "border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg shadow-orange-100"
+                            : "border-gray-200 bg-white hover:border-orange-300 hover:shadow-md"
+                        }`}
+                        onClick={() => {
+                          setSelectedPlanIdx(index);
+                          setShowCustomInput(false);
+                        }}
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.06 }}
+                      >
+                        {isBest && (
+                          <div className="absolute -top-2.5 -right-2">
+                            <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <Star className="h-3 w-3" />
+                              Best
+                            </div>
+                          </div>
+                        )}
+                        <div className="text-center">
+                          {/* Om symbol decoration */}
+                          <div className="text-2xl mb-1 opacity-30">🕉️</div>
+                          <div className="text-2xl font-bold text-gray-900 mb-1">
+                            ₹{price}
+                          </div>
+                          <div className="text-green-600 font-semibold text-sm mb-1">
+                            +{extra}% extra
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            Get ₹{((price * extra) / 100).toFixed(0)} bonus
                           </div>
                         </div>
-                      )}
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-900 mb-1">
-                          {option.amount}
-                        </div>
-                        <div className="text-green-600 font-medium text-sm mb-2">
-                  {option.extra}
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          Save {option.savings}
-                        </div>
-                      </div>
-                    </motion.div>
-            ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
-          </div>
+              </div>
 
-              {/* Enhanced Custom Amount */}
-              <motion.div 
+              {/* custom amount */}
+              <motion.div
                 className="space-y-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.4 }}
+                transition={{ duration: 0.3, delay: 0.3 }}
               >
                 <button
-              onClick={() => setShowCustomInput(!showCustomInput)}
-                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+                  onClick={() => setShowCustomInput(!showCustomInput)}
+                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold transition-colors"
                 >
                   <Plus className="h-4 w-4" />
                   Enter Custom Amount
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showCustomInput ? 'rotate-180' : ''}`} />
-            </button>
-
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-300 ${
+                      showCustomInput ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
                 <AnimatePresence>
-            {showCustomInput && (
+                  {showCustomInput && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="bg-gray-50 rounded-2xl p-4"
+                      className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-5 border border-orange-100"
                     >
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={customAmount}
-                    onChange={handleCustomAmountChange}
-                    placeholder="Enter amount"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-lg font-medium"
-                  />
-                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={customAmount}
+                          onChange={handleCustomAmountChange}
+                          placeholder="Enter amount"
+                          className="w-full pl-10 pr-4 py-3.5 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 text-lg font-semibold bg-white transition-all"
+                        />
+                        <div className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-orange-400 text-lg font-bold">
                           ₹
                         </div>
-                </div>
+                      </div>
                       {customAmount && (
-                        <div className="mt-2 text-sm text-gray-600">
-                          You'll get {bonusRate}% extra = ₹{bonusAmount} bonus
-              </div>
-            )}
+                        <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
+                          <Gift className="h-4 w-4 text-green-500" />
+                          You'll get {bonusRate}% extra = <span className="font-semibold text-green-600">₹{bonusAmount} bonus</span>
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </motion.div>
 
-              {/* Enhanced Offer Display */}
-              {(selectedAmount || customAmount) && (
-                <motion.div 
-                  className="bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-2xl p-6"
-                  initial={{ opacity: 0, scale: 0.9 }}
+              {/* offer banner */}
+              {baseAmount > 0 && (
+                <motion.div
+                  className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5"
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-green-500 rounded-full">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-green-500 rounded-xl">
                       <Gift className="h-5 w-5 text-white" />
-          </div>
+                    </div>
                     <div>
                       <h4 className="font-semibold text-green-800">
-                        🎉 Special Offer Applied!
+                        🎉 Offer Applied!
                       </h4>
                       <p className="text-green-600 text-sm">
                         {bonusRate}% extra on {displayAmount}
-            </p>
+                      </p>
                     </div>
                   </div>
                   <div className="bg-white rounded-xl p-4">
-                    <p className="text-green-800 font-medium text-lg">
-              You will get ₹{bonusAmount} extra in wallet
-            </p>
-                    <p className="text-green-600 text-sm mt-1">
-                      Total wallet credit: ₹{totalAmount}
+                    <p className="text-green-800 font-semibold text-lg">
+                      You will get ₹{bonusAmount} extra in wallet
                     </p>
-          </div>
+                    <p className="text-green-600 text-sm mt-1">
+                      Total wallet credit: <span className="font-bold">₹{totalWalletCredit}</span>
+                    </p>
+                  </div>
                 </motion.div>
               )}
 
-              {/* Enhanced Breakdown */}
-              <motion.div 
+              {/* payment breakdown */}
+              <motion.div
                 className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.6 }}
+                transition={{ duration: 0.3, delay: 0.5 }}
               >
                 <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                   <Info className="h-5 w-5 text-blue-500" />
@@ -503,73 +712,39 @@ const WalletPage = () => {
                 </h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-              <span className="text-gray-600">Recharge Amount</span>
+                    <span className="text-gray-600">Recharge Amount</span>
                     <span className="font-medium">{displayAmount}</span>
-            </div>
+                  </div>
                   <div className="flex justify-between items-center">
-              <span className="text-gray-600">GST ({gstRate}%)</span>
+                    <span className="text-gray-600">GST (18%)</span>
                     <span className="font-medium">₹{gstAmount}</span>
-            </div>
-                  <div className="border-t pt-3">
+                  </div>
+                  <div className="border-t border-dashed border-gray-200 pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-lg">Total Payable</span>
-                      <span className="font-bold text-lg text-orange-600">₹{payableAmount}</span>
-            </div>
-          </div>
-            </div>
-              </motion.div>
-
-              {/* Enhanced Payment Methods */}
-              <motion.div 
-                className="space-y-4"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.8 }}
-              >
-                <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-purple-500" />
-                  Payment Method
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {paymentMethods.map((method) => (
-                    <motion.button
-                      key={method.id}
-                      className={`p-4 rounded-xl border-2 transition-all duration-300 ${
-                        selectedPaymentMethod === method.id
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-200 hover:border-orange-300"
-                      }`}
-                      onClick={() => setSelectedPaymentMethod(method.id)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <method.icon className="h-6 w-6 text-gray-700" />
-                        <div className="text-center">
-                          <div className="font-medium text-gray-900">{method.name}</div>
-                          <div className="text-xs text-gray-500">{method.description}</div>
-            </div>
-          </div>
-                    </motion.button>
-                  ))}
+                      <span className="font-bold text-lg">Total Payable</span>
+                      <span className="font-bold text-lg text-orange-600">
+                        ₹{payableAmount}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
-              {/* Enhanced Recharge Button */}
+              {/* recharge CTA */}
               <motion.button
-            onClick={handleRecharge}
+                onClick={handleRecharge}
                 disabled={isLoading || !baseAmount}
-                className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                whileTap={{ scale: isLoading ? 1 : 0.98 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 1 }}
-          >
+                transition={{ duration: 0.3, delay: 0.7 }}
+              >
                 {isLoading ? (
                   <>
-                    <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Processing...</span>
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                    <span>Processing…</span>
                   </>
                 ) : (
                   <>
@@ -580,29 +755,80 @@ const WalletPage = () => {
                 )}
               </motion.button>
 
-              {/* Trust Indicators */}
-              <motion.div 
-                className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6"
+              {/* payment status indicator */}
+              <AnimatePresence>
+                {paymentStatus && paymentStatus !== "success" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`rounded-2xl p-4 flex items-center gap-3 ${
+                      paymentStatus === "pending"
+                        ? "bg-blue-50 border border-blue-200"
+                        : paymentStatus === "failed"
+                        ? "bg-red-50 border border-red-200"
+                        : "bg-yellow-50 border border-yellow-200"
+                    }`}
+                  >
+                    {paymentStatus === "pending" && (
+                      <>
+                        <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                        <span className="text-blue-700 font-medium text-sm">
+                          Verifying payment… Please don't close this page.
+                        </span>
+                      </>
+                    )}
+                    {paymentStatus === "failed" && (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-500" />
+                        <span className="text-red-700 font-medium text-sm">
+                          Payment failed. Please try again.
+                        </span>
+                      </>
+                    )}
+                    {paymentStatus === "timeout" && (
+                      <>
+                        <Clock className="h-5 w-5 text-yellow-600" />
+                        <span className="text-yellow-700 font-medium text-sm">
+                          Verification timed out. Check Transactions tab.
+                        </span>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* trust badges */}
+              <motion.div
+                className="grid grid-cols-2 sm:grid-cols-4 gap-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 1.2 }}
+                transition={{ duration: 0.3, delay: 0.9 }}
               >
                 {[
                   { icon: Shield, text: "100% Secure", color: "text-green-500" },
                   { icon: Zap, text: "Instant Credit", color: "text-blue-500" },
-                  { icon: CheckCircle, text: "Verified", color: "text-purple-500" },
-                  { icon: Star, text: "Best Rates", color: "text-orange-500" }
+                  {
+                    icon: CheckCircle,
+                    text: "PhonePe Secured",
+                    color: "text-purple-500",
+                  },
+                  { icon: Star, text: "Best Rates", color: "text-orange-500" },
                 ].map((item, index) => (
-                  <div key={index} className="flex items-center gap-2 text-sm text-gray-600">
+                  <div
+                    key={index}
+                    className="flex items-center gap-2 text-sm text-gray-600 bg-white rounded-xl px-3 py-2.5 border border-gray-100"
+                  >
                     <item.icon className={`h-4 w-4 ${item.color}`} />
-                    <span>{item.text}</span>
-        </div>
+                    <span className="font-medium">{item.text}</span>
+                  </div>
                 ))}
               </motion.div>
             </motion.div>
-      )}
+          )}
 
-      {activeTab === "transactions" && (
+          {/* ──────── TRANSACTIONS TAB ──────── */}
+          {activeTab === "transactions" && (
             <motion.div
               key="transactions"
               initial={{ opacity: 0, x: 20 }}
@@ -616,88 +842,124 @@ const WalletPage = () => {
                   <Clock className="h-5 w-5 text-blue-500" />
                   Transaction History
                 </h3>
-                <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-                  <ListFilter className="h-4 w-4" />
-                Filter
-              </button>
-          </div>
+                <button
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 bg-white px-3 py-2 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors"
+                  onClick={fetchTransactions}
+                  disabled={isTxLoading}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isTxLoading ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </button>
+              </div>
 
-              {transactions.length === 0 ? (
-                <motion.div 
-                  className="text-center py-12"
+              {isTxLoading ? (
+                <div className="text-center py-16">
+                  <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <p className="text-gray-500 mt-4 text-sm">Loading transactions…</p>
+                </div>
+              ) : transactions.length === 0 ? (
+                <motion.div
+                  className="text-center py-16"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Clock className="h-8 w-8 text-gray-400" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Clock className="h-10 w-10 text-orange-300" />
                   </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">No Transactions Yet</h4>
-                  <p className="text-gray-500 mb-4">Your transaction history will appear here</p>
-                  <button 
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    No Transactions Yet
+                  </h4>
+                  <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                    Your recharge and consultation transaction history will appear here
+                  </p>
+                  <button
                     onClick={() => setActiveTab("recharge")}
-                    className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-2.5 rounded-xl font-semibold hover:shadow-md transition-all"
                   >
                     Make Your First Recharge
                   </button>
                 </motion.div>
               ) : (
                 <div className="space-y-3">
-                  {transactions.map((transaction, index) => (
-                    <motion.div
-                  key={transaction.id}
-                      className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${
-                    transaction.status === "success"
-                              ? "bg-green-100 text-green-600" 
-                              : "bg-red-100 text-red-600"
-                          }`}>
-                    {transaction.type === "credit" ? (
-                              <ArrowDownCircle className="h-5 w-5" />
-                    ) : (
-                              <ArrowUpCircle className="h-5 w-5" />
-                    )}
-                  </div>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {transaction.description}
+                  {transactions.map((tx, index) => {
+                    const id = tx._id || tx.id || index;
+                    const isCredit =
+                      tx.credit === true ||
+                      tx.type === "credit" ||
+                      tx.isCredited === true ||
+                      tx.paymentFor === "recharge" ||
+                      tx.paymentFor === "cashback";
+                    const status =
+                      tx.status || (tx.success ? "done" : "pending");
+                    const success =
+                      status === "done" || status === "success" || status === "SUCCESS";
+                    const description = getPaymentLabel(tx);
+                    const date = tx.createdAt || tx.date || tx.updatedAt;
+                    const amount = Math.abs(Number(tx.amount || 0)).toFixed(2);
+
+                    return (
+                      <motion.div
+                        key={id}
+                        className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md hover:border-orange-100 transition-all"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.04 }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`p-2.5 rounded-xl ${
+                                isCredit
+                                  ? "bg-green-100 text-green-600"
+                                  : "bg-red-100 text-red-600"
+                              }`}
+                            >
+                              {isCredit ? (
+                                <ArrowDownCircle className="h-5 w-5" />
+                              ) : (
+                                getPaymentIcon(tx.paymentFor)
+                              )}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {formatDate(transaction.date)} • {transaction.paymentMethod}
+                            <div>
+                              <div className="font-semibold text-gray-900 capitalize text-sm">
+                                {description}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {date ? formatDate(date) : ""}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div
+                              className={`font-bold text-base ${
+                                isCredit ? "text-green-600" : "text-red-600"
+                              }`}
+                            >
+                              {isCredit ? "+" : "-"}₹{amount}
+                            </div>
+                            <div
+                              className={`text-[10px] px-2 py-0.5 rounded-full inline-block mt-1 font-semibold ${
+                                success
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {success ? "Completed" : status}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className={`font-semibold ${
-                          transaction.status === "success"
-                            ? "text-green-600"
-                            : "text-red-600"
-                          }`}>
-                            {transaction.type === "credit" ? "+" : "-"}₹{transaction.amount}
-                    </div>
-                          <div className={`text-xs px-2 py-1 rounded-full ${
-                            transaction.status === "success"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
-                          {transaction.status}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
-        </div>
+      </div>
     </div>
   );
 };

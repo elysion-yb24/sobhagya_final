@@ -10,7 +10,7 @@ import GiftConfirmationDialog from '../../components/ui/GiftConfirmationDialog';
 import {
   ArrowLeft, Send, Heart, Lock, Globe, X,
   MessageCircle, List, Phone, Loader2, AlertCircle, Eye, Gift,
-  Share2, Wallet, Mic, MicOff, PhoneOff
+  Wallet, Mic, MicOff, PhoneOff
 } from 'lucide-react';
 import Link from 'next/link';
 import { LiveKitRoom, VideoTrack, useTracks, RoomAudioRenderer } from '@livekit/components-react';
@@ -111,6 +111,22 @@ function formatTime(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+const DEBUG_LIVE_CALL = process.env.NEXT_PUBLIC_DEBUG_LIVE_CALL === '1';
+const dlog = (...args: any[]) => { if (DEBUG_LIVE_CALL) console.log('[LiveCall]', ...args); };
+
+// Mirrors queue-join id derivation in useLiveSocket (userId > _id > id), lowercased + trimmed.
+function getMyId(): string {
+  const ud = getUserDetails();
+  if (!ud) return '';
+  const raw = ud.userId ?? ud._id ?? ud.id ?? '';
+  return String(raw).trim().toLowerCase();
+}
+
+function sameId(a: any, b: string): boolean {
+  if (!a || !b) return false;
+  return String(a).trim().toLowerCase() === b;
+}
+
 /* ────────────────────────────────────────────────────────────────────── */
 /*  Main Page                                                            */
 /* ────────────────────────────────────────────────────────────────────── */
@@ -122,7 +138,7 @@ export default function LiveSessionViewPage() {
   const {
     isConnected, joinSession, leaveSession, fetchSessionToken,
     getChats, sendChat, joinQueue, leaveQueue, getQueue,
-    getActiveCall, addLike, getLikes, joinRoomParticipant, endCall,
+    getActiveCall, addLike, getLikes, joinRoomParticipant, acceptInvite, endCall,
     onChatUpdate, onViewerUpdate, onViewerLeft, onSessionEnded,
     onCallStarted, onCallEnd, onQueueJoined, onLikeUpdate, onGiftReceived, emitSendGift,
   } = useLiveSocket();
@@ -173,6 +189,7 @@ export default function LiveSessionViewPage() {
 
   /* ── call invite & in-call state ── */
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [isWaitlisted, setIsWaitlisted] = useState(false);
   const [inviteCallType, setInviteCallType] = useState<'private' | 'public'>('public');
   const [isJoiningCall, setIsJoiningCall] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
@@ -184,6 +201,7 @@ export default function LiveSessionViewPage() {
   const [callBalance, setCallBalance] = useState(0);
   const [callSessionTime, setCallSessionTime] = useState(0);
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const acceptRef = useRef<(t: 'private' | 'public') => void>(() => {});
 
   /* ════════════════════════════════════════════════════════════════════ */
   /*  Data fetchers                                                      */
@@ -246,38 +264,55 @@ export default function LiveSessionViewPage() {
   const handleAcceptInvite = useCallback(async (callType: 'private' | 'public') => {
     if (isJoiningCall || isInCall) return;
     setIsJoiningCall(true);
+
     try {
+      const ac = Array.isArray(activeCall) ? activeCall : [activeCall].filter(Boolean);
+      const myId = getMyId();
+      const myCall = ac.find(c =>
+        sameId(c?.userId, myId) ||
+        sameId(c?.user?._id, myId) ||
+        sameId(c?.callerId, myId) ||
+        sameId(c?.receiverId, myId) ||
+        sameId(c?.receiverUserId, myId)
+      ) || ac[0]; // fallback to sole activeCall when id formats don't line up
+
+      const channelId = myCall?.channelId || sessionId;
+      dlog('accept: channelId=', channelId, 'callType=', callType, 'myCall=', myCall);
+
+      const ackAccept = await acceptInvite(sessionId, channelId);
+      dlog('accept_invite ack:', ackAccept);
+
       const isPrivateAudio = callType === 'private';
       const rate = isPrivateAudio ? (sessionData?.privateAudioRpm || 5) : (sessionData?.publicAudioRpm || 11);
 
       const resp = await joinRoomParticipant(sessionId, rate, isPrivateAudio);
+      dlog('joinRoomParticipant resp:', resp);
 
       if (resp?.error) {
         const msg = resp?.data?.message === 'LOW_BALANCE'
           ? 'Insufficient balance. Please recharge your wallet.'
           : 'Failed to join call. Please try again.';
         alert(msg);
-        setIsJoiningCall(false);
         return;
       }
 
-      const newToken = resp?.data?.token || resp?.data?.livekitToken || resp?.data?.currentSessionToken || resp?.data?.joinToken || resp?.data;
-      if (newToken && typeof newToken === 'string') {
-        setCallToken(newToken);
-        setCallWsUrl(resp.data?.livekitSocketURL || livekitUrl);
-        setCallBalance(resp.data?.balance || 0);
-        setCallSessionTime(resp.data?.sessionTime || 0);
-      } else {
+      const newToken = resp?.data?.token || resp?.data?.livekitToken || resp?.data?.currentSessionToken || resp?.data?.joinToken;
+      if (!newToken || typeof newToken !== 'string') {
         alert('Failed to get valid token for audio call.');
-        setIsJoiningCall(false);
         return;
       }
+
+      setCallToken(newToken);
+      setCallWsUrl(resp.data?.livekitSocketURL || livekitUrl);
+      setCallBalance(resp.data?.balance || 0);
+      setCallSessionTime(resp.data?.sessionTime || 0);
+      setCallChannelId(channelId);
 
       setIsInCall(true);
       setInQueue(false);
+      setIsWaitlisted(false);
       setCallTimer(0);
 
-      // Start call timer
       if (callTimerRef.current) clearInterval(callTimerRef.current);
       callTimerRef.current = setInterval(() => {
         setCallTimer(prev => prev + 1);
@@ -288,38 +323,50 @@ export default function LiveSessionViewPage() {
     } finally {
       setIsJoiningCall(false);
     }
-  }, [isJoiningCall, isInCall, sessionData, sessionId, livekitUrl, joinRoomParticipant]);
+  }, [isJoiningCall, isInCall, sessionData, sessionId, livekitUrl, joinRoomParticipant, acceptInvite, activeCall]);
 
   useEffect(() => {
-    if (isInCall) return;
+    if (isInCall || isJoiningCall) return;
+    if (!activeCall) return;
+    const myId = getMyId();
     const ud = getUserDetails();
-    if (!ud) return;
-    const myId = String(ud.id || ud._id || ud.userId);
-    
-    // Check queue
-    const mineInQueue = Array.isArray(queue) ? queue.find(q => 
-       String(q.userId) === myId && ['notified', 'started', 'accepted', 'active', 'connecting'].includes(q.status)
-    ) : null;
-    
-    // Check activeCall
-    let amIActive = false;
+    const myName = String(ud?.name || ud?.displayName || '').trim().toLowerCase();
+
     const ac = Array.isArray(activeCall) ? activeCall : [activeCall].filter(Boolean);
-    for (const c of ac) {
-      if (String(c?.userId) === myId || String(c?.user?._id) === myId || String(c?.callerId) === myId) {
-        amIActive = true;
-        break;
-      }
+
+    // Strict: id match
+    let myEntry = ac.find(c => c && (
+      sameId(c.userId, myId) ||
+      sameId(c.user?._id, myId) ||
+      sameId(c.callerId, myId) ||
+      sameId(c.receiverId, myId) ||
+      sameId(c.receiverUserId, myId)
+    ));
+
+    // Widened: I'm waiting + activeCall exists + name matches OR no name set
+    if (!myEntry && isWaitlisted) {
+      myEntry = ac.find(c => {
+        if (!c) return false;
+        const n = String(c.userName || '').trim().toLowerCase();
+        return !n || (!!myName && n === myName);
+      });
+      if (myEntry) dlog('auto-accept widened match via name/empty:', myEntry);
     }
-    
-    // Auto-join if qualifies
-    const qualifies = mineInQueue || amIActive;
-    if (qualifies && !isInCall && !isJoiningCall) {
-      const isPrivate = mineInQueue ? mineInQueue.isPrivate : (ac.find(c => String(c?.userId) === myId || String(c?.callerId) === myId)?.isPrivate || false);
-      const cType = isPrivate ? 'private' : 'public';
-      setInviteCallType(cType);
-      handleAcceptInvite(cType);
+
+    if (!myEntry) {
+      dlog('auto-accept: no match. myId=', myId, 'activeCall=', activeCall);
+      return;
     }
-  }, [queue, activeCall, isInCall, isJoiningCall, handleAcceptInvite]);
+
+    const isPrivate = typeof myEntry.isPrivate === 'string'
+      ? myEntry.isPrivate === 'true'
+      : !!myEntry.isPrivate;
+    const cType: 'private' | 'public' = (isPrivate || queueType === 'private') ? 'private' : 'public';
+    dlog('auto-accept firing, cType=', cType, 'entry=', myEntry);
+    setInviteCallType(cType);
+    handleAcceptInvite(cType);
+  }, [activeCall, isInCall, isJoiningCall, isWaitlisted, queueType, handleAcceptInvite]);
+
   const handleEndCall = async () => {
     if (callTimerRef.current) {
       clearInterval(callTimerRef.current);
@@ -349,6 +396,51 @@ export default function LiveSessionViewPage() {
   useEffect(() => {
     return () => { if (callTimerRef.current) clearInterval(callTimerRef.current); };
   }, []);
+
+  // Keep acceptRef pointing at the latest handleAcceptInvite so socket listeners
+  // (registered with narrower deps) always call the current closure.
+  useEffect(() => { acceptRef.current = handleAcceptInvite; }, [handleAcceptInvite]);
+
+  /* ════════════════════════════════════════════════════════════════════ */
+  /*  Queue polling — detects astrologer's invite                         */
+  /*  Backend sets session.activeCall when broadcaster invites, but emits */
+  /*  no socket event (relies on FCM push on Android). Poll while waiting.*/
+  /* ════════════════════════════════════════════════════════════════════ */
+  useEffect(() => {
+    if (isInCall || isJoiningCall) return;
+    if (!inQueue && !isWaitlisted) return;
+    if (!isConnected || !sessionId) return;
+
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const [ac, q] = await Promise.all([
+          getActiveCall(sessionId),
+          getQueue(sessionId),
+        ]);
+        if (cancelled) return;
+        dlog('poll tick: activeCall=', ac, 'queueLen=', Array.isArray(q) ? q.length : null);
+        setActiveCall(ac); // null when no call; object only when channelId present
+        if (Array.isArray(q)) setQueue(q);
+      } catch (err) {
+        console.error('[LiveSession] Queue poll failed:', err);
+      }
+    };
+
+    tick();
+    const id = setInterval(tick, 1500);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [isConnected, sessionId, inQueue, isWaitlisted, isInCall, isJoiningCall, getActiveCall, getQueue]);
+
+  // Expose a manual retry hook for diagnostics: window.__joinLiveCall()
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    (window as any).__joinLiveCall = (type: 'private' | 'public' = 'public') => {
+      dlog('manual __joinLiveCall invoked with', type);
+      handleAcceptInvite(type);
+    };
+    return () => { delete (window as any).__joinLiveCall; };
+  }, [handleAcceptInvite]);
 
   /* ════════════════════════════════════════════════════════════════════ */
   /*  Session init                                                       */
@@ -414,13 +506,23 @@ export default function LiveSessionViewPage() {
       onViewerLeft(() => {}),
       onSessionEnded(() => setSessionEnded(true)),
       onCallStarted((d: any) => {
-        setActiveCall(d.sessionCall || d);
-        // Store channelId if this call involves us
-        const ud = getUserDetails();
-        const myId = String(ud?.id || ud?._id || ud?.userId);
         const callData = d.sessionCall || d;
-        if (callData && (String(callData.userId) === myId || String(callData.callerId) === myId || String(callData.user?._id) === myId)) {
+        dlog('onCallStarted:', callData);
+        setActiveCall(callData);
+        const myId = getMyId();
+
+        if (callData && (
+          sameId(callData.userId, myId) ||
+          sameId(callData.callerId, myId) ||
+          sameId(callData.user?._id, myId) ||
+          sameId(callData.receiverId, myId) ||
+          sameId(callData.receiverUserId, myId)
+        )) {
           setCallChannelId(callData.channelId || null);
+          const isPrivate = typeof callData.isPrivate === 'string'
+            ? callData.isPrivate === 'true'
+            : !!callData.isPrivate;
+          acceptRef.current(isPrivate ? 'private' : 'public');
         }
       }),
       onCallEnd(() => {
@@ -480,6 +582,7 @@ export default function LiveSessionViewPage() {
       alert(resp.message === 'LOW_BALANCE' ? 'Insufficient balance. Please recharge your wallet.' : resp.message || 'Failed to join queue.');
     } else {
       setInQueue(true);
+      setIsWaitlisted(true);
       setQueueType(isPrivate ? 'private' : 'public');
       if (resp.data) setQueue(Array.isArray(resp.data) ? resp.data : []);
     }
@@ -490,6 +593,7 @@ export default function LiveSessionViewPage() {
     setLeavingQueue(true);
     await leaveQueue(sessionId);
     setInQueue(false);
+    setIsWaitlisted(false);
     setQueueType(null);
     const q = await getQueue(sessionId);
     setQueue(Array.isArray(q) ? q : []);
@@ -714,13 +818,6 @@ export default function LiveSessionViewPage() {
           <span className="text-white text-[10px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">Chat</span>
         </button>
 
-        <button onClick={() => { if (navigator.share) navigator.share({ title: `${broadcasterName} is LIVE`, url: window.location.href }); }}
-          className="flex flex-col items-center gap-0.5 active:scale-90 transition-transform">
-          <div className="w-11 h-11 rounded-full bg-white/90 backdrop-blur-md border border-orange-100 flex items-center justify-center shadow-lg">
-            <Share2 className="w-5 h-5 text-gray-600" />
-          </div>
-          <span className="text-white text-[10px] font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">Share</span>
-        </button>
       </div>
 
       {/* ═══════ QUEUE PANEL ═══════ */}
@@ -793,19 +890,44 @@ export default function LiveSessionViewPage() {
           </div>
         )}
 
-        {inQueue && !isInCall && (
+        {(inQueue || isWaitlisted) && !isInCall && activeCall && !isJoiningCall && (
+          <div className="mx-3 mb-2 flex items-center justify-between bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl px-4 py-2.5 shadow-lg shadow-green-500/30 animate-pulse">
+            <div className="flex items-center gap-2.5">
+              <div className="w-2.5 h-2.5 bg-white rounded-full" />
+              <div>
+                <p className="text-white text-xs font-bold">Astrologer is ready</p>
+                <p className="text-white/80 text-[10px] font-medium flex items-center gap-1">
+                  Tap to join {queueType === 'private' ? <><Lock className="w-2.5 h-2.5" /> Private</> : <><Globe className="w-2.5 h-2.5" /> Public</>} call
+                </p>
+              </div>
+            </div>
+            <button onClick={() => {
+                const acIsPrivate = typeof activeCall?.isPrivate === 'string'
+                  ? activeCall.isPrivate === 'true'
+                  : !!activeCall?.isPrivate;
+                const cType: 'private' | 'public' = acIsPrivate || queueType === 'private' ? 'private' : 'public';
+                setInviteCallType(cType);
+                handleAcceptInvite(cType);
+              }}
+              className="px-4 py-1.5 bg-white text-green-700 rounded-full text-[11px] font-extrabold active:scale-95 transition-all">
+              Join Now
+            </button>
+          </div>
+        )}
+
+        {(inQueue || isWaitlisted) && !isInCall && (!activeCall || isJoiningCall) && (
           <div className="mx-3 mb-2 flex items-center justify-between bg-orange-500 rounded-2xl px-4 py-2.5 shadow-lg">
             <div className="flex items-center gap-2.5">
               <Loader2 className="w-4 h-4 text-white animate-spin" />
               <div>
-                <p className="text-white text-xs font-bold">You're in queue</p>
+                <p className="text-white text-xs font-bold">{isJoiningCall ? 'Connecting…' : (isWaitlisted && !inQueue ? 'Connecting...' : "You're in queue")}</p>
                 <p className="text-white/70 text-[10px] font-medium flex items-center gap-1">
                   {queueType === 'private' ? <><Lock className="w-2.5 h-2.5" /> Private call</> : <><Globe className="w-2.5 h-2.5" /> Public call</>}
                 </p>
               </div>
             </div>
-            <button onClick={handleLeaveQueue} disabled={leavingQueue}
-              className="px-4 py-1.5 bg-white text-orange-600 rounded-full text-[11px] font-bold active:scale-95 transition-all">
+            <button onClick={() => { handleLeaveQueue(); setIsWaitlisted(false); }} disabled={leavingQueue || isJoiningCall}
+              className="px-4 py-1.5 bg-white text-orange-600 rounded-full text-[11px] font-bold active:scale-95 transition-all disabled:opacity-60">
               {leavingQueue ? 'Leaving...' : 'Leave'}
             </button>
           </div>
@@ -821,7 +943,7 @@ export default function LiveSessionViewPage() {
               </button>
             )}
           </div>
-          {!inQueue && !isInCall && (
+          {!inQueue && !isWaitlisted && !isInCall && (
             <button onClick={() => setShowCallTypeModal(true)} disabled={joiningQueue}
               className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white shadow-lg shadow-green-500/30 active:scale-90 transition-all flex-shrink-0">
               {joiningQueue ? <Loader2 className="w-5 h-5 animate-spin" /> : <Phone className="w-5 h-5" />}

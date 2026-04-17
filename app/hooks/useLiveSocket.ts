@@ -202,11 +202,20 @@ export function useLiveSocket() {
     return new Promise((resolve) => {
       if (!socketRef.current) { resolve(null); return; }
       socketRef.current.emit('get_active_call', { sessionId }, (resp: any) => {
-        if (!resp.error && resp.data) {
-          resolve(resp.data.activeCalls);
-        } else {
-          resolve(null);
+        if (resp?.error || !resp?.data) { resolve(null); return; }
+        let ac = resp.data.activeCalls;
+        // Backend stores activeCall in Redis via JSON.stringify and returns the
+        // raw string. Parse it so callers can access fields directly.
+        if (typeof ac === 'string') {
+          try { ac = JSON.parse(ac); } catch { ac = null; }
         }
+        // Backend initializes activeCall as JSON.stringify({}) on session create,
+        // so "{}" parses to empty object — treat as no active call.
+        if (!ac || typeof ac !== 'object' || !ac.channelId) { resolve(null); return; }
+        if (typeof ac.isPrivate === 'string') {
+          ac.isPrivate = ac.isPrivate === 'true';
+        }
+        resolve(ac);
       });
     });
   }, []);
@@ -246,6 +255,15 @@ export function useLiveSocket() {
         isVideoPrivate: true,
         isVideoOff: true,
       }, (resp: any) => {
+        resolve(resp);
+      });
+    });
+  }, []);
+
+  const acceptInvite = useCallback((sessionId: string, channelId: string): Promise<any> => {
+    return new Promise((resolve) => {
+      if (!socketRef.current) { resolve(null); return; }
+      socketRef.current.emit('accept_invite', { sessionId, channelId }, (resp: any) => {
         resolve(resp);
       });
     });
@@ -351,6 +369,7 @@ export function useLiveSocket() {
     addLike,
     getLikes,
     joinRoomParticipant,
+    acceptInvite,
     endCall,
     onChatUpdate,
     onViewerUpdate,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Calendar, User, Clock, Share2 } from "lucide-react";
@@ -10,6 +10,45 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   const [blog, setBlog] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // When a featured image is shown at the top, detach the first inline <img>
+  // from the content and re-append it at the end so we don't duplicate the
+  // hero image and still keep the second image visible at the bottom.
+  const processedContent = useMemo(() => {
+    if (!blog?.content) return "";
+    if (!blog.image) return blog.content;
+    if (typeof window === "undefined" || typeof DOMParser === "undefined") {
+      // SSR/safety fallback: simple regex strip-first-image
+      return blog.content.replace(/<img[^>]*>/i, "");
+    }
+    try {
+      const doc = new DOMParser().parseFromString(
+        `<div id="__root">${blog.content}</div>`,
+        "text/html"
+      );
+      const root = doc.getElementById("__root");
+      if (!root) return blog.content;
+      const firstImg = root.querySelector("img");
+      if (firstImg) {
+        // Walk up to a wrapping <figure>/<p> if it contains only this image
+        let target: Element = firstImg;
+        const parent = firstImg.parentElement;
+        if (
+          parent &&
+          (parent.tagName === "FIGURE" || parent.tagName === "P") &&
+          parent.querySelectorAll("img").length === 1 &&
+          parent.textContent?.trim() === ""
+        ) {
+          target = parent;
+        }
+        target.remove();
+        root.appendChild(target);
+      }
+      return root.innerHTML;
+    } catch {
+      return blog.content;
+    }
+  }, [blog?.content, blog?.image]);
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -36,7 +75,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-amber-50/30 pt-28 pb-20">
+      <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-amber-50/30 pt-8 pb-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="animate-pulse flex flex-col gap-6">
             <div className="h-8 bg-gray-200 rounded w-1/4"></div>
@@ -56,7 +95,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
 
   if (error || !blog) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-amber-50/30 pt-40 pb-20 flex flex-col items-center">
+      <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-amber-50/30 pt-16 pb-20 flex flex-col items-center">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">Oops!</h1>
         <p className="text-gray-600 mb-8">{error || "Blog not found"}</p>
         <Link 
@@ -71,7 +110,7 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/30 pb-20 pt-24 sm:pt-32">
+    <div className="min-h-screen bg-gray-50/30 pb-20 pt-6 sm:pt-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6">
         {/* Breadcrumb / Back Button */}
         <Link 
@@ -155,8 +194,8 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
 
         {/* Article Content */}
         <article className="prose prose-lg prose-orange max-w-none bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100">
-          <div 
-            dangerouslySetInnerHTML={{ __html: blog.content }} 
+          <div
+            dangerouslySetInnerHTML={{ __html: processedContent }}
             className="wp-content"
           />
         </article>

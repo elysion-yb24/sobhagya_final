@@ -9,6 +9,7 @@ interface ChatInputProps {
   isDisabled?: boolean
   onTyping?: () => void
   onStopTyping?: () => void
+  onFileUpload?: (file: File) => void | Promise<void>
 }
 
 export default function ChatInput({
@@ -17,10 +18,25 @@ export default function ChatInput({
   onSendMessage,
   isDisabled = false,
   onTyping,
-  onStopTyping
+  onStopTyping,
+  onFileUpload,
 }: ChatInputProps) {
   const [isTyping, setIsTyping] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !onFileUpload) return
+    try {
+      setUploading(true)
+      await onFileUpload(file)
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   // Auto-resize textarea
   useEffect(() => {
@@ -68,14 +84,24 @@ export default function ChatInput({
         {/* Additional Actions - Hide on mobile */}
         <div className="hidden sm:flex items-center gap-1">
           {/* File upload button */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*,video/*,application/pdf"
+            onChange={handleFileChange}
+            disabled={isDisabled || uploading || !onFileUpload}
+          />
           <button
-            disabled={isDisabled}
+            type="button"
+            disabled={isDisabled || uploading || !onFileUpload}
+            onClick={() => fileInputRef.current?.click()}
             className={`p-1.5 sm:p-2 rounded-full transition-all duration-200 active:scale-95 ${
-              isDisabled
+              isDisabled || uploading || !onFileUpload
                 ? 'text-gray-300 cursor-not-allowed'
                 : 'text-orange-600 hover:text-orange-800 hover:bg-orange-100'
             }`}
-            title="Attach file"
+            title={uploading ? 'Uploading…' : 'Attach file'}
           >
             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />

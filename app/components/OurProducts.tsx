@@ -1,6 +1,5 @@
 'use client'
 import React, { useState } from 'react';
-import Link from 'next/link';
 
 interface Product {
   id: number;
@@ -8,6 +7,8 @@ interface Product {
   description: string;
   image: string;
   link: string;
+  price: number;
+  compareAtPrice?: number;
 }
 
 const OurProducts = () => {
@@ -25,50 +26,71 @@ const OurProducts = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // Real RamVarna featured products — verified against ramvarna.com (2026).
+  // Direct product links + Shopify CDN images keep the showcase in sync with
+  // the live store. Prices reflect the lowest available variant on ramvarna.com.
   const products: Product[] = [
     {
       id: 1,
-      name: "Authentic Gemstones",
-      description: "Authentic Gemstones for Meditation & Well-being",
-      image: "/authentic-gemstones.svg",
-      link: "https://store.sobhagya.in/collections/gemstone"
+      name: "Metal Dhan Yog Bracelet",
+      description: "Silver-plated prosperity bracelet with Tiger Eye, Pyrite, Citrine & Clear Quartz.",
+      image: "https://cdn.shopify.com/s/files/1/0803/0063/8426/files/1_89e75ba4-dcd4-4338-bf80-0c9be0986ee4.webp?v=1774965810",
+      link: "https://ramvarna.com/products/metal-dhan-yog-bracelet-silver",
+      price: 1099,
+      compareAtPrice: 1500,
     },
     {
       id: 2,
-      name: "Rudraksh Collection",
-      description: "Most loved astrology services for trusted guidance",
-      image: "/rudraksh-collection.svg",
-      link: "https://store.sobhagya.in/collections/rudraksh-collection"
+      name: "Dhan Yog Bracelet",
+      description: "Wealth-attracting blend of Green Onyx, Pyrite, Citrine & Tiger Eye gemstones.",
+      image: "https://cdn.shopify.com/s/files/1/0803/0063/8426/files/IMG_4124.jpg?v=1770792204",
+      link: "https://ramvarna.com/products/dhan-yog-bracelet",
+      price: 799,
+      compareAtPrice: 1999,
     },
     {
       id: 3,
-      name: "God Idols",
-      description: "Gifts of Faith & Inner Harmony",
-      image: "/god-idols.png",
-      link: "https://store.sobhagya.in/collections/gog-idols"
+      name: "7 Horses Pyrite Frame",
+      description: "Raw Pyrite Surya Dev frame for career growth, fame and prosperity (7.5\u00d77.5 in).",
+      image: "https://cdn.shopify.com/s/files/1/0803/0063/8426/files/Screenshot2026-03-29at1.55.22PM.png?v=1774773381",
+      link: "https://ramvarna.com/products/7-horses-on-raw-pyrite-frame",
+      price: 999,
+      compareAtPrice: 2199,
     },
     {
       id: 4,
-      name: "Bracelets",
-      description: "Crafted to Resonate with Your Inner Self",
-      image: "/spiritual-bracelets.svg",
-      link: "https://store.sobhagya.in/collections/bracelets"
+      name: "5 Mukhi Rudraksha Bracelet",
+      description: "Certified 5 Mukhi Rudraksha with silver capping for peace, focus and balance.",
+      image: "https://cdn.shopify.com/s/files/1/0803/0063/8426/files/IMG_4109.jpg?v=1770793068",
+      link: "https://ramvarna.com/products/5-mukhi-rudraksha-bracelet-with-capping-quality-improvement-for-durability-looks",
+      price: 699,
+      compareAtPrice: 1500,
     },
     {
       id: 5,
-      name: "Spiritual Products",
-      description: "Elevate Your Spirit: Tools for a Deeper Spiritual Journey",
-      image: "/spiritual-products.svg",
-      link: "https://store.sobhagya.in/collections/spiritual-jewellery-collection"
+      name: "Rose Quartz Love Bracelet",
+      description: "Hand-picked rose quartz beads \u2014 the Stone of Unconditional Love and healing.",
+      image: "https://cdn.shopify.com/s/files/1/0803/0063/8426/files/IMG_4155.jpg?v=1771225996",
+      link: "https://ramvarna.com/products/rose-quartz-bracelet-premium-love-emotional-healing-for-men-and-women",
+      price: 699,
+      compareAtPrice: 1599,
     },
     {
       id: 6,
-      name: "Pooja Items",
-      description: "Create a Divine Atmosphere for Your Daily Puja",
-      image: "/pooja-items.svg",
-      link: "https://store.sobhagya.in/collections/pooja-items"
-    }
+      name: "5 Mukhi Rudraksha",
+      description: "Original Nepali 5 Mukhi Rudraksha bead (22mm) for peace, harmony & focus.",
+      image: "https://cdn.shopify.com/s/files/1/0803/0063/8426/files/IMG_4030.jpg?v=1770792624",
+      link: "https://ramvarna.com/products/5-mukhi-rudraksha-original-nepali-rudraksha-for-peace-harmony",
+      price: 799,
+      compareAtPrice: 2000,
+    },
   ];
+
+  const formatINR = (n: number) => new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(n));
+  const discountPct = (p: Product) =>
+    p.compareAtPrice && p.compareAtPrice > p.price
+      ? Math.round(((p.compareAtPrice - p.price) / p.compareAtPrice) * 100)
+      : 0;
 
   return (
     <section className="bg-white w-full section-spacing om-watermark">
@@ -76,9 +98,12 @@ const OurProducts = () => {
         {/* Enhanced Main Heading */}
         <div className="text-center mb-6 sm:mb-10 md:mb-14">
           <h2 className="section-heading text-[#F7971E] mb-3 sm:mb-4">
-            Our Products
+            Featured from RamVarna
           </h2>
-          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px]" />
+          <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto px-4">
+            Hand-picked spiritual essentials from our sister brand <a href="https://ramvarna.com" target="_blank" rel="noopener noreferrer" className="text-[#F7971E] font-semibold hover:underline">ramvarna.com</a>.
+          </p>
+          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mt-4" />
         </div>
 
         {/* Products Slider - 3 Cards at a Time */}
@@ -115,23 +140,37 @@ const OurProducts = () => {
                     <div className="group w-full max-w-[320px] xs:max-w-sm">
                       <div
                         className="bg-white rounded-xl border border-gray-200 h-[340px] xs:h-[360px] sm:h-96 transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#F7971E] cursor-pointer astro-card"
-                        onClick={() => window.open(product.link, '_blank')}
+                        onClick={() => window.open(product.link, '_blank', 'noopener,noreferrer')}
                       >
                         {/* Product Image */}
                         <div className="w-full h-[260px] xs:h-[280px] sm:h-72 overflow-hidden relative">
                           <img
                             src={product.image}
                             alt={product.name}
+                            loading="lazy"
                             className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${product.name === "Spiritual Products" ? "object-bottom" : ""
                               }`}
+                            onError={(e) => {
+                              const t = e.target as HTMLImageElement;
+                              if (!t.dataset.fallback) {
+                                t.dataset.fallback = "1";
+                                t.src = "/spiritual-products.svg";
+                              }
+                            }}
                           />
 
-                          {/* Hover Overlay with Visit Collection Text */}
+                          {/* Discount badge */}
+                          {discountPct(product) > 0 && (
+                            <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg">
+                              {`-${discountPct(product)}%`}
+                            </div>
+                          )}
+                          {/* Hover Overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                             <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                               <span className="text-white font-bold text-xl block mb-2">
                                 <span className="bg-gradient-to-r from-white to-[#F7971E] bg-clip-text text-transparent">
-                                  Visit Collection
+                                  Shop Now
                                 </span>
                               </span>
                               <svg className="w-6 h-6 text-white mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,16 +180,22 @@ const OurProducts = () => {
                           </div>
                         </div>
 
-                        {/* Product Info - Centered in Bottom White Area */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-white/95 p-4 flex items-center justify-center min-h-[60px]">
+                        {/* Product Info - Name + Price in Bottom White Area */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm px-3 py-2.5 flex flex-col items-center justify-center min-h-[70px] border-t border-orange-100">
                           <h3
-                            className="font-bold text-xl text-center transition-all duration-300 group-hover:scale-105"
+                            className="font-bold text-base sm:text-[15px] text-center leading-tight transition-all duration-300 group-hover:scale-105 line-clamp-1"
                             style={{ fontFamily: "Poppins" }}
                           >
                             <span className="bg-gradient-to-r from-[#556B2F] to-[#F7971E] bg-clip-text text-transparent group-hover:from-[#F7971E] group-hover:to-[#556B2F] transition-all duration-300">
                               {product.name}
                             </span>
                           </h3>
+                          <div className="flex items-baseline gap-2 mt-1">
+                            <span className="font-extrabold text-[#F7971E] text-base">{`₹${formatINR(product.price)}`}</span>
+                            {product.compareAtPrice && product.compareAtPrice > product.price && (
+                              <span className="text-gray-400 text-xs line-through">{`₹${formatINR(product.compareAtPrice)}`}</span>
+                            )}
+                          </div>
                         </div>
 
                         {/* Hover Effect Border */}
@@ -168,22 +213,36 @@ const OurProducts = () => {
                       <div key={index} className="group w-full max-w-[320px]">
                         <div
                           className="bg-white rounded-xl border border-gray-200 h-96 transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#F7971E] cursor-pointer"
-                          onClick={() => window.open(product.link, '_blank')}
+                          onClick={() => window.open(product.link, '_blank', 'noopener,noreferrer')}
                         >
                           {/* Product Image */}
                           <div className="w-full h-72 overflow-hidden relative">
                             <img
                               src={product.image}
                               alt={product.name}
+                              loading="lazy"
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              onError={(e) => {
+                                const t = e.target as HTMLImageElement;
+                                if (!t.dataset.fallback) {
+                                  t.dataset.fallback = "1";
+                                  t.src = "/spiritual-products.svg";
+                                }
+                              }}
                             />
 
-                            {/* Hover Overlay with Visit Collection Text */}
+                            {/* Discount badge */}
+                            {discountPct(product) > 0 && (
+                              <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg">
+                                {`-${discountPct(product)}%`}
+                              </div>
+                            )}
+                            {/* Hover Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                               <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                                 <span className="text-white font-bold text-xl block mb-2">
                                   <span className="bg-gradient-to-r from-white to-[#F7971E] bg-clip-text text-transparent">
-                                    Visit Collection
+                                    Shop Now
                                   </span>
                                 </span>
                                 <svg className="w-6 h-6 text-white mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,23 +277,37 @@ const OurProducts = () => {
                       <div key={index + 3} className="group w-80">
                         <div
                           className="bg-white rounded-xl border border-gray-200 h-96 transition-all duration-300 relative overflow-hidden shadow-lg hover:shadow-2xl hover:border-[#F7971E] cursor-pointer"
-                          onClick={() => window.open(product.link, '_blank')}
+                          onClick={() => window.open(product.link, '_blank', 'noopener,noreferrer')}
                         >
                           {/* Product Image */}
                           <div className="w-full h-72 overflow-hidden relative">
                             <img
                               src={product.image}
                               alt={product.name}
+                              loading="lazy"
                               className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${product.name === "Spiritual Products" ? "object-bottom" : ""
                                 }`}
+                              onError={(e) => {
+                                const t = e.target as HTMLImageElement;
+                                if (!t.dataset.fallback) {
+                                  t.dataset.fallback = "1";
+                                  t.src = "/spiritual-products.svg";
+                                }
+                              }}
                             />
 
-                            {/* Hover Overlay with Visit Collection Text */}
+                            {/* Discount badge */}
+                            {discountPct(product) > 0 && (
+                              <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-red-500 to-orange-500 text-white text-[10px] font-black px-2 py-1 rounded-full shadow-lg">
+                                {`-${discountPct(product)}%`}
+                              </div>
+                            )}
+                            {/* Hover Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                               <div className="text-center transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
                                 <span className="text-white font-bold text-xl block mb-2">
                                   <span className="bg-gradient-to-r from-white to-[#F7971E] bg-clip-text text-transparent">
-                                    Visit Collection
+                                    Shop Now
                                   </span>
                                 </span>
                                 <svg className="w-6 h-6 text-white mx-auto animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -316,6 +389,21 @@ const OurProducts = () => {
               </>
             )}
           </div>
+        </div>
+
+        {/* Shop All CTA */}
+        <div className="flex justify-center mt-8 sm:mt-10">
+          <a
+            href="https://ramvarna.com/collections"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#F7971E] to-orange-600 text-white font-bold text-sm sm:text-base px-6 sm:px-8 py-3 rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          >
+            Shop all on RamVarna
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
         </div>
       </div>
     </section>

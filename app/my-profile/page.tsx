@@ -236,7 +236,7 @@ export default function MyProfilePage() {
         {/* Golden glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-amber-500/10 rounded-full blur-[80px]"></div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-24 sm:pb-28">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-24 sm:pb-28">
           {/* Back button */}
           <button
             onClick={() => router.back()}

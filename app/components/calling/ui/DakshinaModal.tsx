@@ -161,7 +161,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                             </div>
                             <h3 className="text-xl font-bold text-white mb-2">Dakshina Sent!</h3>
                             <p className="text-amber-300/80 text-sm">
-                                ₹{selectedGift?.price} offered to {receiverName}
+                                ₹{Math.round(Number(selectedGift?.price) || 0)} offered to {receiverName}
                             </p>
                             <div className="mt-4 flex items-center gap-1">
                                 {[0, 1, 2, 3, 4].map(i => (
@@ -215,7 +215,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                                             <span className={`text-sm font-bold ${
                                                 isSelected ? 'text-amber-300' : 'text-white/70'
                                             }`}>
-                                                ₹{gift.price}
+                                                ₹{Math.round(Number(gift.price) || 0)}
                                             </span>
                                             {gift.name && (
                                                 <span className={`text-[10px] truncate max-w-full ${isSelected ? 'text-amber-200/60' : 'text-white/40'}`}>{gift.name}</span>
@@ -245,7 +245,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                                         <span>🙏</span>
                                         <span>
                                             {selectedGift
-                                                ? `Offer ₹${selectedGift.price} Dakshina`
+                                                ? `Offer ₹${Math.round(Number(selectedGift.price) || 0)} Dakshina`
                                                 : 'Select an amount'
                                             }
                                         </span>

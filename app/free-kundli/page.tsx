@@ -19,7 +19,7 @@ export default function FreeKundliPage() {
     state: ''
   });
 
-  const countries = ['India', 'United States', 'Canada', 'United Kingdom', 'Australia'];
+  const countries = ['India'];
   const states = [
     'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 
     'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 
@@ -138,6 +138,20 @@ export default function FreeKundliPage() {
 
   const downloadPDF = async (kundliData: any, currentViewMode: 'simple' | 'detailed' = 'simple') => {
     try {
+      let watermarkDataUrl = '/logo.png';
+      try {
+        const res = await fetch('/logo.png');
+        const blob = await res.blob();
+        watermarkDataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Watermark logo fetch failed, falling back to URL', e);
+      }
+
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(`
@@ -145,33 +159,72 @@ export default function FreeKundliPage() {
             <head>
               <title>Sobhagya Free Kundli - ${kundliData?.personalInfo?.name}</title>
               <style>
-                body { 
-                  font-family: Arial, sans-serif; 
-                  margin: 20px; 
+                @page { margin: 18mm 15mm; }
+                html, body {
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                }
+                body {
+                  font-family: Arial, sans-serif;
+                  margin: 20px;
                   position: relative;
                   min-height: 100vh;
                 }
+                /* Tiled diagonal text watermark — repeats on every printed page */
+                .watermark-text {
+                  position: fixed;
+                  top: 0;
+                  left: 0;
+                  width: 100vw;
+                  height: 100vh;
+                  pointer-events: none;
+                  z-index: 0;
+                  opacity: 0.08;
+                  /* Repeating diagonal "SOBHAGYA" text via SVG data URI so it
+                     reliably renders in the browser's print preview. */
+                  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='380' height='220'><text x='20' y='130' font-family='Arial, sans-serif' font-size='48' font-weight='900' fill='%23f97316' transform='rotate(-28 190 110)'>SOBHAGYA</text></svg>");
+                  background-repeat: repeat;
+                }
                 .watermark {
                   position: fixed;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -50%);
-                  opacity: 0.15;
-                  z-index: -1;
+                  top: 0;
+                  left: 0;
+                  width: 100vw;
+                  height: 100vh;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
                   pointer-events: none;
-                  width: 800px;
-                  height: 800px;
-                  background-image: url('/sobhagya-logo-bg.svg');
-                  background-size: contain;
-                  background-repeat: no-repeat;
-                  background-position: center;
+                  z-index: 0;
+                  opacity: 0.12;
+                }
+                .watermark img {
+                  width: 55%;
+                  max-width: 420px;
+                  height: auto;
+                  object-fit: contain;
+                }
+                body > *:not(.watermark):not(.watermark-text) { position: relative; z-index: 1; }
+                @media print {
+                  .watermark-text, .watermark {
+                    position: fixed !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    width: 100vw !important;
+                    height: 100vh !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                  }
+                  .watermark-text { opacity: 0.08 !important; }
+                  .watermark { opacity: 0.12 !important; display: flex !important; }
                 }
                 .header { text-align: center; margin-bottom: 30px; }
                 .personal-info { margin-bottom: 30px; }
                 .chart-container { margin-bottom: 30px; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background: transparent; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; background: transparent; }
+                th { background-color: rgba(242, 242, 242, 0.6); }
                 .house-meanings { margin-top: 30px; }
                 .twelfth-house { margin-top: 30px; background-color: #fff3cd; padding: 15px; border-radius: 5px; }
                 .twelfth-house h3 { color: #856404; margin-top: 0; }
@@ -201,8 +254,12 @@ export default function FreeKundliPage() {
               </style>
             </head>
             <body>
-              <!-- Sobhagya Logo Background Watermark -->
-              <div class="watermark"></div>
+              <!-- Repeating diagonal "SOBHAGYA" text watermark tiled across every page -->
+              <div class="watermark-text" aria-hidden="true"></div>
+              <!-- Sobhagya Logo Background Watermark (inlined as data URL for reliable print) -->
+              <div class="watermark" aria-hidden="true">
+                <img src="${watermarkDataUrl}" alt="Sobhagya" />
+              </div>
               
               <div class="header">
                 <h1>Sobhagya Free Kundli - ${kundliData?.personalInfo?.name}</h1>
@@ -593,7 +650,7 @@ export default function FreeKundliPage() {
                 <p><strong>Downloaded from Sobhagya for FREE</strong></p>
                 <p>This is a computer generated analysis</p>
                 <p>Consult our astrologers for better understanding</p>
-                <p>Visit: <strong>sobhagya.com</strong></p>
+                <p>Visit: <strong>sobhagya.in</strong></p>
               </div>
             </body>
           </html>

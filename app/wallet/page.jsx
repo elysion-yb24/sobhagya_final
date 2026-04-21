@@ -575,42 +575,50 @@ const WalletPage = () => {
                     return (
                       <motion.div
                         key={`${price}-${index}`}
-                        className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                        className={`relative p-5 rounded-[2rem] border-2 cursor-pointer transition-all duration-500 overflow-hidden ${
                           active
-                            ? "border-orange-500 bg-gradient-to-br from-orange-50 to-amber-50 shadow-lg shadow-orange-100"
-                            : "border-gray-200 bg-white hover:border-orange-300 hover:shadow-md"
+                            ? "border-orange-500 bg-gradient-to-br from-orange-50 via-white to-amber-50 shadow-2xl shadow-orange-200/50 scale-105 z-10"
+                            : "border-gray-100 bg-white hover:border-orange-200 hover:shadow-xl"
                         }`}
                         onClick={() => {
                           setSelectedPlanIdx(index);
                           setShowCustomInput(false);
                         }}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: active ? 1.05 : 1.02 }}
+                        whileTap={{ scale: 0.95 }}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.06 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
                       >
+                        {active && (
+                          <motion.div 
+                            layoutId="sacred-glow"
+                            className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-amber-500/5 animate-pulse" 
+                          />
+                        )}
                         {isBest && (
-                          <div className="absolute -top-2.5 -right-2">
-                            <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                              <Star className="h-3 w-3" />
+                          <div className="absolute top-2 right-2">
+                            <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md uppercase tracking-wider">
+                              <Star className="h-2.5 w-2.5 fill-white" />
                               Best
                             </div>
                           </div>
                         )}
-                        <div className="text-center">
-                          {/* Om symbol decoration */}
-                          <div className="text-2xl mb-1 opacity-30">🕉️</div>
-                          <div className="text-2xl font-bold text-gray-900 mb-1">
+                        <div className="relative z-10 text-center">
+                          <div className="text-2xl mb-2 opacity-40">🕉️</div>
+                          <div className={`text-2xl font-black mb-1 transition-colors ${active ? 'text-orange-600' : 'text-gray-900'}`}>
                             ₹{price}
                           </div>
-                          <div className="text-green-600 font-semibold text-sm mb-1">
-                            +{extra}% extra
+                          <div className={`font-bold text-sm mb-1 px-3 py-1 rounded-full inline-block ${active ? 'bg-orange-600 text-white shadow-md' : 'text-green-600 bg-green-50'}`}>
+                            +{extra}% Extra
                           </div>
-                          <div className="text-gray-500 text-xs">
-                            Get ₹{((price * extra) / 100).toFixed(0)} bonus
+                          <div className={`text-[10px] mt-2 font-bold uppercase tracking-widest ${active ? 'text-orange-500' : 'text-gray-400'}`}>
+                            Get ₹{((price * extra) / 100).toFixed(0)} Bonus
                           </div>
                         </div>
+                        {active && (
+                          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-amber-500" />
+                        )}
                       </motion.div>
                     );
                   })}
@@ -626,7 +634,7 @@ const WalletPage = () => {
               >
                 <button
                   onClick={() => setShowCustomInput(!showCustomInput)}
-                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-semibold transition-colors"
+                  className="flex items-center gap-2 text-orange-600 hover:text-orange-700 font-bold transition-colors bg-orange-50/50 px-4 py-2 rounded-full w-fit mx-auto border border-orange-100"
                 >
                   <Plus className="h-4 w-4" />
                   Enter Custom Amount
@@ -639,27 +647,30 @@ const WalletPage = () => {
                 <AnimatePresence>
                   {showCustomInput && (
                     <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl p-5 border border-orange-100"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="premium-glass rounded-[2rem] p-6 shadow-2xl border-white/60 max-w-sm mx-auto w-full"
                     >
                       <div className="relative">
                         <input
                           type="text"
                           value={customAmount}
                           onChange={handleCustomAmountChange}
-                          placeholder="Enter amount"
-                          className="w-full pl-10 pr-4 py-3.5 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-orange-400 text-lg font-semibold bg-white transition-all"
+                          placeholder="Min. ₹50"
+                          className="w-full pl-12 pr-4 py-4 border-2 border-orange-200 rounded-2xl focus:ring-4 focus:ring-orange-100 focus:border-orange-400 text-2xl font-black bg-white/80 transition-all text-center"
                         />
-                        <div className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-orange-400 text-lg font-bold">
+                        <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-orange-500 text-2xl font-black">
                           ₹
                         </div>
                       </div>
                       {customAmount && (
-                        <div className="mt-3 text-sm text-gray-600 flex items-center gap-2">
-                          <Gift className="h-4 w-4 text-green-500" />
-                          You'll get {bonusRate}% extra = <span className="font-semibold text-green-600">₹{bonusAmount} bonus</span>
+                        <div className="mt-4 text-xs font-bold text-gray-500 flex flex-col items-center gap-2">
+                          <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-full border border-green-100">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            <span>Extra {bonusRate}% Bonus Applied</span>
+                          </div>
+                          <p className="text-sm">You'll get <span className="text-orange-600 font-black">₹{bonusAmount} Bonus</span></p>
                         </div>
                       )}
                     </motion.div>
@@ -759,39 +770,57 @@ const WalletPage = () => {
               <AnimatePresence>
                 {paymentStatus && paymentStatus !== "success" && (
                   <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className={`rounded-2xl p-4 flex items-center gap-3 ${
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className={`rounded-[2rem] p-6 shadow-2xl border-2 flex flex-col items-center text-center gap-4 ${
                       paymentStatus === "pending"
-                        ? "bg-blue-50 border border-blue-200"
+                        ? "bg-blue-50 border-blue-200 shadow-blue-200/20"
                         : paymentStatus === "failed"
-                        ? "bg-red-50 border border-red-200"
-                        : "bg-yellow-50 border border-yellow-200"
+                        ? "bg-red-50 border-red-200 shadow-red-200/20"
+                        : "bg-yellow-50 border-yellow-200 shadow-yellow-200/20"
                     }`}
                   >
                     {paymentStatus === "pending" && (
                       <>
-                        <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                        <span className="text-blue-700 font-medium text-sm">
-                          Verifying payment… Please don't close this page.
-                        </span>
+                        <div className="relative">
+                          <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping" />
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="text-blue-900 font-black uppercase tracking-widest text-xs mb-1">Verifying Transaction</h4>
+                          <p className="text-blue-700 font-medium text-sm">
+                            Please stay on this page. We are securely confirming your balance update.
+                          </p>
+                        </div>
                       </>
                     )}
                     {paymentStatus === "failed" && (
                       <>
-                        <XCircle className="h-5 w-5 text-red-500" />
-                        <span className="text-red-700 font-medium text-sm">
-                          Payment failed. Please try again.
-                        </span>
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                          <XCircle className="h-7 w-7 text-red-500" />
+                        </div>
+                        <div>
+                          <h4 className="text-red-900 font-black uppercase tracking-widest text-xs mb-1">Payment Unsuccessful</h4>
+                          <p className="text-red-700 font-medium text-sm">
+                            Your bank or the gateway declined the transaction. No worries, you can try again.
+                          </p>
+                        </div>
                       </>
                     )}
                     {paymentStatus === "timeout" && (
                       <>
-                        <Clock className="h-5 w-5 text-yellow-600" />
-                        <span className="text-yellow-700 font-medium text-sm">
-                          Verification timed out. Check Transactions tab.
-                        </span>
+                        <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <Clock className="h-7 w-7 text-yellow-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-yellow-900 font-black uppercase tracking-widest text-xs mb-1">Verification Delayed</h4>
+                          <p className="text-yellow-700 font-medium text-sm">
+                             bestätigung is taking longer than usual. It will reflect in your transactions soon.
+                          </p>
+                        </div>
                       </>
                     )}
                   </motion.div>
@@ -960,6 +989,36 @@ const WalletPage = () => {
           )}
         </AnimatePresence>
       </div>
+      {/* sticky mobile footer for checkout */}
+      {activeTab === "recharge" && baseAmount > 0 && (
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/80 backdrop-blur-xl border-t border-orange-100 px-6 py-4 pb-safe shadow-[0_-8px_30px_rgb(251,146,60,0.1)] flex items-center justify-between gap-4"
+        >
+          <div>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Payable</p>
+            <p className="text-xl font-black text-orange-600">₹{payableAmount}</p>
+          </div>
+          <motion.button
+            onClick={handleRecharge}
+            disabled={isLoading}
+            className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+          >
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Zap size={16} /> Recharge</>}
+          </motion.button>
+        </motion.div>
+      )}
+
+      <style jsx>{`
+        .pb-safe {
+          padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        }
+        @keyframes sacred-pulse {
+          0%, 100% { opacity: 0.05; }
+          50% { opacity: 0.15; }
+        }
+      `}</style>
     </div>
   );
 };

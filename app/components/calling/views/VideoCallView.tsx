@@ -155,6 +155,20 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onDisconnect, receiverNam
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-black">
+            {/* ═══ DESKTOP BLURRED BACKDROP (md+) ═══ */}
+            <div className="hidden md:block absolute inset-0 z-0 pointer-events-none">
+                {isConnected && hasRemoteVideo ? (
+                    <div className="absolute inset-0 scale-110" style={{ filter: 'blur(40px)' }}>
+                        <RemoteVideo remoteTrack={remoteTrack} receiverName={receiverName} layout="pip" />
+                    </div>
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a2e] via-[#1a0e2e] to-[#0d0819]" />
+                )}
+                <div className="absolute inset-0 bg-black/60" />
+            </div>
+
+            {/* ═══ CENTERED MOBILE-ASPECT STAGE ═══ */}
+            <div className="relative h-full w-full md:w-auto md:mx-auto md:aspect-[10/16] md:max-w-full md:rounded-2xl md:shadow-2xl overflow-hidden bg-black">
             {/* ═══ BACKGROUND ═══ */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#1a0a2e] via-[#1a0e2e] to-[#0d0819] pointer-events-none" />
 
@@ -349,6 +363,9 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onDisconnect, receiverNam
                 gifts={gifts}
                 onFetchGifts={fetchGifts}
             />
+
+            </div>
+            {/* ═══ END CENTERED STAGE ═══ */}
 
             <style jsx global>{`
                 @keyframes vcv-ping-ring {

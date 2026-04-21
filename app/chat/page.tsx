@@ -9,6 +9,15 @@ import ChatInput from '../components/chat/ChatInput';
 import RatingModal from '../components/ui/RatingModal';
 import ReconnectionModal from '../components/ui/ReconnectionModal';
 import { useSessionManager } from '../components/astrologers/SessionManager';
+import {
+  fetchThreads,
+  fetchMessages,
+  createChatSession,
+  adaptThread,
+  fetchChatServiceStatus,
+  uploadChatFile,
+  type BackendMessage,
+} from '../utils/chat-api';
 
 // -------------------- Types --------------------
 interface Message {
@@ -50,7 +59,13 @@ interface PopulatedUser {
 interface Session {
   providerId: PopulatedUser;
   userId: PopulatedUser;
+  /** Historical name; stores the backend's `threadId` (persistent conversation key). */
   sessionId: string;
+  /** Alias for `sessionId` to improve readability. */
+  threadId?: string;
+  /** Current live session document id (backend `session._id`). Needed for
+   *  send_message, end_session socket events. May be null for ended threads. */
+  lastSessionId?: string | null;
   lastMessage: string;
   createdAt: string;
   status: 'active' | 'ended' | 'pending';
@@ -76,7 +91,7 @@ export default function ChatPage() {
   const [sessionDuration, setSessionDuration] = useState<string>('00:00:00');
   // Mobile-first: sidebar closed by default on mobile, open on desktop
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-  
+
   // Open sidebar on desktop by default
   useEffect(() => {
     const handleResize = () => {
@@ -86,10 +101,10 @@ export default function ChatPage() {
         setSidebarOpen(false);
       }
     };
-    
+
     // Set initial state
     handleResize();
-    
+
     // Listen for window resize
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -103,6 +118,7 @@ export default function ChatPage() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [automatedFlowCompleted, setAutomatedFlowCompleted] = useState<boolean>(false);
   const [sessionLeftDialogOpen, setSessionLeftDialogOpen] = useState<boolean>(false);
+  const [threadsLoading, setThreadsLoading] = useState<boolean>(true);
 
   // Refs
   const selectedSessionRef = useRef<Session | null>(selectedSession);
@@ -133,7 +149,7 @@ export default function ChatPage() {
     // Check for reconnection on page load
     const lastSession = localStorage.getItem('lastActiveSession');
     const wasDisconnectedFlag = localStorage.getItem('wasDisconnected') === 'true';
-    
+
     if (lastSession && wasDisconnectedFlag) {
       try {
         const sessionData = JSON.parse(lastSession);
@@ -154,6 +170,21 @@ export default function ChatPage() {
     }
   }, [userId]);
 
+  // Probe the chat backend once — surface outages so users don't sit on a
+  // spinner waiting for threads that will never load.
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const { ok } = await fetchChatServiceStatus();
+      if (cancelled) return;
+      if (!ok) {
+        toast.error('Chat service is temporarily unavailable. Please try again shortly.');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
   useEffect(() => {
     if (!userId) return;
     const interval = setInterval(() => {
@@ -162,30 +193,49 @@ export default function ChatPage() {
     return () => clearInterval(interval);
   }, [userId]);
 
+  // Load chat threads via REST (backend has no `get_all_sessions` socket event).
+  // `GET /api/chat/threads` returns the raw backend thread docs; we adapt each
+  // into the `Session` shape the UI already uses.
   useEffect(() => {
-    if (!socket || !isConnected || !userId || !userRole) return;
+    if (!userId) return;
 
-    const loadSessions = (append: boolean = false) => {
-      socket.emit('get_all_sessions', {
-        userId,
-        role: userRole,
+    let cancelled = false;
 
-      }, (response: any) => {
-        if (response.success && response.data?.sessions) {
-          if (append) {
-            setSessions(prev => [...prev, ...response.data.sessions]);
-          } else {
-            setSessions(response.data.sessions);
-          }
-          setHasMoreSessions(response.data.hasMore || false);
-        } else {
-          toast.error(response.message || 'Failed to fetch sessions');
-        }
-      });
+    setThreadsLoading(true);
+    (async () => {
+      try {
+        const { threads, hasMore } = await fetchThreads({ limit: 20 });
+        if (cancelled) return;
+        const adapted: Session[] = threads.map((t) => {
+          const view = adaptThread(t, userId);
+          return {
+            providerId: view.providerId,
+            userId: view.userId,
+            sessionId: view.sessionId,
+            threadId: view.threadId,
+            lastSessionId: view.lastSessionId,
+            lastMessage: view.lastMessage,
+            createdAt: view.createdAt,
+            status: view.status,
+            userUnreadCount: view.userUnreadCount,
+            providerUnreadCount: view.providerUnreadCount,
+          };
+        });
+        setSessions(adapted);
+        setHasMoreSessions(hasMore);
+        setSessionsPage(1);
+      } catch (err) {
+        console.error('[chat] Failed to fetch threads:', err);
+        if (!cancelled) toast.error('Failed to fetch chats');
+      } finally {
+        if (!cancelled) setThreadsLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-
-    loadSessions();
-  }, [socket, isConnected, userId, userRole]);
+  }, [userId]);
 
   // Listen for socket events
   useEffect(() => {
@@ -198,7 +248,7 @@ export default function ChatPage() {
         console.log('Setting wasDisconnected to true for session:', selectedSession.sessionId);
         setWasDisconnected(true);
         setLastActiveSession(selectedSession);
-        
+
         localStorage.setItem('lastActiveSession', JSON.stringify(selectedSession));
         localStorage.setItem('wasDisconnected', 'true');
       }
@@ -209,13 +259,13 @@ export default function ChatPage() {
       console.log('Socket reconnected');
       const storedDisconnected = localStorage.getItem('wasDisconnected') === 'true';
       const storedSession = localStorage.getItem('lastActiveSession');
-      
+
       console.log('Reconnection check - wasDisconnected:', wasDisconnected, 'storedDisconnected:', storedDisconnected);
       console.log('Current selectedSession:', selectedSession?.sessionId, 'storedSession:', storedSession ? JSON.parse(storedSession).sessionId : 'none');
-      
+
       if ((wasDisconnected || storedDisconnected) && (lastActiveSession || storedSession)) {
         const sessionToCheck = lastActiveSession || (storedSession ? JSON.parse(storedSession) : null);
-        
+
         // Check if we're still on the same session
         if (selectedSession?.sessionId === sessionToCheck?.sessionId) {
           console.log('Showing reconnection modal for session:', selectedSession?.sessionId);
@@ -297,9 +347,14 @@ export default function ChatPage() {
       }
     });
 
-    // Handle typing indicator
+    // Handle typing indicator.
+    // Backend emits just `{ isTyping }` scoped to the thread room.
     socket.on('typing', (data: any) => {
-      if (data.sessionId !== selectedSessionRef.current?.sessionId) return;
+      if (!selectedSessionRef.current) return;
+      if (data && data.isTyping === false) {
+        setTypingMessage(null);
+        return;
+      }
 
       setTypingMessage({
         id: 'typing',
@@ -309,43 +364,7 @@ export default function ChatPage() {
         messageType: 'text'
       });
 
-
-      // Clear typing indicator after 2 seconds (more responsive like WhatsApp)
-      setTimeout(() => {
-        setTypingMessage(null);
-      }, 2000);
-    });
-
-    // ✅ FIX: Handle session status updates
-    socket.on('session_started', (data: any) => {
-      if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        setSelectedSession(prev => prev ? { ...prev, status: 'active' } : prev);
-        const astrologerName = selectedSessionRef.current?.providerId?.name || 'Astrologer';
-        toast.success(`${astrologerName} has joined! Session started`);
-        const joinMsg: Message = {
-          id: `provider-joined-${Date.now()}`,
-          text: `🎉 ${astrologerName} has joined the session! You can now start your consultation.`,
-          sender: 'system',
-          timestamp: new Date().toISOString(),
-          messageType: 'informative',
-          isAutomated: true
-        };
-        setMessages(prev => [...prev, joinMsg]);
-        fetchUserBalance();
-
-        // Reset session duration timer for friend role users
-        if (userRole === 'friend') {
-          setSessionStartTime(new Date());
-          setSessionDuration('00:00:00');
-        }
-      }
-
-      // Update session in sidebar
-      setSessions(prev => prev.map(session =>
-        session.sessionId === data.sessionId
-          ? { ...session, status: 'active' }
-          : session
-      ));
+      setTimeout(() => setTypingMessage(null), 2000);
     });
 
     socket.on('session_ended', (data: any) => {
@@ -379,169 +398,44 @@ export default function ChatPage() {
       ));
     });
 
-    socket.on('session_resumed', (data: any) => {
+    socket.on('astrologer_joined', (data: any) => {
       if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        const newStatus = data.data?.status || 'pending';
-        setSelectedSession(prev => prev ? { ...prev, status: newStatus } : prev);
-    
-        if (newStatus === 'active') {
-          toast.success('Session resumed and astrologer is online!');
-        } else {
-          toast('Session resumed, waiting for astrologer...', { icon: '⏳' });
-          // Don't add waiting message here - let it be handled by sessionStatus
-        }
+        setSelectedSession(prev => prev ? { ...prev, status: 'active' } : prev);
+        const astrologerName = selectedSessionRef.current?.providerId?.name || 'Astrologer';
+        toast.success(`${astrologerName} has joined! Session started`);
+        const joinMsg: Message = {
+          id: `provider-joined-${Date.now()}`,
+          text: `🎉 ${astrologerName} has joined the session! You can now start your consultation.`,
+          sender: 'system',
+          timestamp: new Date().toISOString(),
+          messageType: 'informative',
+          isAutomated: true
+        };
+        setMessages(prev => [...prev, joinMsg]);
         fetchUserBalance();
+
+        // Reset session duration timer for friend role users
+        if (userRole === 'friend') {
+          setSessionStartTime(new Date());
+          setSessionDuration('00:00:00');
+        }
       }
-    
-    
+
+      // Update session in sidebar
       setSessions(prev => prev.map(session =>
         session.sessionId === data.sessionId
-          ? { ...session, status: data.data?.status || 'pending' }
+          ? { ...session, status: 'active' }
           : session
       ));
-    });
-    
-
-    socket.on('session_status_updated', (data: any) => {
-      if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        setSelectedSession(prev => prev ? { ...prev, status: data.status } : prev);
-        if (data.status === 'pending') {
-          toast('Session is pending, waiting for astrologer to join', { icon: 'ℹ️' });
-        }
-      }
-
-
-      setSessions(prev => prev.map(session =>
-        session.sessionId === data.sessionId
-          ? { ...session, status: data.status }
-          : session
-      ));
-    });
-
-   
-    socket.on('unread_count_updated', (data: any) => {
-      if (data.sessionId) {
-        setSessions(prev => prev.map(session =>
-          session.sessionId === data.sessionId
-            ? {
-              ...session,
-              userUnreadCount: data.userUnreadCount || 0,
-              providerUnreadCount: data.providerUnreadCount || 0
-            }
-            : session
-        ));
-      }
-    });
-
-    
-    socket.on('messages_marked_read', (data: any) => {
-      if (data.sessionId) {
-        setSessions(prev => prev.map(session =>
-          session.sessionId === data.sessionId
-            ? {
-              ...session,
-              userUnreadCount: data.userUnreadCount || 0,
-              providerUnreadCount: data.providerUnreadCount || 0
-            }
-            : session
-        ));
-        
-        // Update message status to read if it's the current session
-        if (selectedSessionRef.current?.sessionId === data.sessionId && data.readBy !== userId) {
-          setMessages(prev => prev.map(msg => {
-            if (msg.sender === 'user' && msg.deliveryStatus !== 'read') {
-              return { ...msg, deliveryStatus: 'read' };
-            }
-            return msg;
-          }));
-        }
-      }
-    });
-
-   
-    socket.on('session_deleted', (data: any) => {
-      if (data.sessionId) {
-        console.log('Session deleted from backend:', data.sessionId);
-        
-      
-        setSessions(prev => prev.filter(s => s.sessionId !== data.sessionId));
-        
-       
-        if (selectedSession?.sessionId === data.sessionId) {
-          setSelectedSession(null);
-          setMessages([]);
-          
-          
-          const newUrl = new URL(window.location.href);
-          newUrl.searchParams.delete('sessionId');
-          window.history.replaceState({}, '', newUrl.toString());
-          
-          toast.success('Session has been deleted');
-        }
-      }
-    });
-
-   
-    socket.on('automated_flow_started', (data: any) => {
-      console.log('Automated flow started for session:', data.sessionId);
-      if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        setAutomatedFlowCompleted(false);
-      }
-    });
-
-    socket.on('automated_flow_completed', (data: any) => {
-      console.log('Automated flow completed for session:', data.sessionId);
-
-      if (selectedSessionRef.current?.sessionId === data.sessionId) {
-        setAutomatedFlowCompleted(true);
-      }
-    });
-    // Listen for session created events
-    socket.on('session_created', (data: any) => {
-      console.log('Session created:', data);
-      if (data.sessionId) {
-        // Add the new session to the sessions list
-        setSessions(prev => {
-          const existingSession = prev.find(s => s.sessionId === data.sessionId);
-          if (!existingSession) {
-            return [...prev, {
-              sessionId: data.sessionId,
-              providerId: data.data?.providerId || { _id: data.sessionId, name: 'Astrologer', avatar: undefined },
-              userId: data.data?.userId || { _id: userId || 'temp-user', name: 'User', avatar: undefined },
-              lastMessage: 'Session created',
-              createdAt: new Date().toISOString(),
-              status: 'pending' as const,
-              userUnreadCount: 0,
-              providerUnreadCount: 0
-            }];
-          }
-          return prev;
-        });
-
-        router.push(`/chat?sessionId=${data.sessionId}`);
-        if (userId) {
-          socket.emit('start_automated_flow', {
-            sessionId: data.sessionId,
-            userId,
-            providerId: data.data?.providerId?._id || data.sessionId,
-            flowType: 'PENDING_SESSION_FLOW'
-          });
-        }
-      }
     });
 
     return () => {
       socket.off('receive_message');
       socket.off('typing');
-      socket.off('session_started');
+      socket.off('astrologer_joined');
       socket.off('session_ended');
-      socket.off('session_resumed');
-      socket.off('session_status_updated');
-      socket.off('unread_count_updated');
-      socket.off('messages_marked_read');
-      socket.off('automated_flow_started');
-      socket.off('automated_flow_completed');
-      socket.off('session_created');
+      socket.off('disconnect');
+      socket.off('connect');
     };
   }, [socket, userId]);
 
@@ -550,7 +444,7 @@ export default function ChatPage() {
       // Check if user is near bottom before auto-scrolling (like WhatsApp)
       const container = chatContainerRef.current;
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-      
+
       if (isNearBottom) {
         // Smooth scroll to bottom
         container.scrollTo({
@@ -621,6 +515,15 @@ export default function ChatPage() {
     }
   }, [selectedSession, hasRated, showRating, userRole]);
 
+  // Ensure we join the socket room whenever socket connects (or the selected
+  // session gains a live session id). Without this, selecting a chat before
+  // the socket finishes connecting means the user never receives `receive_message`.
+  useEffect(() => {
+    if (!socket || !isConnected || !userId) return;
+    if (!selectedSession || !selectedSession.lastSessionId) return;
+    joinRoom(selectedSession.sessionId, selectedSession.lastSessionId, false);
+  }, [socket, isConnected, userId, selectedSession?.sessionId, selectedSession?.lastSessionId]);
+
   // Reset unread count when a session is selected
   useEffect(() => {
     if (selectedSession && userRole) {
@@ -642,9 +545,9 @@ export default function ChatPage() {
 
   // Show reconnection modal when session is selected and we have a last active session
   useEffect(() => {
-    if (selectedSession && lastActiveSession && 
-        selectedSession.sessionId === lastActiveSession.sessionId && 
-        lastActiveSession.status === 'active') {
+    if (selectedSession && lastActiveSession &&
+      selectedSession.sessionId === lastActiveSession.sessionId &&
+      lastActiveSession.status === 'active') {
       console.log('Showing reconnection modal - session match found');
       setShowReconnectionModal(true);
     }
@@ -655,7 +558,7 @@ export default function ChatPage() {
     if (selectedSession && !showReconnectionModal) {
       const storedSession = localStorage.getItem('lastActiveSession');
       const wasDisconnectedFlag = localStorage.getItem('wasDisconnected') === 'true';
-      
+
       if (storedSession && wasDisconnectedFlag) {
         try {
           const sessionData = JSON.parse(storedSession);
@@ -691,55 +594,55 @@ export default function ChatPage() {
     }
   }, [selectedSession, wasDisconnected]);
 
-  // ✅ Check for ongoing automated flow when messages change
+  // Sync the URL (threadId / sessionId query params) with the selected session.
+  // Astrologer card navigates with `?threadId=<tid>&sessionId=<live sid>`.
+  // Sidebar navigates with `?sessionId=<tid>` (legacy naming — sessionId is the threadId).
   useEffect(() => {
-    if (selectedSession && messages.length > 0) {
-      // Small delay to ensure the flow check happens after messages are fully loaded
-      const timer = setTimeout(() => {
-        checkAndContinueAutomatedFlow(selectedSession);
-      }, 1000);
+    const threadParam = searchParams?.get('threadId') ?? null;
+    const sessionParam = searchParams?.get('sessionId') ?? null;
+    const threadIdFromUrl = threadParam || sessionParam;
+    // sessionParam is a live session id only when threadId is explicitly present.
+    const explicitSessionId = threadParam ? sessionParam : null;
 
-      return () => clearTimeout(timer);
-    }
-  }, [messages, selectedSession]);
-
-  useEffect(() => {
-    if (!searchParams || sessions.length === 0) return;
-    const sessionIdFromUrl = searchParams.get('sessionId');
-
-
-    if (!sessionIdFromUrl) {
-      setSelectedSession(null);
-      setMessages([]);
-      setShowRating(false);
-      setAutomatedFlowCompleted(false);
+    if (!threadIdFromUrl) {
+      // No session in URL — clear current selection.
+      if (selectedSession) {
+        setSelectedSession(null);
+        setMessages([]);
+        setShowRating(false);
+        setAutomatedFlowCompleted(false);
+      }
       return;
     }
 
-    // Check if user left and returned to session
-    const lastSession = localStorage.getItem('lastActiveSessionId');
-    const sessionLeftTimestamp = localStorage.getItem('sessionLeftTimestamp');
-    
-    if (lastSession === sessionIdFromUrl && sessionLeftTimestamp) {
-      const leftTime = parseInt(sessionLeftTimestamp);
-      const timeDiff = Date.now() - leftTime;
-      // If user left less than 30 minutes ago, show return dialog
-      if (timeDiff < 30 * 60 * 1000) {
-        setSessionLeftDialogOpen(true);
-        localStorage.removeItem('sessionLeftTimestamp');
-      }
-    }
+    // Wait until the threads list finishes loading before trying to match.
+    if (sessions.length === 0) return;
 
-    const foundSession = sessions.find(s => s.sessionId === sessionIdFromUrl);
+    const foundSession = sessions.find(s => s.sessionId === threadIdFromUrl);
     if (foundSession) {
-      setSelectedSession(foundSession);
+      // If the URL carries a fresh sessionId (e.g. just-created via
+      // createChatSession on the astrologer card), prefer it over whatever
+      // the REST threads list returned (which may be stale).
+      const resolved: Session = explicitSessionId && explicitSessionId !== threadIdFromUrl
+        ? { ...foundSession, lastSessionId: explicitSessionId, status: 'active' }
+        : foundSession;
+
+      // Skip if we're already viewing this thread with the same live session.
+      if (
+        selectedSession &&
+        selectedSession.sessionId === resolved.sessionId &&
+        selectedSession.lastSessionId === resolved.lastSessionId
+      ) {
+        return;
+      }
+
+      setSelectedSession(resolved);
       setMessages([]);
 
-      // Immediately reset unread count in UI when session is opened from URL
-      const unreadCount = (userRole === 'user' || userRole === 'friend') ? foundSession.userUnreadCount : foundSession.providerUnreadCount;
+      const unreadCount = (userRole === 'user' || userRole === 'friend') ? resolved.userUnreadCount : resolved.providerUnreadCount;
       if (unreadCount && unreadCount > 0) {
         setSessions(prev => prev.map(s =>
-          s.sessionId === foundSession.sessionId
+          s.sessionId === resolved.sessionId
             ? {
               ...s,
               userUnreadCount: (userRole === 'user' || userRole === 'friend') ? 0 : s.userUnreadCount,
@@ -749,147 +652,96 @@ export default function ChatPage() {
         ));
       }
 
-      if (socket && isConnected && userId) {
-        joinRoom(foundSession.sessionId, foundSession.providerId._id);
-        loadMessages(foundSession.sessionId);
+      // Always load messages via REST.
+      loadMessages(resolved.sessionId);
 
-        // Mark messages as read when session is opened from URL
+      // Join the room if we have a live session id.
+      const liveSid = resolved.lastSessionId;
+      if (socket && isConnected && userId && liveSid) {
+        joinRoom(resolved.sessionId, liveSid, false);
         if (unreadCount && unreadCount > 0) {
-          markMessagesAsRead(foundSession.sessionId);
+          markMessagesAsRead(resolved.sessionId);
         }
       }
 
       setHasRated(false);
-
-
-      if (foundSession.status === 'ended' && userRole !== 'friend') {
-        console.log('Session ended from URL, showing rating modal');
+      if (resolved.status === 'ended' && userRole !== 'friend') {
         setShowRating(true);
       }
     } else {
-      // Session not found in sessions list, create a new session
-      // This happens when clicking chat button from astrologers page
-      console.log('Session not found in sessions list, creating new session for:', sessionIdFromUrl);
-
-      if (socket && isConnected && userId) {
-        // Create a new session using session_update
-        socket.emit('session_update', {
-          sessionId: sessionIdFromUrl,
-          userId: userId,
-          role: userRole,
-          providerId: sessionIdFromUrl
-        }, (response: any) => {
-          if (response?.error) {
-            console.error('Failed to create session:', response.message);
-            toast.error('Failed to create chat session');
-          } else {
-            console.log('Session created successfully:', response);
-
-            // Create a temporary session object for display
-            const tempSession = {
-              sessionId: sessionIdFromUrl,
-              providerId: { _id: sessionIdFromUrl, name: 'Astrologer', avatar: undefined },
-              userId: { _id: userId || 'temp-user', name: 'User', avatar: undefined },
-              lastMessage: 'Session created',
-              createdAt: new Date().toISOString(),
-              status: 'pending' as const,
-              userUnreadCount: 0,
-              providerUnreadCount: 0
-            };
-
-            setSelectedSession(tempSession);
-            setMessages([]);
-            router.push(`/chat?sessionId=${sessionIdFromUrl}`);
-
-            // Join the room and load messages
-            joinRoom(sessionIdFromUrl, sessionIdFromUrl);
-            loadMessages(sessionIdFromUrl);
-
-            // // Start automated flow for pending session
-            // socket.emit('start_automated_flow', {
-            //   sessionId: sessionIdFromUrl,
-            //   userId: userId,
-            //   providerId: sessionIdFromUrl,
-            //   flowType: 'PENDING_SESSION_FLOW'
-            // });
-          }
-        });
-      }
-
+      // Thread not in our list — probably just created by the astrologer card
+      // flow before the threads REST call completes. We'll pick it up on the
+      // next list refresh. Don't emit any legacy `session_update` event here;
+      // the backend doesn't implement it.
+      console.log('[chat] Thread not in sessions list yet, waiting for refresh:', threadIdFromUrl);
       setHasRated(false);
     }
-  }, [searchParams, sessions, socket, isConnected, userId, hasRated]);
+  }, [searchParams, sessions, userId, hasRated, socket, isConnected, userRole]);
 
-  // -------------------- Handlers --------------------
+  // ... (rest of the code remains the same)
+  // thread doc's `_id`. The REST endpoint returns descending-sorted messages,
+  // so we reverse them for chronological display.
+  const loadMessages = async (threadId: string) => {
+    if (!threadId) return;
+    try {
+      const raw = await fetchMessages(threadId, { limit: 20 });
+      const ordered = raw.slice().reverse(); // oldest first
+      const currentUserId = String(userId || '');
 
-  const loadMessages = (sessionId: string) => {
-    if (!socket || !isConnected) return;
-    socket.emit('get_messages', { sessionId, limit: 10, skip: 0, userId }, (response: any) => {
-      if (response?.success && response.data?.messages) {
-        const formattedMessages = response.data.messages.map((msg: any) => {
-          // ✅ FIX: Better sender detection for loaded messages
-          let sender: 'user' | 'astrologer' | 'system' = 'astrologer';
-
-          const sentById = msg.sentBy; // For loaded messages, sentBy is at top level
-
-          if (msg.sentBy === 'system' || msg.isAutomated || msg.sentByName === 'Support Bot' || msg.sentByName === 'Sobhagya') {
-            sender = 'system';
-          } else {
-            const currentUserId = String(userId);
-
-            if (String(sentById) === currentUserId) {
-              sender = 'user';
-            } else {
-              sender = 'astrologer';
-            }
-          }
-
-          return {
-            id: msg._id || `msg-${Date.now()}`,
-            text: msg.message,
-            sender,
-            timestamp: msg.createdAt || new Date().toISOString(),
-            messageType: msg.messageType || 'text',
-            fileLink: msg.fileLink,
-            sentByName: msg.sentByName,
-            sentByProfileImage: msg.sentByProfileImage,
-            messageId: msg.messageId,
-            options: msg.options || [],
-            isAutomated: msg.isAutomated || false,
-            deliveryStatus: sender === 'user' ? 'delivered' : undefined
-          };
-        });
-        setMessages(formattedMessages);
-
-        // ✅ Check for ongoing automated flow after messages are loaded
-        if (selectedSession) {
-          setTimeout(() => {
-            checkAndContinueAutomatedFlow(selectedSession);
-          }, 500); // Small delay to ensure messages are set
+      const formattedMessages: Message[] = ordered.map((msg) => {
+        let sender: 'user' | 'astrologer' | 'system' = 'astrologer';
+        if (msg.messageType === 'info' || (msg as any).isAutomated) {
+          sender = 'system';
+        } else if (String(msg.sentBy) === currentUserId) {
+          sender = 'user';
         }
+        const uiType: Message['messageType'] =
+          msg.messageType === 'info' || msg.messageType === 'informative'
+            ? 'informative'
+            : (msg.messageType as Message['messageType']) || 'text';
+
+        return {
+          id: msg.chatId || msg._id || `msg-${Date.now()}-${Math.random()}`,
+          text: msg.message || '',
+          sender,
+          timestamp: msg.createdAt || new Date().toISOString(),
+          messageType: uiType,
+          fileLink: msg.fileLink,
+          voiceMessageDuration: msg.voiceMessageDuration,
+          isAutomated: Boolean((msg as any).isAutomated),
+          deliveryStatus: sender === 'user' ? 'delivered' : undefined,
+        };
+      });
+      setMessages(formattedMessages);
+
+      // ✅ Check for ongoing automated flow after messages are loaded
+      if (selectedSession) {
+        setTimeout(() => {
+          checkAndContinueAutomatedFlow(selectedSession);
+        }, 500); // Small delay to ensure messages are set
       }
-    });
+    } catch (err) {
+      console.error('[chat] loadMessages failed:', err);
+    }
   };
 
+  // Mark messages as read via backend socket `read_message` event.
+  // Backend signature: { readBy, providerId, userId }. Argument name `sessionId`
+  // here is a UI alias for threadId (kept for backwards compatibility).
   const markMessagesAsRead = (sessionId: string) => {
-    if (!socket || !isConnected || !userId) return;
+    if (!socket || !userId) return;
 
-    // Find the session to get the correct IDs
     const session = sessions.find(s => s.sessionId === sessionId);
     if (!session) return;
 
-    // Emit read_message event to mark messages as read
     socket.emit('read_message', {
       readBy: userId,
       providerId: session.providerId._id,
       userId: session.userId._id,
-      sessionId: sessionId
     }, (response: any) => {
       if (response?.error) {
         console.error('Failed to mark messages as read:', response.message);
       } else {
-        console.log('Messages marked as read successfully');
-        // Update the session's unread count to 0 based on user role
         setSessions(prev => prev.map(s =>
           s.sessionId === sessionId
             ? {
@@ -906,12 +758,12 @@ export default function ChatPage() {
   const handleSelectSession = (session: Session) => {
     setSelectedSession(session);
     // Don't reset flow state - let backend handle continuation
-    
+
     // Close sidebar on mobile after selecting session
     if (typeof window !== 'undefined' && window.innerWidth < 768) { // md breakpoint
       setSidebarOpen(false);
     }
-    
+
     router.push(`/chat?sessionId=${session.sessionId}`);
 
     // Immediately reset unread count in UI when session is selected
@@ -928,77 +780,50 @@ export default function ChatPage() {
       ));
     }
 
-    if (socket && isConnected && userId) {
-      joinRoom(session.sessionId, session.providerId._id);
-      loadMessages(session.sessionId);
+    // Load messages via REST (no socket dependency).
+    loadMessages(session.sessionId);
 
-      // Mark messages as read when user clicks on session
+    // Join the socket room so we receive realtime `receive_message` events.
+    // `joinRoom` needs both threadId (= session.sessionId) and the live
+    // sessionId (= session.lastSessionId). If lastSessionId is missing the
+    // thread is considered ended and there's nothing to join.
+    if (socket && isConnected && userId && session.lastSessionId) {
+      joinRoom(session.sessionId, session.lastSessionId, false);
       if (unreadCount && unreadCount > 0) {
         markMessagesAsRead(session.sessionId);
       }
-
-      // Start automated flow for pending sessions
-      if (session.status === 'pending' && (userRole === 'user' || userRole === 'friend')) {
-        socket.emit('start_automated_flow', {
-          sessionId: session.sessionId,
-          userId: userId,
-          providerId: session.providerId._id,
-          flowType: 'PENDING_SESSION_FLOW'
-        });
-      }
-
-      // ✅ Check for ongoing automated flow after a short delay
-      setTimeout(() => {
-        checkAndContinueAutomatedFlow(session);
-      }, 1500);
     }
 
-    // Reset rating state for new session
     setHasRated(false);
-
-    // Show rating modal if session is ended and user hasn't rated yet (only for non-friend users)
     if (session.status === 'ended' && userRole !== 'friend') {
-      console.log('Session ended, showing rating modal');
       setShowRating(true);
     }
   };
 
-  // ✅ NEW: Check if session needs automated flow continuation
-  const checkAndContinueAutomatedFlow = (session: Session) => {
-    if (!socket || !isConnected || !userId || !(userRole === 'user' || userRole === 'friend')) {
-      return;
-    }
-
-    // Check if the last message in the session is from the bot/system and has options
-    // This indicates an ongoing automated flow that needs continuation
-    const lastMessage = messages[messages.length - 1];
-    const hasOngoingFlow = lastMessage &&
-      (lastMessage.sender === 'system' || lastMessage.isAutomated) &&
-      lastMessage.options &&
-      lastMessage.options.length > 0;
-
-    if (hasOngoingFlow) {
-      console.log('🔄 Detected ongoing automated flow, restarting...');
-      socket.emit('start_automated_flow', {
-        sessionId: session.sessionId,
-        userId: userId,
-        providerId: session.providerId._id
-        // Let backend determine correct flowType from session state
-      });
-    }
-  };
+  // Backend chat-service does NOT implement `start_automated_flow` /
+  // `user_response` events, so the automated-flow branch is gone. We keep
+  // `checkAndContinueAutomatedFlow` as a typed no-op so existing call sites
+  // don't break at compile time.
+  const checkAndContinueAutomatedFlow = (_session: Session) => { /* no-op */ };
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedSession || !socket || !userId || isSubmitting) return;
-    
+
+    // Backend requires a live session to accept messages.
+    const liveSessionId = selectedSession.lastSessionId;
+    if (!liveSessionId) {
+      toast.error('Session has ended. Start a new chat to continue.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     const messageToSend = newMessage;
-    setNewMessage(''); // Clear input immediately for better UX
+    setNewMessage('');
 
     const clientMessageId = `temp-${Date.now()}`;
 
-    // Add optimistic message immediately for instant feedback
+    // Optimistic local echo.
     const optimisticMessage: Message = {
       id: clientMessageId,
       text: messageToSend,
@@ -1008,152 +833,123 @@ export default function ChatPage() {
       clientMessageId,
       deliveryStatus: 'sent'
     };
-
     setMessages(prev => [...prev, optimisticMessage]);
+    // Track the clientMessageId so the echoed `receive_message` from the
+    // server doesn't add a duplicate bubble.
+    sentMessageIds.current.add(clientMessageId);
 
-    // Check if we're in an automated flow waiting for user input
-    const lastBotMessage = [...messages].reverse().find(m => 
-      (m.isAutomated || m.sender === 'system') && 
-      m.messageId && 
-      (!m.options || m.options.length === 0) &&
-      m.messageType !== 'options'
-    );
-
-    // If there's an automated message without options, it's waiting for text input
-    if (lastBotMessage && lastBotMessage.messageId) {
-      // Send as user_response for automated flow
-      socket.emit('user_response', {
-        sessionId: selectedSession.sessionId,
-        selectedOptionId: messageToSend, // Backend expects this parameter name
-        messageId: lastBotMessage.messageId,
-        userId: userId
-      }, (response: any) => {
-        setIsSubmitting(false);
-        if (response?.error) {
-          toast.error('Failed to send message');
-          setNewMessage(messageToSend);
-          setMessages(prev => prev.filter(m => m.clientMessageId !== clientMessageId));
-        } else {
-          // Update delivery status to delivered
-          setMessages(prev => prev.map(m => 
-            m.clientMessageId === clientMessageId 
-              ? { ...m, deliveryStatus: 'delivered' }
-              : m
-          ));
-        }
-      });
-    } else {
-      // Send as regular message (no messageId to prevent double processing)
-      socket.emit(
-        'send_message',
-        {
-          message: messageToSend,
-          sessionId: selectedSession.sessionId,
-          sentBy: userId,
-          messageType: 'text',
-          clientMessageId
-          // Deliberately NOT sending messageId to prevent backend double processing
-        },
+    socket.emit(
+      'send_message',
+      {
+        sessionId: liveSessionId,
+        threadId: selectedSession.sessionId,
+        sentBy: userId,
+        message: messageToSend,
+        messageType: 'text',
+        clientMessageId,
+      },
       (response: any) => {
         setIsSubmitting(false);
-        if (response?.error) {
-          toast.error('Failed to send message');
-          setNewMessage(messageToSend); // restore input if failed
-          // Remove optimistic message on error
+        if (!response?.success) {
+          toast.error(response?.message || 'Failed to send message');
+          setNewMessage(messageToSend);
           setMessages(prev => prev.filter(m => m.clientMessageId !== clientMessageId));
-        } else {
-          // Update delivery status to delivered
-          setMessages(prev => prev.map(m => 
-            m.clientMessageId === clientMessageId 
-              ? { ...m, deliveryStatus: 'delivered' }
-              : m
-          ));
+          return;
         }
+        setMessages(prev => prev.map(m =>
+          m.clientMessageId === clientMessageId
+            ? { ...m, deliveryStatus: 'delivered', id: response?.data?.chatId || m.id }
+            : m
+        ));
       }
     );
-    }
   };
 
-  // Handle typing indicators
+  // Backend `typing` event signature: { threadId, isTyping }. Broadcast is
+  // room-scoped so no extra identifiers are needed.
   const handleTyping = () => {
     if (!selectedSession || !socket || !userId) return;
-    socket.emit('typing', {
-      sessionId: selectedSession.sessionId,
-      userId: userId,
-      from: 'User'
-    });
+    socket.emit('typing', { threadId: selectedSession.sessionId, isTyping: true });
   };
 
   const handleStopTyping = () => {
     if (!selectedSession || !socket || !userId) return;
-    socket.emit('stop_typing', {
-      sessionId: selectedSession.sessionId,
-      userId: userId
-    });
+    socket.emit('typing', { threadId: selectedSession.sessionId, isTyping: false });
   };
 
-  // ✅ NEW: Handle option selection
-  const handleOptionSelect = (optionId: string, messageId: string) => {
-    if (!selectedSession || !socket || !userId) return;
+  // Option/menu selection is not supported by the current backend — leave
+  // as a no-op so JSX callers (ChatMessages onOptionSelect) don't crash.
+  const handleOptionSelect = (_optionId: string, _messageId: string) => { /* no-op */ };
 
-    // Find the option text for optimistic update
-    const optionMessage = messages.find(m => m.messageId === messageId);
-    const selectedOption = optionMessage?.options?.find(o => o.optionId === optionId);
-    
-    let optimisticClientMessageId = '';
-    
-    if (selectedOption) {
-      // Add optimistic user message immediately
-      optimisticClientMessageId = `opt-${Date.now()}`;
-      const optimisticMessage: Message = {
-        id: optimisticClientMessageId,
-        text: selectedOption.optionText,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-        messageType: 'text',
-        clientMessageId: optimisticClientMessageId,
-        deliveryStatus: 'sent'
-      };
-      setMessages(prev => [...prev, optimisticMessage]);
+  const handleFileUpload = async (file: File) => {
+    if (!selectedSession || !socket || !userId) return;
+    const liveSessionId = selectedSession.lastSessionId;
+    if (!liveSessionId) {
+      toast.error('Session has ended. Start a new chat to continue.');
+      return;
     }
 
-    // Send option selection to server using the correct event name
-    socket.emit('user_response', {
-      sessionId: selectedSession.sessionId,
-      selectedOptionId: optionId,
-      messageId: messageId,
-      userId: userId
-    }, (response: any) => {
-      if (response?.error) {
-        console.error('Failed to process option selection:', response.message);
-        toast.error('Failed to process selection');
-        // Remove optimistic message on error using the stored ID
-        if (selectedOption && optimisticClientMessageId) {
-          setMessages(prev => prev.filter(m => m.clientMessageId !== optimisticClientMessageId));
+    const uploaded = await uploadChatFile(file);
+    if (!uploaded?.fileLink) {
+      toast.error('File upload failed');
+      return;
+    }
+
+    let messageType: 'image' | 'video' | 'file' = 'file';
+    if (file.type.startsWith('image/')) messageType = 'image';
+    else if (file.type.startsWith('video/')) messageType = 'video';
+
+    const clientMessageId = `temp-${Date.now()}`;
+    const optimistic: Message = {
+      id: clientMessageId,
+      text: file.name,
+      sender: 'user',
+      timestamp: new Date().toISOString(),
+      messageType,
+      fileLink: uploaded.fileLink,
+      clientMessageId,
+      deliveryStatus: 'sent',
+    };
+    setMessages((prev) => [...prev, optimistic]);
+    sentMessageIds.current.add(clientMessageId);
+
+    socket.emit(
+      'send_message',
+      {
+        sessionId: liveSessionId,
+        threadId: selectedSession.sessionId,
+        sentBy: userId,
+        message: file.name,
+        messageType,
+        fileLink: uploaded.fileLink,
+        clientMessageId,
+      },
+      (response: any) => {
+        if (!response?.success) {
+          toast.error(response?.message || 'Failed to send file');
+          setMessages((prev) => prev.filter((m) => m.clientMessageId !== clientMessageId));
+          return;
         }
-      } else {
-        console.log('Option selection processed successfully');
-        // Update delivery status to delivered
-        if (optimisticClientMessageId) {
-          setMessages(prev => prev.map(m => 
-            m.clientMessageId === optimisticClientMessageId 
-              ? { ...m, deliveryStatus: 'delivered' }
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.clientMessageId === clientMessageId
+              ? { ...m, deliveryStatus: 'delivered', id: response?.data?.chatId || m.id }
               : m
-          ));
-        }
+          )
+        );
       }
-    });
+    );
   };
 
   const handleEndSession = () => setShowEndSessionDialog(true);
 
   const confirmEndSession = () => {
     if (!selectedSession || !socket || !userId) return;
-    socket.emit('end_session', { 
-      threadId: selectedSession.sessionId, 
-      sessionId: (selectedSession as any).lastSessionId || selectedSession.sessionId, 
+    socket.emit('end_session', {
+      threadId: selectedSession.sessionId,
+      sessionId: (selectedSession as any).lastSessionId || selectedSession.sessionId,
       role: userRole === 'friend' ? 'friend' : 'user',
-      reason: 'user_ended' 
+      reason: 'user_ended'
     });
     setShowEndSessionDialog(false);
   };
@@ -1249,15 +1045,15 @@ export default function ChatPage() {
     }, (response: any) => {
       if (response.success) {
         toast.success('Session deleted successfully');
-        
+
 
         setSessions(prev => prev.filter(s => s.sessionId !== session.sessionId));
-        
+
         // If this was the selected session, clear selection and update URL
         if (selectedSession?.sessionId === session.sessionId) {
           setSelectedSession(null);
           setMessages([]);
-          
+
           // Remove sessionId from URL
           const newUrl = new URL(window.location.href);
           newUrl.searchParams.delete('sessionId');
@@ -1279,13 +1075,13 @@ export default function ChatPage() {
 
   const handleRestartSession = () => {
     if (!selectedSession || !socket || !userId) return;
-    
+
     setShowReconnectionModal(false);
     setLastActiveSession(null);
-    
+
     // Clear the current session and start fresh
     setMessages([]);
-    
+
     // Emit a restart session event to the server
     socket.emit('restart_session', {
       sessionId: selectedSession.sessionId,
@@ -1308,7 +1104,7 @@ export default function ChatPage() {
     setLastActiveSession(null);
   };
 
-  
+
   const triggerReconnectionModal = () => {
     if (selectedSession) {
       console.log('Manually triggering reconnection modal');
@@ -1370,14 +1166,14 @@ export default function ChatPage() {
 
   // -------------------- UI --------------------
   return (
-    <div className="fixed inset-0 bg-white z-40 md:top-16 lg:top-20" style={{ 
+    <div className="fixed inset-0 bg-white z-40 md:top-16 lg:top-20" style={{
       top: '64px', // Mobile header height
       WebkitOverflowScrolling: 'touch' // iOS smooth scrolling
     }}>
       <div className="flex h-full overflow-hidden">
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
-          <div 
+          <div
             className="absolute inset-0 bg-black bg-opacity-50 z-40 md:hidden"
             onClick={toggleSidebar}
           />
@@ -1386,22 +1182,22 @@ export default function ChatPage() {
         {/* Sidebar */}
         <div className={`
           transition-all duration-300 ease-in-out overflow-hidden bg-white
-          ${sidebarOpen 
+          ${sidebarOpen
             ? 'w-full sm:w-80 md:w-80' // Mobile: full width, SM+: 320px
             : 'w-0'
           }
           ${sidebarOpen ? 'absolute md:relative z-50 md:z-auto' : 'relative'}
         `}
-        style={{ 
-          height: '100%'
-        }}>
+          style={{
+            height: '100%'
+          }}>
           <Sidebar
             sessions={sessions}
             selectedSession={selectedSession}
             userRole={userRole}
             userBalance={userBalance}
             balanceLoading={false}
-            loading={!isConnected}
+            loading={threadsLoading}
             error={null}
             onSelectSession={handleSelectSession}
             onRefreshBalance={fetchUserBalance}
@@ -1414,205 +1210,206 @@ export default function ChatPage() {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 min-w-0" style={{ 
+        <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 min-w-0" style={{
           height: '100%',
           WebkitOverflowScrolling: 'touch'
         }}>
-        {/* Mobile hamburger menu - always show on mobile */}
-        <div className="md:hidden bg-white px-3 py-2 border-b border-gray-200 flex-shrink-0 shadow-sm">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={toggleSidebar}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
-            >
-              <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            {selectedSession && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                  <span className="text-orange-600 text-sm font-semibold">
-                    {typeof selectedSession.providerId !== 'string' 
-                      ? selectedSession.providerId?.name?.charAt(0) || 'A'
-                      : 'A'
+          {/* Mobile hamburger menu - always show on mobile */}
+          <div className="md:hidden bg-white px-3 py-2 border-b border-gray-200 flex-shrink-0 shadow-sm">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={toggleSidebar}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors active:scale-95"
+              >
+                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              {selectedSession && (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                    <span className="text-orange-600 text-sm font-semibold">
+                      {typeof selectedSession.providerId !== 'string'
+                        ? selectedSession.providerId?.name?.charAt(0) || 'A'
+                        : 'A'
+                      }
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-900">
+                    {typeof selectedSession.providerId !== 'string'
+                      ? selectedSession.providerId?.name || 'Astrologer'
+                      : 'Astrologer'
                     }
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-900">
-                  {typeof selectedSession.providerId !== 'string' 
-                    ? selectedSession.providerId?.name || 'Astrologer'
-                    : 'Astrologer'
-                  }
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {selectedSession ? (
-          <>
-            {/* ✅ Header shows User info if astrologer (friend role) */}
-            <div className="flex-shrink-0">
-              <ChatHeader
-                selectedSession={selectedSession}
-                userRole={userRole}
-                onEndSession={handleEndSession}
-                onContinueChat={handleContinueChat}
-                insufficientBalance={false}
-                endingSession={false}
-                sessionDuration={userRole === 'friend' ? sessionDuration : null}
-
-              />
+              )}
             </div>
+          </div>
 
-            {/* Chat messages */}
-            <div className="flex-1 overflow-hidden relative">
-              <ChatMessages
-                ref={chatContainerRef}
-                messages={messages}
-                typingMessage={typingMessage}
-                userId={userId}
-                userRole={userRole}
-                selectedSession={selectedSession}
-                sessionStatus={selectedSession.status}
-                automatedFlowCompleted={automatedFlowCompleted}
-                onReplyToMessage={() => { }}
-                onOptionSelect={handleOptionSelect}
-              />
-
-              {/* ✅ Rating only for users, not for astrologers (friend) */}
-              {userRole !== 'friend' && (
-                <RatingModal
-                  isOpen={showRating}
-                  onRatingSubmit={handleRatingSubmit}
+          {selectedSession ? (
+            <>
+              {/* ✅ Header shows User info if astrologer (friend role) */}
+              <div className="flex-shrink-0">
+                <ChatHeader
+                  selectedSession={selectedSession}
+                  userRole={userRole}
+                  onEndSession={handleEndSession}
                   onContinueChat={handleContinueChat}
-                  onClose={handleCloseRating}
+                  insufficientBalance={false}
+                  endingSession={false}
+                  sessionDuration={userRole === 'friend' ? sessionDuration : null}
+
                 />
+              </div>
+
+              {/* Chat messages */}
+              <div className="flex-1 overflow-hidden relative">
+                <ChatMessages
+                  ref={chatContainerRef}
+                  messages={messages}
+                  typingMessage={typingMessage}
+                  userId={userId}
+                  userRole={userRole}
+                  selectedSession={selectedSession}
+                  sessionStatus={selectedSession.status}
+                  automatedFlowCompleted={automatedFlowCompleted}
+                  onReplyToMessage={() => { }}
+                  onOptionSelect={handleOptionSelect}
+                />
+
+                {/* ✅ Rating only for users, not for astrologers (friend) */}
+                {userRole !== 'friend' && (
+                  <RatingModal
+                    isOpen={showRating}
+                    onRatingSubmit={handleRatingSubmit}
+                    onContinueChat={handleContinueChat}
+                    onClose={handleCloseRating}
+                  />
+                )}
+
+                {/* Reconnection Modal */}
+                <ReconnectionModal
+                  isOpen={showReconnectionModal}
+                  onContinue={handleContinueSession}
+                  onRestart={handleRestartSession}
+                  onClose={handleCloseReconnectionModal}
+                  astrologerName={selectedSession?.providerId?.name || 'Astrologer'}
+                />
+              </div>
+
+              {/* Show waiting loader if flow completed and session pending */}
+              {selectedSession.status === 'pending' && automatedFlowCompleted && (
+                <div className="flex-shrink-0 px-3 md:px-4 py-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-t border-orange-200">
+                  <div className="flex items-center justify-center gap-2 md:gap-3">
+                    <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+                    <span className="text-orange-700 text-xs md:text-sm font-medium text-center">
+                      Waiting for {typeof selectedSession.providerId !== 'string' ? selectedSession.providerId?.name || 'astrologer' : 'astrologer'} to join...
+                    </span>
+                  </div>
+                </div>
               )}
 
-              {/* Reconnection Modal */}
-              <ReconnectionModal
-                isOpen={showReconnectionModal}
-                onContinue={handleContinueSession}
-                onRestart={handleRestartSession}
-                onClose={handleCloseReconnectionModal}
-                astrologerName={selectedSession?.providerId?.name || 'Astrologer'}
-              />
-            </div>
-
-            {/* Show waiting loader if flow completed and session pending */}
-            {selectedSession.status === 'pending' && automatedFlowCompleted && (
-              <div className="flex-shrink-0 px-3 md:px-4 py-3 bg-gradient-to-r from-orange-50 to-yellow-50 border-t border-orange-200">
-                <div className="flex items-center justify-center gap-2 md:gap-3">
-                  <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-                  <span className="text-orange-700 text-xs md:text-sm font-medium text-center">
-                    Waiting for {typeof selectedSession.providerId !== 'string' ? selectedSession.providerId?.name || 'astrologer' : 'astrologer'} to join...
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* ✅ Input disabled until session active for astrologers */}
-            <div className="flex-shrink-0">
-              <ChatInput
-                newMessage={newMessage}
-                setNewMessage={setNewMessage}
-                onSendMessage={handleSendMessage}
-                onTyping={handleTyping}
-                onStopTyping={handleStopTyping}
-                isDisabled={
-                  isSubmitting ||
-                  (userRole === 'friend' && selectedSession.status !== 'active') ||
-                  selectedSession.status === 'ended' ||
-                  (userBalance !== null && userBalance <= 0 && userRole !== 'friend')
-                }
-              />
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center overflow-hidden relative p-4">
-            {/* Empty state with Sobhagya Logo */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="opacity-5 md:opacity-10 blur-sm transform scale-75 md:scale-150">
-                <img
-                  src="/sobhagya-logo.svg"
-                  alt="Sobhagya Logo"
-                  className="w-48 h-48 md:w-96 md:h-96 object-contain"
+              {/* ✅ Input disabled until session active for astrologers */}
+              <div className="flex-shrink-0">
+                <ChatInput
+                  newMessage={newMessage}
+                  setNewMessage={setNewMessage}
+                  onSendMessage={handleSendMessage}
+                  onTyping={handleTyping}
+                  onStopTyping={handleStopTyping}
+                  onFileUpload={handleFileUpload}
+                  isDisabled={
+                    isSubmitting ||
+                    (userRole === 'friend' && selectedSession.status !== 'active') ||
+                    selectedSession.status === 'ended' ||
+                    (userBalance !== null && userBalance <= 0 && userRole !== 'friend')
+                  }
                 />
               </div>
-            </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center overflow-hidden relative p-4">
+              {/* Empty state with Sobhagya Logo */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="opacity-5 md:opacity-10 blur-sm transform scale-75 md:scale-150">
+                  <img
+                    src="/sobhagya-logo.svg"
+                    alt="Sobhagya Logo"
+                    className="w-48 h-48 md:w-96 md:h-96 object-contain"
+                  />
+                </div>
+              </div>
 
-            <div className="text-center relative z-10 max-w-sm mx-auto">
-              <div className="w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
-                <svg className="w-8 h-8 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <h3 className="text-gray-700 text-lg md:text-xl font-semibold mb-2">
-                {userRole === 'friend' ? 'Waiting for User Requests' : 'Welcome to Sobhagya Chat'}
-              </h3>
-              <p className="text-gray-500 text-base md:text-lg font-medium mb-1">
-                {userRole === 'friend' ? 'Select a user to start consultation' : 'Start your consultation'}
-              </p>
-              <p className="text-gray-400 text-sm mb-6">
-                {userRole === 'friend' ? 'Manage your active consultations here' : 'Connect with our experienced astrologers'}
-              </p>
-              
-              {/* Mobile action button */}
-              <div className="md:hidden">
-                <button
-                  onClick={toggleSidebar}
-                  className="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors active:scale-95"
-                >
-                  View Chats
-                </button>
-              </div>
-              
-              {/* Desktop hint */}
-              <div className="hidden md:block mt-6 p-3 bg-orange-50 rounded-lg border border-orange-100">
-                <p className="text-orange-600 text-sm">
-                  Select a chat from the sidebar to start messaging
+              <div className="text-center relative z-10 max-w-sm mx-auto">
+                <div className="w-16 h-16 md:w-24 md:h-24 mx-auto mb-4 md:mb-6 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
+                  <svg className="w-8 h-8 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <h3 className="text-gray-700 text-lg md:text-xl font-semibold mb-2">
+                  {userRole === 'friend' ? 'Waiting for User Requests' : 'Welcome to Sobhagya Chat'}
+                </h3>
+                <p className="text-gray-500 text-base md:text-lg font-medium mb-1">
+                  {userRole === 'friend' ? 'Select a user to start consultation' : 'Start your consultation'}
                 </p>
+                <p className="text-gray-400 text-sm mb-6">
+                  {userRole === 'friend' ? 'Manage your active consultations here' : 'Connect with our experienced astrologers'}
+                </p>
+
+                {/* Mobile action button */}
+                <div className="md:hidden">
+                  <button
+                    onClick={toggleSidebar}
+                    className="w-full bg-orange-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-orange-600 transition-colors active:scale-95"
+                  >
+                    View Chats
+                  </button>
+                </div>
+
+                {/* Desktop hint */}
+                <div className="hidden md:block mt-6 p-3 bg-orange-50 rounded-lg border border-orange-100">
+                  <p className="text-orange-600 text-sm">
+                    Select a chat from the sidebar to start messaging
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* End session dialog - Mobile optimized */}
+        {showEndSessionDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 md:p-8 max-w-sm md:max-w-md w-full shadow-2xl">
+              <div className="text-center">
+                <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 md:w-8 md:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">End Session</h3>
+                <p className="text-gray-600 mb-6 text-sm md:text-base">Are you sure you want to end this session? This action cannot be undone.</p>
+                <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
+                  <button
+                    onClick={() => setShowEndSessionDialog(false)}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmEndSession}
+                    className="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 active:scale-95 transition-all font-medium"
+                  >
+                    End Session
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
+    </div>
 
-      {/* End session dialog - Mobile optimized */}
-      {showEndSessionDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 md:p-8 max-w-sm md:max-w-md w-full shadow-2xl">
-            <div className="text-center">
-              <div className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6 md:w-8 md:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">End Session</h3>
-              <p className="text-gray-600 mb-6 text-sm md:text-base">Are you sure you want to end this session? This action cannot be undone.</p>
-              <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
-               <button
-                  onClick={() => setShowEndSessionDialog(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 active:scale-95 transition-all font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={confirmEndSession}
-                  className="flex-1 px-6 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 active:scale-95 transition-all font-medium"
-                >
-                  End Session
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-        </div>
-      </div>
-    
   );
 
 }

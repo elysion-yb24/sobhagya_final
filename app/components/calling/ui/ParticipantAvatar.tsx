@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import Image from 'next/image';
+import React, { useState, useEffect } from 'react';
 
 interface ParticipantAvatarProps {
     src?: string;
@@ -17,17 +16,31 @@ const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
     className = '',
 }) => {
     const [imgError, setImgError] = useState(false);
-    const fallbackImage = 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(name);
+
+    useEffect(() => { setImgError(false); }, [src]);
 
     const sizeClasses = {
         sm: 'w-10 h-10',
         md: 'w-16 h-16',
-        lg: 'w-32 h-32',
-        xl: 'w-48 h-48',
+        lg: 'w-32 h-32 md:w-36 md:h-36',
+        xl: 'w-48 h-48 md:w-56 md:h-56',
     };
 
-    // Determine what to display as the image source
-    const displaySrc = (imgError || !src) ? fallbackImage : src;
+    const initialsSize = {
+        sm: 'text-base',
+        md: 'text-2xl',
+        lg: 'text-5xl md:text-6xl',
+        xl: 'text-6xl md:text-7xl',
+    };
+
+    const initials = (name || 'A')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(s => s.charAt(0).toUpperCase())
+        .join('');
+
+    const hasValidSrc = !!src && src.trim() !== '' && !imgError;
 
     const handleImageError = () => setImgError(true);
 
@@ -61,12 +74,18 @@ const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
           }
         `}
             >
-                <img
-                    src={displaySrc}
-                    alt={name}
-                    className="w-full h-full object-cover"
-                    onError={handleImageError}
-                />
+                {hasValidSrc ? (
+                    <img
+                        src={src}
+                        alt={name}
+                        className="w-full h-full object-cover"
+                        onError={handleImageError}
+                    />
+                ) : (
+                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-orange-400 to-amber-600 text-white font-bold ${initialsSize[size]}`}>
+                        {initials}
+                    </div>
+                )}
             </div>
 
             <style jsx global>{`

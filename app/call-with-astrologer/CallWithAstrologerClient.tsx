@@ -124,7 +124,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         let endpoint = "";
 
         if (query) {
-          endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`;
+          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`;
           if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
           if (sort) endpoint += `&sortBy=${encodeURIComponent(sort)}`;
         } else {
@@ -234,7 +234,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         let endpoint = "";
 
         if (searchQuery) {
-          endpoint = `${getApiBaseUrl()}/${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(searchQuery)}&skip=${skip}&limit=${limit}`;
+          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(searchQuery)}&skip=${skip}&limit=${limit}`;
           if (languageFilter && languageFilter !== "All") endpoint += `&language=${encodeURIComponent(languageFilter)}`;
           if (sortBy) endpoint += `&sortBy=${encodeURIComponent(sortBy)}`;
         } else {
@@ -330,9 +330,10 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
       localStorage.setItem('lastAstrologerId', astrologer._id);
       localStorage.setItem('callSource', 'callWithAstrologer');
 
-      const dest = callType === 'audio'
-        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
-        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      const avatarUrl = (astrologer as any).avatar || astrologer.profileImage || '';
+      const rpmStr = String(callType === 'audio' ? (astrologer.rpm ?? '') : (astrologer.videoRpm ?? astrologer.rpm ?? ''));
+      const common = `token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologer.name)}&astrologerId=${encodeURIComponent(astrologer._id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}&avatar=${encodeURIComponent(avatarUrl)}&rpm=${encodeURIComponent(rpmStr)}`;
+      const dest = callType === 'audio' ? `/audio-call?${common}` : `/video-call?${common}`;
 
       router.push(dest);
     } catch (err) {
@@ -441,7 +442,11 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           ) : (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.1 }}>
               <AstrologerList
-                astrologers={astrologers}
+                astrologers={(() => {
+                  const q = searchQuery.trim().toLowerCase();
+                  if (!q) return astrologers;
+                  return astrologers.filter(a => a.name?.toLowerCase().includes(q));
+                })()}
                 isLoading={isLoading}
                 isLoadingMore={isLoadingMore}
                 hasError={!!error}

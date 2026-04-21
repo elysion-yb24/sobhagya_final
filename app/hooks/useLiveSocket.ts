@@ -70,6 +70,13 @@ export function useLiveSocket() {
       console.error('[LiveSocket] Connection error:', err.message);
     });
 
+    // Log every inbound event so we can see what the server actually broadcasts
+    // when the astrologer accepts a queued invite — exact event name varies by
+    // backend and isn't documented on the Android side (FCM does that job there).
+    socket.onAny((event, ...args) => {
+      console.log('[LiveSocket] <=', event, ...args);
+    });
+
     socketRef.current = socket;
 
     return () => {
@@ -89,6 +96,24 @@ export function useLiveSocket() {
         } else {
           resolve([]);
         }
+      });
+    });
+  }, []);
+
+  const startSession = useCallback((sessionId: string, broadcasterId: string, broadcasterName: string, broadcasterProfilePicture: string): Promise<any> => {
+    return new Promise((resolve) => {
+      if (!socketRef.current) { resolve({ error: true, message: "Socket not connected" }); return; }
+      socketRef.current.emit('startSession', { sessionId, broadcasterId, broadcasterName, broadcasterProfilePicture }, (resp: any) => {
+        resolve(resp);
+      });
+    });
+  }, []);
+
+  const endSessionBroadcaster = useCallback((sessionId: string): Promise<any> => {
+    return new Promise((resolve) => {
+      if (!socketRef.current) { resolve({ error: true }); return; }
+      socketRef.current.emit('endSession', { sessionId }, (resp: any) => {
+        resolve(resp);
       });
     });
   }, []);
@@ -202,19 +227,19 @@ export function useLiveSocket() {
     return new Promise((resolve) => {
       if (!socketRef.current) { resolve(null); return; }
       socketRef.current.emit('get_active_call', { sessionId }, (resp: any) => {
+        try { console.log('[LiveSocket] get_active_call FULL:', JSON.stringify(resp)); }
+        catch { console.log('[LiveSocket] get_active_call (unstringifiable):', resp); }
         if (resp?.error || !resp?.data) { resolve(null); return; }
-        let ac = resp.data.activeCalls;
-        // Backend stores activeCall in Redis via JSON.stringify and returns the
-        // raw string. Parse it so callers can access fields directly.
+        let ac: any = resp.data.activeCalls ?? resp.data.activeCall ?? resp.data;
         if (typeof ac === 'string') {
           try { ac = JSON.parse(ac); } catch { ac = null; }
         }
-        // Backend initializes activeCall as JSON.stringify({}) on session create,
-        // so "{}" parses to empty object — treat as no active call.
-        if (!ac || typeof ac !== 'object' || !ac.channelId) { resolve(null); return; }
+        if (!ac || typeof ac !== 'object') { resolve(null); return; }
+        if (!ac.channelId && !ac.userId && !ac.user) { resolve(null); return; }
         if (typeof ac.isPrivate === 'string') {
           ac.isPrivate = ac.isPrivate === 'true';
         }
+        console.log('[LiveSocket] get_active_call PARSED:', ac);
         resolve(ac);
       });
     });
@@ -280,6 +305,15 @@ export function useLiveSocket() {
     });
   }, []);
 
+  const emitConnectedWithLivekit = useCallback((sessionId: string, isHlsStream: boolean = false): Promise<any> => {
+    return new Promise((resolve) => {
+      if (!socketRef.current) { resolve(null); return; }
+      socketRef.current.emit('connectedWithLivekit', { sessionId, isHlsStream }, (resp: any) => {
+        resolve(resp);
+      });
+    });
+  }, []);
+
   const emitSendGift = useCallback((sessionId: string, gift: any, receiverName: string): Promise<any> => {
     return new Promise((resolve) => {
       if (!socketRef.current) { resolve(null); return; }
@@ -333,6 +367,17 @@ export function useLiveSocket() {
     return () => { socketRef.current?.off('call_started'); };
   }, []);
 
+  const onInviteReceived = useCallback((callback: (data: any) => void) => {
+    // Different backends broadcast the "astrologer invited you" notification
+    // under different event names. Subscribe to all known variants.
+    const events = ['send_invite', 'invite_received', 'inviteReceived', 'invite_sent', 'inviteSent', 'invitationReceived'];
+    const handler = (resp: any) => {
+      callback(resp?.data ?? resp);
+    };
+    events.forEach(e => socketRef.current?.on(e, handler));
+    return () => { events.forEach(e => socketRef.current?.off(e, handler)); };
+  }, []);
+
   const onCallEnd = useCallback((callback: (data: any) => void) => {
     socketRef.current?.on('call_end', callback);
     return () => { socketRef.current?.off('call_end'); };
@@ -357,6 +402,8 @@ export function useLiveSocket() {
     socket: socketRef.current,
     isConnected,
     getSessions,
+    startSession,
+    endSessionBroadcaster,
     joinSession,
     leaveSession,
     fetchSessionToken,
@@ -371,11 +418,13 @@ export function useLiveSocket() {
     joinRoomParticipant,
     acceptInvite,
     endCall,
+    emitConnectedWithLivekit,
     onChatUpdate,
     onViewerUpdate,
     onViewerLeft,
     onSessionEnded,
     onCallStarted,
+    onInviteReceived,
     onCallEnd,
     onQueueJoined,
     onLikeUpdate,

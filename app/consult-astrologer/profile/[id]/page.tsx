@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Phone, Video } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, isAuthenticated, getUserDetails, hasUserCalledBefore } from "../../../utils/auth-utils";
 import { motion } from "framer-motion";
@@ -443,8 +443,8 @@ export default function CallAstrologerProfilePage() {
                                 {/* Call & Message Stats */}
                                 <div className="flex items-center justify-center sm:justify-start gap-8 sm:gap-12 md:gap-20 my-2 sm:my-3 py-2 sm:py-3">
                                     <div className="flex items-center gap-2 sm:gap-4">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-[1px] border-[#F7971E] rounded-full flex items-center justify-center bg-white">
-                                            <img src="/phone.svg" alt="Call" className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-[1px] border-[#F7971E] rounded-full flex items-center justify-center bg-white text-[#F7971E]">
+                                            <Phone className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" aria-hidden="true" />
                                         </div>
                                         <div>
                                             <p className="text-mono font-normal text-[#636161]-700 text-xs sm:text-sm">Call</p>
@@ -475,12 +475,12 @@ export default function CallAstrologerProfilePage() {
                             <button className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] border border-[#f7971e] text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-50 transition-colors">
                                 Follow
                             </button>
-                            <button className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#f7971e] text-black rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors">
+                            <button className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#F7971E] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors">
                                 Dakshina
                             </button>
                             <button
                                 onClick={handleCall}
-                                className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#f7971e] text-black rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors"
+                                className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#F7971E] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors"
                             >
                                 {userHasCalledBefore ? `₹${astrologer?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
                             </button>
@@ -586,7 +586,7 @@ export default function CallAstrologerProfilePage() {
                                                          setSelectedCallAstrologer(similar);
                                                          setShowCallOptions(true);
                                                      }}
-                                                     className="w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
+                                                     className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
                                                  >
                                                      {userHasCalledBefore ? `₹${similar?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
                                                  </button>
@@ -668,20 +668,17 @@ export default function CallAstrologerProfilePage() {
                         <div className="space-y-2 sm:space-y-3">
                             <button
                                 onClick={() => handleCallTypeSelection('audio')}
-                                className="w-full bg-[#F7971E] text-black py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
                             >
-                                <img src="/phone.svg" alt="Audio Call" className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <Phone className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
                                 Audio Call
                             </button>
                             
                             <button
                                 onClick={() => handleCallTypeSelection('video')}
-                                className="w-full bg-[#F7971E] text-black py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
                             >
-                                <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor"/>
-                                    <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor"/>
-                                </svg>
+                                <Video className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
                                 Video Call
                             </button>
                         </div>

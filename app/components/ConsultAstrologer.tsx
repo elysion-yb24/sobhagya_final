@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { Phone, Video } from 'lucide-react';
 import { getApiBaseUrl } from '@/app/config/api';
 import { isAuthenticated, getAuthToken, getUserDetails } from '@/app/utils/auth-utils';
 
@@ -142,7 +143,7 @@ const AstrologerCarousel = () => {
   };
 
   // Direct call initiation for authenticated users
-  const initiateDirectCall = async (astrologerId: string, astrologerName: string, callType: 'audio' | 'video') => {
+  const initiateDirectCall = async (astrologerId: string, astrologerName: string, callType: 'audio' | 'video', astrologerAvatar: string = '', astrologerRpm: string | number = '') => {
     try {
       const token = getAuthToken();
       const user = getUserDetails();
@@ -185,9 +186,8 @@ const AstrologerCarousel = () => {
       localStorage.setItem('lastAstrologerId', astrologerId);
       localStorage.setItem('callSource', 'consultAstrologer');
 
-      const dest = callType === 'audio'
-        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
-        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
+      const common = `token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}&avatar=${encodeURIComponent(astrologerAvatar)}&rpm=${encodeURIComponent(String(astrologerRpm))}`;
+      const dest = callType === 'audio' ? `/audio-call?${common}` : `/video-call?${common}`;
 
       router.push(dest);
     } catch (err) {
@@ -201,7 +201,13 @@ const AstrologerCarousel = () => {
     if (selectedCallAstrologer) {
       setShowCallOptions(false);
       if (isAuthenticated()) {
-        initiateDirectCall(selectedCallAstrologer._id, selectedCallAstrologer.name, callType);
+        {
+          const av = (selectedCallAstrologer as any).avatar || (selectedCallAstrologer as any).profileImage || '';
+          const r = callType === 'audio'
+            ? ((selectedCallAstrologer as any).rpm ?? '')
+            : ((selectedCallAstrologer as any).videoRpm ?? (selectedCallAstrologer as any).rpm ?? '');
+          initiateDirectCall(selectedCallAstrologer._id, selectedCallAstrologer.name, callType, av, r);
+        }
       } else {
         localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
         localStorage.setItem("callIntent", callType);
@@ -346,7 +352,7 @@ const AstrologerCarousel = () => {
                   <div className="flex justify-center">
                     <button
                       onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-full max-w-[171px] h-[30px] bg-[#F7971E] text-black text-[10px] font-medium hover:bg-orange-600 hover:text-white transition-colors uppercase flex items-center justify-center rounded-md"
+                      className="w-full max-w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 hover:text-white transition-colors uppercase flex items-center justify-center rounded-md"
                     >
                       OFFER: FREE 1st call
                     </button>
@@ -400,20 +406,17 @@ const AstrologerCarousel = () => {
             <div className="space-y-3">
               <button
                 onClick={() => handleCallTypeSelection('audio')}
-                className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+                className="w-full bg-[#F7971E] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
               >
-                <img src="/phone.svg" alt="Audio Call" className="w-5 h-5" />
+                <Phone className="w-5 h-5" aria-hidden="true" />
                 Audio Call
               </button>
               
               <button
                 onClick={() => handleCallTypeSelection('video')}
-                className="w-full bg-[#F7971E] text-black py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+                className="w-full bg-[#F7971E] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M3 6C3 4.89543 3.89543 4 5 4H12C13.1046 4 14 4.89543 14 6V18C14 19.1046 13.1046 20 12 20H5C3.89543 20 3 19.1046 3 18V6Z" fill="currentColor"/>
-                  <path d="M14 8.5L19 6V18L14 15.5V8.5Z" fill="currentColor"/>
-                </svg>
+                <Video className="w-5 h-5" aria-hidden="true" />
                 Video Call
               </button>
             </div>

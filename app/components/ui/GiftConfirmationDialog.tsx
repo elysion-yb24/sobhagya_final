@@ -58,7 +58,7 @@ const GiftConfirmationDialog: React.FC<GiftConfirmationDialogProps> = ({
               
               {giftPrice !== undefined && (
                 <div className="mb-8 px-6 py-2 rounded-full bg-orange-50 border border-orange-200 shadow-sm animate-pulse">
-                  <span className="text-2xl font-black text-orange-600 tracking-tighter">₹{giftPrice}</span>
+                  <span className="text-2xl font-black text-orange-600 tracking-tighter">₹{new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(Number(giftPrice) || 0))}</span>
                 </div>
               )}
               

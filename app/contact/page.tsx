@@ -29,25 +29,45 @@ const Contact = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setSubmitMessage(null);
 
+    // Basic client-side validation
+    const name = formData.name.trim();
+    const contact = formData.email.trim();
+    const message = formData.message.trim();
+
+    if (!name || !contact || !message) {
+      setSubmitMessage('💫 Please fill in all fields.');
+      setTimeout(() => setSubmitMessage(null), 4000);
+      return;
+    }
+
+    // Accept either an email or a phone number (7+ digits)
+    const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+    const looksLikePhone = /^[+()\-\s\d]{7,}$/.test(contact);
+    if (!looksLikeEmail && !looksLikePhone) {
+      setSubmitMessage('💫 Please enter a valid email or phone number.');
+      setTimeout(() => setSubmitMessage(null), 4000);
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ name, email: contact, message }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
         setSubmitMessage('✨ Message sent successfully! We will get back to you soon.');
         setFormData({ name: '', email: '', message: '' });
       } else {
-        setSubmitMessage('💫 Failed to send message. Please try again.');
+        setSubmitMessage(`💫 ${data?.error || 'Failed to send message. Please try again.'}`);
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -209,7 +229,7 @@ const Contact = () => {
 
             {/* Instagram */}
             <motion.a
-              href="https://www.instagram.com/sobhagya.bhakti"
+              href="https://www.instagram.com/sobhagya.bhaakti"
               target="_blank"
               rel="noopener noreferrer"
               className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center cursor-pointer"
@@ -321,7 +341,9 @@ const Contact = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="Phone No./ Email"
+                placeholder="Phone No. / Email"
+                inputMode="text"
+                autoComplete="email"
                 className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
                 required
               />
@@ -349,12 +371,17 @@ const Contact = () => {
               <motion.button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full sm:w-[214px] bg-[#fff] text-[#F7971D] py-3 rounded-md font-semibold hover:bg-[#e09e3c] hover:text-white transition"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                className="w-full sm:w-[214px] bg-[#F7971D] text-white py-3 rounded-md font-semibold hover:bg-[#e09e3c] hover:text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
+                whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
               >
-                Submit
+                {isSubmitting ? 'Sending…' : 'Submit'}
               </motion.button>
+              {submitMessage && (
+                <p className="mt-4 text-center text-sm text-gray-700" aria-live="polite">
+                  {submitMessage}
+                </p>
+              )}
             </motion.div>
           </form>
         </motion.div>

@@ -1,9 +1,20 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Link from "next/link";
 import { getAuthToken } from "../../utils/auth-utils";
-import { ArrowUpRight, ArrowDownLeft, Wallet, Loader2 } from "lucide-react";
-import { buildApiUrl } from "../../config/api";
+import {
+  ArrowUpRight,
+  ArrowDownLeft,
+  Wallet,
+  Video,
+  Phone,
+  Gift,
+  IndianRupee,
+  CreditCard,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 
 interface Transaction {
   _id: string;
@@ -227,12 +238,89 @@ export default function TransactionHistory() {
     }
   };
 
+  // Derive icon + color per transaction category
+  const getTxnMeta = (t: Transaction) => {
+    const pf = (t.paymentFor || "").toLowerCase();
+    const desc = (t.description || "").toLowerCase();
+    const isCredit = (t.amount || 0) >= 0;
+
+    if (pf.includes("video") || desc.includes("video")) {
+      return {
+        label: "Video Call",
+        Icon: Video,
+        ringClass: "from-blue-400 to-indigo-500",
+      };
+    }
+    if (pf.includes("audio") || desc.includes("audio") || pf === "call" || desc.includes("call")) {
+      return {
+        label: "Audio Call",
+        Icon: Phone,
+        ringClass: "from-emerald-400 to-green-600",
+      };
+    }
+    if (pf.includes("gift") || desc.includes("gift")) {
+      return {
+        label: "Gift Sent",
+        Icon: Gift,
+        ringClass: "from-pink-400 to-rose-500",
+      };
+    }
+    if (pf.includes("cashback") || desc.includes("cashback")) {
+      return {
+        label: "Cashback Bonus",
+        Icon: Sparkles,
+        ringClass: "from-amber-400 to-orange-500",
+      };
+    }
+    if (pf.includes("recharge") || desc.includes("recharge") || pf.includes("wallet")) {
+      return {
+        label: "Wallet Recharge",
+        Icon: IndianRupee,
+        ringClass: "from-orange-400 to-amber-500",
+      };
+    }
+    return {
+      label: t.description || t.paymentFor || (isCredit ? "Credit" : "Debit"),
+      Icon: CreditCard,
+      ringClass: isCredit ? "from-emerald-400 to-green-600" : "from-orange-400 to-amber-500",
+    };
+  };
+
+  const getStatusBadge = (status: string) => {
+    const s = (status || "").toLowerCase();
+    if (s === "done" || s === "completed" || s === "success") {
+      return {
+        text: "Completed",
+        classes: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      };
+    }
+    if (s === "cancelled" || s === "canceled") {
+      return {
+        text: "Cancelled",
+        classes: "bg-gray-100 text-gray-600 border-gray-200",
+      };
+    }
+    if (s === "pending") {
+      return {
+        text: "Pending",
+        classes: "bg-blue-50 text-blue-700 border-blue-200",
+      };
+    }
+    return {
+      text: status ? status.charAt(0).toUpperCase() + status.slice(1) : "Unknown",
+      classes: "bg-red-50 text-red-700 border-red-200",
+    };
+  };
+
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-12">
+      <div className="flex justify-center items-center py-16">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-orange-500 mx-auto mb-3" />
-          <p className="text-gray-600 text-sm">Loading transactions...</p>
+          <div className="relative w-14 h-14 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100" />
+            <div className="absolute inset-0 rounded-full border-4 border-orange-500 border-t-transparent animate-spin" />
+          </div>
+          <p className="text-gray-600 text-sm font-medium">Loading transactions...</p>
         </div>
       </div>
     );
@@ -240,112 +328,148 @@ export default function TransactionHistory() {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-center">
-        <p className="text-sm">{error}</p>
+      <div className="max-w-md mx-auto bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 rounded-2xl p-5 flex items-start gap-3">
+        <div className="p-2 bg-red-100 rounded-xl flex-shrink-0">
+          <AlertCircle className="h-5 w-5 text-red-600" />
+        </div>
+        <div className="flex-1">
+          <h4 className="font-semibold text-red-900 text-sm">Unable to load transactions</h4>
+          <p className="text-red-700 text-xs mt-1">{error}</p>
+          <button
+            onClick={() => fetchTransactions(1, false)}
+            className="mt-3 px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   if (!transactions || transactions.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Wallet className="h-8 w-8 text-gray-400" />
+      <div className="text-center py-16 px-4">
+        <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
+          <Wallet className="h-10 w-10 text-orange-400" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">No transactions</h3>
-        <p className="text-gray-500 text-sm">Your transaction history will appear here</p>
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No transactions yet</h3>
+        <p className="text-gray-500 text-sm max-w-sm mx-auto mb-6">
+          Your recharges, consultations, and other activity will appear here
+        </p>
+        <Link
+          href="/wallet"
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-2.5 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
+        >
+          <Sparkles className="w-4 h-4" />
+          Make Your First Recharge
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 h-full overflow-y-auto">
-      {/* Header */}
-      <div className="space-y-3 sm:space-y-4">
-        {transactions.map((transaction) => (
+    <div className="space-y-3 sm:space-y-4">
+      {transactions.map((transaction) => {
+        const isCredit = (transaction.amount || 0) >= 0;
+        const meta = getTxnMeta(transaction);
+        const status = getStatusBadge(transaction.status);
+        const { Icon: TxnIcon } = meta;
+
+        return (
           <div
             key={transaction._id}
-            className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow"
+            className="group bg-white border border-gray-100 rounded-2xl p-3.5 sm:p-4 md:p-5 hover:shadow-lg hover:shadow-orange-100/40 hover:border-orange-200 transition-all duration-300"
           >
-            {/* Mobile layout */}
-            <div className="flex items-start gap-2 sm:gap-3">
-              {/* Transaction type icon */}
-              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                (transaction.amount || 0) >= 0 ? "bg-green-100" : "bg-orange-100"
-              }`}>
-                {(transaction.amount || 0) >= 0 ? (
-                  <ArrowDownLeft className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                ) : (
-                  <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-orange-600" />
-                )}
+            <div className="flex items-start gap-3 sm:gap-4">
+              {/* Gradient icon */}
+              <div className="relative flex-shrink-0">
+                <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${meta.ringClass} flex items-center justify-center shadow-md`}>
+                  <TxnIcon className="h-5 w-5 sm:h-5 sm:w-5 text-white" />
+                </div>
+                {/* Credit/Debit indicator */}
+                <div
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center ring-2 ring-white shadow ${
+                    isCredit ? "bg-emerald-500" : "bg-red-500"
+                  }`}
+                  aria-label={isCredit ? "Credit" : "Debit"}
+                >
+                  {isCredit ? (
+                    <ArrowDownLeft className="w-3 h-3 text-white" />
+                  ) : (
+                    <ArrowUpRight className="w-3 h-3 text-white" />
+                  )}
+                </div>
               </div>
 
-              {/* Transaction details */}
+              {/* Details */}
               <div className="flex-1 min-w-0">
-                <div className="flex flex-col gap-2">
-                  {/* Transaction info */}
+                <div className="flex items-start justify-between gap-2 sm:gap-3">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-gray-900 text-sm leading-tight">
-                      {getTransactionDisplayName(transaction)}
+                    <h4 className="font-semibold text-gray-900 text-sm sm:text-base leading-tight truncate group-hover:text-orange-600 transition-colors">
+                      {meta.label}
                     </h4>
                     {transaction.notes?.receiverName && (
-                      <p className="text-xs text-orange-600 font-medium mt-1">
+                      <p className="text-xs sm:text-sm text-orange-600 font-medium mt-0.5 truncate">
                         with {transaction.notes.receiverName}
                       </p>
                     )}
-                    {transaction.notes?.callDuration && (
-                      <p className="text-xs text-gray-600 mt-0.5">
-                        Duration: {Math.round(transaction.notes.callDuration / 60)} min
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatDate(transaction)}
-                    </p>
-                  </div>
-
-                  {/* Amount and status */}
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                      transaction.status === "done" || transaction.status === "completed" ? "bg-green-100 text-green-800" :
-                      transaction.status === "cancelled" ? "bg-gray-100 text-gray-600" :
-                      "bg-red-100 text-red-600"
-                    }`}>
-                      {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                    </span>
-                    
-                    <div className="text-right">
-                      <p className={`text-base sm:text-lg font-bold ${
-                        (transaction.amount || 0) >= 0 ? "text-green-600" : "text-orange-600"
-                      }`}>
-                        {(transaction.amount || 0) >= 0 ? "+" : "-"}₹{Math.abs(transaction.amount || 0).toFixed(2)}
-                      </p>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-gray-500 mt-1">
+                      <span>{formatDate(transaction)}</span>
+                      {transaction.notes?.callDuration ? (
+                        <>
+                          <span className="text-gray-300">•</span>
+                          <span>{Math.max(1, Math.round(transaction.notes.callDuration / 60))} min</span>
+                        </>
+                      ) : null}
                     </div>
                   </div>
+
+                  {/* Amount */}
+                  <div className="text-right flex-shrink-0">
+                    <p
+                      className={`text-base sm:text-lg font-bold tabular-nums ${
+                        isCredit ? "text-emerald-600" : "text-red-600"
+                      }`}
+                    >
+                      {isCredit ? "+" : "-"}₹{Math.abs(transaction.amount || 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status badge */}
+                <div className="flex items-center justify-between mt-2.5 pt-2.5 border-t border-gray-50">
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold whitespace-nowrap border ${status.classes}`}
+                  >
+                    {status.text}
+                  </span>
+                  {transaction.notes?.rpm && (
+                    <span className="text-[10px] sm:text-xs text-gray-500 font-medium">
+                      ₹{transaction.notes.rpm}/min
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        );
+      })}
 
       {/* Infinite scroll loader */}
       {hasMore && (
-        <div ref={loaderRef} className="flex flex-col items-center justify-center py-8 min-h-[120px]">
+        <div ref={loaderRef} className="flex flex-col items-center justify-center py-6 sm:py-8 min-h-[120px]">
           {isLoadingMore ? (
             <div className="flex flex-col items-center gap-2">
               <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-              <div className="text-gray-500 text-sm">Loading more transactions...</div>
+              <div className="text-gray-500 text-sm font-medium">Loading more transactions...</div>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-3">
-              {/* <div className="text-gray-400 text-sm">Scroll down to load more transactions</div> */}
-              <button
-                onClick={loadMoreTransactions}
-                className="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 transition-colors"
-              >
-                Load More
-              </button>
-            </div>
+            <button
+              onClick={loadMoreTransactions}
+              className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-xl text-sm font-semibold shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
+            >
+              Load More
+            </button>
           )}
         </div>
       )}

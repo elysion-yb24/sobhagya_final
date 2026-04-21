@@ -2,7 +2,7 @@
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:7002',
+  BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://micro.sobhagya.in',
   BASE_URL_G: process.env.NEXT_PUBLIC_API_BASE_URL_G || 'https://micro.sobhagya.in',
   ENDPOINTS: {
     AUTH: {
@@ -15,6 +15,14 @@ export const API_CONFIG = {
       ASTROLOGERS: '/user/api/astrologers',
       WALLET_BALANCE: '/payment/api/transaction/wallet-balance',
       SEARCH: '/user/api/search',
+      CHANGE_STATUS: '/user/api/change-status',
+      CHANGE_VIDEO_STATUS: '/user/api/change-status-video',
+      DATA: '/user/api/data',
+    },
+    PAYMENT: {
+      TRANSACTIONS: '/payment/api/transaction/transactions',
+      STATS: '/payment/api/transaction/stats',
+      WALLET_BALANCE: '/payment/api/transaction/wallet-balance',
     },
     BLOG: {
       GET_BLOGS: '/api/blog/admin/get-blogs',
@@ -25,7 +33,37 @@ export const API_CONFIG = {
 
 // Build full API URL
 export function buildApiUrl(endpoint: string): string {
-  return `${API_CONFIG.BASE_URL}${endpoint}`;
+  return `${getApiBaseUrl()}${endpoint}`;
+}
+
+/**
+ * Gets the chat service backend URL. 
+ * Per user instruction: production gateway base is /chat/api/
+ * relative to micro.sobhagya.in.
+ */
+export function getChatBackendUrl(): string {
+  const customChatUrl = process.env.BACKEND_BASE_URL;
+  if (customChatUrl) return customChatUrl;
+
+  // Production gateway mounts chat-service at /chat/api.
+  const base = getApiBaseUrl();
+  return `${base}/chat/api`;
+}
+
+/**
+ * Gets the chat socket URL.
+ */
+export function getChatSocketUrl(): string {
+  if (process.env.NEXT_PUBLIC_CHAT_SOCKET_URL) {
+    return process.env.NEXT_PUBLIC_CHAT_SOCKET_URL;
+  }
+
+  const base = getApiBaseUrl();
+  if (base.includes('sobhagya.in')) {
+    return base; // Gateway handles /chat-socket path
+  }
+
+  return 'https://micro.sobhagya.in';
 }
 
 // Get API Base URL reliably
@@ -35,12 +73,12 @@ export function getApiBaseUrl(): string {
 
   // 2️⃣ Fallbacks based on environment
   if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:7002'; // always use 9001 for dev
+    return 'https://micro.sobhagya.in'; // always use 9001 for dev
   }
   if (process.env.NODE_ENV === 'production') {
     return 'https://micro.sobhagya.in';
   }
 
   // Default fallback
-  return 'http://localhost:7002';
+  return 'https://micro.sobhagya.in';
 }

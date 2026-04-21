@@ -102,27 +102,60 @@ const Footer: React.FC = () => {
             <div className="space-y-4">
               <h3 className="text-[#F7971E] font-semibold text-lg sm:text-xl mb-6">GET IN TOUCH</h3>
               <div className="space-y-3">
-                {/* Contact Link */}
-                <div className="flex items-center justify-start gap-3">
-                  <span className="text-[#F7971E] text-lg">◆</span>
-                  <Link
-                    href="/contact"
-                    className="text-white hover:text-orange-400 text-sm sm:text-base transition-colors"
-                  >
-                    Contact Us
-                  </Link>
+                {/* Email */}
+                <a
+                  href="mailto:info@sobhagya.in"
+                  className="flex items-start gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors group"
+                >
+                  <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 mt-1">◆</span>
+                  <span className="flex flex-col leading-tight">
+                    <span>info@sobhagya.in</span>
+                    <span className="text-white/60 text-[10px] sm:text-xs mt-0.5">(we will respond within 24 hours)</span>
+                  </span>
+                </a>
+
+                {/* Phone */}
+                <a
+                  href="tel:+919876543210"
+                  className="flex items-start gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors group"
+                >
+                  <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 mt-1">◆</span>
+                  <span className="flex flex-col leading-tight">
+                    <span>+91 98765 43210</span>
+                    <span className="text-white/60 text-[10px] sm:text-xs mt-0.5">(24/7 customer support)</span>
+                  </span>
+                </a>
+
+                {/* Address */}
+                <div className="flex items-start gap-x-3 text-xs sm:text-sm lg:text-base">
+                  <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 mt-1">◆</span>
+                  <span className="flex flex-col leading-tight text-white/90">
+                    <span>Elysion Softwares Services</span>
+                    <span>Private Limited, Delhi, India</span>
+                  </span>
                 </div>
-                <div className="flex items-center justify-start space-x-4 pt-2">
+
+                {/* Contact Link */}
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors leading-none group"
+                >
+                  <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0">◆</span>
+                  <span>Contact Us</span>
+                </Link>
+
+                {/* Social Icons */}
+                <div className="flex items-center justify-start space-x-4 pt-1">
                   <Link
-                    href="https://www.instagram.com/sobhagya.bhakti?igsh=MTJveTdrdnk2NXR1eA=="
+                    href="https://www.instagram.com/sobhagya.bhaakti"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white hover:text-[#F7971E] transition-colors duration-300"
+                    className="text-white hover:text-[#F7971E] transition-colors duration-300 hover:scale-110"
                     aria-label="Follow us on Instagram"
                   >
-                    <img 
-                      src="/instagram.svg" 
-                      alt="Instagram" 
+                    <img
+                      src="/instagram.svg"
+                      alt="Instagram"
                       className="w-7 h-7 sm:w-8 sm:h-8"
                     />
                   </Link>
@@ -130,17 +163,17 @@ const Footer: React.FC = () => {
                     href="https://linkedin.com/company/sobhagya"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white hover:text-[#F7971E] transition-colors duration-300"
+                    className="text-white hover:text-[#F7971E] transition-colors duration-300 hover:scale-110"
                     aria-label="Follow us on LinkedIn"
                   >
-                    <img 
-                      src="/linkedin.svg" 
-                      alt="LinkedIn" 
+                    <img
+                      src="/linkedin.svg"
+                      alt="LinkedIn"
                       className="w-7 h-7 sm:w-8 sm:h-8"
                     />
                   </Link>
                 </div>
-                
+
                 {/* Download Our App Section */}
                 <div className="pt-4 border-t border-white/20">
                   <p className="text-white text-sm sm:text-base opacity-90 mb-3">
@@ -161,26 +194,24 @@ const Footer: React.FC = () => {
                         className="w-[130px] sm:w-[150px] h-auto"
                       />
                     </Link>
-                  <Link
-                    href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
-                  >
-                    <Image
-                      src="/play-store.svg"
-                      alt="Download on Google Play"
-                      width={150}
-                      height={50}
-                      className="w-[130px] sm:w-[150px] h-auto"
-                    />
-                  </Link>
+                    <Link
+                      href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
+                    >
+                      <Image
+                        src="/play-store.svg"
+                        alt="Download on Google Play"
+                        width={150}
+                        height={50}
+                        className="w-[130px] sm:w-[150px] h-auto"
+                      />
+                    </Link>
                   </div>
                 </div>
               </div>
             </div>
-
-
           </div>
         </div>
 
@@ -214,7 +245,7 @@ const Footer: React.FC = () => {
                 <p className="text-white text-xs">Private Limited, Delhi, India</p>
               </div>
                              <div className="flex items-center justify-center gap-3 pt-2">
-                <Link href="https://www.instagram.com/sobhagya.bhakti?igsh=MTJveTdrdnk2NXR1eA==" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300">
+                <Link href="https://www.instagram.com/sobhagya.bhaakti" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300">
                   <img 
                     src="/instagram.svg" 
                     alt="Instagram" 
@@ -270,43 +301,47 @@ const Footer: React.FC = () => {
           </div>
 
             {/* Mobile: Horizontal Links Grid */}
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-              <h3 className="text-[#F7971E] font-semibold text-xs text-left">QUICK LINKS</h3>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[16px,1fr] items-center gap-x-2 h-5">
-                    <span className="inline-flex w-[16px] h-[16px] text-[#F7971E] text-[14px] leading-none items-center justify-center -translate-y-[1px]">◆</span>
-                    <Link href="/privacy-policy" className="text-white hover:text-[#F7971E] text-xs transition-colors leading-none block relative top-[1px]">Privacy Policy</Link>
-                  </div>
-                  <div className="grid grid-cols-[16px,1fr] items-center gap-x-2 h-5">
-                    <span className="inline-flex w-[16px] h-[16px] text-[#F7971E] text-[14px] leading-none items-center justify-center -translate-y-[1px]">◆</span>
-                    <Link href="/refund-policy" className="text-white hover:text-[#F7971E] text-xs transition-colors leading-none block relative top-[1px]">Refund Policy</Link>
-                  </div>
-                  <div className="grid grid-cols-[16px,1fr] items-center gap-x-2 h-5">
-                    <span className="inline-flex w-[16px] h-[16px] text-[#F7971E] text-[14px] leading-none items-center justify-center -translate-y-[1px]">◆</span>
-                    <Link href="/shipping-policy" className="text-white hover:text-[#F7971E] text-xs transition-colors leading-none block relative top-[1px]">Shipping Policy</Link>
-                  </div>
-                  <div className="grid grid-cols-[16px,1fr] items-center gap-x-2 h-5">
-                    <span className="inline-flex w-[16px] h-[16px] text-[#F7971E] text-[14px] leading-none items-center justify-center -translate-y-[1px]">◆</span>
-                  <Link href="/terms-and-conditions" className="text-white hover:text-[#F7971E] text-xs transition-colors leading-none block relative top-[1px]">Terms and Conditions</Link>
+            <div className="grid grid-cols-2 gap-4 xs:gap-6">
+              <div className="space-y-4">
+              <h3 className="text-[#F7971E] font-semibold text-sm tracking-wider text-left border-b border-[#F7971E]/20 pb-1">QUICK LINKS</h3>
+                <div className="space-y-3 pt-1">
+                  <Link href="/privacy-policy" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Privacy Policy</span>
+                  </Link>
+                  <Link href="/refund-policy" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Refund Policy</span>
+                  </Link>
+                  <Link href="/shipping-policy" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Shipping Policy</span>
+                  </Link>
+                  <Link href="/terms-and-conditions" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">T&C</span>
+                  </Link>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[#F7971E] font-semibold text-xs text-center">SERVICES</h3>
-              <div className="space-y-2 w-fit mx-auto">
-                <div className="grid grid-cols-[16px,1fr] items-center gap-x-2 h-5">
-                  <span className="inline-flex w-[16px] h-[16px] text-[#F7971E] text-[14px] leading-none items-center justify-center -translate-y-[1px]">◆</span>
-                  <Link href="/services/gun-milan" className="text-white hover:text-[#F7971E] text-xs transition-colors leading-none block relative top-[1px]">Gun Milan</Link>
-                </div>
-                <div className="grid grid-cols-[16px,1fr] items-center gap-x-2 h-5">
-                  <span className="inline-flex w-[16px] h-[16px] text-[#F7971E] text-[14px] leading-none items-center justify-center -translate-y-[1px]">◆</span>
-                  <Link href="/call-with-astrologer" className="text-white hover:text-[#F7971E] text-xs transition-colors leading-none block relative top-[1px]">Call with Astrologer</Link>
-                </div>
+              <div className="space-y-4">
+              <h3 className="text-[#F7971E] font-semibold text-sm tracking-wider text-left border-b border-[#F7971E]/20 pb-1">SERVICES</h3>
+              <div className="space-y-3 pt-1">
+                <Link href="/services/gun-milan" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                  <span className="text-[#F7971E] text-[10px]">◆</span>
+                  <span className="leading-tight">Gun Milan</span>
+                </Link>
+                <Link href="/call-with-astrologer" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                  <span className="text-[#F7971E] text-[10px]">◆</span>
+                  <span className="leading-tight">Consult Now</span>
+                </Link>
+                <Link href="/blog" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                  <span className="text-[#F7971E] text-[10px]">◆</span>
+                  <span className="leading-tight">Blog</span>
+                </Link>
               </div>
             </div>
-        </div>
+          </div>
 
 
         </div>

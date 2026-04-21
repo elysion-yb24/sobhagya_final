@@ -51,8 +51,8 @@ export default function LiveSessionsPage() {
 
   return (
     <section className="bg-orange-50/30 w-full min-h-screen">
-      {/* Top status bar - sticks below the global header */}
-      <div className="sticky top-[56px] md:top-16 lg:top-[88px] z-30 bg-white/80 backdrop-blur-xl border-b border-orange-100 transition-all">
+      {/* Top status bar — top offsets match the fixed global header height (see ClientLayout pt values) */}
+      <div className="sticky top-[72px] md:top-[80px] lg:top-[96px] z-30 bg-white/85 backdrop-blur-xl border-b border-orange-100 transition-all">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">

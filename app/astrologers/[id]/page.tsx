@@ -33,6 +33,7 @@ import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/prod
 import InsufficientBalanceModal from '../../components/ui/InsufficientBalanceModal';
 import CallInitiatedModal from '../../components/ui/CallInitiatedModal';
 import GiftConfirmationDialog from '../../components/ui/GiftConfirmationDialog';
+import { initiateCall } from '../../utils/calling-utils';
 
 
 // Updated Astrologer interface with all API fields
@@ -126,11 +127,11 @@ function ConfirmationDialog({
   const getButtonStyles = () => {
     switch (type) {
       case 'warning':
-        return 'bg-red-500 hover:bg-red-600 text-black';
+        return 'bg-red-500 hover:bg-red-600 text-white';
       case 'success':
-        return 'bg-green-500 hover:bg-green-600 text-black';
+        return 'bg-green-500 hover:bg-green-600 text-white';
       default:
-        return 'bg-orange-500 hover:bg-orange-600 text-black';
+        return 'bg-orange-500 hover:bg-orange-600 text-white';
     }
   };
 
@@ -802,164 +803,37 @@ export default function AstrologerProfilePage() {
     }
   };
 
-  const handleAudioCall = async (retryCount = 0) => {
+  const handleAudioCall = async () => {
+    if (!partner || !partner._id) return;
+    
     try {
       setIsAudioCallProcessing(true);
       setCurrentCallType('audio');
-      const token = getAuthToken();
-      const userDetails = getUserDetails();
-      const userId = userDetails?.id || userDetails?._id;
       
-      if (!token || !userId) {
-        throw new Error('Authentication required');
-      }
-
-      // Check if user role is 'friend' (partner)
-      if (userDetails.role === 'friend') {
-        console.log('Call blocked: User is a partner (friend role)');
-        setIsAudioCallProcessing(false);
-        setCurrentCallType(null);
-        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
-        return;
-      }
-
-      // Defensive check for partner._id
-      if (!partner || !partner._id) {
-        alert('Astrologer information is missing. Please refresh the page.');
-        setIsAudioCallProcessing(false);
-        setCurrentCallType(null);
-        return;
-      }
-      
-      // Fetch latest wallet balance
-      const currentBalance = await fetchWalletPageData();
-      
-      // Check wallet balance before proceeding
       const audioRpm = partner?.rpm || 15;
-      const audioCost = audioRpm * 2; // Estimate 2 minutes minimum cost
-      if (currentBalance < audioCost) {
-        setIsAudioCallProcessing(false);
-        setCurrentCallType(null);
+      const avatarUrl = partner?.avatar || partner?.profileImage || '';
+
+      await initiateCall({
+        astrologerId: partner._id,
+        astrologerName: partner.name,
+        callType: 'audio',
+        avatarUrl,
+        rpm: audioRpm
+      });
+      
+    } catch (error: any) {
+      setIsAudioCallProcessing(false);
+      setCurrentCallType(null);
+      
+      if (error.message === 'DONT_HAVE_ENOUGH_BALANCE') {
+        const audioRpm = partner?.rpm || 15;
         setInsufficientBalanceData({
-          requiredAmount: audioCost,
+          requiredAmount: Number(audioRpm) * 2,
           serviceType: 'call'
         });
         setShowInsufficientBalanceModal(true);
-        return;
-      }
-      
-      // Generate unique channel ID with timestamp and retry count to avoid conflicts
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 15);
-      const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
-      const channelId = Date.now().toString();
-      const receiverId = partner._id;
-      const requestBody = {
-        receiverUserId: receiverId,
-        type: 'call',
-        appVersion: '1.0.0',
-        isScreenShareCall: false
-      };
-      
-      if (!requestBody.receiverUserId) {
-        alert('receiverUserId is missing. Cannot initiate audio call.');
-        setIsAudioCallProcessing(false);
-        setCurrentCallType(null);
-        return;
-      }
-      
-      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        let errorMessage = 'Failed to initiate audio call';
-        const status = response.status;
-        try {
-          const errorData = await response.json();
-          console.error(`❌ Backend error (${status}):`, JSON.stringify(errorData));
-
-          const msgFromError =
-            errorData && typeof errorData === 'object'
-              ? errorData.message || errorData.error || JSON.stringify(errorData)
-              : String(errorData || '');
-
-          if (msgFromError === 'DONT_HAVE_ENOUGH_BALANCE') {
-            errorMessage = 'Insufficient wallet balance for audio call';
-          } else if (msgFromError === 'User not online') {
-            errorMessage = 'Astrologer is currently offline';
-          } else if (msgFromError === 'User already on another call, wait for a few minutes') {
-            errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
-          } else {
-            errorMessage = msgFromError || errorMessage;
-          }
-        } catch (e) {
-          console.error(`❌ HTTP error (${status}):`, response.statusText);
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        console.error('[audio call] livekit token response:', JSON.stringify(data));
-        const msg = data.message || '';
-        let errorMessage = msg || 'Failed to get audio call token';
-        if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
-          errorMessage = 'Insufficient wallet balance for audio call';
-        } else if (msg === 'User not online') {
-          errorMessage = 'Astrologer is currently offline';
-        } else if (msg.includes('already on another call')) {
-          errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
-        } else if (msg === 'Call already in progress') {
-          errorMessage = 'A call is already in progress. Please wait a moment and try again.';
-        } else if (msg === 'User Not Found') {
-          errorMessage = 'Astrologer not found. Please refresh the page and try again.';
-        }
-        throw new Error(errorMessage);
-      }
-      
-      // Extract data from backend response structure (matches backend format)
-      const { token: livekitToken, channel, livekitSocketURL, rpm, balance } = data.data;
-      
-      if (!livekitToken || !channel) {
-        throw new Error('Missing token or channel in response');
-      }
-      
-      // Store astrologer ID and image in localStorage for navigation back and avatar display
-      localStorage.setItem('lastAstrologerId', partner._id);
-      localStorage.setItem('callSource', 'astrologerProfile');
-      if (partner.avatar) {
-        localStorage.setItem(`astrologer_image_${partner._id}`, partner.profileImage);
-      }
-      
-      // Open frontend audio call page with token and room
-      const audioCallUrl = `/audio-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}&avatar=${encodeURIComponent(partner.avatar || partner.profileImage || '')}&rpm=${rpm || 0}&balance=${balance || 0}`;
-      router.push(audioCallUrl);
-      setTimeout(() => {
-        setIsAudioCallProcessing(false);
-        setCurrentCallType(null);
-      }, 1000);
-      
-    } catch (error) {
-      console.error('❌ Audio call error:', error);
-      setIsAudioCallProcessing(false);
-      setCurrentCallType(null);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate audio call';
-      if (errorMessage.includes('timeout')) {
-        alert('Connection timeout: The server is not responding. Please check your internet connection and try again.');
-      } else if (errorMessage.includes('Socket not connected')) {
-        alert('Connection error: Unable to connect to the server. Please refresh the page and try again.');
       } else {
-        alert(errorMessage);
+        // Already alerted in utility
       }
     }
   };
@@ -1027,162 +901,37 @@ export default function AstrologerProfilePage() {
     }
   };
 
-  const handleVideoCall = async (retryCount = 0) => {
+  const handleVideoCall = async () => {
+    if (!partner || !partner._id) return;
+
     try {
       setIsVideoCallProcessing(true);
       setCurrentCallType('video');
-      const token = getAuthToken();
-      const userDetails = getUserDetails();
-      const userId = userDetails?.id || userDetails?._id;
       
-      if (!token || !userId) {
-        throw new Error('Authentication required');
-      }
-
-      // Check if user role is 'friend' (partner)
-      if (userDetails.role === 'friend') {
-        console.log('Call blocked: User is a partner (friend role)');
-        setIsVideoCallProcessing(false);
-        setCurrentCallType(null);
-        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
-        return;
-      }
-
-      // Defensive check for partner._id
-      if (!partner || !partner._id) {
-        alert('Astrologer information is missing. Please refresh the page.');
-        setIsVideoCallProcessing(false);
-        setCurrentCallType(null);
-        return;
-      }
-      
-      // Fetch latest wallet balance
-      const currentBalance = await fetchWalletPageData();
-      
-      // Check wallet balance before proceeding
       const videoRpm = partner?.videoRpm || 20;
-      const videoCost = videoRpm * 2; // Estimate 2 minutes minimum cost
-      if (currentBalance < videoCost) {
-        setIsVideoCallProcessing(false);
-        setCurrentCallType(null);
+      const avatarUrl = partner?.avatar || partner?.profileImage || '';
+
+      await initiateCall({
+        astrologerId: partner._id,
+        astrologerName: partner.name,
+        callType: 'video',
+        avatarUrl,
+        rpm: videoRpm
+      });
+      
+    } catch (error: any) {
+      setIsVideoCallProcessing(false);
+      setCurrentCallType(null);
+      
+      if (error.message === 'DONT_HAVE_ENOUGH_BALANCE') {
+        const videoRpm = partner?.videoRpm || 20;
         setInsufficientBalanceData({
-          requiredAmount: videoCost,
+          requiredAmount: Number(videoRpm) * 2,
           serviceType: 'call'
         });
         setShowInsufficientBalanceModal(true);
-        return;
-      }
-      
-      // Generate unique channel ID with timestamp and retry count to avoid conflicts
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 15);
-      const retryId = retryCount > 0 ? `_retry${retryCount}` : '';
-      const channelId = Date.now().toString();
-      const receiverId = partner._id;
-      const requestBody = {
-        receiverUserId: receiverId,
-        type: 'video',
-        appVersion: '1.0.0',
-        isScreenShareCall: false
-      };
-      
-      if (!requestBody.receiverUserId) {
-        alert('receiverUserId is missing. Cannot initiate video call.');
-        setIsVideoCallProcessing(false);
-        setCurrentCallType(null);
-        return;
-      }
-      
-      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        let errorMessage = 'Failed to initiate video call';
-        const status = response.status;
-        try {
-          const errorData = await response.json();
-
-          const msgFromError =
-            errorData && typeof errorData === 'object'
-              ? errorData.message || errorData.error || JSON.stringify(errorData)
-              : String(errorData || '');
-
-          if (msgFromError === 'DONT_HAVE_ENOUGH_BALANCE') {
-            errorMessage = 'Insufficient wallet balance for video call';
-          } else if (msgFromError === 'User not online') {
-            errorMessage = 'Astrologer is currently offline';
-          } else if (msgFromError === 'User already on another call, wait for a few minutes') {
-            errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
-          } else {
-            errorMessage = msgFromError || errorMessage;
-          }
-        } catch (e) {
-          // Parse error fallback
-        }
-        throw new Error(errorMessage);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        const msg = data.message || '';
-        let errorMessage = msg || 'Failed to get video call token';
-        if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
-          errorMessage = 'Insufficient wallet balance for video call';
-        } else if (msg === 'User not online') {
-          errorMessage = 'Astrologer is currently offline';
-        } else if (msg.includes('already on another call')) {
-          errorMessage = 'Astrologer is currently busy on another call. Please try again later.';
-        } else if (msg === 'Call already in progress') {
-          errorMessage = 'A call is already in progress. Please wait a moment and try again.';
-        } else if (msg === 'User Not Found') {
-          errorMessage = 'Astrologer not found. Please refresh the page and try again.';
-        }
-        throw new Error(errorMessage);
-      }
-      
-      // Extract data from backend response structure (matches backend format)
-      const { token: livekitToken, channel, livekitSocketURL, rpm, balance } = data.data;
-      
-      if (!livekitToken || !channel) {
-        throw new Error('Missing token or channel in response');
-      }
-      
-      // Store astrologer ID and image in localStorage for navigation back and avatar display
-      localStorage.setItem('lastAstrologerId', partner._id);
-      localStorage.setItem('callSource', 'astrologerProfile');
-      if (partner.avatar) {
-        localStorage.setItem(`astrologer_image_${partner._id}`, partner.profileImage);
-      }
-      
-      // Open frontend video call page with token and room
-      const videoCallUrl = `/video-call?token=${encodeURIComponent(livekitToken)}&room=${encodeURIComponent(channel)}&astrologer=${encodeURIComponent(partner?.name || '')}&astrologerId=${encodeURIComponent(partner._id)}&wsURL=${encodeURIComponent(livekitSocketURL || '')}&avatar=${encodeURIComponent(partner.avatar || partner.profileImage || '')}&rpm=${rpm || 0}&balance=${balance || 0}`;
-      router.push(videoCallUrl);
-      setTimeout(() => {
-        setIsVideoCallProcessing(false);
-        setCurrentCallType(null);
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Video call error:', error);
-      setIsVideoCallProcessing(false);
-      setCurrentCallType(null);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initiate video call';
-      if (errorMessage.includes('timeout')) {
-        alert('Connection timeout: The server is not responding. Please check your internet connection and try again.');
-      } else if (errorMessage.includes('Socket not connected')) {
-        alert('Connection error: Unable to connect to the server. Please refresh the page and try again.');
       } else {
-        alert(errorMessage);
+        // Already alerted in utility
       }
     }
   };
@@ -1285,7 +1034,7 @@ export default function AstrologerProfilePage() {
           <div className="absolute top-4 left-4">
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-black transition-colors"
+              className="flex items-center gap-2 text-white transition-colors"
               onMouseEnter={(e) => e.currentTarget.style.color = '#FFB366'}
               onMouseLeave={(e) => e.currentTarget.style.color = 'white'}
             >
@@ -1394,7 +1143,7 @@ export default function AstrologerProfilePage() {
                   <div className="flex flex-wrap gap-2 mb-2">
                     <button
                       onClick={() => setShowGiftModal(true)}
-                      className="text-black px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
+                      className="text-white px-6 py-2.5 rounded-lg font-medium transition-colors text-sm"
                       style={{ backgroundColor: '#F7971E' }}
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
@@ -1530,7 +1279,7 @@ export default function AstrologerProfilePage() {
                           <p className="text-sm text-gray-500 mb-4">Exp: {ast.experience} years</p>
                           <button 
                             onClick={() => router.push(`/astrologers/${ast._id}`)}
-                            className="w-full text-black py-3 rounded-lg text-sm font-semibold transition-colors"
+                            className="w-full text-white py-3 rounded-lg text-sm font-semibold transition-colors"
                             style={{ backgroundColor: '#F7971E' }}
                             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8850B'}
                             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#F7971E'}
@@ -1573,7 +1322,7 @@ export default function AstrologerProfilePage() {
                 <div className="space-y-8">
                   {reviews.slice(0, 3).map((review, index) => (
                     <div key={review._id || index} className="flex items-start gap-6 pb-8 border-b border-gray-100 last:border-b-0">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-black font-bold" style={{ backgroundColor: '#F7971E' }}>
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: '#F7971E' }}>
                         {review.userName?.charAt(0)?.toUpperCase() || 'U'}
                       </div>
                       <div className="flex-1">

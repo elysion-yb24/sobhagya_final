@@ -1,8 +1,11 @@
 'use client';
 
 import Image from 'next/image'
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { PhoneIcon } from '@heroicons/react/24/solid';
+import { ArrowRight } from 'lucide-react';
 
 export default function Services() {
     const services = [
@@ -10,73 +13,73 @@ export default function Services() {
           name: "Birth Journal", 
           image: "/Group 13384.png", 
           description: "Your birth journal is a cosmic blueprint, revealing the celestial influences that shape your destiny.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Vastu Shastra", 
           image: "/Group 13383.png", 
           description: "Vastu harmonizes cosmic energies with your surroundings, creating a balanced environment.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
-        { 
-          name: "Face Reading", 
-          image: "/Face reading.svg", 
-          description: "Your face is a mirror of destiny, revealing secrets about your personality and future.", 
-          link: "#"
+        {
+          name: "Face Reading",
+          image: "/Face Reading.svg",
+          description: "Your face is a mirror of destiny, revealing secrets about your personality and future.",
+          link: "/call-with-astrologer"
         },
         { 
           name: "Lal Kitab", 
           image: "/Group 13388.png", 
           description: "Powerful remedies and astrological solutions for harmony and prosperity.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Crystal Ball", 
           image: "/Group 13385.png", 
           description: "The crystal ball reveals hidden truths, offering glimpses into past, present, and future.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Kundli Dosh", 
           image: "/Group 13386.png", 
           description: "Identifying planetary imbalances in your birth chart and providing remedies.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
-        { 
-          name: "Matrimony", 
-          image: "/Group 13367.png", 
-          description: "Astrology insights for a destined union, ensuring harmony, compatibility, and lifelong happiness.", 
-          link: "#" 
+        {
+          name: "Matrimony",
+          image: "/Group 13366.png",
+          description: "Astrology insights for a destined union, ensuring harmony, compatibility, and lifelong happiness.",
+          link: "/call-with-astrologer"
         },
         { 
           name: "Palm Reading", 
           image: "/Group 13387.png", 
           description: "Decoding the life moments in your hands, guiding you towards true potential.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Name Analysis", 
           image: "/Group 13396.png", 
           description: "Your name carries hidden energies that influence your destiny.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Festivals", 
           image: "/Group 13395.png", 
           description: "Understanding celestial influences in festivals to align with cosmic energies.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Card Reading", 
           image: "/Group 13394.png", 
           description: "Unlocking the mysteries of fate through Card interpretations.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         },
         { 
           name: "Year Analysis", 
           image: "/Group 13393.png", 
           description: "Astrological insights into major life themes and challenges for the year ahead.", 
-          link: "#" 
+          link: "/call-with-astrologer"
         }
       ];
 
@@ -158,7 +161,7 @@ export default function Services() {
               transition={{ duration: 0.1, delay: 0.7 }}
             >
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="Kundli Generator icon.svg" alt="Free Kundli Generator" className="w-12 h-12" />
+                <img src="/Kundli Generator icon.svg" alt="Free Kundli Generator" className="w-12 h-12" />
               </div>
               <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
                 Free Kundli Generator
@@ -182,7 +185,7 @@ export default function Services() {
               transition={{ duration: 0.1, delay: 0.8 }}
             >
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="daily-horoscope-.svg" alt="Daily Horoscope" className="w-12 h-12" />
+                <img src="/daily-horoscope-.svg" alt="Daily Horoscope" className="w-12 h-12" />
               </div>
               <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
                 Daily Horoscope
@@ -206,7 +209,7 @@ export default function Services() {
               transition={{ duration: 0.1, delay: 0.9 }}
             >
               <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="Gun Milan (1).svg" alt="Gun Milan" className="w-12 h-12" />
+                <img src="/Gun Milan (1).svg" alt="Gun Milan" className="w-12 h-12" />
               </div>
               <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
                 Gun Milan
@@ -248,15 +251,27 @@ export default function Services() {
             {services.map((service, index) => (
               <div
                 key={index}
+                onClick={() => window.location.href = service.link}
                 className="group p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-white transition-all duration-25 ease-out shadow-md hover:shadow-2xl hover:border-orange-500 hover:-translate-y-1"
               >
                 <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                  <Image 
-                    src={service.image || "/default-image.png"} 
-                    alt={service.name} 
-                    width={service.name === "Palm Reading" ? 45 : 61} 
+                  {/* Use plain <img> with URL-encoded src because next/image can fail silently
+                      on some environments for filenames containing spaces or parentheses.
+                      Fallback to /default-image.png if the icon can't be loaded. */}
+                  <img
+                    src={encodeURI(service.image || "/default-image.png")}
+                    alt={service.name}
+                    width={service.name === "Palm Reading" ? 45 : 61}
                     height={service.name === "Palm Reading" ? 45 : 61}
-                    className="transition-opacity duration-200"
+                    loading="lazy"
+                    className="w-12 h-12 object-contain transition-opacity duration-200"
+                    onError={(e) => {
+                      const t = e.target as HTMLImageElement;
+                      if (!t.dataset.fallback) {
+                        t.dataset.fallback = "1";
+                        t.src = "/default-image.png";
+                      }
+                    }}
                   />
                 </div>
                 <h3 className="text-lg font-semibold mt-2 text-gray-800 transition-colors">
@@ -296,16 +311,37 @@ export default function Services() {
               >
                 Book your consultation now via chat, call, or video and take the first step toward clarity and success!
               </motion.p>
-              <motion.button 
-                className="mt-6 bg-white text-[#F7971D] py-3 sm:py-4 px-8 sm:px-16 rounded-lg font-semibold text-base sm:text-lg shadow-md hover:bg-orange-600 hover:text-white transition"
+              <motion.div
+                className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center"
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 2.3 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
-                Book Now
-              </motion.button>
+                <Link href="/call-with-astrologer" prefetch className="w-full sm:w-auto">
+                  <motion.button
+                    type="button"
+                    aria-label="Book a consultation with an astrologer"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#F7971D] to-orange-600 text-white py-3 sm:py-4 px-8 sm:px-16 rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <PhoneIcon className="w-5 h-5" />
+                    Book Now
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </motion.button>
+                </Link>
+                <Link href="/astrologers" prefetch className="w-full sm:w-auto">
+                  <motion.button
+                    type="button"
+                    aria-label="Browse all astrologers"
+                    className="w-full inline-flex items-center justify-center gap-2 bg-white text-[#F7971D] border-2 border-[#F7971D] py-3 sm:py-4 px-6 sm:px-10 rounded-xl font-semibold text-base sm:text-lg hover:bg-orange-50 transition-all duration-300"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Browse Astrologers
+                  </motion.button>
+                </Link>
+              </motion.div>
             </div>
           </motion.div>
         </div>

@@ -13,23 +13,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create transporter using Hostinger SMTP (optimized for Vercel)
+    const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+    const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
+
+    if (!smtpUser || !smtpPass) {
+      console.error('SMTP credentials missing: set SMTP_USER and SMTP_PASS (or EMAIL_USER/EMAIL_PASS) in env');
+      return NextResponse.json(
+        { error: 'Email service is not configured. Please try again later.' },
+        { status: 500 }
+      );
+    }
+
+    const smtpPort = Number(process.env.SMTP_PORT || 587);
     const transporter = nodemailer.createTransport({
-      host: 'smtp.hostinger.com',
-      port: 587,
-      secure: false, // true for 465, false for other ports
-      auth: {
-        user: process.env.EMAIL_USER, // info@elysionsoftwares.com
-        pass: process.env.EMAIL_PASS, // Password for info@elysionsoftwares.com
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
+      host: process.env.SMTP_HOST || 'smtp.hostinger.com',
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+      tls: { rejectUnauthorized: false },
     });
 
     // Email content
     const mailOptions = {
-      from: `"Sobhagya Contact Form" <${process.env.EMAIL_USER}>`, // From info@elysionsoftwares.com
+      from: `"Sobhagya Contact Form" <${smtpUser}>`,
       to: 'info@sobhagya.in', // Always send to info@sobhagya.in
       replyTo: email, // User's email for reply
       subject: `New Contact Form Message from ${name}`,

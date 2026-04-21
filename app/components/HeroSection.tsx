@@ -60,7 +60,7 @@ const HeroSection: React.FC = () => {
       id: "shop",
       title: "Sobhagya Shop",
       icon: "/astromall.png",
-      href: "https://store.sobhagya.in",
+      href: "https://www.ramvarna.com",
       isExternal: true,
     }
   ];

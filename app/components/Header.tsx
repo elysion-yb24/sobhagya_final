@@ -194,8 +194,13 @@ const Header = () => {
     return ch.toUpperCase();
   };
 
-  // Hide header on call pages and active live sessions
-  if (pathname?.startsWith('/video-call') || pathname?.startsWith('/audio-call') || (pathname?.startsWith('/live-sessions/') && pathname !== '/live-sessions')) {
+  // Hide header on call pages, active live sessions, and partner dashboard
+  if (
+    pathname?.startsWith('/video-call') || 
+    pathname?.startsWith('/audio-call') || 
+    (pathname?.startsWith('/live-sessions/') && pathname !== '/live-sessions') ||
+    pathname === '/partner-info'
+  ) {
     return null;
   }
 
@@ -343,12 +348,14 @@ const Header = () => {
                   {[
                     { label: "About Us", href: "/about" },
                     { label: "Services", href: "/services" },
-                    { label: "Live Sessions", href: "/live-sessions" },
-                    { label: "Call with Astrologer", href: "/call-with-astrologer" },
+                    { label: "Live Sessions", href: "/live-sessions", hideForPartner: true },
+                    { label: "Call with Astrologer", href: "/call-with-astrologer", hideForPartner: true },
                     { label: "Shop", href: "https://www.ramvarna.com" },
                     { label: "Blog", href: "/blog" },
                     { label: "Contact Us", href: "/contact" },
-                  ].map((link) => (
+                  ]
+                  .filter(link => !((userProfile?.role === 'astrologer' || userProfile?.role === 'friend') && link.hideForPartner))
+                  .map((link) => (
                     <Link
                       key={link.label}
                       href={link.href}
@@ -467,9 +474,10 @@ const Header = () => {
           <div className="flex items-center gap-2">
           <Link
             href="/call-with-astrologer"
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 transition-all duration-300 hover:scale-110"
+            aria-label="Call with astrologer"
+            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 active:scale-95"
           >
-              <Phone size={16} />
+            <Phone size={18} />
           </Link>
 
           {mounted && isAuthenticatedUser && (
@@ -518,18 +526,27 @@ const Header = () => {
         {/* MOBILE MENU with enhanced animations and improved scroll behavior */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
-            className="fixed top-0 left-0 w-full z-[9999] flex flex-col bg-white shadow-2xl"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            style={{ 
-              height: 'auto',
-              maxHeight: '100vh',
-              overflowY: 'auto'
-            }}
-          >
+          <>
+            {/* Backdrop for mobile menu */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998] md:hidden"
+            />
+            <motion.div 
+              className="fixed top-0 left-0 w-full z-[9999] flex flex-col premium-glass shadow-2xl rounded-b-[2rem]"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              style={{ 
+                height: 'auto',
+                maxHeight: '100vh',
+                overflowY: 'auto'
+              }}
+            >
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
               <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={() => setIsOpen(false)}>
@@ -548,7 +565,7 @@ const Header = () => {
             </div>
 
             {/* Mobile Menu Content */}
-            <div className="px-4 py-6 space-y-6 bg-white">
+            <div className="px-4 py-8 space-y-6 bg-transparent">
               {/* User Authentication Section */}
               {mounted && isAuthenticatedUser ? (
                 <div className="space-y-4">
@@ -674,12 +691,14 @@ const Header = () => {
                   {[
                     { href: "/about", label: "About Us", icon: "✨", bgColor: "bg-indigo-100" },
                     { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
-                    { href: "/live-sessions", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100" },
-                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100" },
+                    { href: "/live-sessions", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100", hideForPartner: true },
+                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100", hideForPartner: true },
                     { href: "https://www.ramvarna.com", label: "Shop", icon: "🛍️", bgColor: "bg-pink-100" },
                     { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
                     { href: "/contact", label: "Contact Us", icon: "📧", bgColor: "bg-blue-100" },
-                  ].map((item, index) => (
+                  ]
+                  .filter(link => !((userProfile?.role === 'astrologer' || userProfile?.role === 'friend') && (link as any).hideForPartner))
+                  .map((item, index) => (
                     <Link 
                       key={item.href}
                       href={item.href}
@@ -729,11 +748,10 @@ const Header = () => {
               )}
             </div>
           </motion.div>
-        )}
+        </>
+      )}
       </AnimatePresence>
-      </div>
-
-
+    </div>
     </header>
   );
   };

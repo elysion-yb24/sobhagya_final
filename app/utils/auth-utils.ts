@@ -42,6 +42,26 @@ export function getAuthToken(): string | null {
 }
 
 /**
+ * Returns the refresh token (distinct from the access token returned by
+ * getAuthToken). Backend chat middleware reads it from the `cookies` header.
+ */
+export function getRefreshToken(): string | null {
+  try {
+    if (typeof window === 'undefined') return null;
+    const lsRefresh = localStorage.getItem('refresh_token');
+    if (lsRefresh) return lsRefresh;
+    const lsToken = localStorage.getItem('token');
+    if (lsToken) return lsToken;
+    const match = document.cookie.match(/(?:^|;\s*)refresh_token=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]);
+    return null;
+  } catch (e) {
+    console.error('Error in getRefreshToken:', e);
+    return null;
+  }
+}
+
+/**
  * Stores the authentication token in localStorage and cookies
  */
 export function storeAuthToken(token: string): boolean {
@@ -54,7 +74,7 @@ export function storeAuthToken(token: string): boolean {
     
     // Store in cookies for server-side access (using same name as working APIs)
     const isSecure = window.location.protocol === 'https:';
-    document.cookie = `token=${token}; path=/; max-age=${60*60*24*7}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+    document.cookie = `token=${token}; path=/; max-age=${60*60*24*365}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
     
     return true;
   } catch (e) {
@@ -574,52 +594,25 @@ export async function performLogout(): Promise<boolean> {
 }
 
 /**
- * Checks if token exists and is valid
- * Tokens are considered valid for 7 days from last activity (not creation)
+ * Checks if a token exists.
+ *
+ * Product requirement: the session must persist until the user explicitly
+ * logs out. There is no client-side TTL — if a token string is present,
+ * treat the user as authenticated. The server is responsible for rejecting
+ * tokens that have actually been revoked (401 → `authenticatedFetch` wipes
+ * auth data), so we no longer short-circuit on a local timestamp.
  */
 export function isTokenValid(token: string | null): boolean {
   if (!token) return false;
-  
   try {
-    // Check if token is a non-empty string
-    if (!token || token.trim() === '') return false;
-    
-    // Check token timestamp (last activity time)
-    const tokenTimestamp = localStorage.getItem('tokenTimestamp');
-    if (!tokenTimestamp) {
-      // If no timestamp exists, assume token is fresh and update timestamp
-      localStorage.setItem('tokenTimestamp', Date.now().toString());
-      return true;
-    }
-    
-    // Token TTL: 7 days (in milliseconds)
-    const TOKEN_TTL = 7 * 24 * 60 * 60 * 1000;
-    const timestampNum = parseInt(tokenTimestamp, 10);
-    
-    if (isNaN(timestampNum)) {
-      // Invalid timestamp, reset it
-      localStorage.setItem('tokenTimestamp', Date.now().toString());
-      return true;
-    }
-    
-    const currentTime = Date.now();
-    if (timestampNum > currentTime) {
-      // Future timestamp, reset it
-      localStorage.setItem('tokenTimestamp', currentTime.toString());
-      return true;
-    }
-    
-    const isValid = (currentTime - timestampNum) < TOKEN_TTL;
-    
-    // If token is still valid, update the timestamp to extend its life
-    if (isValid) {
-      localStorage.setItem('tokenTimestamp', currentTime.toString());
-    }
-    
-    return isValid;
+    if (token.trim() === '') return false;
+    // Keep tokenTimestamp fresh so any "how old is this session?" consumers
+    // (e.g. hasUserCalledBefore) still behave. Not used for expiry.
+    localStorage.setItem('tokenTimestamp', Date.now().toString());
+    return true;
   } catch (e) {
     console.error("Error validating token:", e);
-    return false;
+    return true;
   }
 }
 
@@ -667,22 +660,12 @@ export function updateTokenActivity(): boolean {
 }
 
 /**
- * Check if token is still valid or needs refresh
- * Since there's no refresh token API, we'll extend token validity on activity
+ * Check if a token is present. No local expiry — only the server can
+ * invalidate a session (see `authenticatedFetch` 401 handling).
  */
 export function refreshTokenIfNeeded(): boolean {
   const token = getAuthToken();
-  
-  if (!token) return false;
-  
-  // If token is valid, return true
-  if (isTokenValid(token)) return true;
-  
-  // If token exists but is expired, we can't refresh it without an API
-  // So we need to clear the data and require re-authentication
-  console.log('❌ Token expired and no refresh API available, clearing auth data');
-  clearAuthData();
-  return false;
+  return !!token;
 }
 
 /**
@@ -775,6 +758,21 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
 
   // Update token activity before making the request
   updateTokenActivity();
+
+  // Ensure token is also set as cookie (some microservices expect this)
+  if (typeof document !== 'undefined') {
+    try {
+      const isSecure = window.location.protocol === 'https:';
+      const cookieOptions = `; path=/; max-age=${60*60*24*365}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+      document.cookie = `token=${token}${cookieOptions}`;
+      // Also set for .sobhagya.in if applicable
+      if (window.location.hostname.includes('sobhagya.in')) {
+        document.cookie = `token=${token}${cookieOptions}; domain=.sobhagya.in`;
+      }
+    } catch (e) {
+      console.warn('Failed to sync token cookie:', e);
+    }
+  }
 
   // Add authorization header
   const headers = {

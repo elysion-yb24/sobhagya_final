@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Search, ChevronDown, XCircle } from "lucide-react";
 
 interface FilterBarProps {
@@ -23,9 +23,31 @@ const FilterBar: React.FC<FilterBarProps> = ({
   isLoading
 }) => {
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFiredRef = useRef<string>(searchQuery);
+
+  useEffect(() => {
+    setLocalQuery(searchQuery);
+    lastFiredRef.current = searchQuery;
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const trimmed = localQuery.trim();
+      if (trimmed === lastFiredRef.current.trim()) return;
+      lastFiredRef.current = trimmed;
+      onSearchClick(trimmed);
+    }, 350);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [localQuery, onSearchClick]);
 
   const handleSearch = () => {
-    onSearchClick(localQuery);
+    const trimmed = localQuery.trim();
+    lastFiredRef.current = trimmed;
+    onSearchClick(trimmed);
   };
 
   return (

@@ -134,16 +134,26 @@ export async function POST(req: NextRequest) {
     });
 
     const text = await res.text();
-    console.log('[call-token-livekit] backend HTTP status:', res.status);
-    console.log('[call-token-livekit] backend response headers:', Object.fromEntries(res.headers));
-    console.log('[call-token-livekit] backend raw response (first 500 chars):', text.substring(0, 500));
+    console.log(`[call-token-livekit] Backend response: status=${res.status}`);
     
     let parsed: any;
     try {
-      parsed = JSON.parse(text);
+      if (text) {
+        parsed = JSON.parse(text);
+      } else {
+        console.warn('[call-token-livekit] Backend returned empty response');
+        parsed = { success: false, message: 'Empty response from backend' };
+      }
     } catch (e) {
-      console.error('[call-token-livekit] Failed to parse backend response as JSON');
-      parsed = { success: false, message: text };
+      console.error('[call-token-livekit] Failed to parse backend response as JSON:', text);
+      parsed = { success: false, message: 'Server error: Invalid response format', details: text.substring(0, 100) };
+    }
+
+    // Capture the balance/token from successful response for logging (sanitized)
+    if (parsed.success && parsed.data) {
+      console.log('[call-token-livekit] Success: Token generated, room:', parsed.data.channel);
+    } else {
+      console.log('[call-token-livekit] Backend returned error:', parsed.message || 'Unknown error');
     }
 
     return NextResponse.json(parsed, { 

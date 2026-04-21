@@ -10,6 +10,7 @@ import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceMod
 import ChatConnectingModal from "../../components/ui/ChatConnectingModal";
 import { useWalletBalance } from "./WalletBalanceContext";
 import { useSessionManager } from "./SessionManager";
+import { initiateCall } from "../../utils/calling-utils";
 
 interface Astrologer {
   _id: string;
@@ -193,63 +194,31 @@ const AstrologerCard = React.memo(function AstrologerCard({
   const initiateDirectCall = async (callType: 'audio' | 'video') => {
     try {
       setIsInitiatingCall(true);
-      const token = getAuthToken();
-      const user = getUserDetails();
-      if (!token || !user?.id) {
-        router.push('/login');
-        return;
-      }
+      
+      const avatarUrl = (partner as any).avatar || profileImage || '';
+      const currentRpm = callType === 'audio' ? (rpm || 15) : (videoRpm || 20);
 
-      if (user.role === 'friend') {
-        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
-        setIsInitiatingCall(false);
-        return;
-      }
-
-      const channelId = Date.now().toString();
-      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      const body = {
-        receiverUserId: _id,
-        type: callType === 'audio' ? 'call' : 'video',
-        appVersion: '1.0.0'
-      };
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-        credentials: 'include',
+      await initiateCall({
+        astrologerId: _id,
+        astrologerName: name,
+        callType,
+        avatarUrl,
+        rpm: currentRpm
       });
-
-      const data = await response.json();
-      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
-        const msg = data?.message || 'Failed to initiate call';
-        if (msg === 'DONT_HAVE_ENOUGH_BALANCE') {
-          setInsufficientBalanceData({ requiredAmount: (rpm || 15) * 2, serviceType: 'call' });
-          setShowInsufficientBalanceModal(true);
-          setIsInitiatingCall(false);
-          return;
-        }
-        throw new Error(msg);
-      }
-
-      localStorage.setItem('lastAstrologerId', _id);
-      localStorage.setItem('callSource', 'astrologerCard');
-      localStorage.removeItem('selectedAstrologerId');
-      localStorage.removeItem('callIntent');
-
-      const dest = callType === 'audio'
-        ? `/audio-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(name)}&astrologerId=${encodeURIComponent(_id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`
-        : `/video-call?token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(name)}&astrologerId=${encodeURIComponent(_id)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}`;
-
-      router.push(dest);
-    } catch (err) {
-      console.error('❌ Direct call initiation failed:', err);
-      alert(err instanceof Error ? err.message : 'Failed to initiate call');
+      
+    } catch (err: any) {
       setIsInitiatingCall(false);
+      
+      if (err.message === 'DONT_HAVE_ENOUGH_BALANCE') {
+        const currentRpm = callType === 'audio' ? (rpm || 15) : (videoRpm || 20);
+        setInsufficientBalanceData({ 
+          requiredAmount: Number(currentRpm) * 2, 
+          serviceType: 'call' 
+        });
+        setShowInsufficientBalanceModal(true);
+      } else {
+        // Already alerted in utility
+      }
     }
   };
 
@@ -339,16 +308,19 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
       try {
         console.log('Creating/updating session with provider:', _id);
-        // Use createSession which will handle both creating and checking
-        const sessionId = await createOrJoinSession(_id);
-        console.log('Session result:', sessionId);
-        
-        if (sessionId) {
-          console.log('Session created/found:', sessionId);
+        // createOrJoinSession now returns { threadId, sessionId } from REST
+        // POST /api/chat/create-session. The threadId is the persistent
+        // conversation key, sessionId is the current active session doc id.
+        const info = await createOrJoinSession(_id);
+        console.log('Session result:', info);
+
+        if (info && info.threadId) {
+          const qs = new URLSearchParams({ threadId: info.threadId });
+          if (info.sessionId) qs.set('sessionId', info.sessionId);
           setTimeout(() => {
             setShowChatConnectingModal(false);
-            router.push(`/chat?sessionId=${sessionId}`);
-          }, 1500); // Show loading for at least 1.5 seconds
+            router.push(`/chat?${qs.toString()}`);
+          }, 1500);
         } else {
           console.error('Failed to create session');
           setTimeout(() => {
@@ -516,7 +488,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                   setIsCallMenuOpen((prev) => !prev);
                 }
               }}
-              className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-black shadow-md transition"
+              className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-white shadow-md transition"
               style={{
                 background: "linear-gradient(90deg, #F9A43A 0%, #F7971E 100%)",
               }}

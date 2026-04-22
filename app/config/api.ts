@@ -59,11 +59,12 @@ export function getChatSocketUrl(): string {
   }
 
   const base = getApiBaseUrl();
-  if (base.includes('sobhagya.in')) {
-    return base; // Gateway handles /chat-socket path
+  // If base is production gateway or local gateway, use it
+  if (base.includes('sobhagya.in') || base.includes('localhost')) {
+    return base;
   }
-
-  return 'https://micro.sobhagya.in';
+  
+  return 'http://localhost:9001';
 }
 
 // Get API Base URL reliably
@@ -73,7 +74,7 @@ export function getApiBaseUrl(): string {
 
   // 2️⃣ Fallbacks based on environment
   if (process.env.NODE_ENV === 'development') {
-    return 'https://micro.sobhagya.in'; // always use 9001 for dev
+    return 'http://localhost:9001'; // always use 9001 for dev
   }
   if (process.env.NODE_ENV === 'production') {
     return 'https://micro.sobhagya.in';

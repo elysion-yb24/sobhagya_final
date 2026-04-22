@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface GiftItem {
     _id: string;
@@ -80,6 +80,54 @@ const DakshinaIcons: Record<string, React.ReactNode> = {
 const ICON_KEYS = ['om', 'diya', 'lotus', 'namaste', 'star', 'trishul'];
 const ICON_LABELS = ['Om', 'Diya', 'Lotus', 'Namaste', 'Nakshatra', 'Trishul'];
 
+// Inject keyframes once at module load instead of on every render via <style jsx global>.
+// Using translate3d forces GPU compositing on older/lower-end devices.
+const DAKSHINA_STYLE_ID = '__dksh_modal_keyframes__';
+if (typeof document !== 'undefined' && !document.getElementById(DAKSHINA_STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = DAKSHINA_STYLE_ID;
+    style.textContent = `
+        @keyframes dksh-fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* Mobile bottom-sheet slide-up */
+        @keyframes dksh-slideUp {
+            from { transform: translate3d(0, 100%, 0); }
+            to   { transform: translate3d(0, 0, 0); }
+        }
+        /* Desktop centered dialog: keep the -50%/-50% centering while fading + scaling */
+        @keyframes dksh-popIn {
+            from { opacity: 0; transform: translate3d(-50%, -46%, 0) scale(0.96); }
+            to   { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
+        }
+        @keyframes dksh-scaleIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes dksh-sparkle {
+            from { opacity: 0; transform: translate3d(0,8px,0) scale(0); }
+            to   { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+        }
+        .dksh-backdrop {
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            animation: dksh-fadeIn 0.2s ease-out both;
+        }
+        .dksh-modal {
+            animation: dksh-slideUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
+            backface-visibility: hidden;
+        }
+        @media (min-width: 768px) {
+            .dksh-modal {
+                transform: translate3d(-50%, -50%, 0);
+                animation: dksh-popIn 0.32s cubic-bezier(0.16,1,0.3,1) both;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .dksh-backdrop, .dksh-modal { animation-duration: 0.01ms !important; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 const FALLBACK_PRESETS: GiftItem[] = [
     { _id: 'preset_11', name: 'Om', icon: 'om', price: 11 },
     { _id: 'preset_21', name: 'Diya', icon: 'diya', price: 21 },
@@ -96,7 +144,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
 
     const displayGifts = (gifts && gifts.length > 0) ? gifts.filter(g => g.active !== false) : FALLBACK_PRESETS;
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (isOpen && onFetchGifts && (!gifts || gifts.length === 0)) {
             onFetchGifts();
         }
@@ -133,41 +181,41 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
+                className="dksh-backdrop fixed inset-0 z-[200] bg-black/50"
                 onClick={handleClose}
-                style={{ animation: 'dksh-fadeIn 0.2s ease-out' }}
             />
 
-            {/* Modal */}
+            {/* Modal — bottom sheet on mobile, centered dialog on md+ */}
             <div
-                className="fixed bottom-0 inset-x-0 z-[201] max-h-[85vh] overflow-y-auto"
-                style={{ animation: 'dksh-slideUp 0.35s cubic-bezier(0.16,1,0.3,1)' }}
+                className="dksh-modal fixed z-[201] max-h-[85vh] overflow-y-auto
+                           bottom-0 inset-x-0
+                           md:bottom-auto md:inset-x-auto md:top-1/2 md:left-1/2 md:w-[92vw] md:max-w-md"
             >
-                <div className="bg-gradient-to-b from-[#1a0e2e] to-[#110a1f] rounded-t-3xl border-t border-white/10 shadow-2xl">
-                    {/* Handle */}
-                    <div className="flex justify-center pt-3 pb-1">
-                        <div className="w-10 h-1 rounded-full bg-white/20" />
+                <div className="bg-gradient-to-b from-white via-orange-50/60 to-amber-50/40 rounded-t-3xl border-t border-orange-100 shadow-[0_-12px_40px_rgba(249,115,22,0.18)] md:rounded-3xl md:border md:shadow-[0_20px_60px_rgba(249,115,22,0.25)]">
+                    {/* Handle (mobile bottom-sheet affordance only) */}
+                    <div className="flex justify-center pt-3 pb-1 md:hidden">
+                        <div className="w-10 h-1 rounded-full bg-orange-200" />
                     </div>
 
                     {/* Success State */}
                     {showSuccess ? (
                         <div className="flex flex-col items-center justify-center py-16 px-6" style={{ animation: 'dksh-scaleIn 0.4s cubic-bezier(0.16,1,0.3,1)' }}>
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/20 border-2 border-amber-400/40 flex items-center justify-center mb-5 text-amber-400">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center mb-5 text-white shadow-lg shadow-orange-500/30">
                                 {selectedGift?.icon && DakshinaIcons[selectedGift.icon.toLowerCase()]
                                     ? <div className="scale-150">{DakshinaIcons[selectedGift.icon.toLowerCase()]}</div>
                                     : selectedGift?.icon && (selectedGift.icon.startsWith('http') || selectedGift.icon.startsWith('//'))
                                         ? <img src={selectedGift.icon} alt={selectedGift.name || 'gift'} className="w-12 h-12 object-contain" />
                                         : <div className="scale-150">{DakshinaIcons['namaste'] || <span className="text-4xl">🙏</span>}</div>}
                             </div>
-                            <h3 className="text-xl font-bold text-white mb-2">Dakshina Sent!</h3>
-                            <p className="text-amber-300/80 text-sm">
-                                ₹{Math.round(Number(selectedGift?.price) || 0)} offered to {receiverName}
+                            <h3 className="text-xl font-extrabold text-gray-900 mb-2">Dakshina Sent!</h3>
+                            <p className="text-orange-600 text-sm font-semibold">
+                                ₹{Math.round(Number(selectedGift?.price) || 0).toLocaleString('en-IN')} offered to {receiverName}
                             </p>
                             <div className="mt-4 flex items-center gap-1">
                                 {[0, 1, 2, 3, 4].map(i => (
                                     <span
                                         key={i}
-                                        className="text-amber-400 text-xs"
+                                        className="text-orange-500 text-xs"
                                         style={{ animation: `dksh-sparkle 0.6s ease-out ${i * 0.1}s both` }}
                                     >
                                         ✦
@@ -179,46 +227,49 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                         <div className="px-5 pb-8 pt-3">
                             {/* Header */}
                             <div className="text-center mb-6">
-                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-600/10 border border-amber-400/20 mb-3">
+                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 mb-3 shadow-lg shadow-orange-500/30">
                                     <span className="text-2xl">🙏</span>
                                 </div>
-                                <h3 className="text-lg font-bold text-white tracking-tight">Offer Dakshina</h3>
-                                <p className="text-white/40 text-xs mt-1">
-                                    Bless <span className="text-amber-300/70">{receiverName}</span> with your offering
+                                <h3 className="text-lg font-extrabold text-gray-900 tracking-tight">Offer Dakshina</h3>
+                                <p className="text-gray-500 text-xs mt-1">
+                                    Bless <span className="text-orange-600 font-semibold">{receiverName}</span> with your offering
                                 </p>
                             </div>
 
                             {/* Gift items */}
                             <div className="grid grid-cols-3 gap-2.5 mb-5">
-                                {displayGifts.map((gift, idx) => {
+                                {displayGifts.map((gift) => {
                                     const isSelected = selectedGift?._id === gift._id;
-                                    // Use SVG icon if available, otherwise fallback to emoji
                                     const iconKey = gift.icon?.toLowerCase();
                                     const svgIcon = DakshinaIcons[iconKey];
                                     return (
                                         <button
                                             key={gift._id}
                                             onClick={() => setSelectedGift(gift)}
-                                            className={`relative flex flex-col items-center gap-1.5 py-4 px-3 rounded-2xl border transition-all duration-200 ${
+                                            style={{
+                                                transition: 'transform 180ms cubic-bezier(0.16,1,0.3,1), background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease',
+                                                transform: isSelected ? 'scale(1.03)' : 'scale(1)',
+                                            }}
+                                            className={`relative flex flex-col items-center gap-1.5 py-4 px-3 rounded-2xl border ${
                                                 isSelected
-                                                    ? 'bg-gradient-to-b from-amber-500/20 to-orange-600/10 border-amber-400/40 shadow-lg shadow-amber-500/10 scale-[1.02]'
-                                                    : 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06] hover:border-white/10'
+                                                    ? 'bg-gradient-to-b from-orange-50 to-amber-50 border-orange-400 shadow-lg shadow-orange-500/15'
+                                                    : 'bg-white border-orange-100 hover:bg-orange-50/60 hover:border-orange-200'
                                             }`}
                                         >
-                                            <div className={`transition-colors duration-200 ${isSelected ? 'text-amber-400' : 'text-amber-300/60'}`}>
+                                            <div className={`transition-colors duration-200 ${isSelected ? 'text-orange-600' : 'text-orange-400'}`}>
                                                 {svgIcon ? svgIcon
                                                     : gift.icon && (gift.icon.startsWith('http') || gift.icon.startsWith('//'))
                                                         ? <img src={gift.icon} alt={gift.name || 'gift'} className="w-10 h-10 object-contain rounded-lg" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                                                         : <span className="text-2xl">{gift.icon || '🙏'}</span>
                                                 }
                                             </div>
-                                            <span className={`text-sm font-bold ${
-                                                isSelected ? 'text-amber-300' : 'text-white/70'
+                                            <span className={`text-sm font-extrabold ${
+                                                isSelected ? 'text-orange-600' : 'text-gray-800'
                                             }`}>
-                                                ₹{Math.round(Number(gift.price) || 0)}
+                                                ₹{Math.round(Number(gift.price) || 0).toLocaleString('en-IN')}
                                             </span>
                                             {gift.name && (
-                                                <span className={`text-[10px] truncate max-w-full ${isSelected ? 'text-amber-200/60' : 'text-white/40'}`}>{gift.name}</span>
+                                                <span className={`text-[10px] truncate max-w-full font-medium ${isSelected ? 'text-orange-500' : 'text-gray-400'}`}>{gift.name}</span>
                                             )}
                                         </button>
                                     );
@@ -229,15 +280,16 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                             <button
                                 onClick={handleSend}
                                 disabled={!selectedGift || isSending}
-                                className={`w-full py-4 rounded-2xl font-bold text-sm tracking-wide transition-all duration-200 flex items-center justify-center gap-2 ${
+                                style={{ transition: 'transform 150ms ease, box-shadow 200ms ease, background-color 200ms ease' }}
+                                className={`w-full py-4 rounded-2xl font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 ${
                                     selectedGift
-                                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 active:scale-[0.98]'
-                                        : 'bg-white/[0.05] text-white/20 cursor-not-allowed'
+                                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 active:scale-[0.98]'
+                                        : 'bg-orange-50 text-orange-300 cursor-not-allowed border border-orange-100'
                                 }`}
                             >
                                 {isSending ? (
                                     <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                                         <span>Offering...</span>
                                     </div>
                                 ) : (
@@ -256,7 +308,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                             {/* Cancel */}
                             <button
                                 onClick={handleClose}
-                                className="w-full mt-3 py-3 text-white/30 text-xs font-medium tracking-wide hover:text-white/50 transition-colors"
+                                className="w-full mt-3 py-3 text-gray-400 text-xs font-semibold tracking-wide hover:text-gray-600 transition-colors"
                             >
                                 Cancel
                             </button>
@@ -265,24 +317,6 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                 </div>
             </div>
 
-            <style jsx global>{`
-                @keyframes dksh-fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-                @keyframes dksh-slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-                @keyframes dksh-scaleIn {
-                    from { opacity: 0; transform: scale(0.8); }
-                    to { opacity: 1; transform: scale(1); }
-                }
-                @keyframes dksh-sparkle {
-                    from { opacity: 0; transform: scale(0) translateY(8px); }
-                    to { opacity: 1; transform: scale(1) translateY(0); }
-                }
-            `}</style>
         </>
     );
 };

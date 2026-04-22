@@ -11,16 +11,31 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // When a featured image is shown at the top, detach the first inline <img>
-  // from the content and re-append it at the end so we don't duplicate the
-  // hero image and still keep the second image visible at the bottom.
+  // The featured image is rendered above the article body. To avoid showing
+  // it twice at the top, remove every inline <img> in the body whose src
+  // matches the featured image. Any other image (a genuine second image)
+  // stays at its natural position, which is typically further down the post.
   const processedContent = useMemo(() => {
     if (!blog?.content) return "";
     if (!blog.image) return blog.content;
+
+    const normalize = (u?: string | null) => {
+      if (!u) return "";
+      try {
+        return new URL(u, typeof window !== "undefined" ? window.location.href : "https://sobhagya.in")
+          .pathname.split("/").pop() || u;
+      } catch {
+        return u;
+      }
+    };
+    const heroKey = normalize(blog.image);
+
     if (typeof window === "undefined" || typeof DOMParser === "undefined") {
-      // SSR/safety fallback: simple regex strip-first-image
-      return blog.content.replace(/<img[^>]*>/i, "");
+      // SSR fallback — drop the first occurrence of the hero src if present.
+      const pattern = new RegExp(`<img[^>]*src=["'][^"']*${heroKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^"']*["'][^>]*>`, "i");
+      return blog.content.replace(pattern, "");
     }
+
     try {
       const doc = new DOMParser().parseFromString(
         `<div id="__root">${blog.content}</div>`,
@@ -28,11 +43,12 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
       );
       const root = doc.getElementById("__root");
       if (!root) return blog.content;
-      const firstImg = root.querySelector("img");
-      if (firstImg) {
-        // Walk up to a wrapping <figure>/<p> if it contains only this image
-        let target: Element = firstImg;
-        const parent = firstImg.parentElement;
+
+      root.querySelectorAll("img").forEach((img) => {
+        const src = img.getAttribute("src") || "";
+        if (normalize(src) !== heroKey) return;
+        let target: Element = img;
+        const parent = img.parentElement;
         if (
           parent &&
           (parent.tagName === "FIGURE" || parent.tagName === "P") &&
@@ -42,8 +58,8 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
           target = parent;
         }
         target.remove();
-        root.appendChild(target);
-      }
+      });
+
       return root.innerHTML;
     } catch {
       return blog.content;

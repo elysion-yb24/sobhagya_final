@@ -7,13 +7,14 @@ import { isAuthenticated, getUserDetails, getAuthToken } from '../../utils/auth-
 import { getApiBaseUrl } from '../../config/api';
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/production-api';
 import GiftConfirmationDialog from '../../components/ui/GiftConfirmationDialog';
+import DakshinaModal from '../../components/calling/ui/DakshinaModal';
 import {
   ArrowLeft, Heart, Lock, Globe, X, Send,
   Phone, Loader2, AlertCircle, Eye, Gift,
   Wallet, Mic, MicOff, PhoneOff
 } from 'lucide-react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { LiveKitRoom, VideoTrack, useTracks, RoomAudioRenderer, useLocalParticipant, useRoomContext } from '@livekit/components-react';
 import { Track, ConnectionState } from 'livekit-client';
 
@@ -68,9 +69,9 @@ function FloatingHearts({ trigger }: { trigger: number }) {
       });
     }
 
-    setHearts(prev => [...prev.slice(-20), ...newHearts]);
+    setHearts(prev => [...prev.slice(-40), ...newHearts]);
 
-    const longestMs = Math.max(...newHearts.map(h => h.duration * 1000 + h.delay)) + 100;
+    const longestMs = Math.max(...newHearts.map(h => h.duration * 1000 + h.delay)) + 1500;
     const timer = setTimeout(() => {
       setHearts(prev => prev.filter(h => !newHearts.some(n => n.id === h.id)));
     }, longestMs);
@@ -84,16 +85,16 @@ function FloatingHearts({ trigger }: { trigger: number }) {
           key={h.id}
           className="absolute bottom-0 left-1/2 animate-burst-heart"
           style={{
-            transform: `translateX(calc(-50% + ${h.x}px))`,
-            animationDuration: `${h.duration}s`,
-            animationDelay: `${h.delay}ms`,
+            ['--burst-x' as any]: `${h.x}px`,
             ['--burst-drift' as any]: `${h.drift}px`,
             ['--burst-rot' as any]: `${h.rotation}deg`,
+            animationDuration: `${h.duration}s`,
+            animationDelay: `${h.delay}ms`,
           }}
         >
           <Heart
             style={{ color: h.color, fill: h.color, width: `${h.size}px`, height: `${h.size}px` }}
-            className="drop-shadow-[0_3px_10px_rgba(239,68,68,0.55)]"
+            className="drop-shadow-[0_3px_10px_rgba(239,68,68,0.55)] opacity-90 will-change-transform"
           />
         </div>
       ))}
@@ -151,7 +152,15 @@ function AudioPlaybackUnlocker() {
   // and `connected`.
   useEffect(() => {
     if (!room) return;
-    const update = () => setBlocked(!room.canPlaybackAudio);
+    const update = async () => {
+      // Try to auto-unblock audio without waiting for a gesture — this
+      // succeeds whenever the browser still considers the page "activated"
+      // (e.g. the refresh happened on a tab that was just interacted with).
+      if (!room.canPlaybackAudio) {
+        try { await room.startAudio(); } catch {}
+      }
+      setBlocked(!room.canPlaybackAudio);
+    };
     update();
     room.on('audioPlaybackChanged' as any, update);
     room.on('connected' as any, update);
@@ -356,13 +365,14 @@ export default function LiveSessionViewPage() {
     getActiveCall, addLike, getLikes, joinRoomParticipant, acceptInvite, endCall,
     emitConnectedWithLivekit,
     onChatUpdate, onViewerUpdate, onViewerLeft, onSessionEnded,
-    onCallStarted, onInviteReceived, onCallEnd, onQueueJoined, onLikeUpdate, onGiftReceived, emitSendGift,
+    onCallStarted, onInviteReceived, onCallEnd, onQueueJoined, onLikeUpdate, onGiftReceived, onGiftRequest, emitSendGift,
   } = useLiveSocket();
 
   /* ── core state ── */
   const [sessionData, setSessionData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionEnded, setSessionEnded] = useState(false);
 
   /* ── livekit ── */
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
@@ -389,11 +399,12 @@ export default function LiveSessionViewPage() {
   const [likes, setLikes] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [likeAnimCount, setLikeAnimCount] = useState(0);
-  const [sessionEnded, setSessionEnded] = useState(false);
+  const [giftNotification, setGiftNotification] = useState<{ type: 'received' | 'request'; giftName?: string; fromName?: string; price?: number } | null>(null);
+  const [dakshinaRequestModal, setDakshinaRequestModal] = useState<{ gift?: any; visible: boolean }>({ visible: false });
+  const [showGiftModal, setShowGiftModal] = useState(false);
   const [showCallTypeModal, setShowCallTypeModal] = useState(false);
 
   /* ── dakshina ── */
-  const [showGiftModal, setShowGiftModal] = useState(false);
   const [gifts, setGifts] = useState<GiftItem[]>([]);
   const [selectedGift, setSelectedGift] = useState<GiftItem | null>(null);
   const [showGiftConfirm, setShowGiftConfirm] = useState(false);
@@ -462,33 +473,102 @@ export default function LiveSessionViewPage() {
   /* ════════════════════════════════════════════════════════════════════ */
   /*  Gift handling                                                      */
   /* ════════════════════════════════════════════════════════════════════ */
+  // Mirrors handleSendGift in app/astrologers/[id]/page.tsx and
+  // app/call-with-astrologer/profile/[id]/page.tsx exactly. The transactional
+  // REST call deducts the wallet and persists the gift; the socket emit is
+  // best-effort so viewers see the real-time toast.
   const handleSendGift = async (gift: GiftItem) => {
+    if (!gift) { alert('Please select a gift first.'); return; }
+
+    // The DakshinaModal falls back to FALLBACK_PRESETS (ids like `preset_11`)
+    // when the real gifts list hasn't loaded. Those ids don't exist on the
+    // backend — refetch and ask the user to retry instead of hitting the API
+    // with a guaranteed 404.
+    if (typeof gift._id === 'string' && gift._id.startsWith('preset_')) {
+      console.warn('Real gifts not loaded yet — retrying fetch.');
+      fetchGifts();
+      alert('Gifts are still loading. Please wait a moment and try again.');
+      throw new Error('Gifts not loaded');
+    }
+
+    const price = Number(gift.price) || 0;
+    if (walletBalance < price) {
+      alert('Insufficient wallet balance. Please add funds to your wallet.');
+      throw new Error('Insufficient wallet balance.');
+    }
+
     setIsSendingGift(true);
     try {
       const token = getAuthToken();
-      const ud = getUserDetails();
-      if (!token || !ud?.id) throw new Error('Authentication required');
-      const res = await fetch(`${getApiBaseUrl()}/calling/api/gift/send-gift`, {
+      const userDetails = getUserDetails();
+      if (!token || !userDetails?.id) {
+        throw new Error('Authentication required');
+      }
+
+      // Try every shape the backend has returned broadcaster id under. The
+      // getSessions list uses `broadcasterId`, but joinSession can nest it under
+      // `broadcaster._id` or return it as `broadcasterUserId`.
+      const receiverUserId: string | undefined =
+        sessionData?.broadcasterId ||
+        sessionData?.broadcasterUserId ||
+        sessionData?.broadcaster?._id ||
+        sessionData?.broadcaster?.id ||
+        sessionData?.userId;
+
+      if (!receiverUserId) {
+        throw new Error('Astrologer details unavailable. Please refresh and try again.');
+      }
+
+      const giftData = {
+        id: gift._id,
+        receiverUserId,
+        giftId: gift._id,
+        amount: price,
+      };
+
+      const response = await fetch(`${getApiBaseUrl()}/calling/api/gift/send-gift`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id: gift._id, receiverUserId: sessionData?.broadcasterId, giftId: gift._id, amount: gift.price }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(giftData),
         credentials: 'include',
       });
-      if (!res.ok) {
-        let msg = 'Failed to send gift';
-        try { const d = await res.json(); msg = d.message || d.error || msg; } catch {}
-        throw new Error(msg);
-      }
-      
-      // Emit real-time effect
-      emitSendGift(sessionId, gift, sessionData?.broadcasterName || 'Astrologer');
 
-      setWalletBalance(prev => prev - gift.price);
-      setGiftToast({ gift, senderName: 'You' });
-    } catch (err: any) {
-      console.error('Error sending gift:', err);
-      alert(err?.message || 'Failed to send gift');
-    } finally { setIsSendingGift(false); }
+      if (!response.ok) {
+        let errorMessage = 'Failed to send gift';
+        try {
+          const errorData = await response.json();
+          console.error('Dakshina API error:', errorData);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          console.error('Failed to parse dakshina error response:', parseError);
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Cosmetic broadcast to all live viewers — never block the success path
+      // on this, since the REST call above already committed the transaction.
+      try {
+        await emitSendGift(sessionId, gift, broadcasterName, receiverUserId);
+      } catch (socketErr) {
+        console.warn('Dakshina REST committed but socket broadcast failed:', socketErr);
+      }
+
+      setWalletBalance(prev => Math.max(0, prev - price));
+      setGiftNotification({ type: 'received', giftName: gift.name, price: gift.price, fromName: 'You' });
+      setTimeout(() => setGiftNotification(null), 3000);
+      fetchBalance();
+      return true;
+    } catch (error: any) {
+      console.error('Error sending dakshina:', error);
+      alert(error instanceof Error ? error.message : 'Failed to send dakshina');
+      throw error;
+    } finally {
+      setIsSendingGift(false);
+    }
   };
 
   /* ════════════════════════════════════════════════════════════════════ */
@@ -560,16 +640,19 @@ export default function LiveSessionViewPage() {
       dlog('joinRoomParticipant resp:', resp);
 
       if (resp?.error) {
-        const msg = resp?.data?.message === 'LOW_BALANCE'
-          ? 'Insufficient balance. Please recharge your wallet.'
-          : 'Failed to join call. Please try again.';
+        const rawMsg = resp?.data?.message || resp?.message || '';
+        const upper = String(rawMsg).toUpperCase();
+        const msg = upper.includes('LOW_BALANCE') || upper.includes('INSUFFICIENT')
+          ? `Insufficient balance for ${isPrivateAudio ? 'private' : 'public'} call (₹${rate}/min). Please recharge your wallet.`
+          : rawMsg || 'Failed to join call. Please try again.';
         alert(msg);
         return;
       }
 
       const newToken = resp?.data?.token || resp?.data?.livekitToken || resp?.data?.currentSessionToken || resp?.data?.joinToken;
       if (!newToken || typeof newToken !== 'string') {
-        alert('Failed to get valid token for audio call.');
+        console.error('joinRoomParticipant returned no token:', resp);
+        alert('Could not start the call — no audio token from server. Please try again.');
         return;
       }
 
@@ -1019,8 +1102,23 @@ export default function LiveSessionViewPage() {
         getQueue(sessionId).then(q => setQueue(Array.isArray(q) ? q : []));
       }),
       onQueueJoined((d: any) => { if (d.data) setQueue(Array.isArray(d.data) ? d.data : []); }),
-      onLikeUpdate((d: any) => { if (d.data?.totalLikes !== undefined) setLikes(d.data.totalLikes); }),
-      onGiftReceived((d: any) => { if (d?.gift) setGiftToast({ gift: d.gift, senderName: d.fromName || 'Someone' }); }),
+      onLikeUpdate((d: any) => {
+        if (d.data?.totalLikes !== undefined) {
+          setLikes(prev => {
+            // Fire the floating-heart burst whenever the count goes up, so the
+            // viewer sees community engagement (Instagram/YouTube Live style).
+            if (d.data.totalLikes > prev) setLikeAnimCount(c => c + 1);
+            return d.data.totalLikes;
+          });
+        }
+      }),
+      onGiftReceived((d: any) => { 
+        setGiftNotification({ type: 'received', giftName: d.giftName, fromName: d.fromName, price: d.price });
+        setTimeout(() => setGiftNotification(null), 3500);
+      }),
+      onGiftRequest((d: any) => {
+        setDakshinaRequestModal({ gift: d.gift, visible: true });
+      }),
     ];
     return () => unsubs.forEach(u => { if (typeof u === 'function') u(); });
   }, [isConnected, sessionId, isInCall, queueType]);
@@ -1041,45 +1139,87 @@ export default function LiveSessionViewPage() {
     setSendingChat(false);
   };
 
-  // Rate-limit `add_like` socket emits to at most one per LIKE_API_THROTTLE_MS,
-  // independent of how fast the user taps. Visual heart burst still fires on
-  // every tap for instant feedback (Instagram/YouTube Live behavior). The
-  // displayed `likes` count is ONLY ever updated from the server (either the
-  // ack to `add_like` or the broadcast `like_update`) so it never drifts.
-  const lastLikeApiRef = useRef(0);
+  // A user can like a session only ONCE. We still play the heart-burst animation
+  // on every tap for visual feedback, but the `add_like` socket emit only fires
+  // the first time — subsequent taps are no-ops. `isLiked` is hydrated from the
+  // server (getLikes → isLikedByUser) on mount, so this holds across reloads.
   const handleLike = useCallback(async () => {
     if (!isAuthenticated()) return;
-    setIsLiked(true);
-    setLikeAnimCount(prev => prev + 1);
+    if (isLiked) return;
 
-    const LIKE_API_THROTTLE_MS = 250;
-    const now = Date.now();
-    if (now - lastLikeApiRef.current < LIKE_API_THROTTLE_MS) return;
-    lastLikeApiRef.current = now;
+    // Optimistic UI: bump the visible count + fire heart-burst the instant the
+    // user taps. The server response (or the broadcast `like_update`) will
+    // overwrite `likes` with the authoritative number a moment later.
+    setLikeAnimCount(prev => prev + 1);
+    setIsLiked(true);
+    setLikes(prev => prev + 1);
 
     const resp = await addLike(sessionId);
+    if (resp?.error) {
+      const msg = String(resp?.message || resp?.data?.message || '').toLowerCase();
+      // Only roll back if the server actually rejected the like. "Already liked"
+      // is treated as a no-op success since the user has in fact liked before.
+      if (!msg.includes('already')) {
+        setIsLiked(false);
+        setLikes(prev => Math.max(0, prev - 1));
+      }
+      return;
+    }
     if (resp?.data?.totalLikes !== undefined) {
       setLikes(resp.data.totalLikes);
     }
-  }, [sessionId, addLike]);
+    if (resp?.data?.isLikedByUser !== undefined) {
+      setIsLiked(!!resp.data.isLikedByUser);
+    }
+  }, [sessionId, addLike, isLiked]);
 
   const handleJoinQueue = async (isPrivate: boolean) => {
     if (!isAuthenticated()) { alert('Please login to request a call.'); return; }
+
+    const rpm = isPrivate ? Number(sessionData?.privateAudioRpm || 0) : Number(sessionData?.publicAudioRpm || 0);
+    // Need at least one minute's worth of credit to even start the ring, since
+    // the backend will reject with LOW_BALANCE otherwise.
+    if (rpm > 0 && walletBalance < rpm) {
+      alert(`Insufficient balance for ${isPrivate ? 'private' : 'public'} call (₹${rpm}/min needed). Please recharge your wallet.`);
+      return;
+    }
+
     setJoiningQueue(true);
     setShowCallTypeModal(false);
-    const resp = await joinQueue(sessionId, isPrivate);
-    if (resp?.error) {
-      alert(resp.message === 'LOW_BALANCE' ? 'Insufficient balance. Please recharge your wallet.' : resp.message || 'Failed to join queue.');
-    } else {
+    try {
+      const resp = await joinQueue(sessionId, isPrivate);
+      dlog('joinQueue resp:', resp);
+
+      if (resp?.error) {
+        const serverMsg = resp?.message || resp?.data?.message;
+        const upper = String(serverMsg || '').toUpperCase();
+        if (upper.includes('LOW_BALANCE') || upper.includes('INSUFFICIENT')) {
+          alert('Insufficient balance. Please recharge your wallet.');
+        } else if (upper.includes('ALREADY')) {
+          // Already in queue — treat as success and sync local state.
+          setInQueue(true);
+          setIsWaitlisted(true);
+          setQueueType(isPrivate ? 'private' : 'public');
+          myQueuePresenceRef.current = true;
+        } else {
+          alert(serverMsg || 'Failed to join queue. Please try again.');
+        }
+        return;
+      }
+
       setInQueue(true);
       setIsWaitlisted(true);
       setQueueType(isPrivate ? 'private' : 'public');
       // Mark presence so the first poll's `wasPresent && !isPresentNow` can
       // fire even if the astrologer picks us before our first tick runs.
       myQueuePresenceRef.current = true;
-      if (resp.data) setQueue(Array.isArray(resp.data) ? resp.data : []);
+      if (resp?.data) setQueue(Array.isArray(resp.data) ? resp.data : []);
+    } catch (err: any) {
+      console.error('joinQueue failed:', err);
+      alert('Failed to request call. Please check your connection and try again.');
+    } finally {
+      setJoiningQueue(false);
     }
-    setJoiningQueue(false);
   };
 
   const handleLeaveQueue = async () => {
@@ -1197,52 +1337,17 @@ export default function LiveSessionViewPage() {
         )}
       </div>
 
-      {/* ═══════ IN-CALL OVERLAY ═══════ */}
-      {isInCall && (
-        <div className="absolute top-0 left-0 right-0 z-[205] safe-top animate-fade-in-up">
-          <div className="mx-3 mt-3 bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl px-4 py-3 border border-green-400/30 animate-call-glow">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 bg-white rounded-full animate-pulse" />
-                <div>
-                  <p className="text-white text-xs font-bold">
-                    {inviteCallType === 'private' ? '🔒 Private' : '🌐 Public'} Call with {broadcasterName}
-                  </p>
-                  <p className="text-white/70 text-[11px] font-medium mt-0.5">
-                    {formatTime(callTimer)}
-                    {callSessionTime > 0 && <span className="text-white/50"> / max {formatTime(callSessionTime)}</span>}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Mute toggle */}
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${isMuted ? 'bg-red-500' : 'bg-white/20'}`}
-                >
-                  {isMuted ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4 text-white" />}
-                </button>
-                {/* End call */}
-                <button
-                  onClick={handleEndCall}
-                  className="w-9 h-9 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/30 active:scale-90 transition-transform"
-                >
-                  <PhoneOff className="w-4 h-4 text-white" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ═══════ TOP BAR ═══════ */}
-      {!isInCall && (
-        <div className="relative z-10 flex items-center justify-between px-3 pt-3 pb-2 safe-top" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 65%, transparent 100%)' }}>
-          <div className="flex items-center gap-2.5">
-            <button onClick={() => router.push('/live-sessions')} className="w-9 h-9 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-orange-600 active:scale-90 transition-transform">
-              <ArrowLeft className="w-4 h-4" />
-            </button>
-            <div className="flex items-center gap-2 premium-glass rounded-full pl-0.5 pr-3.5 py-0.5 shadow-sm border-white/40">
+      {/* Always rendered. When `isInCall`, the broadcaster pill grows a second
+          row showing the call type + live duration timer, and the right-hand
+          LIVE/Eye/X chips are swapped for mute + end-call controls. */}
+      <div className="relative z-10 flex items-start justify-between px-3 pt-3 pb-2 safe-top" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 65%, transparent 100%)' }}>
+        <div className="flex items-start gap-2.5">
+          <button onClick={() => router.push('/live-sessions')} className="w-9 h-9 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-orange-600 active:scale-90 transition-transform">
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className={`premium-glass rounded-2xl pl-0.5 pr-3.5 py-0.5 shadow-sm border-white/40 ${isInCall ? 'pb-1.5' : ''}`}>
+            <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full p-[2px] bg-gradient-to-br from-orange-500 via-amber-500 to-yellow-500">
                 <div className="w-full h-full rounded-full overflow-hidden bg-white">
                   {broadcasterAvatar ? (
@@ -1262,23 +1367,66 @@ export default function LiveSessionViewPage() {
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-md shadow-red-500/20">
-              <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-              LIVE
-            </span>
-            <div className="flex items-center gap-1 bg-white/90 backdrop-blur-md border border-orange-100 rounded-lg px-2 py-1 shadow-sm">
-              <Eye className="w-3 h-3 text-orange-500" />
-              <span className="text-gray-800 text-[11px] font-bold">{viewers}</span>
-            </div>
-            <button onClick={() => router.push('/live-sessions')} className="w-8 h-8 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-gray-400 active:scale-90 transition-transform hover:text-red-500">
-              <X className="w-4 h-4" />
-            </button>
+            {/* Call type + timer — only while in an active call. Sits directly
+                under the broadcaster name so both the user and the astrologer
+                can see the active-call status at a glance. */}
+            {isInCall && (
+              <div className="mt-1.5 ml-10 flex items-center gap-1.5 animate-fade-in-up">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider shadow-sm ${
+                  inviteCallType === 'private'
+                    ? 'bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white'
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                }`}>
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                  {inviteCallType === 'private' ? '🔒 Private Call' : '🌐 Public Call'}
+                </span>
+                <span className="text-gray-800 text-[11px] font-extrabold tabular-nums">
+                  {formatTime(callTimer)}
+                  {callSessionTime > 0 && <span className="text-gray-400 font-semibold"> / {formatTime(callSessionTime)}</span>}
+                </span>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        <div className="flex items-center gap-1.5">
+          {isInCall ? (
+            <>
+              <button
+                onClick={() => setIsMuted(!isMuted)}
+                className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all active:scale-90 ${
+                  isMuted ? 'bg-red-500 text-white' : 'bg-white border border-orange-100 text-orange-600'
+                }`}
+                aria-label={isMuted ? 'Unmute' : 'Mute'}
+              >
+                {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={handleEndCall}
+                className="w-9 h-9 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md shadow-red-500/30 active:scale-90 transition-transform"
+                aria-label="End call"
+              >
+                <PhoneOff className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-md shadow-red-500/20">
+                <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                LIVE
+              </span>
+              <div className="flex items-center gap-1 bg-white/90 backdrop-blur-md border border-orange-100 rounded-lg px-2 py-1 shadow-sm">
+                <Eye className="w-3 h-3 text-orange-500" />
+                <span className="text-gray-800 text-[11px] font-bold">{viewers}</span>
+              </div>
+              <button onClick={() => router.push('/live-sessions')} className="w-8 h-8 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-gray-400 active:scale-90 transition-transform hover:text-red-500">
+                <X className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* ═══════ ACTIVE CALL BANNER (when someone else is in call) ═══════ */}
       {activeCall && !isInCall && (
@@ -1295,16 +1443,22 @@ export default function LiveSessionViewPage() {
 
       {/* ═══════ GIFT TOAST ═══════ */}
       <div className="absolute left-3 top-24 z-30">
-        {giftToast && <GiftToast gift={giftToast.gift} senderName={giftToast.senderName} onDone={() => setGiftToast(null)} />}
+        <AnimatePresence>
+          {giftToast && <GiftToast gift={giftToast.gift} senderName={giftToast.senderName} onDone={() => setGiftToast(null)} />}
+        </AnimatePresence>
       </div>
 
       {/* ═══════ RIGHT SIDE ACTIONS ═══════ */}
       <div className="absolute right-3 bottom-[175px] sm:bottom-[195px] z-20 flex flex-col items-center gap-4">
         <div className="relative">
           <FloatingHearts trigger={likeAnimCount} />
-          <button onClick={handleLike} className="flex flex-col items-center gap-1 active:scale-90 transition-transform">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 ${isLiked ? 'bg-red-500 shadow-red-500/40 scale-110' : 'premium-glass border-white/60'}`}>
-              <Heart key={likeAnimCount} className={`w-6 h-6 transition-all animate-heart-pop ${isLiked ? 'text-white fill-white' : 'text-red-500'}`} />
+          <button onClick={handleLike} disabled={isLiked} className="flex flex-col items-center gap-1 active:scale-90 transition-transform disabled:active:scale-100">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 backdrop-blur-md border active:scale-125 focus:scale-110 ${
+              isLiked
+                ? 'bg-white/30 border-white/40'
+                : 'bg-white/15 border-white/25 hover:bg-white/25'
+            }`}>
+              <Heart key={likeAnimCount} className={`w-6 h-6 transition-all animate-heart-pop drop-shadow ${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} />
             </div>
             <span className="text-white text-[11px] font-black drop-shadow-md">{likes}</span>
           </button>
@@ -1569,73 +1723,69 @@ export default function LiveSessionViewPage() {
           </div>
         </>
       )}
-
-      {/* ═══════ DAKSHINA MODAL ═══════ */}
-      {showGiftModal && (
-        <>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210]" onClick={() => setShowGiftModal(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-[210] animate-slide-up max-w-lg mx-auto">
-            <div className="bg-white rounded-t-3xl overflow-hidden shadow-2xl">
-              <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-5 py-5 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-15 pointer-events-none">
-                  <div className="absolute top-1 right-4 text-4xl">🙏</div>
-                  <div className="absolute bottom-1 left-4 text-2xl">✨</div>
-                </div>
-                <div className="flex items-center justify-between relative z-10">
-                  <div>
-                    <h3 className="text-white font-bold text-lg">Send Dakshina</h3>
-                    <p className="text-white/80 text-xs mt-0.5">Offer blessings to {broadcasterName}</p>
-                  </div>
-                  <button onClick={() => setShowGiftModal(false)} className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all">
-                    <X className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-              </div>
-              <div className="p-5 max-h-[55vh] overflow-y-auto">
-                <div className="flex items-center justify-between mb-5 px-4 py-3 bg-orange-50 rounded-xl border border-orange-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-orange-100"><Wallet className="w-4 h-4 text-orange-500" /></div>
-                    <span className="text-gray-500 text-sm font-medium">Balance</span>
-                  </div>
-                  <span className="font-bold text-lg text-gray-900">₹{formatRupees(walletBalance)}</span>
-                </div>
-                {gifts.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    {gifts.map(gift => {
-                      const canAfford = walletBalance >= gift.price;
-                      return (
-                        <button key={gift._id} onClick={() => { if (!canAfford) return; setSelectedGift(gift); setShowGiftConfirm(true); setShowGiftModal(false); }}
-                          disabled={!canAfford}
-                          className={`p-4 rounded-2xl border transition-all duration-200 ${canAfford ? 'border-orange-100 bg-white hover:bg-orange-50 hover:border-orange-300 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-sm' : 'border-gray-100 bg-gray-50 opacity-40 cursor-not-allowed'}`}>
-                          <div className="flex flex-col items-center text-center">
-                            <img src={gift.icon} alt={gift.name} className="w-12 h-12 mb-2" />
-                            <h4 className="font-bold text-gray-900 text-sm mb-0.5">{gift.name}</h4>
-                            <p className="font-bold text-sm text-orange-600">₹{formatRupees(gift.price)}</p>
-                            {!canAfford && <p className="text-red-500 text-[10px] mt-1 font-semibold">Low balance</p>}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-3 border border-orange-100"><Gift className="w-8 h-8 text-orange-200" /></div>
-                    <p className="text-gray-400 text-sm">No offerings available yet</p>
-                  </div>
-                )}
-              </div>
+      {/* ═══════ GIFT NOTIFICATION OVERLAY ═══════ */}
+      {giftNotification && giftNotification.type === 'received' && (
+        <div className="fixed top-20 inset-x-0 z-[250] flex justify-center pointer-events-none px-4 animate-fade-in-down">
+          <div className="px-6 py-3 rounded-2xl backdrop-blur-xl shadow-2xl border flex items-center gap-3 bg-gradient-to-r from-amber-500/90 to-orange-500/90 border-amber-300/40">
+            <span className="text-2xl">🙏</span>
+            <div>
+              <p className="text-white text-sm font-bold">Dakshina Received!</p>
+              <p className="text-white/80 text-xs">
+                {`${giftNotification.fromName || 'User'} sent ${giftNotification.giftName || 'Dakshina'}${giftNotification.price ? ` (₹${giftNotification.price})` : ''}`}
+              </p>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* ═══════ GIFT CONFIRM ═══════ */}
-      {showGiftConfirm && selectedGift && (
-        <GiftConfirmationDialog isOpen={showGiftConfirm}
-          onClose={() => { setShowGiftConfirm(false); setSelectedGift(null); }}
-          onConfirm={async () => { await handleSendGift(selectedGift); }}
-          giftName={selectedGift.name} giftIcon={selectedGift.icon} giftPrice={selectedGift.price} isLoading={isSendingGift} />
+      {/* ═══════ DAKSHINA REQUEST MODAL ═══════ */}
+      {dakshinaRequestModal.visible && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setDakshinaRequestModal({ visible: false })} />
+          <div className="relative w-full max-w-sm bg-gradient-to-b from-[#2a1545] to-[#1a0e2e] rounded-3xl border border-white/10 shadow-2xl overflow-hidden animate-scale-in">
+            <div className="px-6 pt-7 pb-4 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-indigo-600/20 border-2 border-purple-400/30 mb-4">
+                {dakshinaRequestModal.gift?.icon ? (
+                  <img src={dakshinaRequestModal.gift.icon} alt="gift" className="w-9 h-9 object-contain" />
+                ) : (
+                  <Gift className="w-8 h-8 text-purple-300" />
+                )}
+              </div>
+              <h3 className="text-lg font-bold text-white mb-1">Dakshina Requested</h3>
+              <p className="text-white/50 text-sm">
+                {broadcasterName} has requested{' '}
+                <span className="text-amber-300">{dakshinaRequestModal.gift?.name || 'Dakshina'}</span>
+                {dakshinaRequestModal.gift?.price && (
+                  <span className="text-amber-300 font-semibold"> (₹{dakshinaRequestModal.gift.price})</span>
+                )}
+              </p>
+            </div>
+            <div className="px-6 pb-7 flex gap-3">
+              <button onClick={() => setDakshinaRequestModal({ visible: false })} className="flex-1 py-3.5 rounded-2xl bg-white/[0.06] border border-white/[0.08] text-white/60 text-sm font-semibold hover:bg-white/[0.1] transition-all active:scale-[0.97]">
+                Decline
+              </button>
+              <button onClick={async () => {
+                const gift = dakshinaRequestModal.gift;
+                setDakshinaRequestModal({ visible: false });
+                if (gift) handleSendGift(gift);
+              }} className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-bold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all active:scale-[0.97] flex items-center justify-center gap-2">
+                <Send className="w-4 h-4" />
+                Send{dakshinaRequestModal.gift?.price ? ` ₹${dakshinaRequestModal.gift.price}` : ''}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* ═══════ DAKSHINA MODAL ═══════ */}
+      <DakshinaModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        onSend={handleSendGift}
+        receiverName={broadcasterName}
+        gifts={gifts}
+        onFetchGifts={fetchGifts}
+      />
 
       </div>
       {/* ═══════ END CENTERED STAGE ═══════ */}
@@ -1649,11 +1799,11 @@ export default function LiveSessionViewPage() {
         @keyframes float-heart { 0% { transform: translateY(0) scale(1); opacity: 1; } 50% { transform: translateY(-70px) scale(1.15); opacity: 0.8; } 100% { transform: translateY(-140px) scale(0.7); opacity: 0; } }
         .animate-float-heart { animation: float-heart 1.5s ease-out forwards; }
         @keyframes burst-heart {
-          0%   { transform: translateX(calc(-50% + 0px)) translateY(0) scale(0.4) rotate(0); opacity: 0; }
-          12%  { transform: translateX(calc(-50% + 0px)) translateY(-10px) scale(1.25) rotate(calc(var(--burst-rot, 0deg) * 0.4)); opacity: 1; }
-          35%  { transform: translateX(calc(-50% + calc(var(--burst-drift, 0px) * 0.5))) translateY(-90px) scale(1.05) rotate(calc(var(--burst-rot, 0deg) * 0.7)); opacity: 1; }
-          70%  { transform: translateX(calc(-50% + var(--burst-drift, 0px))) translateY(-180px) scale(0.95) rotate(var(--burst-rot, 0deg)); opacity: 0.85; }
-          100% { transform: translateX(calc(-50% + calc(var(--burst-drift, 0px) * 1.3))) translateY(-260px) scale(0.5) rotate(calc(var(--burst-rot, 0deg) * 1.1)); opacity: 0; }
+          0%   { transform: translateX(calc(-50% + 0px)) translateY(12px) scale(0) rotate(0); opacity: 0; }
+          15%  { transform: translateX(calc(-50% + 0px)) translateY(-20px) scale(1.4) rotate(calc(var(--burst-rot, 0deg) * 0.4)); opacity: 1; }
+          40%  { transform: translateX(calc(-50% + calc(var(--burst-drift, 0px) * 0.6))) translateY(-110px) scale(1.1) rotate(calc(var(--burst-rot, 0deg) * 0.7)); opacity: 1; }
+          75%  { transform: translateX(calc(-50% + var(--burst-drift, 0px))) translateY(-210px) scale(0.95) rotate(var(--burst-rot, 0deg)); opacity: 0.85; }
+          100% { transform: translateX(calc(-50% + calc(var(--burst-drift, 0px) * 1.5))) translateY(-320px) scale(0.4) rotate(calc(var(--burst-rot, 0deg) * 1.2)); opacity: 0; }
         }
         .animate-burst-heart { animation: burst-heart ease-out forwards; will-change: transform, opacity; }
         @keyframes slide-in-left { from { transform: translateX(-120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }

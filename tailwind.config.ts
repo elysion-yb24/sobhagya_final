@@ -77,6 +77,12 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'burst-heart': {
+          '0%': { opacity: '1', transform: 'translate3d(calc(-50% + var(--burst-x)), 0, 0) scale(0.5)' },
+          '20%': { transform: 'translate3d(calc(-50% + var(--burst-x) + var(--burst-drift)), -20vh, 0) scale(1) rotate(var(--burst-rot))' },
+          '80%': { opacity: '0.8', transform: 'translate3d(calc(-50% + var(--burst-x) - var(--burst-drift)), -60vh, 0) scale(1) rotate(calc(var(--burst-rot) * -1))' },
+          '100%': { opacity: '0', transform: 'translate3d(calc(-50% + var(--burst-x) + var(--burst-drift)), -80vh, 0) scale(1) rotate(var(--burst-rot))' },
+        },
       },
       animation: {
         'twinkle': 'twinkle 3s ease-in-out infinite',
@@ -89,6 +95,7 @@ export default {
         'slide-down': 'slide-down 0.6s ease-out forwards',
         'scale-in': 'scale-in 0.5s ease-out forwards',
         'count-up': 'count-up 0.8s ease-out forwards',
+        'burst-heart': 'burst-heart forwards cubic-bezier(0.25, 0.46, 0.45, 0.94)',
       },
       screens: {
         'xs': '375px',

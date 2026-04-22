@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getUserDetails, getAuthToken } from '../utils/auth-utils';
+import { getApiBaseUrl } from '../config/api';
 
-const LIVE_SOCKET_URL = 'https://micro.sobhagya.in';
+const LIVE_SOCKET_URL = typeof window !== 'undefined' ? getApiBaseUrl() : 'https://micro.sobhagya.in';
 const LIVE_SOCKET_PATH = '/live-socket/socket.io/';
 
 export interface LiveSession {
@@ -314,9 +315,9 @@ export function useLiveSocket() {
     });
   }, []);
 
-  const emitSendGift = useCallback((sessionId: string, gift: any, receiverName: string): Promise<any> => {
-    return new Promise((resolve) => {
-      if (!socketRef.current) { resolve(null); return; }
+  const emitSendGift = useCallback((sessionId: string, gift: any, receiverName: string, receiverId?: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      if (!socketRef.current) { reject(new Error('Socket not connected')); return; }
       const userDetails = getUserDetails();
       const userId = userDetails?.id || userDetails?._id || '';
       const userName = userDetails?.name || userDetails?.displayName || 'User';
@@ -328,7 +329,7 @@ export function useLiveSocket() {
         giftId: gift._id,
         from: userId,
         fromName: userName,
-        to: receiverName,
+        to: receiverId || receiverName,
         giftName: gift.name,
         giftIcon: gift.icon,
         toName: receiverName,
@@ -336,6 +337,10 @@ export function useLiveSocket() {
       };
 
       socketRef.current.emit('send_gift', payload, (resp: any) => {
+        if (resp && resp.error) {
+          reject(new Error(resp.message || resp.data?.message || 'Failed to send dakshina'));
+          return;
+        }
         resolve(resp);
       });
     });
@@ -398,6 +403,11 @@ export function useLiveSocket() {
     return () => { socketRef.current?.off('receive_gift'); };
   }, []);
 
+  const onGiftRequest = useCallback((callback: (data: any) => void) => {
+    socketRef.current?.on('gift_request', callback);
+    return () => { socketRef.current?.off('gift_request'); };
+  }, []);
+
   return {
     socket: socketRef.current,
     isConnected,
@@ -429,6 +439,7 @@ export function useLiveSocket() {
     onQueueJoined,
     onLikeUpdate,
     onGiftReceived,
+    onGiftRequest,
     emitSendGift,
   };
 }

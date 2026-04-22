@@ -88,41 +88,20 @@ if (typeof document !== 'undefined' && !document.getElementById(DAKSHINA_STYLE_I
     style.id = DAKSHINA_STYLE_ID;
     style.textContent = `
         @keyframes dksh-fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        /* Mobile bottom-sheet slide-up */
         @keyframes dksh-slideUp {
             from { transform: translate3d(0, 100%, 0); }
             to   { transform: translate3d(0, 0, 0); }
         }
-        /* Desktop centered dialog: keep the -50%/-50% centering while fading + scaling */
-        @keyframes dksh-popIn {
-            from { opacity: 0; transform: translate3d(-50%, -46%, 0) scale(0.96); }
-            to   { opacity: 1; transform: translate3d(-50%, -50%, 0) scale(1); }
-        }
         @keyframes dksh-scaleIn {
-            from { opacity: 0; transform: scale(0.85); }
-            to   { opacity: 1; transform: scale(1); }
+            from { opacity: 0; transform: translate3d(0,0,0) scale(0.85); }
+            to   { opacity: 1; transform: translate3d(0,0,0) scale(1); }
         }
         @keyframes dksh-sparkle {
             from { opacity: 0; transform: translate3d(0,8px,0) scale(0); }
             to   { opacity: 1; transform: translate3d(0,0,0) scale(1); }
         }
-        .dksh-backdrop {
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            animation: dksh-fadeIn 0.2s ease-out both;
-        }
-        .dksh-modal {
-            animation: dksh-slideUp 0.35s cubic-bezier(0.16,1,0.3,1) both;
-            backface-visibility: hidden;
-        }
-        @media (min-width: 768px) {
-            .dksh-modal {
-                transform: translate3d(-50%, -50%, 0);
-                animation: dksh-popIn 0.32s cubic-bezier(0.16,1,0.3,1) both;
-            }
-        }
         @media (prefers-reduced-motion: reduce) {
-            .dksh-backdrop, .dksh-modal { animation-duration: 0.01ms !important; }
+            [data-dksh-anim] { animation-duration: 0.01ms !important; }
         }
     `;
     document.head.appendChild(style);
@@ -141,6 +120,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
     const [selectedGift, setSelectedGift] = useState<GiftItem | null>(null);
     const [isSending, setIsSending] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [animatingIn, setAnimatingIn] = useState(false);
 
     const displayGifts = (gifts && gifts.length > 0) ? gifts.filter(g => g.active !== false) : FALLBACK_PRESETS;
 
@@ -148,6 +128,15 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
         if (isOpen && onFetchGifts && (!gifts || gifts.length === 0)) {
             onFetchGifts();
         }
+    }, [isOpen]);
+
+    // Drop `will-change` after the open animation finishes so the browser can
+    // release the GPU layer — keeping will-change permanently actually hurts.
+    useEffect(() => {
+        if (!isOpen) { setAnimatingIn(false); return; }
+        setAnimatingIn(true);
+        const t = setTimeout(() => setAnimatingIn(false), 400);
+        return () => clearTimeout(t);
     }, [isOpen]);
 
     const handleSend = async () => {
@@ -179,21 +168,28 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
 
     return (
         <>
-            {/* Backdrop */}
+            {/* Backdrop — blur applied only AFTER slide-up completes so the
+                 compositor isn't rasterizing a blurred layer during the transform */}
             <div
-                className="dksh-backdrop fixed inset-0 z-[200] bg-black/50"
+                className={`fixed inset-0 z-[200] bg-black/50 ${animatingIn ? '' : 'backdrop-blur-sm'}`}
                 onClick={handleClose}
+                style={{ animation: 'dksh-fadeIn 0.2s ease-out', willChange: animatingIn ? 'opacity' : 'auto' }}
             />
 
-            {/* Modal — bottom sheet on mobile, centered dialog on md+ */}
+            {/* Modal */}
             <div
-                className="dksh-modal fixed z-[201] max-h-[85vh] overflow-y-auto
-                           bottom-0 inset-x-0
-                           md:bottom-auto md:inset-x-auto md:top-1/2 md:left-1/2 md:w-[92vw] md:max-w-md"
+                className="fixed bottom-0 inset-x-0 z-[201] max-h-[85vh] overflow-y-auto md:left-1/2 md:-translate-x-1/2 md:max-w-md"
+                style={{
+                    animation: 'dksh-slideUp 0.35s cubic-bezier(0.16,1,0.3,1)',
+                    willChange: animatingIn ? 'transform' : 'auto',
+                    transform: 'translateZ(0)',
+                    backfaceVisibility: 'hidden',
+                    contain: 'layout paint',
+                }}
             >
-                <div className="bg-gradient-to-b from-white via-orange-50/60 to-amber-50/40 rounded-t-3xl border-t border-orange-100 shadow-[0_-12px_40px_rgba(249,115,22,0.18)] md:rounded-3xl md:border md:shadow-[0_20px_60px_rgba(249,115,22,0.25)]">
-                    {/* Handle (mobile bottom-sheet affordance only) */}
-                    <div className="flex justify-center pt-3 pb-1 md:hidden">
+                <div className="bg-gradient-to-b from-white via-orange-50/60 to-amber-50/40 rounded-t-3xl border-t border-orange-100 shadow-[0_-12px_40px_rgba(249,115,22,0.18)]">
+                    {/* Handle */}
+                    <div className="flex justify-center pt-3 pb-1">
                         <div className="w-10 h-1 rounded-full bg-orange-200" />
                     </div>
 
@@ -246,13 +242,10 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                                         <button
                                             key={gift._id}
                                             onClick={() => setSelectedGift(gift)}
-                                            style={{
-                                                transition: 'transform 180ms cubic-bezier(0.16,1,0.3,1), background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease',
-                                                transform: isSelected ? 'scale(1.03)' : 'scale(1)',
-                                            }}
-                                            className={`relative flex flex-col items-center gap-1.5 py-4 px-3 rounded-2xl border ${
+                                            style={{ transition: 'transform 180ms cubic-bezier(0.16,1,0.3,1), background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease' }}
+                                            className={`relative flex flex-col items-center gap-1.5 py-4 px-3 rounded-2xl border transform-gpu ${
                                                 isSelected
-                                                    ? 'bg-gradient-to-b from-orange-50 to-amber-50 border-orange-400 shadow-lg shadow-orange-500/15'
+                                                    ? 'bg-gradient-to-b from-orange-50 to-amber-50 border-orange-400 shadow-lg shadow-orange-500/15 scale-[1.03]'
                                                     : 'bg-white border-orange-100 hover:bg-orange-50/60 hover:border-orange-200'
                                             }`}
                                         >
@@ -281,7 +274,7 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                                 onClick={handleSend}
                                 disabled={!selectedGift || isSending}
                                 style={{ transition: 'transform 150ms ease, box-shadow 200ms ease, background-color 200ms ease' }}
-                                className={`w-full py-4 rounded-2xl font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 ${
+                                className={`w-full py-4 rounded-2xl font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 transform-gpu ${
                                     selectedGift
                                         ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 active:scale-[0.98]'
                                         : 'bg-orange-50 text-orange-300 cursor-not-allowed border border-orange-100'

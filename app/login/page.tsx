@@ -135,6 +135,13 @@ export default function LoginPage() {
     
     checkAuthAndRedirect();
   }, [router, isVerifyingOtp]);
+
+  // Scroll to top when OTP screen becomes active
+  useEffect(() => {
+    if (currentScreen === 'otp-verification') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentScreen]);
   
   const filteredCountries = searchTerm 
     ? countries.filter(country => 
@@ -197,6 +204,8 @@ export default function LoginPage() {
         if (data.session_id) {
           setSessionId(data.session_id);
         }
+        // Ensure user sees OTP screen at top of view
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         setCurrentScreen('otp-verification');
       } else {
         setError(data.message || 'Failed to send OTP. Please try again.');
@@ -367,7 +376,7 @@ export default function LoginPage() {
         const userDetails = getUserDetails();
         const hasUserDetails = userDetails && (userDetails.name || userDetails.displayName) && (userDetails.name || userDetails.displayName).trim() !== '';
         
-        if (!hasUserDetails && (callIntent || storedAstrologerId)) {
+        if (!hasUserDetails) {
           setIsVerifyingOtp(false);
           router.replace('/calls/call1');
           return;
@@ -465,8 +474,8 @@ export default function LoginPage() {
         const hasUserDetails = user && (user.name || user.displayName) && (user.name || user.displayName).trim() !== '';
         
         
-        // If user details are not present and there's a call intent, redirect to call pages
-        if (!hasUserDetails && (callIntent || storedAstrologerId)) {
+        // If user details are not present, redirect to the name collection page
+        if (!hasUserDetails) {
           router.push('/calls/call1');
           return;
         }
@@ -594,13 +603,13 @@ export default function LoginPage() {
       {/* Premium Header */}
       <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mt-4 sm:mt-6 md:mt-8 mb-3 sm:mb-4 md:mb-6">
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 sm:mb-3 overflow-hidden">
             <Image 
               src="/sobhagya-logo.svg" 
               alt="Astrology Logo" 
-              width={80} 
-              height={80} 
-              className="object-cover w-full h-full rounded-full" 
+              width={96}
+              height={96}
+              className="object-cover rounded-full w-full h-full"
               priority
               quality={100}
             />
@@ -616,7 +625,7 @@ export default function LoginPage() {
 
       {/* Glassmorphism Card */}
       <motion.div 
-        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-2xl border-l-4 border-orange-400 p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center relative z-10"
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border-l-4 border-orange-400 p-4 sm:p-6 md:p-8 lg:p-10 flex flex-col items-center relative z-10 animate-fade-in"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
@@ -627,15 +636,17 @@ export default function LoginPage() {
             <label className="block text-xs sm:text-sm md:text-base font-semibold text-gray-700 mb-1">
               Phone Number
             </label>
-            <div className="flex rounded-lg sm:rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-orange-400 bg-white">
+            <div className="flex rounded-xl overflow-hidden border-2 border-gray-200 focus-within:border-orange-500 bg-white transition-all duration-200 shadow-sm focus-within:shadow-lg">
               {/* Country Selector */}
-              <div className="relative flex items-center bg-gray-50 px-2 sm:px-3 border-r border-gray-200 cursor-pointer select-none min-w-0" ref={dropdownRef}>
+              <div className="relative flex items-center bg-gray-50 px-2 sm:px-3 border-r border-gray-200 cursor-pointer select-none min-w-0 focus-within:ring-2 focus-within:ring-orange-400" ref={dropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-1 sm:gap-2 focus:outline-none min-w-0 py-3 sm:py-2"
+                  className="flex items-center gap-1 sm:gap-2 focus:outline-none min-w-0 py-3 sm:py-2 focus-visible:ring-2 focus-visible:ring-orange-400 transition-all duration-150"
+                  aria-haspopup="listbox"
+                  aria-expanded={isDropdownOpen}
                 >
-                  <span className="w-5 h-4 sm:w-6 sm:h-4 mr-1 flex items-center justify-center flex-shrink-0">
+                  <span className="w-5 h-4 sm:w-6 sm:h-4 mr-1 flex items-center justify-center flex-shrink-0 drop-shadow-sm">
                     <Image 
                       src={selectedCountry.flag} 
                       alt={selectedCountry.code} 
@@ -644,7 +655,7 @@ export default function LoginPage() {
                       className="object-contain rounded-sm" 
                     />
                   </span>
-                  <span className="text-sm sm:text-base font-medium text-gray-700 whitespace-nowrap">
+                  <span className="text-sm sm:text-base font-medium text-gray-700 whitespace-nowrap select-none">
                     {selectedCountry.dial_code}
                   </span>
                   <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-500 transition-transform flex-shrink-0 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -652,7 +663,7 @@ export default function LoginPage() {
                 <AnimatePresence>
                   {isDropdownOpen && (
                     <motion.div
-                      className="absolute top-full left-0 mt-2 w-56 sm:w-64 md:w-72 bg-white border border-gray-200 rounded-lg sm:rounded-xl shadow-xl z-50 max-h-60 overflow-auto"
+                      className="absolute top-full left-0 mt-2 w-56 sm:w-64 md:w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-60 overflow-auto animate-fade-in"
                       initial={{ opacity: 0, y: -10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -667,6 +678,7 @@ export default function LoginPage() {
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm sm:text-base"
+                            autoFocus
                           />
                         </div>
                       </div>
@@ -676,15 +688,15 @@ export default function LoginPage() {
                             key={country.code}
                             type="button"
                             onClick={() => selectCountry(country)}
-                            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-orange-50 transition-colors text-left touch-manipulation"
+                            className="w-full flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-orange-100 focus:bg-orange-200 transition-colors text-left touch-manipulation rounded-lg"
+                            tabIndex={0}
                           >
-                            <span className="w-5 h-4 sm:w-6 sm:h-4 flex items-center justify-center flex-shrink-0">
+                            <span className="w-5 h-4 sm:w-6 sm:h-4 flex items-center justify-center flex-shrink-0 drop-shadow-sm">
                               <Image 
                                 src={country.flag} 
                                 alt={country.code} 
-                                width={24} 
-                                height={16} 
-                                className="object-contain rounded-sm" 
+                                className="w-6 h-4 object-contain rounded-sm"
+                                fill
                               />
                             </span>
                             <span className="flex-1 text-xs sm:text-sm text-gray-700 truncate">
@@ -704,10 +716,15 @@ export default function LoginPage() {
               <input
                 type="tel"
                 value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 placeholder="Enter your phone number"
-                className="flex-1 px-3 sm:px-4 py-3 sm:py-3 bg-transparent outline-none text-base sm:text-lg font-medium text-gray-700 min-w-0"
+                aria-label="Phone Number"
+                className="flex-1 px-3 sm:px-4 py-3 sm:py-3 bg-transparent outline-none text-base sm:text-lg font-medium text-gray-700 min-w-0 focus:ring-2 focus:ring-orange-400 transition-all duration-150"
                 required
+                autoFocus
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={15}
               />
             </div>
           </div>
@@ -716,13 +733,14 @@ export default function LoginPage() {
           <AnimatePresence>
             {error && (
               <motion.div
-                className="flex items-start gap-2 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 mt-2"
+                className="flex items-start gap-2 p-3 sm:p-4 bg-red-100 border border-red-300 rounded-lg text-red-800 mt-2"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
+                role="alert"
               >
-                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
-                <span className="text-xs sm:text-sm leading-relaxed">{error}</span>
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                <span className="text-xs sm:text-sm leading-relaxed font-medium">{error}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -731,7 +749,8 @@ export default function LoginPage() {
           <motion.button
             type="submit"
             disabled={isLoading || !phoneNumber}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 sm:py-4 px-4 sm:px-6 rounded-lg sm:rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 touch-manipulation text-sm sm:text-base"
+            aria-disabled={isLoading || !phoneNumber}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white min-h-[48px] py-3 sm:py-4 px-4 sm:px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 touch-manipulation text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-400"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
@@ -771,11 +790,11 @@ export default function LoginPage() {
       </div> */}
 
       {/* Footer */}
-      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 md:mt-8 mb-4 text-center text-xs sm:text-sm text-gray-400 px-4">
+      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 md:mt-8 mb-4 text-center text-xs sm:text-sm text-gray-400 px-4 select-none">
         <span>By continuing, you agree to our </span>
-        <button className="text-orange-600 hover:underline touch-manipulation">Terms of Service</button>
+        <button className="text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded">Terms of Service</button>
         <span> and </span>
-        <button className="text-orange-600 hover:underline touch-manipulation">Privacy Policy</button>
+        <button className="text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded">Privacy Policy</button>
       </footer>
 
       {/* Partner Restriction Modal */}

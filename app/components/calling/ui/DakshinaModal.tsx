@@ -89,8 +89,8 @@ if (typeof document !== 'undefined' && !document.getElementById(DAKSHINA_STYLE_I
     style.textContent = `
         @keyframes dksh-fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes dksh-slideUp {
-            from { transform: translate3d(0, 100%, 0); }
-            to   { transform: translate3d(0, 0, 0); }
+            from { transform: translate3d(-50%, 100%, 0); }
+            to   { transform: translate3d(-50%, 0, 0); }
         }
         @keyframes dksh-scaleIn {
             from { opacity: 0; transform: translate3d(0,0,0) scale(0.85); }
@@ -178,11 +178,11 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
 
             {/* Modal */}
             <div
-                className="fixed bottom-0 inset-x-0 z-[201] max-h-[85vh] overflow-y-auto md:left-1/2 md:-translate-x-1/2 md:max-w-md"
+                className="fixed bottom-0 left-1/2 -translate-x-1/2 z-[201] w-full max-w-md max-h-[85vh] overflow-y-auto"
                 style={{
                     animation: 'dksh-slideUp 0.35s cubic-bezier(0.16,1,0.3,1)',
                     willChange: animatingIn ? 'transform' : 'auto',
-                    transform: 'translateZ(0)',
+                    transform: 'translate3d(-50%, 0, 0)',
                     backfaceVisibility: 'hidden',
                     contain: 'layout paint',
                 }}

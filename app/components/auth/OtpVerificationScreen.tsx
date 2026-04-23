@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Cookies from 'universal-cookie';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,15 +49,8 @@ export default function OtpVerificationScreen({
   const cookies = new Cookies(null, { path: '/' });
 
   useEffect(() => {
-    // Lock background scroll when OTP screen is open
-    const originalBodyOverflow = document.body.style.overflow;
-    const originalHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = originalBodyOverflow;
-      document.documentElement.style.overflow = originalHtmlOverflow;
-    };
+    // Only scroll to top, do not lock scroll (fixes mobile UX)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
@@ -315,15 +309,19 @@ export default function OtpVerificationScreen({
   const isSubmitDisabled = isLoading || parentIsLoading || isResending || otp.some(digit => !digit);
 
   return (
-    <div className="flex flex-col items-center justify-start px-2 sm:px-4 lg:px-6 py-4 sm:py-6">
+    <div className="flex flex-col items-center justify-start px-2 sm:px-4 lg:px-6 py-4 sm:py-6 min-h-screen overflow-y-auto bg-gradient-to-br from-orange-50 via-white to-orange-50">
       {/* Premium Header */}
       <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto flex flex-col items-center mb-4 sm:mb-6">
         <div className="flex flex-col items-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2">
-            <img 
-              src="/sobhagya-logo.svg" 
-              alt="Astrology Logo" 
-              className="object-cover w-full h-full rounded-full" 
+          <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2 overflow-hidden">
+            <Image
+              src="/sobhagya-logo.svg"
+              alt="Astrology Logo"
+              width={80}
+              height={80}
+              className="object-cover rounded-full w-full h-full"
+              priority
+              quality={100}
             />
           </div>
           <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 mb-1 text-center leading-tight">
@@ -342,10 +340,11 @@ export default function OtpVerificationScreen({
 
       {/* Glassmorphism Card */}
       <motion.div 
-        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-2xl border-l-4 border-orange-400 p-3 sm:p-4 md:p-6 flex flex-col items-center relative z-10"
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border-l-4 border-orange-400 p-3 sm:p-4 md:p-6 flex flex-col items-center relative z-10 animate-fade-in"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
+        style={{ minHeight: '340px', marginTop: '2rem', marginBottom: '2rem' }}
       >
         <div className="w-full space-y-3 sm:space-y-4">
           {/* OTP Input Group */}
@@ -355,17 +354,21 @@ export default function OtpVerificationScreen({
             </label>
             <div className="flex justify-center gap-2 sm:gap-3">
               {otp.map((digit, index) => (
-                <input
+                <motion.input
                   key={index}
                   id={`otp-input-${index}`}
                   type="text"
                   inputMode="numeric"
-                  maxLength={4}
+                  maxLength={1}
                   value={digit}
+                  aria-label={`Digit ${index + 1}`}
                   onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ""))}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-xl sm:text-2xl md:text-3xl bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition-all duration-200 font-bold text-gray-900 hover:border-orange-200"
-                  style={{fontFamily: 'Poppins', letterSpacing: '0.1em'}}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-center text-xl sm:text-2xl md:text-3xl bg-white border-2 rounded-lg focus:outline-none font-bold text-gray-900 transition-all duration-200 hover:border-orange-200 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ${digit ? 'border-orange-400 shadow-md scale-105' : 'border-gray-200'}`}
+                  style={{fontFamily: 'Inter', letterSpacing: '0.1em'}}
+                  animate={digit ? { scale: 1.08 } : { scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  autoFocus={index === 0}
                 />
               ))}
             </div>
@@ -435,9 +438,11 @@ export default function OtpVerificationScreen({
           <motion.button
             onClick={handleVerify}
             disabled={isSubmitDisabled}
-            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 touch-manipulation text-sm sm:text-base"
+            aria-disabled={isSubmitDisabled}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white min-h-[48px] py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 touch-manipulation text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-orange-400"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.3 }}
           >
             {isLoading || parentIsLoading ? (
               <>
@@ -460,10 +465,10 @@ export default function OtpVerificationScreen({
           {/* Back Button */}
           <button
             onClick={onBack}
-            className="w-full bg-transparent text-gray-500 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base touch-manipulation"
+            className="w-full bg-transparent text-gray-500 min-h-[48px] py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base touch-manipulation focus:outline-none focus:ring-2 focus:ring-gray-200"
           >
             <span className="flex items-center justify-center gap-2">
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               <span>Back to Login</span>
@@ -473,11 +478,11 @@ export default function OtpVerificationScreen({
       </motion.div>
 
       {/* Footer */}
-      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-400 px-4">
+      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-400 px-4 select-none">
         <span>By continuing, you agree to our </span>
-        <button className="text-orange-600 hover:underline touch-manipulation">Terms of Service</button>
+        <button className="text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded">Terms of Service</button>
         <span> and </span>
-        <button className="text-orange-600 hover:underline touch-manipulation">Privacy Policy</button>
+        <button className="text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded">Privacy Policy</button>
       </footer>
     </div>
   );

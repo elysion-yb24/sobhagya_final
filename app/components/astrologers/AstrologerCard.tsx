@@ -349,15 +349,15 @@ const AstrologerCard = React.memo(function AstrologerCard({
       <div
         className="relative bg-white rounded-xl border p-4 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col w-full mx-auto overflow-hidden"
         style={{
-          borderColor: "#F7971E",
-          boxShadow: "0 4px 16px rgba(247,151,30,0.15)",
+          borderColor: "#F7941D",
+          boxShadow: "0 4px 16px rgba(247,148,29,0.15)",
         }}
         onClick={handleCardClick}
       >
         {/* 🎁 Free Call Banner */}
         {!hasCompletedFreeCall && (
           <div
-            className="absolute top-3 -right-10 w-[160px] bg-[#F7971E] text-white text-[11px] text-center font-bold py-[2px] rotate-[45deg] flex items-center justify-center shadow-md z-50 whitespace-normal leading-tight"
+            className="absolute top-3 -right-10 w-[160px] bg-[#F7941D] text-white text-[11px] text-center font-bold py-[2px] rotate-[45deg] flex items-center justify-center shadow-md z-50 whitespace-normal leading-tight"
             style={{ transformOrigin: "center" }}
           >
               &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1st Free Call
@@ -376,7 +376,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                   ? partner.avatar || partner.profileImage
                   : `https://ui-avatars.com/api/?name=${encodeURIComponent(
                       name
-                    )}&background=F7971E&color=fff&size=70`
+                    )}&background=F7941D&color=fff&size=70`
               }
               alt={name}
               className="w-[70px] h-[70px] rounded-full object-cover border-2"
@@ -387,13 +387,13 @@ const AstrologerCard = React.memo(function AstrologerCard({
                   ? "#F97316" 
                   : partner.status === "offline" 
                   ? "#EF4444" 
-                  : "#F7971E",
+                  : "#F7941D",
               }}
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                   name
-                )}&background=F7971E&color=fff&size=70`;
+                )}&background=F7941D&color=fff&size=70`;
               }}
             />
 
@@ -470,7 +470,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
               e.stopPropagation();
               handleChatClick();
             }}
-            className="flex-1 border border-[#F7971D] text-[#F7971D] rounded-md py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-orange-50 transition"
+            className="flex-1 border border-[#F7941D] text-[#F7941D] rounded-md py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-orange-50 transition"
           >
             <img src="/message.png" alt="Chat" className="w-[10px] h-[10px]" />
             Chat
@@ -490,10 +490,17 @@ const AstrologerCard = React.memo(function AstrologerCard({
               }}
               className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-white shadow-md transition"
               style={{
-                background: "linear-gradient(90deg, #F9A43A 0%, #F7971E 100%)",
+                background: "linear-gradient(90deg, #F9A43A 0%, #F7941D 100%)",
               }}
             >
-              {isInitiatingCall ? "Connecting..." : hasCompletedFreeCall ? "Call" : "OFFER: 1st FREE Call"}
+              {isInitiatingCall ? (
+                "Connecting..."
+              ) : (
+                <>
+                  <Phone className="w-3 h-3" />
+                  {hasCompletedFreeCall ? "Call" : "OFFER: 1st FREE Call"}
+                </>
+              )}
             </button>
 
             {isCallMenuOpen && (

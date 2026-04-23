@@ -130,14 +130,14 @@ const AboutUs = () => {
             >
               <div className="relative w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80">
                 {/* Using the zodiac wheel image that appears to be in the screenshot */}
-                <img 
-                  src="/sobhagya-logo.svg" 
-                  alt="Sobhagya Logo" 
+                <Image
+                  src="/sobhagya-logo.svg"
+                  alt="Sobhagya Logo"
+                  width={256}
+                  height={256}
                   className="w-full h-full object-contain"
-                  onError={(e) => {
-                    // Fallback to sobhagya logo if zodiac wheel not found
-                    (e.target as HTMLImageElement).src = "/sobhagya-logo.svg";
-                  }}
+                  priority
+                  quality={100}
                 />
               </div>
             </motion.div>

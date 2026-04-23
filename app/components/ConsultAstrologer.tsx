@@ -229,7 +229,7 @@ const AstrologerCarousel = () => {
         }}>
         <div className="section-container">
           <h2 className="section-heading text-center text-white mb-6 sm:mb-10" style={{
-            fontFamily: 'EB Garamond',
+            fontFamily: 'Inter',
           }}>
             Consult with <em>India's</em> best Astrologers
           </h2>
@@ -258,7 +258,7 @@ const AstrologerCarousel = () => {
       <div className="section-container">
         <h2
           className="section-heading text-center text-white mb-6 sm:mb-10"
-          style={{ fontFamily: "EB Garamond" }}
+          style={{ fontFamily: "Inter" }}
         >
           Consult with <em>India's</em> best Astrologers
         </h2>
@@ -288,7 +288,7 @@ const AstrologerCarousel = () => {
                 }}
               >
                 <div
-                  className="bg-white rounded-xl border border-[#F7971E] p-3 sm:p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full max-w-[200px] xs:max-w-[210px] sm:max-w-[221px] mx-auto"
+                  className="bg-white rounded-xl border border-[#F7941D] p-3 sm:p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full max-w-[200px] xs:max-w-[210px] sm:max-w-[221px] mx-auto"
                   onClick={() => handleAstrologerClick(astrologer._id)}
                 >
                   {/* Profile Picture */}
@@ -300,7 +300,7 @@ const AstrologerCarousel = () => {
                           ? "#399932" 
                           : astrologer.status === "offline" 
                           ? "#EF4444" 
-                          : "#F7971E"
+                          : "#F7941D"
                       }}
                     >
                       <Image
@@ -352,8 +352,9 @@ const AstrologerCarousel = () => {
                   <div className="flex justify-center">
                     <button
                       onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-full max-w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 hover:text-white transition-colors uppercase flex items-center justify-center rounded-md"
+                      className="w-full max-w-[171px] h-[30px] bg-[#F7941D] text-white text-[10px] font-medium hover:bg-orange-600 hover:text-white transition-colors uppercase flex items-center justify-center rounded-md gap-1.5"
                     >
+                      <Phone className="w-2.5 h-2.5" />
                       OFFER: FREE 1st call
                     </button>
                   </div>
@@ -406,7 +407,7 @@ const AstrologerCarousel = () => {
             <div className="space-y-3">
               <button
                 onClick={() => handleCallTypeSelection('audio')}
-                className="w-full bg-[#F7971E] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+                className="w-full bg-[#F7941D] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
               >
                 <Phone className="w-5 h-5" aria-hidden="true" />
                 Audio Call
@@ -414,7 +415,7 @@ const AstrologerCarousel = () => {
               
               <button
                 onClick={() => handleCallTypeSelection('video')}
-                className="w-full bg-[#F7971E] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
+                className="w-full bg-[#F7941D] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
               >
                 <Video className="w-5 h-5" aria-hidden="true" />
                 Video Call

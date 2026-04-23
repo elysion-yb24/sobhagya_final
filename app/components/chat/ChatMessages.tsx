@@ -61,8 +61,8 @@ const TypingIndicator = ({ selectedSession }: { selectedSession?: any }) => {
       style={{ height: '40px' }} // Fixed height to prevent shifting
     >
       {/* Always show Sobhagya logo for bot typing */}
-      <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-        <img src="/sobhagya-logo.svg" alt="Sobhagya" className="w-4 h-4 md:w-6 md:h-6 object-contain" />
+      <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={24} height={24} className="w-4 h-4 md:w-6 md:h-6 object-contain" />
       </div>
       
       <div className="bg-white text-gray-800 px-3 md:px-4 py-2 md:py-3 rounded-2xl rounded-bl-sm shadow-lg relative max-w-xs min-h-[36px] md:min-h-[40px] flex items-center">
@@ -265,8 +265,8 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
     
     return (
       <div className="flex items-end gap-1 sm:gap-2 mb-2 justify-start">
-        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-          <img src="/sobhagya-logo.svg" alt="Sobhagya" className="w-4 h-4 sm:w-6 sm:h-6 object-contain" />
+        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={24} height={24} className="w-4 h-4 sm:w-6 sm:h-6 object-contain" />
         </div>
         <div className="relative max-w-[85%] sm:max-w-xs md:max-w-md">
           {/* Message bubble - only show if there's text content */}
@@ -408,7 +408,7 @@ const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
             height: '100vh' 
           }}>
           <div className="opacity-5 md:opacity-10 blur-sm transform scale-75 sm:scale-100 md:scale-150">
-            <img src="/sobhagya-logo.svg" alt="Sobhagya Logo" className="w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 object-contain" />
+            <Image src="/sobhagya-logo.svg" alt="Sobhagya Logo" width={384} height={384} className="w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 object-contain" />
           </div>
         </div>
 

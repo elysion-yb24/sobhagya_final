@@ -72,7 +72,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
     (searchParams?.get("sortBy") as "audio" | "video" | "language") || ""
   );
   const [languageFilter, setLanguageFilter] = useState(searchParams?.get("language") || "All");
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialError);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -123,16 +123,22 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         const limit = 10;
         let endpoint = "";
 
-        if (query) {
-          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(query)}&skip=${skip}&limit=${limit}`;
+        const safeQuery = query.replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
+
+        // Use the authenticated search endpoint ONLY if the user is logged in
+        if (safeQuery && token) {
+          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(safeQuery)}&skip=${skip}&limit=${limit}`;
           if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
           if (sort) endpoint += `&sortBy=${encodeURIComponent(sort)}`;
         } else {
+          // If unauthenticated search, fetch a large list to filter client-side since /search is blocked
+          const queryLimit = (!token && safeQuery) ? 1000 : limit;
           const queryParts = [
             `skip=${skip}`,
-            `limit=${limit}`,
+            `limit=${queryLimit}`,
             language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
-            sort ? `sortBy=${encodeURIComponent(sort)}` : ""
+            sort === "video" ? `video=true` : "",
+            sort !== "video" && sort !== "audio" && sort ? `sortBy=${encodeURIComponent(sort)}` : ""
           ];
           const queryString = queryParts.filter(Boolean).join("&");
           endpoint = `${getApiBaseUrl()}/user/api/users-list?${queryString}`;
@@ -148,16 +154,43 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         const res = await fetch(endpoint, {
           method: "GET",
           headers,
-          credentials: "omit",
+          credentials: "include",
           cache: "no-store", // CRITICAL for dynamic real-time bypass mimicking /astrologers
         });
 
-        if (!res.ok) throw new Error("Failed to fetch astrologers");
+        if (!res.ok) {
+          // If the backend returns 404 (Not Found) or 401, treat it as empty results rather than crashing
+          if (res.status === 404 || res.status === 401) {
+            setAstrologers(prev => append && !query ? prev : []);
+            setHasMore(false);
+            setIsLoading(false);
+            setIsLoadingMore(false);
+            return;
+          }
+          const text = await res.text().catch(() => '');
+          throw new Error(`Failed to fetch astrologers: ${res.status} ${text}`);
+        }
 
         const data = await res.json();
-        const newAstrologers: Astrologer[] = query
+        let newAstrologers: Astrologer[] = query
           ? data.data?.list || data.users || data.data || []
           : data.data?.list || [];
+
+        // --- CLIENT-SIDE COMPENSATIONS FOR BACKEND LIMITATIONS ---
+        if (safeQuery) {
+          if (!token) {
+            // Unauthenticated search used `users-list`, so we must manually filter by name
+            newAstrologers = newAstrologers.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
+          } else {
+            // Authenticated search used `/search`, which ignores language and sort. Apply manually:
+            if (language && language !== "All") {
+              newAstrologers = newAstrologers.filter(a => a.languages?.includes(language));
+            }
+            if (sort === "video") {
+              newAstrologers = newAstrologers.filter(a => a.hasVideo);
+            }
+          }
+        }
 
         setAstrologers(prev => {
           if (append && !query) {
@@ -233,16 +266,20 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         const limit = Math.max(10, astrologers.length);
         let endpoint = "";
 
-        if (searchQuery) {
-          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(searchQuery)}&skip=${skip}&limit=${limit}`;
+        const safeQuery = searchQuery.replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
+
+        if (safeQuery && token) {
+          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(safeQuery)}&skip=${skip}&limit=${limit}`;
           if (languageFilter && languageFilter !== "All") endpoint += `&language=${encodeURIComponent(languageFilter)}`;
           if (sortBy) endpoint += `&sortBy=${encodeURIComponent(sortBy)}`;
         } else {
+          const queryLimit = (!token && safeQuery) ? 1000 : limit;
           const queryParts = [
             `skip=${skip}`,
-            `limit=${limit}`,
+            `limit=${queryLimit}`,
             languageFilter && languageFilter !== "All" ? `language=${encodeURIComponent(languageFilter)}` : "",
-            sortBy ? `sortBy=${encodeURIComponent(sortBy)}` : ""
+            sortBy === "video" ? `video=true` : "",
+            sortBy !== "video" && sortBy !== "audio" && sortBy ? `sortBy=${encodeURIComponent(sortBy)}` : ""
           ];
           const queryString = queryParts.filter(Boolean).join("&");
           endpoint = `${getApiBaseUrl()}/user/api/users-list?${queryString}`;
@@ -257,16 +294,32 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         const res = await fetch(endpoint, {
           method: "GET",
           headers,
-          credentials: "omit",
+          credentials: "include",
           cache: "no-store",
         });
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          return;
+        }
 
         const data = await res.json();
-        const freshList: Astrologer[] = searchQuery
+        let freshList: Astrologer[] = searchQuery
           ? data.data?.list || data.users || data.data || []
           : data.data?.list || [];
+
+        // Sync client-side filters for polling
+        if (safeQuery) {
+          if (!token) {
+            freshList = freshList.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
+          } else {
+            if (languageFilter && languageFilter !== "All") {
+              freshList = freshList.filter(a => a.languages?.includes(languageFilter));
+            }
+            if (sortBy === "video") {
+              freshList = freshList.filter(a => a.hasVideo);
+            }
+          }
+        }
 
         if (freshList && freshList.length > 0) {
           // Replace the visible list to instantly reflect status changes and ranking bumps (someone coming online)
@@ -489,7 +542,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
                   Connect with <span className="font-semibold text-gray-700">{selectedCallAstrologer?.name}</span>
                 </p>
               </div>
-              
+
               <div className="space-y-3">
                 <button
                   onClick={() => handleCallTypeSelection('audio')}
@@ -501,7 +554,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
                   </svg>
                   Audio Call
                 </button>
-                
+
                 <button
                   onClick={() => handleCallTypeSelection('video')}
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3.5 px-5 rounded-2xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 font-semibold flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
@@ -513,7 +566,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
                   Video Call
                 </button>
               </div>
-              
+
               <button
                 onClick={() => setShowCallOptions(false)}
                 className="w-full mt-4 text-gray-500 py-2.5 px-4 rounded-2xl hover:bg-gray-50 transition-all duration-200 text-sm font-medium"

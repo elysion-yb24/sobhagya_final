@@ -82,6 +82,7 @@ const ConsultingSection: React.FC = () => {
           {/* Right: Topics timeline */}
           <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
             <div className="absolute left-5 sm:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#E69126] via-[#F7971E] to-[#E69126]/30" />
+            <div className="absolute left-5 sm:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#F7941D] via-[#F7941D] to-[#F7941D]/30" />
             
             <div className="space-y-6 sm:space-y-8 md:space-y-10">
               {consultingTopics.map((topic, index) => (
@@ -92,8 +93,8 @@ const ConsultingSection: React.FC = () => {
                 >
                   {/* Animated timeline dot */}
                   <div className="absolute left-5 sm:left-6 top-4 -translate-x-1/2 z-10">
-                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#E69126] rounded-full relative">
-                      <div className="absolute inset-0 bg-[#E69126] rounded-full animate-ping opacity-30" />
+                    <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#F7941D] rounded-full relative">
+                      <div className="absolute inset-0 bg-[#F7941D] rounded-full animate-ping opacity-30" />
                     </div>
                   </div>
                   

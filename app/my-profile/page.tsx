@@ -10,7 +10,7 @@ import {
   maskPhone,
 } from "../utils/auth-utils";
 import { fetchWalletBalance as simpleFetchWalletBalance } from "../utils/production-api";
-import { User, Phone, Mail, Calendar, MapPin, Clock, Edit3, Save, X, ArrowLeft, ChevronRight, Wallet, Star, PhoneCall, History } from "lucide-react";
+import { User, Phone, Mail, Edit3, Save, X, ArrowLeft, ChevronRight, Wallet, Star, PhoneCall, History } from "lucide-react";
 import Link from "next/link";
 
 export default function MyProfilePage() {
@@ -21,19 +21,12 @@ export default function MyProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [walletBalance, setWalletBalance] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<"personal" | "astro">("personal");
+
 
   const [profile, setProfile] = useState<any>(null);
   const [editForm, setEditForm] = useState({
     name: "",
-    age: "",
-    gender: "",
-    topic: "",
     aboutUs: "",
-    language: "",
-    dob: "",
-    placeOfBirth: "",
-    timeOfBirth: "",
   });
 
   useEffect(() => {
@@ -81,20 +74,10 @@ export default function MyProfilePage() {
   }, [mounted, router]);
 
   const populateForm = (data: any) => {
-    // Handle both frontend field names (topic/aboutUs) and backend field names (talksAbout/about)
-    const topicData = data.topic || data.talksAbout;
     const aboutData = data.aboutUs || data.about;
-    const langData = data.language || data.languages;
     setEditForm({
       name: data.name || data.displayName || "",
-      age: data.age?.toString() || "",
-      gender: data.gender || "",
-      topic: Array.isArray(topicData) ? topicData.join(", ") : topicData || "",
       aboutUs: aboutData || "",
-      language: Array.isArray(langData) ? langData.join(", ") : langData || "",
-      dob: data.dob || "",
-      placeOfBirth: data.placeOfBirth || "",
-      timeOfBirth: data.timeOfBirth || "",
     });
   };
 
@@ -104,22 +87,7 @@ export default function MyProfilePage() {
 
     const payload: any = {};
     if (editForm.name.trim()) payload.name = editForm.name.trim();
-    if (editForm.age) payload.age = parseInt(editForm.age, 10);
-    if (editForm.gender) payload.gender = editForm.gender;
-    if (editForm.topic.trim()) {
-      payload.topic = editForm.topic.includes(",")
-        ? editForm.topic.split(",").map((t) => t.trim()).filter(Boolean)
-        : editForm.topic.trim();
-    }
     if (editForm.aboutUs.trim()) payload.aboutUs = editForm.aboutUs.trim();
-    if (editForm.language.trim()) {
-      payload.language = editForm.language.includes(",")
-        ? editForm.language.split(",").map((l) => l.trim()).filter(Boolean)
-        : editForm.language.trim();
-    }
-    if (editForm.dob) payload.dob = editForm.dob;
-    if (editForm.placeOfBirth.trim()) payload.placeOfBirth = editForm.placeOfBirth.trim();
-    if (editForm.timeOfBirth) payload.timeOfBirth = editForm.timeOfBirth;
 
     try {
       const token = getAuthToken();
@@ -352,105 +320,6 @@ export default function MyProfilePage() {
               <p className="text-sm text-gray-500 mt-0.5">Update your personal and astrological details</p>
             </div>
             <div className="px-6 py-6 space-y-5">
-              {/* Name */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
-                <input
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                />
-              </div>
-
-              {/* Age & Gender Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Age</label>
-                  <input
-                    type="number"
-                    value={editForm.age}
-                    onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
-                    placeholder="Age"
-                    min={1}
-                    max={120}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Gender</label>
-                  <select
-                    value={editForm.gender}
-                    onChange={(e) => setEditForm({ ...editForm, gender: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800 bg-white"
-                  >
-                    <option value="">Select</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Date of Birth */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date of Birth</label>
-                <input
-                  type="date"
-                  value={editForm.dob}
-                  onChange={(e) => setEditForm({ ...editForm, dob: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                />
-              </div>
-
-              {/* Place & Time of Birth Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Place of Birth</label>
-                  <input
-                    type="text"
-                    value={editForm.placeOfBirth}
-                    onChange={(e) => setEditForm({ ...editForm, placeOfBirth: e.target.value })}
-                    placeholder="City, State"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Time of Birth</label>
-                  <input
-                    type="time"
-                    value={editForm.timeOfBirth}
-                    onChange={(e) => setEditForm({ ...editForm, timeOfBirth: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                  />
-                </div>
-              </div>
-
-              {/* Language */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Language(s)</label>
-                <input
-                  type="text"
-                  value={editForm.language}
-                  onChange={(e) => setEditForm({ ...editForm, language: e.target.value })}
-                  placeholder="e.g. Hindi, English"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                />
-              </div>
-
-              {/* Topics of Interest */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Topics of Interest</label>
-                <input
-                  type="text"
-                  value={editForm.topic}
-                  onChange={(e) => setEditForm({ ...editForm, topic: e.target.value })}
-                  placeholder="e.g. Career, Relationship, Health"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
-                />
-              </div>
-
               {/* About */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">About</label>
@@ -458,7 +327,7 @@ export default function MyProfilePage() {
                   value={editForm.aboutUs}
                   onChange={(e) => setEditForm({ ...editForm, aboutUs: e.target.value })}
                   placeholder="Tell us something about yourself..."
-                  rows={3}
+                  rows={4}
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800 resize-none"
                 />
               </div>
@@ -496,139 +365,20 @@ export default function MyProfilePage() {
         ) : (
           /* ---- VIEW MODE ---- */
           <div className="space-y-4">
-            {/* Tab Switcher */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 flex gap-1">
-              <button
-                onClick={() => setActiveTab("personal")}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  activeTab === "personal"
-                    ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Personal Details
-              </button>
-              <button
-                onClick={() => setActiveTab("astro")}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                  activeTab === "astro"
-                    ? "bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-md"
-                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                Birth Details
-              </button>
+            {/* Profile Content */}
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="divide-y divide-gray-50">
+                <ProfileRow icon={<User className="w-5 h-5" />} label="Name" value={displayName} color="orange" />
+                <ProfileRow icon={<Phone className="w-5 h-5" />} label="Phone" value={phone || "Not set"} color="blue" />
+                {email && <ProfileRow icon={<Mail className="w-5 h-5" />} label="Email" value={email} color="purple" />}
+              </div>
+              {(profile.aboutUs || profile.about) && (
+                <div className="px-5 py-6 border-t border-gray-100 bg-gray-50/50">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2.5">About Me</p>
+                  <p className="text-gray-700 text-sm leading-relaxed">{profile.aboutUs || profile.about}</p>
+                </div>
+              )}
             </div>
-
-            {/* Personal Details Tab */}
-            {activeTab === "personal" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="divide-y divide-gray-50">
-                  <ProfileRow icon={<User className="w-5 h-5" />} label="Name" value={displayName} color="orange" />
-                  <ProfileRow icon={<Phone className="w-5 h-5" />} label="Phone" value={phone || "Not set"} color="blue" />
-                  {email && <ProfileRow icon={<Mail className="w-5 h-5" />} label="Email" value={email} color="purple" />}
-                  <ProfileRow
-                    icon={<Calendar className="w-5 h-5" />}
-                    label="Age"
-                    value={profile.age ? `${profile.age} years` : "Not set"}
-                    color="green"
-                  />
-                  <ProfileRow
-                    icon={<User className="w-5 h-5" />}
-                    label="Gender"
-                    value={profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : "Not set"}
-                    color="pink"
-                  />
-                  <ProfileRow
-                    icon={
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                      </svg>
-                    }
-                    label="Language"
-                    value={(() => {
-                      const l = profile.language || profile.languages;
-                      if (!l) return "Not set";
-                      return Array.isArray(l) ? l.join(", ") : l;
-                    })()}
-                    color="indigo"
-                  />
-                  <ProfileRow
-                    icon={<Star className="w-5 h-5" />}
-                    label="Topics of Interest"
-                    value={(() => {
-                      const t = profile.topic || profile.talksAbout;
-                      if (!t) return "Not set";
-                      return Array.isArray(t) ? t.join(", ") : t;
-                    })()}
-                    color="amber"
-                  />
-                </div>
-                {(profile.aboutUs || profile.about) && (
-                  <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">About</p>
-                    <p className="text-gray-700 text-sm leading-relaxed">{profile.aboutUs || profile.about}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Astro / Birth Details Tab */}
-            {activeTab === "astro" && (
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-                <div className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 px-5 py-4 border-b border-purple-100/40">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <circle cx="12" cy="12" r="10" strokeWidth={1.5} />
-                      <path d="M12 2a15 15 0 010 20M12 2a15 15 0 000 20M2 12h20" strokeWidth={1.5} />
-                    </svg>
-                    <h3 className="text-sm font-bold text-purple-800">Astrological Birth Details</h3>
-                  </div>
-                  <p className="text-xs text-purple-500/70 mt-1">Required for accurate horoscope & kundli generation</p>
-                </div>
-                <div className="divide-y divide-gray-50">
-                  <ProfileRow
-                    icon={<Calendar className="w-5 h-5" />}
-                    label="Date of Birth"
-                    value={profile.dob || "Not set"}
-                    color="purple"
-                  />
-                  <ProfileRow
-                    icon={<MapPin className="w-5 h-5" />}
-                    label="Place of Birth"
-                    value={profile.placeOfBirth || "Not set"}
-                    color="indigo"
-                  />
-                  <ProfileRow
-                    icon={<Clock className="w-5 h-5" />}
-                    label="Time of Birth"
-                    value={profile.timeOfBirth || "Not set"}
-                    color="violet"
-                  />
-                </div>
-                {(!profile.dob || !profile.placeOfBirth || !profile.timeOfBirth) && (
-                  <div className="px-5 py-4 border-t border-gray-100 bg-amber-50/50">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-amber-800">Complete your birth details</p>
-                        <p className="text-xs text-amber-600/80 mt-0.5">Add your date, place, and time of birth for accurate astrological predictions.</p>
-                        <button
-                          onClick={() => { setIsEditing(true); setActiveTab("personal"); }}
-                          className="mt-2 text-xs font-semibold text-orange-600 hover:text-orange-700 underline underline-offset-2"
-                        >
-                          Update Now
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Quick Actions */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">

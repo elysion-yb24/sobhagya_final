@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable SWC minification (faster than Terser)
-  swcMinify: true,
 
   // Compiler optimizations
   compiler: {

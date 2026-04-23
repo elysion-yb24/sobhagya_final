@@ -11,13 +11,9 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // The featured image is rendered above the article body. To avoid showing
-  // it twice at the top, remove every inline <img> in the body whose src
-  // matches the featured image. Any other image (a genuine second image)
-  // stays at its natural position, which is typically further down the post.
-  const processedContent = useMemo(() => {
-    if (!blog?.content) return "";
-    if (!blog.image) return blog.content;
+  const { html: processedContent, bottomImage } = useMemo(() => {
+    const fallback = { html: blog?.content || "", bottomImage: null as string | null };
+    if (!blog?.content) return fallback;
 
     const normalize = (u?: string | null) => {
       if (!u) return "";
@@ -31,9 +27,9 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
     const heroKey = normalize(blog.image);
 
     if (typeof window === "undefined" || typeof DOMParser === "undefined") {
-      // SSR fallback — drop the first occurrence of the hero src if present.
-      const pattern = new RegExp(`<img[^>]*src=["'][^"']*${heroKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[^"']*["'][^>]*>`, "i");
-      return blog.content.replace(pattern, "");
+      // SSR fallback — drop all images
+      const noImagesHtml = blog.content.replace(/<img[^>]*>/gi, "");
+      return { html: noImagesHtml, bottomImage: null };
     }
 
     try {
@@ -42,11 +38,18 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
         "text/html"
       );
       const root = doc.getElementById("__root");
-      if (!root) return blog.content;
+      if (!root) return fallback;
+
+      let extractedBottom: string | null = null;
 
       root.querySelectorAll("img").forEach((img) => {
         const src = img.getAttribute("src") || "";
-        if (normalize(src) !== heroKey) return;
+        
+        // Save the first non-hero image to use at the bottom
+        if (!extractedBottom && normalize(src) !== heroKey) {
+          extractedBottom = src;
+        }
+
         let target: Element = img;
         const parent = img.parentElement;
         if (
@@ -60,9 +63,9 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
         target.remove();
       });
 
-      return root.innerHTML;
+      return { html: root.innerHTML, bottomImage: extractedBottom };
     } catch {
-      return blog.content;
+      return fallback;
     }
   }, [blog?.content, blog?.image]);
 
@@ -215,6 +218,19 @@ export default function BlogDetailClient({ slug }: { slug: string }) {
             className="wp-content"
           />
         </article>
+
+        {/* Bottom Image */}
+        {(bottomImage || blog.image) && (
+          <div className="relative w-full aspect-[16/9] md:aspect-[2/1] rounded-2xl overflow-hidden mt-8 shadow-md">
+            <Image 
+              src={bottomImage || blog.image!} 
+              alt={`${blog.title} - ending`} 
+              fill 
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 800px"
+            />
+          </div>
+        )}
       </div>
 
       <style jsx global>{`

@@ -57,7 +57,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
-      <main className={`flex flex-col ${isFullScreenPage ? 'min-h-screen' : 'min-h-screen pt-[72px] md:pt-[80px] lg:pt-[120px]'}`}>
+      <main className={`flex flex-col ${isFullScreenPage ? 'min-h-screen' : 'min-h-screen pt-16 md:pt-20 lg:pt-28'}`}>
         {children}
       </main>
       {showFooter && <div />}

@@ -233,7 +233,7 @@ const HeroSection: React.FC = () => {
                       height={48}
                       className="sm:w-[48px] sm:h-[48px] md:w-[52px] md:h-[52px] lg:w-[56px] lg:h-[56px] block"
                     />
-                    <h3 className="font-medium mt-2 sm:mt-3 text-sm sm:text-base md:text-lg" style={{ fontFamily: "Poppins" }}>{card.title}</h3>
+                    <h3 className="font-medium mt-2 sm:mt-3 text-sm sm:text-base md:text-lg" style={{ fontFamily: "Inter" }}>{card.title}</h3>
                   </motion.div>
                 </Link>
               ))}

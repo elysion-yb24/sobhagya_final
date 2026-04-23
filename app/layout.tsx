@@ -1,4 +1,4 @@
-import { Poppins, EB_Garamond } from "next/font/google";
+import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
@@ -11,11 +11,11 @@ import AuthErrorHandler from "@/app/components/AuthErrorHandler";
 import { SessionManagerProvider } from "@/app/components/astrologers/SessionManager";
 import ConditionalFooter from "./components/ConditionalFooter"; 
 
-const poppins = Poppins({ 
+const inter = Inter({ 
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-poppins"
+  variable: "--font-inter"
 });
 
 const ebGaramond = EB_Garamond({ 
@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" 
         />
       </head>
-      <body className={`${poppins.variable} ${ebGaramond.variable}`}>
+      <body className={`${inter.variable} ${ebGaramond.variable}`}>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
             <SessionManagerProvider>  {/* 👈 wrap everything inside */}

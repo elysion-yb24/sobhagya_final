@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Eagle_Lake, Poppins } from "next/font/google";
+import { Eagle_Lake, Inter } from "next/font/google";
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
-const poppins = Poppins({
+const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   display: "swap",
@@ -12,7 +12,7 @@ const poppins = Poppins({
 const Footer: React.FC = () => {
   return (
     <footer
-      className={`bg-[#373737] text-white py-8 sm:py-10 md:py-12 lg:py-14 relative overflow-hidden ${poppins.className}`}
+      className={`bg-[#373737] text-white py-8 sm:py-10 md:py-12 lg:py-14 relative overflow-hidden ${inter.className}`}
     >
       {/* Top Left Zodiac Background Image */}
       <div className="absolute top-[-50px] left-[-150px] w-[300px] h-[200px] sm:w-[400px] sm:h-[300px] opacity-10 pointer-events-none">
@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
 
       <div className="section-container">
         {/* Title text */}
-        <h2 className="text-orange-400 text-center text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl mb-4 sm:mb-6 lg:mb-10 underline decoration-orange-400 underline-offset-8 px-2 sm:px-4">
+        <h2 className="text-[#F7941D] text-center text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl mb-4 sm:mb-6 lg:mb-10 underline decoration-[#F7941D] underline-offset-8 px-2 sm:px-4">
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
         </h2>
 

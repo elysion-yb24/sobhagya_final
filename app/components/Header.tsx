@@ -370,13 +370,7 @@ const Header = () => {
                   ))}
                 </nav>
 
-                {/* Language selector */}
-                <div className="flex items-center gap-1 cursor-pointer group text-orange-500 hover:text-orange-600 transition-colors text-sm font-medium">
-                  <span>EN</span>
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
+
               </div>
             </div>
           </div>

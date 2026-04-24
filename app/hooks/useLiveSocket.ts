@@ -315,6 +315,26 @@ export function useLiveSocket() {
     });
   }, []);
 
+  // Mirrors useCallSocket.fetchGifts — the live backend shares the same
+  // `get_gifts` event, so the modal doesn't need a REST fallback.
+  const fetchGifts = useCallback((): Promise<any[]> => {
+    return new Promise((resolve) => {
+      if (!socketRef.current || !socketRef.current.connected) {
+        resolve([]);
+        return;
+      }
+      socketRef.current.emit('get_gifts', {}, (response: any) => {
+        if (response?.error) {
+          console.error('[useLiveSocket] get_gifts error:', response);
+          resolve([]);
+          return;
+        }
+        const list = Array.isArray(response?.data) ? response.data : [];
+        resolve(list);
+      });
+    });
+  }, []);
+
   const emitSendGift = useCallback((sessionId: string, gift: any, receiverName: string, receiverId?: string): Promise<any> => {
     return new Promise((resolve, reject) => {
       if (!socketRef.current) { reject(new Error('Socket not connected')); return; }
@@ -441,5 +461,6 @@ export function useLiveSocket() {
     onGiftReceived,
     onGiftRequest,
     emitSendGift,
+    fetchGifts,
   };
 }

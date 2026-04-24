@@ -1,12 +1,23 @@
-'use client'
-import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { Phone, Video } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Phone,
+  Video,
+  ChevronLeft,
+  ChevronRight,
+  ShieldCheck,
+  Star,
+  Lock,
+} from 'lucide-react';
+
 import { getApiBaseUrl } from '@/app/config/api';
-import { isAuthenticated, getAuthToken, getUserDetails } from '@/app/utils/auth-utils';
+import {
+  isAuthenticated,
+} from '@/app/utils/auth-utils';
 
 interface Astrologer {
   _id: string;
@@ -21,75 +32,53 @@ interface Astrologer {
   callMinutes: number;
   rpm: number;
   status: string;
-  isLive: boolean;
+  age?: number;
+  experience?: number | string;
 }
+
+const COLORS = {
+  primary: '#F79A18',
+  gold: '#EDB000',
+  cream: '#F8F4EC',
+  soft: '#EFE6D5',
+  dark: '#3A3A3A',
+  text: '#666666',
+  white: '#FFFFFF',
+};
 
 const AstrologerCarousel = () => {
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
+
   const [astrologers, setAstrologers] = useState<Astrologer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
   const [showCallOptions, setShowCallOptions] = useState(false);
-  const [selectedCallAstrologer, setSelectedCallAstrologer] = useState<Astrologer | null>(null);
+  const [selectedCallAstrologer, setSelectedCallAstrologer] =
+    useState<Astrologer | null>(null);
 
+  useEffect(() => {
+    const resize = () => setIsMobile(window.innerWidth < 768);
+    resize();
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
 
- 
-
-
-  // Fetch astrologers from API
   useEffect(() => {
     const fetchAstrologers = async () => {
       try {
-        setLoading(true);
-        setHasError(false);
-        const baseUrl = getApiBaseUrl();
-        const apiUrl = `${baseUrl}/user/api/users-list`;
+        const res = await fetch(
+          `${getApiBaseUrl()}/user/api/users-list`
+        );
+        const data = await res.json();
 
-        console.log('Fetching from:', apiUrl);
-
-
-        const response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        });
-
-        // Check if response is ok
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Check content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.warn('Response is not JSON:', contentType);
-          // Try to get the response text for debugging
-          const text = await response.text();
-          console.error('Response text:', text.substring(0, 200));
-          throw new Error('Response is not JSON');
-        }
-
-        const data = await response.json();
-        console.log('API Response:', data);
-
-        if (data.success && data.data?.list) {
-          // Filter astrologers: show all online, but limit offline to 3
-          const onlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "online");
-          const offlineAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status === "offline").slice(0, 3);
-          const otherAstrologers = data.data.list.filter((astrologer: Astrologer) => astrologer.status !== "online" && astrologer.status !== "offline");
-          
-          setAstrologers([...onlineAstrologers, ...offlineAstrologers, ...otherAstrologers]);
-        } else {
-          console.warn('API response format unexpected:', data);
-          throw new Error('Invalid API response format');
+        if (data.success) {
+          setAstrologers(data.data.list || []);
         }
       } catch (error) {
-        console.error('Error fetching astrologers:', error);
-        setHasError(true);
-        setAstrologers([]);
+        console.log(error);
       } finally {
         setLoading(false);
       }
@@ -98,340 +87,419 @@ const AstrologerCarousel = () => {
     fetchAstrologers();
   }, []);
 
+  const visibleCards = isMobile ? 1 : 4;
+
+  const maxIndex = useMemo(() => {
+    return Math.max(0, astrologers.length - visibleCards);
+  }, [astrologers.length, visibleCards]);
+
   const nextSlide = () => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
-    setCurrentIndex((prevIndex) =>
-      prevIndex >= maxIndex ? 0 : prevIndex + 1
+    setCurrentIndex((prev) =>
+      prev >= maxIndex ? 0 : prev + 1
     );
   };
 
   const prevSlide = () => {
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
-    setCurrentIndex((prevIndex) =>
-      prevIndex === 0 ? maxIndex : prevIndex - 1
+    setCurrentIndex((prev) =>
+      prev === 0 ? maxIndex : prev - 1
     );
   };
 
-  // Auto-play functionality
   useEffect(() => {
-    if (astrologers.length === 0) return;
+    if (!astrologers.length) return;
 
-    const interval = setInterval(() => {
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const maxIndex = isMobile ? astrologers.length - 1 : Math.max(0, astrologers.length - 4);
-      setCurrentIndex((prevIndex) =>
-        prevIndex >= maxIndex ? 0 : prevIndex + 1
-      );
-    }, 3500); // Change slide every 3.5 seconds
+    const timer = setInterval(nextSlide, 3500);
+    return () => clearInterval(timer);
+  }, [astrologers.length, maxIndex]);
 
-    return () => clearInterval(interval);
-  }, [astrologers.length]);
-
-  // Handle astrologer card click
-  const handleAstrologerClick = (astrologerId: string) => {
-    // Go to the dedicated ConsultAstrologer profile page
-    router.push(`/consult-astrologer/profile/${astrologerId}`);
+  const handleProfile = (id: string) => {
+    router.push(`/consult-astrologer/profile/${id}`);
   };
 
-  // Handle call button click
-  const handleCallClick = (astrologer: Astrologer, e: React.MouseEvent) => {
+  const handleCallClick = (
+    astro: Astrologer,
+    e: React.MouseEvent
+  ) => {
     e.stopPropagation();
-    setSelectedCallAstrologer(astrologer);
+    setSelectedCallAstrologer(astro);
     setShowCallOptions(true);
   };
 
-  // Direct call initiation for authenticated users
-  const initiateDirectCall = async (astrologerId: string, astrologerName: string, callType: 'audio' | 'video', astrologerAvatar: string = '', astrologerRpm: string | number = '') => {
-    try {
-      const token = getAuthToken();
-      const user = getUserDetails();
-      if (!token || !user?.id) {
-        localStorage.setItem("selectedAstrologerId", astrologerId);
-        localStorage.setItem("callIntent", callType);
-        localStorage.setItem("callSource", "consultAstrologer");
-        router.push("/login");
-        return;
-      }
+  const chooseCallType = (
+    type: 'audio' | 'video'
+  ) => {
+    if (!selectedCallAstrologer) return;
 
-      if (user.role === 'friend') {
-        alert('You Are a Partner At Sobhagya, So Call Cannot Be Initiated');
-        return;
-      }
-
-      const channelId = Date.now().toString();
-      const livekitUrl = `/api/calling/call-token-livekit?channel=${encodeURIComponent(channelId)}`;
-      const body = {
-        receiverUserId: astrologerId,
-        type: callType === 'audio' ? 'call' : 'video',
-        appVersion: '1.0.0'
-      };
-
-      const response = await fetch(livekitUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-        credentials: 'include',
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data?.data?.token || !data?.data?.channel) {
-        throw new Error(data?.message || 'Failed to initiate call');
-      }
-
-      localStorage.setItem('lastAstrologerId', astrologerId);
-      localStorage.setItem('callSource', 'consultAstrologer');
-
-      const common = `token=${encodeURIComponent(data.data.token)}&room=${encodeURIComponent(data.data.channel)}&astrologer=${encodeURIComponent(astrologerName)}&astrologerId=${encodeURIComponent(astrologerId)}&wsURL=${encodeURIComponent(data.data.livekitSocketURL || '')}&avatar=${encodeURIComponent(astrologerAvatar)}&rpm=${encodeURIComponent(String(astrologerRpm))}`;
-      const dest = callType === 'audio' ? `/audio-call?${common}` : `/video-call?${common}`;
-
-      router.push(dest);
-    } catch (err) {
-      console.error('❌ Direct call initiation failed:', err);
-      alert(err instanceof Error ? err.message : 'Failed to initiate call');
+    if (!isAuthenticated()) {
+      router.push('/login');
+      return;
     }
+
+    router.push(
+      type === 'audio'
+        ? '/audio-call'
+        : '/video-call'
+    );
+
+    setShowCallOptions(false);
   };
 
-  // Handle call type selection
-  const handleCallTypeSelection = (callType: 'audio' | 'video') => {
-    if (selectedCallAstrologer) {
-      setShowCallOptions(false);
-      if (isAuthenticated()) {
-        {
-          const av = (selectedCallAstrologer as any).avatar || (selectedCallAstrologer as any).profileImage || '';
-          const r = callType === 'audio'
-            ? ((selectedCallAstrologer as any).rpm ?? '')
-            : ((selectedCallAstrologer as any).videoRpm ?? (selectedCallAstrologer as any).rpm ?? '');
-          initiateDirectCall(selectedCallAstrologer._id, selectedCallAstrologer.name, callType, av, r);
-        }
-      } else {
-        localStorage.setItem("selectedAstrologerId", selectedCallAstrologer._id);
-        localStorage.setItem("callIntent", callType);
-        localStorage.setItem("callSource", "consultAstrologer");
-        router.push("/login");
-      }
-    }
+  const getSafeTags = (tags: string[] = []) => {
+    return tags.slice(0, 3);
   };
-
-  // Don't render anything if there's an error
-  if (hasError) {
-    return null;
-  }
 
   if (loading) {
     return (
-        <div className="w-full section-spacing relative" style={{
-         backgroundImage: "url('/bg-image.svg')",
-        }}>
-        <div className="section-container">
-          <h2 className="section-heading text-center text-white mb-6 sm:mb-10" style={{
-            fontFamily: 'Inter',
-          }}>
-            Consult with <em>India's</em> best Astrologers
-          </h2>
-          <div className="flex justify-center">
-            <div className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center max-w-sm mx-auto animate-pulse">
-              <div className="w-32 h-32 rounded-full bg-gray-300 mb-4"></div>
-              <div className="h-6 bg-gray-300 rounded w-32 mb-2"></div>
-              <div className="h-4 bg-gray-300 rounded w-48 mb-1"></div>
-              <div className="h-4 bg-gray-300 rounded w-24 mb-4"></div>
-              <div className="h-8 bg-gray-300 rounded w-32"></div>
-            </div>
-          </div>
+      <section
+        className="py-20"
+        style={{ background: COLORS.cream }}
+      >
+        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-6 animate-pulse">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="h-[460px] rounded-[28px] bg-white"
+            />
+          ))}
         </div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div
-      className="w-full section-spacing"
-      style={{
-        backgroundImage: "url('/bg-image.svg')",
-        position: "relative",
-      }}
+    <section
+      className="py-20 overflow-hidden"
+      style={{ background: COLORS.cream }}
     >
-      <div className="section-container">
-        <h2
-          className="section-heading text-center text-white mb-6 sm:mb-10"
-          style={{ fontFamily: "Inter" }}
-        >
-          Consult with <em>India's</em> best Astrologers
-        </h2>
+      <div className="max-w-7xl mx-auto px-4">
 
-        {/* Slider container */}
-        <div className="relative overflow-hidden">
-          {/* Previous button */}
+        {/* Heading */}
+        <div className="text-center mb-14">
+          <p
+            className="font-semibold tracking-wider text-sm"
+            style={{ color: COLORS.primary }}
+          >
+            TRUSTED GUIDANCE
+          </p>
+
+          <h2 className="text-4xl md:text-6xl font-bold mt-3 text-black">
+            Consult with India’s{' '}
+            <span style={{ color: COLORS.primary }}>
+              Best Astrologers
+            </span>
+          </h2>
+
+          <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm text-[#555]">
+            <span className="flex items-center gap-2">
+              <ShieldCheck
+                size={16}
+                color={COLORS.gold}
+              />
+              Verified Experts
+            </span>
+
+            <span className="flex items-center gap-2">
+              <Star
+                size={16}
+                fill={COLORS.gold}
+                color={COLORS.gold}
+              />
+              4.8+ Rating
+            </span>
+
+            <span className="flex items-center gap-2">
+              <Phone
+                size={16}
+                color={COLORS.gold}
+              />
+              Instant Connect
+            </span>
+
+            <span className="flex items-center gap-2">
+              <Lock
+                size={16}
+                color={COLORS.gold}
+              />
+              Confidential
+            </span>
+          </div>
+        </div>
+
+        {/* Slider */}
+        <div className="relative">
+
+          {/* Prev */}
           <button
             onClick={prevSlide}
-            className="absolute left-0 xs:left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-200 hover:border-orange-400"
-            aria-label="Previous astrologer"
+            className="absolute left-0 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+            style={{
+              background: COLORS.primary,
+              color: COLORS.white,
+            }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft />
           </button>
 
-          {/* Slider track */}
-          <div className="flex transition-transform duration-300 ease-out">
-            {astrologers.map((astrologer, index) => (
-              <div
-                key={astrologer._id}
-                className="w-full xs:w-1/2 sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/4 flex-shrink-0 px-1 sm:px-2"
-                style={{
-                  transform: `translateX(-${currentIndex * 100}%)`,
-                  transition: 'transform 300ms ease-out'
-                }}
-              >
-                <div
-                  className="bg-white rounded-xl border border-[#F7941D] p-3 sm:p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-300 w-full max-w-[200px] xs:max-w-[210px] sm:max-w-[221px] mx-auto"
-                  onClick={() => handleAstrologerClick(astrologer._id)}
-                >
-                  {/* Profile Picture */}
-                  <div className="mb-3">
-                    <div 
-                      className="relative w-20 h-20 rounded-full overflow-hidden border-2 flex items-center justify-center mx-auto"
-                      style={{
-                        borderColor: astrologer.status === "online" 
-                          ? "#399932" 
-                          : astrologer.status === "offline" 
-                          ? "#EF4444" 
-                          : "#F7941D"
-                      }}
-                    >
-                      <Image
-                        src={
-                          astrologer.avatar && astrologer.avatar.startsWith('http')
-                            ? astrologer.avatar
-                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                astrologer.name
-                              )}&background=FF6B35&color=fff&size=120`
-                        }
-                        alt={astrologer.name}
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover rounded-full"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                            astrologer.name
-                          )}&background=FF6B35&color=fff&size=120`;
-                        }}
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Name */}
-                  <h3 className="font-bold text-base text-gray-900 mb-0.5">
-                    {astrologer.name.split(' ').length > 2
-                      ? `${astrologer.name.split(' ')[0]} ${astrologer.name.split(' ').slice(-1)[0]}`
-                      : astrologer.name
-                    }
-                  </h3>
-                  
-                  {/* Language */}
-                  <p className="text-sm text-gray-600 mb-0">
-                    Hindi
-                  </p>
-                  
-                  {/* Expertise */}
-                  <p className="text-sm text-gray-600 mb-0 line-clamp-2 h-8 flex items-center justify-center text-center">
-                    {astrologer.talksAbout?.slice(0, 3).join(", ").replace("tarrot reading","Card Reading") || "Kp, Vedic, Vastu"}
-                  </p>
-                  
-                  {/* Experience */}
-                  <p className="text-sm text-gray-600 mb-1.5">
-                    Exp:- {Math.floor(astrologer.callMinutes / 60)}years
-                  </p>
-                  
-                  {/* Call Button */}
-                  <div className="flex justify-center">
-                    <button
-                      onClick={(e) => handleCallClick(astrologer, e)}
-                      className="w-full max-w-[171px] h-[30px] bg-[#F7941D] text-white text-[10px] font-medium hover:bg-orange-600 hover:text-white transition-colors uppercase flex items-center justify-center rounded-md gap-1.5"
-                    >
-                      <Phone className="w-2.5 h-2.5" />
-                      OFFER: FREE 1st call
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Next button */}
+          {/* Next */}
           <button
             onClick={nextSlide}
-            className="absolute right-0 xs:right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border border-orange-200 hover:border-orange-400"
-            aria-label="Next astrologer"
+            className="absolute right-0 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+            style={{
+              background: COLORS.primary,
+              color: COLORS.white,
+            }}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight />
           </button>
 
-          {/* Dots indicator - hidden on mobile, only show on desktop */}
-          <div className="hidden md:flex justify-center mt-2 space-x-1">
-            {astrologers.map((_, index) => (
+          <div className="overflow-hidden">
+            <motion.div
+              className="flex"
+              animate={{
+                x: `-${currentIndex * (100 / visibleCards)}%`,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 100,
+                damping: 18,
+              }}
+            >
+              {astrologers.map((astro) => {
+                const tags = getSafeTags(
+                  astro.talksAbout || []
+                );
+
+                return (
+                  <div
+                    key={astro._id}
+                    className="w-full md:w-1/4 shrink-0 p-3"
+                  >
+                    {/* FIXED CARD */}
+                    <motion.div
+                      whileHover={{
+                        y: -8,
+                        scale: 1.01,
+                      }}
+                      onClick={() =>
+                        handleProfile(astro._id)
+                      }
+                      className="bg-white rounded-[28px] p-5 shadow-md hover:shadow-xl cursor-pointer h-[470px] flex flex-col"
+                    >
+
+                      {/* TOP AREA */}
+                      <div>
+
+                        {/* PERFECT CIRCLE IMAGE */}
+                        <div className="relative w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-[#f2e2c2]">
+                          <Image
+                            src={
+                              astro.avatar?.startsWith(
+                                'http'
+                              )
+                                ? astro.avatar
+                                : `https://ui-avatars.com/api/?name=${astro.name}`
+                            }
+                            alt={astro.name}
+                            fill
+                            className="object-cover"
+                          />
+
+                          
+                        </div>
+
+                        {/* FIXED NAME HEIGHT */}
+                        <h3 className="text-[20px] font-bold text-center mt-5 leading-tight h-[56px] line-clamp-2 flex items-center justify-center">
+                          {astro.name}
+                        </h3>
+
+                        {/* FIXED SUBTITLE HEIGHT */}
+                        <p className="text-center text-[#666] mt-1 h-[28px]">
+                          Hindi • {astro.age || astro.experience || 1} Years Exp.
+                        </p>
+
+                        {/* TAG SECTION FIXED */}
+                        <div className="mt-4 h-[92px] flex flex-wrap justify-center content-start gap-2 overflow-hidden">
+                          {tags.length > 0 ? (
+                            tags.map((tag, i) => (
+                              <span
+                                key={i}
+                                className="px-3 h-9 inline-flex items-center rounded-full text-sm whitespace-nowrap max-w-full truncate"
+                                style={{
+                                  background:
+                                    COLORS.soft,
+                                  color:
+                                    COLORS.dark,
+                                }}
+                              >
+                                {tag}
+                              </span>
+                            ))
+                          ) : (
+                            <span
+                              className="px-3 h-9 inline-flex items-center rounded-full text-sm"
+                              style={{
+                                background:
+                                  COLORS.soft,
+                                color:
+                                  COLORS.dark,
+                              }}
+                            >
+                              Vedic
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* BOTTOM PUSHED SAME LEVEL */}
+                      <div className="mt-auto">
+                        <div className="flex justify-between border-t pt-4 text-sm text-[#555]">
+                          <span className="flex items-center gap-1">
+                            <Star
+                              size={16}
+                              fill={COLORS.gold}
+                              color={COLORS.gold}
+                            />
+                            {astro.rating?.avg ||
+                              4.8}
+                          </span>
+
+                          <span>
+                            {astro.calls || 0} Calls
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={(e) =>
+                            handleCallClick(
+                              astro,
+                              e
+                            )
+                          }
+                          className="w-full h-12 rounded-2xl mt-4 font-semibold flex items-center justify-center gap-2"
+                          style={{
+                            background:
+                              COLORS.primary,
+                            color:
+                              COLORS.white,
+                          }}
+                        >
+                          <Phone size={16} />
+                          FREE 1st Call
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                );
+              })}
+            </motion.div>
+          </div>
+
+          {/* Dots */}
+          <div className="flex justify-center gap-2 mt-8">
+            {Array.from({
+              length: maxIndex + 1,
+            }).map((_, i) => (
               <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors ${index === currentIndex ? 'bg-orange-500' : 'bg-gray-300'}`}
-                aria-label={`Go to slide ${index + 1}`}
+                key={i}
+                onClick={() =>
+                  setCurrentIndex(i)
+                }
+                className="h-2 rounded-full"
+                style={{
+                  width:
+                    i === currentIndex
+                      ? 24
+                      : 10,
+                  background:
+                    i === currentIndex
+                      ? COLORS.primary
+                      : '#dbc7a2',
+                }}
               />
             ))}
           </div>
         </div>
       </div>
 
-      {/* Call Options Modal */}
-      {showCallOptions && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      {/* Modal */}
+      <AnimatePresence>
+        {showCallOptions && (
           <motion.div
-            className="bg-white rounded-lg p-6 max-w-sm w-full mx-4"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
           >
-            <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-              Choose Call Type
-            </h3>
-            <p className="text-gray-600 text-center mb-6">
-              How would you like to connect with {selectedCallAstrologer?.name}?
-            </p>
-            
-            <div className="space-y-3">
-              <button
-                onClick={() => handleCallTypeSelection('audio')}
-                className="w-full bg-[#F7941D] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
-              >
-                <Phone className="w-5 h-5" aria-hidden="true" />
-                Audio Call
-              </button>
-              
-              <button
-                onClick={() => handleCallTypeSelection('video')}
-                className="w-full bg-[#F7941D] text-white py-3 px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-3"
-              >
-                <Video className="w-5 h-5" aria-hidden="true" />
-                Video Call
-              </button>
-            </div>
-            
-            <button
-              onClick={() => setShowCallOptions(false)}
-              className="w-full mt-4 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+            <motion.div
+              className="bg-white rounded-3xl p-6 w-full max-w-md"
+              initial={{
+                scale: 0.9,
+                y: 30,
+              }}
+              animate={{
+                scale: 1,
+                y: 0,
+              }}
+              exit={{
+                scale: 0.9,
+                y: 30,
+              }}
             >
-              Cancel
-            </button>
+              <h3 className="text-2xl font-bold text-center">
+                Choose Call Type
+              </h3>
+
+              <div className="space-y-3 mt-6">
+                <button
+                  onClick={() =>
+                    chooseCallType(
+                      'audio'
+                    )
+                  }
+                  className="w-full h-12 rounded-2xl text-white font-semibold flex items-center justify-center gap-2"
+                  style={{
+                    background:
+                      COLORS.primary,
+                  }}
+                >
+                  <Phone size={18} />
+                  Audio Call
+                </button>
+
+                <button
+                  onClick={() =>
+                    chooseCallType(
+                      'video'
+                    )
+                  }
+                  className="w-full h-12 rounded-2xl font-semibold flex items-center justify-center gap-2"
+                  style={{
+                    background:
+                      COLORS.gold,
+                    color:
+                      COLORS.dark,
+                  }}
+                >
+                  <Video size={18} />
+                  Video Call
+                </button>
+
+                <button
+                  onClick={() =>
+                    setShowCallOptions(
+                      false
+                    )
+                  }
+                  className="w-full h-12 rounded-2xl bg-gray-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
-        </div>
-      )}
-    </div>
+        )}
+      </AnimatePresence>
+    </section>
   );
 };
 

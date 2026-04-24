@@ -2,9 +2,11 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Users, Clock, Shield, Zap, Target, PhoneIcon, ArrowRight, CheckCircle, Sparkles, Globe, Heart, Brain, Crown, Shield as ShieldIcon } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 const WhyConsult: React.FC = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('benefits');
   
   const cosmicJourney = [
@@ -327,7 +329,9 @@ const WhyConsult: React.FC = () => {
               Connect with our certified astrologers and unlock the secrets written in your stars. Begin your journey of self-discovery today.
             </p>
             
-            <motion.button 
+            <motion.button
+              type="button"
+              onClick={() => router.push('/call-with-astrologer')}
               className="bg-[#F7971D] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center mx-auto group hover:bg-orange-600"
               style={{ fontFamily: "Poppins" }}
               whileHover={{ scale: 1.05 }}

@@ -105,7 +105,7 @@ const Footer: React.FC = () => {
                 {/* Email */}
                 <a
                   href="mailto:info@sobhagya.in"
-                  className="flex items-start gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors group"
+                  className="inline-flex self-start w-fit items-start gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors group"
                 >
                   <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 mt-1">◆</span>
                   <span className="flex flex-col leading-tight">
@@ -116,12 +116,12 @@ const Footer: React.FC = () => {
 
                 {/* Phone */}
                 <a
-                  href="tel:+919876543210"
-                  className="flex items-start gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors group"
+                  href="tel:+919211994461"
+                  className="inline-flex self-start w-fit items-start gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors group"
                 >
                   <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 mt-1">◆</span>
                   <span className="flex flex-col leading-tight">
-                    <span>+91 98765 43210</span>
+                    <span>+91 92119 94461</span>
                     <span className="text-white/60 text-[10px] sm:text-xs mt-0.5">(24/7 customer support)</span>
                   </span>
                 </a>
@@ -233,8 +233,8 @@ const Footer: React.FC = () => {
               {/* Phone */}
               <div className="flex items-center justify-center">
                 <span className="inline-flex items-center justify-center w-3 h-3 text-[#F7971E] mr-2 leading-none">◆</span>
-                <a href="tel:+919876543210" className="text-white hover:text-[#F7971E] text-sm transition-colors">
-                  +91 98765 43210
+                <a href="tel:+919211994461" className="text-white hover:text-[#F7971E] text-sm transition-colors">
+                  +91 92119 94461
                 </a>
               </div>
               <p className="text-white text-xs opacity-80">(24/7 customer support)</p>

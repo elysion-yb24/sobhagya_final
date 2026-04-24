@@ -121,14 +121,28 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
     const [isSending, setIsSending] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [animatingIn, setAnimatingIn] = useState(false);
+    const [isFetching, setIsFetching] = useState(false);
 
-    const displayGifts = (gifts && gifts.length > 0) ? gifts.filter(g => g.active !== false) : FALLBACK_PRESETS;
+    const realGifts = (gifts || []).filter(g => g.active !== false && !String(g._id || '').startsWith('preset_'));
+    const hasRealGifts = realGifts.length > 0;
+    // When real gifts haven't arrived yet, show FALLBACK_PRESETS as non-clickable
+    // skeletons so the layout doesn't shift, but users can't submit a fake id.
+    const displayGifts = hasRealGifts ? realGifts : FALLBACK_PRESETS;
 
+    // Fetch on open, and retry every time the modal reopens so transient
+    // network/auth failures on first load get another chance.
     useEffect(() => {
-        if (isOpen && onFetchGifts && (!gifts || gifts.length === 0)) {
-            onFetchGifts();
+        if (isOpen && onFetchGifts && !hasRealGifts) {
+            setIsFetching(true);
+            Promise.resolve(onFetchGifts()).finally(() => setIsFetching(false));
         }
     }, [isOpen]);
+
+    const handleRetry = () => {
+        if (!onFetchGifts || isFetching) return;
+        setIsFetching(true);
+        Promise.resolve(onFetchGifts()).finally(() => setIsFetching(false));
+    };
 
     // Drop `will-change` after the open animation finishes so the browser can
     // release the GPU layer — keeping will-change permanently actually hurts.
@@ -233,20 +247,25 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                             </div>
 
                             {/* Gift items */}
-                            <div className="grid grid-cols-3 gap-2.5 mb-5">
+                            <div className="grid grid-cols-3 gap-2.5 mb-3">
                                 {displayGifts.map((gift) => {
-                                    const isSelected = selectedGift?._id === gift._id;
+                                    const isSelected = hasRealGifts && selectedGift?._id === gift._id;
                                     const iconKey = gift.icon?.toLowerCase();
                                     const svgIcon = DakshinaIcons[iconKey];
+                                    const disabled = !hasRealGifts;
                                     return (
                                         <button
                                             key={gift._id}
-                                            onClick={() => setSelectedGift(gift)}
+                                            type="button"
+                                            disabled={disabled}
+                                            onClick={() => !disabled && setSelectedGift(gift)}
                                             style={{ transition: 'transform 180ms cubic-bezier(0.16,1,0.3,1), background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease' }}
                                             className={`relative flex flex-col items-center gap-1.5 py-4 px-3 rounded-2xl border transform-gpu ${
-                                                isSelected
-                                                    ? 'bg-gradient-to-b from-orange-50 to-amber-50 border-orange-400 shadow-lg shadow-orange-500/15 scale-[1.03]'
-                                                    : 'bg-white border-orange-100 hover:bg-orange-50/60 hover:border-orange-200'
+                                                disabled
+                                                    ? 'bg-white/60 border-orange-100/60 opacity-60 cursor-wait animate-pulse'
+                                                    : isSelected
+                                                        ? 'bg-gradient-to-b from-orange-50 to-amber-50 border-orange-400 shadow-lg shadow-orange-500/15 scale-[1.03]'
+                                                        : 'bg-white border-orange-100 hover:bg-orange-50/60 hover:border-orange-200'
                                             }`}
                                         >
                                             <div className={`transition-colors duration-200 ${isSelected ? 'text-orange-600' : 'text-orange-400'}`}>
@@ -269,13 +288,37 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                                 })}
                             </div>
 
+                            {/* Loading / retry state */}
+                            {!hasRealGifts && (
+                                <div className="flex items-center justify-between bg-orange-50/70 border border-orange-100 rounded-xl px-4 py-2.5 mb-4">
+                                    <span className="text-xs text-orange-700 font-medium flex items-center gap-2">
+                                        {isFetching ? (
+                                            <>
+                                                <span className="w-3 h-3 border-2 border-orange-300 border-t-orange-600 rounded-full animate-spin" />
+                                                Loading offerings…
+                                            </>
+                                        ) : (
+                                            <>Could not load offerings.</>
+                                        )}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleRetry}
+                                        disabled={isFetching}
+                                        className="text-xs font-bold text-orange-600 hover:text-orange-700 disabled:opacity-50"
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Send button */}
                             <button
                                 onClick={handleSend}
-                                disabled={!selectedGift || isSending}
+                                disabled={!selectedGift || isSending || !hasRealGifts}
                                 style={{ transition: 'transform 150ms ease, box-shadow 200ms ease, background-color 200ms ease' }}
                                 className={`w-full py-4 rounded-2xl font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 transform-gpu ${
-                                    selectedGift
+                                    selectedGift && hasRealGifts
                                         ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 active:scale-[0.98]'
                                         : 'bg-orange-50 text-orange-300 cursor-not-allowed border border-orange-100'
                                 }`}
@@ -289,9 +332,11 @@ const DakshinaModal: React.FC<DakshinaModalProps> = ({ isOpen, onClose, onSend, 
                                     <>
                                         <span>🙏</span>
                                         <span>
-                                            {selectedGift
-                                                ? `Offer ₹${Math.round(Number(selectedGift.price) || 0)} Dakshina`
-                                                : 'Select an amount'
+                                            {!hasRealGifts
+                                                ? 'Loading offerings…'
+                                                : selectedGift
+                                                    ? `Offer ₹${Math.round(Number(selectedGift.price) || 0)} Dakshina`
+                                                    : 'Select an amount'
                                             }
                                         </span>
                                     </>

@@ -125,17 +125,18 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
 
         const safeQuery = query.replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
 
-        // Use the authenticated search endpoint ONLY if the user is logged in
-        if (safeQuery && token) {
+        // /search requires name length > 2 and auth — otherwise fall through to users-list + client filter
+        if (safeQuery.length >= 3 && token) {
           endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(safeQuery)}&skip=${skip}&limit=${limit}`;
           if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
-          if (sort) endpoint += `&sortBy=${encodeURIComponent(sort)}`;
+          if (sort && sort !== "audio" && sort !== "video") endpoint += `&sortBy=${encodeURIComponent(sort)}`;
         } else {
-          // If unauthenticated search, fetch a large list to filter client-side since /search is blocked
-          const queryLimit = (!token && safeQuery) ? 1000 : limit;
+          // Short queries or unauthenticated: fetch a bigger page and filter by name client-side
+          const queryLimit = safeQuery ? 200 : limit;
           const queryParts = [
             `skip=${skip}`,
             `limit=${queryLimit}`,
+            `asc=-1`,
             language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
             sort === "video" ? `video=true` : "",
             sort !== "video" && sort !== "audio" && sort ? `sortBy=${encodeURIComponent(sort)}` : ""
@@ -177,18 +178,18 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           : data.data?.list || [];
 
         // --- CLIENT-SIDE COMPENSATIONS FOR BACKEND LIMITATIONS ---
-        if (safeQuery) {
-          if (!token) {
-            // Unauthenticated search used `users-list`, so we must manually filter by name
-            newAstrologers = newAstrologers.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
-          } else {
-            // Authenticated search used `/search`, which ignores language and sort. Apply manually:
-            if (language && language !== "All") {
-              newAstrologers = newAstrologers.filter(a => a.languages?.includes(language));
-            }
-            if (sort === "video") {
-              newAstrologers = newAstrologers.filter(a => a.hasVideo);
-            }
+        const usedSearchEndpoint = safeQuery.length >= 3 && !!token;
+        if (safeQuery && !usedSearchEndpoint) {
+          // Fell through to users-list — filter by name locally
+          newAstrologers = newAstrologers.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
+        }
+        if (usedSearchEndpoint) {
+          // /search ignores language and sort — apply manually
+          if (language && language !== "All") {
+            newAstrologers = newAstrologers.filter(a => a.languages?.includes(language));
+          }
+          if (sort === "video") {
+            newAstrologers = newAstrologers.filter(a => a.hasVideo);
           }
         }
 
@@ -268,15 +269,16 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
 
         const safeQuery = searchQuery.replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
 
-        if (safeQuery && token) {
+        if (safeQuery.length >= 3 && token) {
           endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(safeQuery)}&skip=${skip}&limit=${limit}`;
           if (languageFilter && languageFilter !== "All") endpoint += `&language=${encodeURIComponent(languageFilter)}`;
-          if (sortBy) endpoint += `&sortBy=${encodeURIComponent(sortBy)}`;
+          if (sortBy && sortBy !== "audio" && sortBy !== "video") endpoint += `&sortBy=${encodeURIComponent(sortBy)}`;
         } else {
-          const queryLimit = (!token && safeQuery) ? 1000 : limit;
+          const queryLimit = safeQuery ? 200 : limit;
           const queryParts = [
             `skip=${skip}`,
             `limit=${queryLimit}`,
+            `asc=-1`,
             languageFilter && languageFilter !== "All" ? `language=${encodeURIComponent(languageFilter)}` : "",
             sortBy === "video" ? `video=true` : "",
             sortBy !== "video" && sortBy !== "audio" && sortBy ? `sortBy=${encodeURIComponent(sortBy)}` : ""
@@ -308,16 +310,16 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           : data.data?.list || [];
 
         // Sync client-side filters for polling
-        if (safeQuery) {
-          if (!token) {
-            freshList = freshList.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
-          } else {
-            if (languageFilter && languageFilter !== "All") {
-              freshList = freshList.filter(a => a.languages?.includes(languageFilter));
-            }
-            if (sortBy === "video") {
-              freshList = freshList.filter(a => a.hasVideo);
-            }
+        const pollUsedSearch = safeQuery.length >= 3 && !!token;
+        if (safeQuery && !pollUsedSearch) {
+          freshList = freshList.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
+        }
+        if (pollUsedSearch) {
+          if (languageFilter && languageFilter !== "All") {
+            freshList = freshList.filter(a => a.languages?.includes(languageFilter));
+          }
+          if (sortBy === "video") {
+            freshList = freshList.filter(a => a.hasVideo);
           }
         }
 

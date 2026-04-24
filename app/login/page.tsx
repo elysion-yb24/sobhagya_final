@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -56,25 +56,26 @@ export default function LoginPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [mounted, setMounted] = useState<boolean>(false);
   const [showPartnerRestrictionModal, setShowPartnerRestrictionModal] = useState(false);
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
-  
+  const [isFinalizing, setIsFinalizing] = useState(false);
+
+  // `didHandleAuthRef` ensures the mount-time redirect, and any post-OTP
+  // redirect, each fire exactly once. Using a ref instead of state means
+  // flipping it doesn't schedule another render or re-run the effect below.
+  const didHandleAuthRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
 
   useEffect(() => {
     setMounted(true);
-    
+
     const checkAuthAndRedirect = async () => {
       try {
-        console.log('🔄 checkAuthAndRedirect called - isVerifyingOtp:', isVerifyingOtp);
-        // Don't run this check if we're currently verifying OTP
-        if (isVerifyingOtp) {
-          console.log('🔄 Skipping auth check - OTP verification in progress');
-          return;
-        }
-        
+        if (didHandleAuthRef.current) return;
+
         const isAuthValid = isAuthenticated();
         if (isAuthValid) {
+          didHandleAuthRef.current = true;
+          setIsFinalizing(true);
         console.log('✅ User already authenticated, checking for stored astrologer ID');
         
         // Check if there's a stored astrologer ID from the call flow
@@ -109,32 +110,26 @@ export default function LoginPage() {
         console.log('🔍 Checking stored data:', { storedAstrologerId, callIntent, callSource });
         
         if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
-          console.log('✅ Found call intent from', callSource, ':', callIntent, 'for astrologer:', storedAstrologerId);
-          // Clear the original intent data
           localStorage.removeItem('selectedAstrologerId');
           localStorage.removeItem('callIntent');
           localStorage.removeItem('callSource');
-          // Directly initiate call and navigate to call page
           await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
           return;
         } else if (storedAstrologerId) {
-          console.log('📞 Found stored astrologer ID:', storedAstrologerId);
           localStorage.removeItem('selectedAstrologerId');
-          // Redirect to the specific astrologer profile
-          router.push(`/astrologers/${storedAstrologerId}`);
+          router.replace(`/astrologers/${storedAstrologerId}`);
         } else {
-          console.log('🏠 No stored astrologer ID, redirecting to call-with-astrologer page');
-          router.push('/call-with-astrologer');
+          router.replace('/call-with-astrologer');
         }
       }
     } catch (error) {
       console.log('❌ Authentication check failed on login page:', error);
-      
+      didHandleAuthRef.current = false;
     }
     };
-    
+
     checkAuthAndRedirect();
-  }, [router, isVerifyingOtp]);
+  }, [router]);
 
   // Scroll to top when OTP screen becomes active
   useEffect(() => {
@@ -337,200 +332,94 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerifyOtp = async (data: any) => {
-    setIsVerifyingOtp(true);
-    console.log('🔄 Starting OTP verification process');
-    console.log('📋 localStorage before OTP processing:', Object.keys(localStorage).reduce((acc, key) => {
-      acc[key] = localStorage.getItem(key);
-      return acc;
-    }, {} as any));
-    // If this is just a success notification from OtpVerificationScreen, don't re-verify
-    if (data && data.verified === true) {
-      console.log("OTP verification completed successfully by child component");
-      setError(null);
-      
-      // Immediately route after OTP success — no delay needed since localStorage is already set by OtpVerificationScreen
-      try {
-        const user = getUserDetails();
-        
-        if (user && user.role === 'friend') {
-          setIsVerifyingOtp(false);
-          const callIntent = localStorage.getItem('callIntent');
-          if (callIntent) {
-            localStorage.removeItem('selectedAstrologerId');
-            localStorage.removeItem('callIntent');
-            localStorage.removeItem('callSource');
-            setShowPartnerRestrictionModal(true);
-            return;
-          } else {
-            router.replace('/partner-info');
-            return;
-          }
-        }
-
-        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-        const chatIntent = localStorage.getItem('chatIntent');
-        const callIntent = localStorage.getItem('callIntent');
-        const callSource = localStorage.getItem('callSource');
-        
-        const userDetails = getUserDetails();
-        const hasUserDetails = userDetails && (userDetails.name || userDetails.displayName) && (userDetails.name || userDetails.displayName).trim() !== '';
-        
-        if (!hasUserDetails) {
-          setIsVerifyingOtp(false);
-          router.replace('/calls/call1');
-          return;
-        }
-        
-        if (storedAstrologerId && chatIntent === '1') {
-          const profile = getUserDetails();
-          const currentUserId = profile?.id || profile?._id || '';
-          const currentUserName = profile?.displayName || profile?.name || 'User';
-          if (currentUserId) {
-            const a = currentUserId;
-            const b = storedAstrologerId;
-            const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
-            localStorage.removeItem('selectedAstrologerId');
-            localStorage.removeItem('chatIntent');
-            setIsVerifyingOtp(false);
-            router.replace(`/chat`);
-            return;
-          }
-        }
-
-        if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
-          localStorage.removeItem('selectedAstrologerId');
-          localStorage.removeItem('callIntent');
-          localStorage.removeItem('callSource');
-          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
-          setIsVerifyingOtp(false);
-          return;
-        }
-
-        // Default: redirect to call-with-astrologer page immediately
-        setIsVerifyingOtp(false);
-        router.replace('/call-with-astrologer');
-      } catch (error) {
-        console.error('Error in post-OTP routing:', error);
-        setIsVerifyingOtp(false);
-        router.replace('/call-with-astrologer');
-      }
+  // OtpVerificationScreen owns the actual OTP-verify request, token storage,
+  // and user-details persistence. By the time it invokes `onVerify`, the user
+  // is authenticated. All we do here is pick the destination and navigate —
+  // exactly once — while showing a "Signing you in…" overlay so no earlier
+  // screen can flash behind the transition.
+  const handleVerifyOtp = useCallback(async (data: any) => {
+    if (!data || data.verified !== true) {
+      // Nothing else ever sends a non-verified payload today; ignore defensively.
       return;
     }
 
-    // Legacy OTP verification (if needed for backwards compatibility)
-    const otp = typeof data === 'string' ? data : null;
-    if (!otp) {
-      console.error("Invalid OTP data received:", data);
-      setError("Invalid OTP format");
-      return;
-    }
-
-    setIsLoading(true);
+    // Claim the single navigation slot so the mount effect can't race us.
+    didHandleAuthRef.current = true;
+    setIsFinalizing(true);
     setError(null);
-    
+
     try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phone: phoneNumber,
-          otp: otp,
-          session_id: sessionId
-        }),
-      });
-      
-      const responseData: AuthenticationData = await response.json();
-      
-      if (response.ok) {
-        if (responseData.token) {
-          storeAuthToken(responseData.token);
+      const user = getUserDetails();
+      const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
+      const callIntent = localStorage.getItem('callIntent');
+      const chatIntent = localStorage.getItem('chatIntent');
+      const callSource = localStorage.getItem('callSource');
 
-          console.log("Token saved successfully:", responseData.token);
-        } else {
-          console.error("No token found in response:", responseData);
-          setError("Authentication succeeded but no token was received.");
-        }
-        
-        // Post-OTP: handle call intent and chat intent
-        const storedAstrologerId = localStorage.getItem('selectedAstrologerId');
-        const callIntent = localStorage.getItem('callIntent');
-        const chatIntent = localStorage.getItem('chatIntent');
-        const callSource = localStorage.getItem('callSource');
-
-        console.log('🔍 Post-OTP: Checking stored data:', { storedAstrologerId, callIntent, chatIntent, callSource });
-        console.log('🔍 All localStorage keys:', Object.keys(localStorage));
-
-        const user = getUserDetails();
-        if (user && user.role === 'friend') {
-          console.log('👥 User is a friend, redirecting to partner info');
-          router.push('/partner-info');
-          return;
-        }
-
-        // Check if user details are present in database response (legacy)
-        const hasUserDetails = user && (user.name || user.displayName) && (user.name || user.displayName).trim() !== '';
-        
-        
-        // If user details are not present, redirect to the name collection page
-        if (!hasUserDetails) {
-          router.push('/calls/call1');
-          return;
-        }
-
-        // Handle chat intent first
-        if (storedAstrologerId && chatIntent === '1') {
-          console.log('💬 Handling chat intent');
-          const profile = getUserDetails();
-          const currentUserId = profile?.id || profile?._id || '';
-          const currentUserName = profile?.displayName || profile?.name || 'User';
-          if (currentUserId) {
-            const a = currentUserId;
-            const b = storedAstrologerId;
-            const roomId = a < b ? `chat-${a}-${b}` : `chat-${b}-${a}`;
-            localStorage.removeItem('selectedAstrologerId');
-            localStorage.removeItem('chatIntent');
-            window.location.href = `/chat-room/${encodeURIComponent(roomId)}?userId=${encodeURIComponent(currentUserId)}&userName=${encodeURIComponent(currentUserName)}&role=user&autoDetails=1&astrologerId=${encodeURIComponent(storedAstrologerId)}`;
-            return;
-          }
-        }
-
-        // Handle call intent from any call source
-        if (storedAstrologerId && callIntent && (callSource === 'callWithAstrologer' || callSource === 'astrologerCard' || callSource === 'consultAstrologer')) {
-          console.log('📞 Found call intent from', callSource, ':', callIntent, 'for astrologer:', storedAstrologerId);
-          
-          // Clear the original intent data
+      // Partners can't initiate calls — route them accordingly.
+      if (user?.role === 'friend') {
+        if (callIntent) {
           localStorage.removeItem('selectedAstrologerId');
           localStorage.removeItem('callIntent');
           localStorage.removeItem('callSource');
-          
-          // Directly initiate call and navigate to call page
-          await initiateDirectCall(storedAstrologerId, callIntent === 'video' ? 'video' : 'audio');
+          setShowPartnerRestrictionModal(true);
+          setIsFinalizing(false);
           return;
         }
-
-        // Handle regular astrologer navigation
-        if (storedAstrologerId) {
-          console.log('📞 Post-OTP: Found stored astrologer ID:', storedAstrologerId);
-          localStorage.removeItem('selectedAstrologerId');
-          router.push(`/astrologers/${storedAstrologerId}`);
-        } else {
-          console.log('🏠 Post-OTP: No stored astrologer ID, redirecting to call-with-astrologer page');
-          router.push('/call-with-astrologer');
-        }
-      } else {
-        setError(responseData.message || 'Failed to verify OTP. Please try again.');
+        router.replace('/partner-info');
+        return;
       }
-    } catch (error) {
-      console.error('Error verifying OTP:', error);
-      setError('An error occurred. Please try again later.');
-    } finally {
-      setIsLoading(false);
-      setIsVerifyingOtp(false);
+
+      // First-time users without a saved name go through the onboarding form.
+      const hasName =
+        !!(user && ((user.name && String(user.name).trim()) ||
+          (user.displayName && String(user.displayName).trim())));
+      if (!hasName) {
+        router.replace('/calls/call1');
+        return;
+      }
+
+      // Chat intent — drop them into the chat page for the chosen astrologer.
+      if (storedAstrologerId && chatIntent === '1') {
+        localStorage.removeItem('selectedAstrologerId');
+        localStorage.removeItem('chatIntent');
+        router.replace('/chat');
+        return;
+      }
+
+      // Call intent from any entry point — initiate and navigate to the call.
+      if (
+        storedAstrologerId &&
+        callIntent &&
+        (callSource === 'callWithAstrologer' ||
+          callSource === 'astrologerCard' ||
+          callSource === 'consultAstrologer')
+      ) {
+        localStorage.removeItem('selectedAstrologerId');
+        localStorage.removeItem('callIntent');
+        localStorage.removeItem('callSource');
+        await initiateDirectCall(
+          storedAstrologerId,
+          callIntent === 'video' ? 'video' : 'audio'
+        );
+        return;
+      }
+
+      // Plain astrologer selection (no explicit call/chat intent).
+      if (storedAstrologerId) {
+        localStorage.removeItem('selectedAstrologerId');
+        router.replace(`/astrologers/${storedAstrologerId}`);
+        return;
+      }
+
+      router.replace('/call-with-astrologer');
+    } catch (err) {
+      console.error('Post-OTP routing failed:', err);
+      router.replace('/call-with-astrologer');
     }
-  };
+    // Note: we intentionally leave isFinalizing=true so the overlay stays up
+    // until the new route mounts. Resetting it would let the login UI paint
+    // again during the navigation frame.
+  }, [router]);
 
   const handleResendOtp = async () => {
     setIsLoading(true);
@@ -584,6 +473,15 @@ export default function LoginPage() {
     );
   }
 
+  // Full-screen overlay while post-OTP routing happens. Prevents the phone
+  // input or any other login UI from painting during the navigation frame.
+  const finalizingOverlay = isFinalizing ? (
+    <div className="fixed inset-0 z-[60] bg-white flex flex-col items-center justify-center">
+      <div className="w-14 h-14 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mb-4" />
+      <p className="text-gray-700 font-medium">Signing you in…</p>
+    </div>
+  ) : null;
+
   if (currentScreen === 'otp-verification') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50">
@@ -594,6 +492,7 @@ export default function LoginPage() {
           onResend={handleResendOtp}
           onBack={() => setCurrentScreen('phone-input')}
         />
+        {finalizingOverlay}
       </div>
     );
   }
@@ -829,6 +728,7 @@ export default function LoginPage() {
           </motion.div>
         </div>
       )}
+      {finalizingOverlay}
     </div>
   );
 }

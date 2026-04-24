@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useLiveSocket, ChatMessage, QueueItem } from '../../hooks/useLiveSocket';
 import { isAuthenticated, getUserDetails, getAuthToken } from '../../utils/auth-utils';
-import { getApiBaseUrl } from '../../config/api';
 import { fetchWalletBalance as simpleFetchWalletBalance } from '../../utils/production-api';
 import GiftConfirmationDialog from '../../components/ui/GiftConfirmationDialog';
 import DakshinaModal from '../../components/calling/ui/DakshinaModal';
@@ -366,6 +365,7 @@ export default function LiveSessionViewPage() {
     emitConnectedWithLivekit,
     onChatUpdate, onViewerUpdate, onViewerLeft, onSessionEnded,
     onCallStarted, onInviteReceived, onCallEnd, onQueueJoined, onLikeUpdate, onGiftReceived, onGiftRequest, emitSendGift,
+    fetchGifts: fetchGiftsSocket,
   } = useLiveSocket();
 
   /* ── core state ── */
@@ -441,26 +441,18 @@ export default function LiveSessionViewPage() {
   /* ════════════════════════════════════════════════════════════════════ */
   /*  Data fetchers                                                      */
   /* ════════════════════════════════════════════════════════════════════ */
+  // Mirrors the audio/video-call flow which uses the socket `get_gifts` event
+  // via useCallSocket. The REST endpoint used to be wired here but was failing
+  // silently; the socket path is the source of truth the backend supports.
   const fetchGifts = useCallback(async () => {
     try {
-      const token = getAuthToken();
-      const res = await fetch(`${getApiBaseUrl()}/calling/api/gift/get-gifts`, {
-        method: 'GET',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      if (res.ok) {
-        const d = await res.json();
-        const list: GiftItem[] = Array.isArray(d.data) ? d.data : [];
-        // Normalize + sort Dakshina presets ascending by price so the UI always
-        // shows the smallest offering first (11, 21, 51, 101, 251, 501, ...).
-        const normalized = list
-          .map((g) => ({ ...g, price: Math.round(Number(g.price) || 0) }))
-          .sort((a, b) => a.price - b.price);
-        setGifts(normalized);
-      }
-    } catch (err) { console.error('Error fetching gifts:', err); }
-  }, []);
+      const list = await fetchGiftsSocket();
+      const normalized: GiftItem[] = (Array.isArray(list) ? list : [])
+        .map((g: any) => ({ ...g, price: Math.round(Number(g.price) || 0) }))
+        .sort((a: GiftItem, b: GiftItem) => a.price - b.price);
+      setGifts(normalized);
+    } catch (err) { console.error('[Dakshina] Error fetching gifts:', err); }
+  }, [fetchGiftsSocket]);
 
   const fetchBalance = useCallback(async () => {
     try {
@@ -473,99 +465,58 @@ export default function LiveSessionViewPage() {
   /* ════════════════════════════════════════════════════════════════════ */
   /*  Gift handling                                                      */
   /* ════════════════════════════════════════════════════════════════════ */
-  // Mirrors handleSendGift in app/astrologers/[id]/page.tsx and
-  // app/call-with-astrologer/profile/[id]/page.tsx exactly. The transactional
-  // REST call deducts the wallet and persists the gift; the socket emit is
-  // best-effort so viewers see the real-time toast.
+  // Mirrors the audio/video call flow in AudioCallView / VideoCallView.
+  // Those views call `sendGift` from useCallSocket which is a single socket
+  // `send_gift` emit — the backend handles wallet deduction + persistence +
+  // broadcast in one handler. We intentionally do NOT hit the REST
+  // `/calling/api/gift/send-gift` endpoint any more; it was failing and the
+  // socket path is what the backend actually supports.
   const handleSendGift = async (gift: GiftItem) => {
-    if (!gift) { alert('Please select a gift first.'); return; }
+    if (!gift) { return; }
 
-    // The DakshinaModal falls back to FALLBACK_PRESETS (ids like `preset_11`)
-    // when the real gifts list hasn't loaded. Those ids don't exist on the
-    // backend — refetch and ask the user to retry instead of hitting the API
-    // with a guaranteed 404.
     if (typeof gift._id === 'string' && gift._id.startsWith('preset_')) {
-      console.warn('Real gifts not loaded yet — retrying fetch.');
+      console.warn('[Dakshina] preset_* id leaked into send. Refetching.');
       fetchGifts();
-      alert('Gifts are still loading. Please wait a moment and try again.');
-      throw new Error('Gifts not loaded');
+      throw new Error('Offerings not loaded yet.');
     }
 
     const price = Number(gift.price) || 0;
     if (walletBalance < price) {
-      alert('Insufficient wallet balance. Please add funds to your wallet.');
-      throw new Error('Insufficient wallet balance.');
+      throw new Error('Insufficient wallet balance. Please add funds to your wallet.');
+    }
+
+    const userDetails = getUserDetails();
+    if (!userDetails?.id) {
+      throw new Error('Authentication required');
+    }
+
+    // Broadcaster id can arrive under several keys depending on whether the
+    // session came from getSessions vs. joinSession.
+    const receiverUserId: string | undefined =
+      sessionData?.broadcasterId ||
+      sessionData?.broadcasterUserId ||
+      sessionData?.broadcaster?._id ||
+      sessionData?.broadcaster?.id ||
+      sessionData?.userId;
+
+    if (!receiverUserId) {
+      throw new Error('Astrologer details unavailable. Please refresh and try again.');
     }
 
     setIsSendingGift(true);
     try {
-      const token = getAuthToken();
-      const userDetails = getUserDetails();
-      if (!token || !userDetails?.id) {
-        throw new Error('Authentication required');
-      }
+      await emitSendGift(sessionId, gift, broadcasterName, receiverUserId);
 
-      // Try every shape the backend has returned broadcaster id under. The
-      // getSessions list uses `broadcasterId`, but joinSession can nest it under
-      // `broadcaster._id` or return it as `broadcasterUserId`.
-      const receiverUserId: string | undefined =
-        sessionData?.broadcasterId ||
-        sessionData?.broadcasterUserId ||
-        sessionData?.broadcaster?._id ||
-        sessionData?.broadcaster?.id ||
-        sessionData?.userId;
-
-      if (!receiverUserId) {
-        throw new Error('Astrologer details unavailable. Please refresh and try again.');
-      }
-
-      const giftData = {
-        id: gift._id,
-        receiverUserId,
-        giftId: gift._id,
-        amount: price,
-      };
-
-      const response = await fetch(`${getApiBaseUrl()}/calling/api/gift/send-gift`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(giftData),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to send gift';
-        try {
-          const errorData = await response.json();
-          console.error('Dakshina API error:', errorData);
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch (parseError) {
-          console.error('Failed to parse dakshina error response:', parseError);
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Cosmetic broadcast to all live viewers — never block the success path
-      // on this, since the REST call above already committed the transaction.
-      try {
-        await emitSendGift(sessionId, gift, broadcasterName, receiverUserId);
-      } catch (socketErr) {
-        console.warn('Dakshina REST committed but socket broadcast failed:', socketErr);
-      }
-
+      // Optimistic UI — balance/notification update immediately, then a
+      // server-side balance refresh reconciles in the background.
       setWalletBalance(prev => Math.max(0, prev - price));
       setGiftNotification({ type: 'received', giftName: gift.name, price: gift.price, fromName: 'You' });
       setTimeout(() => setGiftNotification(null), 3000);
       fetchBalance();
       return true;
     } catch (error: any) {
-      console.error('Error sending dakshina:', error);
-      alert(error instanceof Error ? error.message : 'Failed to send dakshina');
-      throw error;
+      console.error('[Dakshina] send failed:', error);
+      throw error instanceof Error ? error : new Error('Failed to send dakshina');
     } finally {
       setIsSendingGift(false);
     }

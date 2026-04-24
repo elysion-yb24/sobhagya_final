@@ -9,6 +9,7 @@ export default function Call1() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [isExiting, setIsExiting] = useState(false);
+  const [checkingExistingUser, setCheckingExistingUser] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -20,6 +21,39 @@ export default function Call1() {
       console.log("Stored astrologer ID for call flow:", astrologerId);
     }
   }, [astrologerId]);
+
+  // Existing users (name already stored in localStorage or the user profile)
+  // should skip this onboarding step entirely.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const pickName = () => {
+      const direct = localStorage.getItem("userName");
+      if (direct && direct.trim()) return direct.trim();
+
+      try {
+        const raw = localStorage.getItem("userDetails");
+        if (!raw) return null;
+        const u = JSON.parse(raw);
+        const candidate =
+          u?.name ||
+          u?.displayName ||
+          [u?.firstName, u?.lastName].filter(Boolean).join(" ").trim();
+        if (candidate && String(candidate).trim()) return String(candidate).trim();
+      } catch {}
+      return null;
+    };
+
+    const existingName = pickName();
+    if (existingName) {
+      localStorage.setItem("userName", existingName);
+      setIsExiting(true);
+      // Use replace so the back button doesn't bounce them onto this form again.
+      router.replace("/calls/call9");
+      return;
+    }
+    setCheckingExistingUser(false);
+  }, [router]);
 
   const handleNameChange = (e) => {
     let value = e.target.value;
@@ -49,7 +83,7 @@ export default function Call1() {
   return (
     <div className="h-screen bg-white flex flex-col items-center justify-center px-4 sm:px-6 md:px-9 overflow-hidden">
       <AnimatePresence mode="wait">
-        {!isExiting && (
+        {!isExiting && !checkingExistingUser && (
           <motion.div
             key="call1-card"
             initial={{ opacity: 0, scale: 0.95 }}

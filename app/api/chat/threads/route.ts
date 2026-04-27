@@ -7,5 +7,5 @@ import { pickQuery, proxyChatRequest } from '../_shared';
  */
 export async function GET(req: NextRequest) {
   const sp = pickQuery(req, ['lastTimeStamp', 'limit']);
-  return proxyChatRequest(req, 'GET', '/threads', { searchParams: sp });
+  return proxyChatRequest(req, 'GET', '/chat/threads', { searchParams: sp });
 }

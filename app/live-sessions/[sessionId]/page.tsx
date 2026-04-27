@@ -1400,39 +1400,39 @@ export default function LiveSessionViewPage() {
       </div>
 
       {/* ═══════ RIGHT SIDE ACTIONS ═══════ */}
-      <div className="absolute right-3 bottom-[175px] sm:bottom-[195px] z-20 flex flex-col items-center gap-4">
+      <div className="absolute right-4 bottom-[200px] z-30 flex flex-col items-center gap-6">
         <div className="relative">
           <FloatingHearts trigger={likeAnimCount} />
-          <button onClick={handleLike} disabled={isLiked} className="flex flex-col items-center gap-1 active:scale-90 transition-transform disabled:active:scale-100">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 backdrop-blur-md border active:scale-125 focus:scale-110 ${
+          <button onClick={handleLike} disabled={isLiked} className="group flex flex-col items-center gap-1.5 transition-all">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all duration-500 backdrop-blur-xl border-2 group-active:scale-125 ${
               isLiked
-                ? 'bg-white/30 border-white/40'
-                : 'bg-white/15 border-white/25 hover:bg-white/25'
+                ? 'bg-red-500/20 border-red-500/40'
+                : 'bg-white/10 border-white/20 hover:bg-white/20 hover:border-white/40'
             }`}>
-              <Heart key={likeAnimCount} className={`w-6 h-6 transition-all animate-heart-pop drop-shadow ${isLiked ? 'text-red-500 fill-red-500' : 'text-white'}`} />
+              <Heart className={`w-7 h-7 transition-all ${isLiked ? 'text-red-500 fill-red-500 animate-heart-pop' : 'text-white'}`} />
             </div>
-            <span className="text-white text-[11px] font-black drop-shadow-md">{likes}</span>
+            <span className="text-white text-xs font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{likes}</span>
           </button>
         </div>
 
         <button onClick={() => { if (!isAuthenticated()) { alert('Please login to send dakshina.'); return; } setShowGiftModal(true); }}
-          className="flex flex-col items-center gap-1 active:scale-90 transition-transform group">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-xl shadow-orange-500/30 group-hover:scale-110 transition-transform">
-            <Gift className="w-6 h-6 text-white" />
+          className="group flex flex-col items-center gap-1.5 transition-all">
+          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#F7971E] via-[#FFD200] to-[#F7971E] bg-[length:200%_auto] hover:bg-right flex items-center justify-center shadow-[0_8px_32px_rgba(247,151,30,0.4)] group-hover:scale-110 transition-all duration-500">
+            <Gift className="w-7 h-7 text-white drop-shadow-md" />
           </div>
-          <span className="text-orange-400 text-[11px] font-black drop-shadow-md uppercase">Send</span>
+          <span className="text-[#FFD200] text-[10px] font-black tracking-widest uppercase drop-shadow-md">Dakshina</span>
         </button>
 
         {!inQueue && !isWaitlisted && !isInCall && (
           <button
             onClick={() => setShowCallTypeModal(true)}
             disabled={joiningQueue}
-            className="flex flex-col items-center gap-1 active:scale-90 transition-transform group disabled:opacity-60"
+            className="group flex flex-col items-center gap-1.5 transition-all disabled:opacity-60"
           >
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-xl shadow-green-500/40 group-hover:scale-110 transition-transform border-2 border-white/25">
-              {joiningQueue ? <Loader2 className="w-6 h-6 text-white animate-spin" /> : <Phone className="w-6 h-6 text-white" />}
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#00b09b] to-[#96c93d] flex items-center justify-center shadow-[0_8px_32px_rgba(0,176,155,0.4)] group-hover:scale-110 transition-all duration-500 border-2 border-white/20">
+              {joiningQueue ? <Loader2 className="w-7 h-7 text-white animate-spin" /> : <Phone className="w-7 h-7 text-white drop-shadow-md" />}
             </div>
-            <span className="text-green-300 text-[11px] font-black drop-shadow-md uppercase">Call</span>
+            <span className="text-[#96c93d] text-[10px] font-black tracking-widest uppercase drop-shadow-md">Consult</span>
           </button>
         )}
       </div>
@@ -1440,30 +1440,40 @@ export default function LiveSessionViewPage() {
       {/* ═══════ BOTTOM: CHAT + QUEUE STATUS ═══════ */}
       <div className="relative z-10 mt-auto" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.35) 55%, transparent 100%)' }}>
 
-        {/* Chat messages — last 30, scrollable, with fade mask at top */}
+        {/* Chat messages — Instagram/TikTok style with better aesthetics */}
         <div
-          className="px-3 pb-2 pr-20 max-h-[30vh] overflow-y-auto space-y-1.5 scrollbar-hide"
-          style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, black 12%)' }}
+          className="px-4 pb-4 pr-24 max-h-[35vh] overflow-y-auto space-y-3 scrollbar-hide"
+          style={{ maskImage: 'linear-gradient(to top, black 85%, transparent 100%)' }}
         >
-          {chats.slice(-30).map((chat, idx) => {
+          {chats.slice(-40).map((chat, idx) => {
             const ud = getUserDetails();
             const isMe = String(chat.userId) === String(ud?.id || ud?._id || ud?.userId);
             const isBroadcaster = chat.userId === sessionData?.broadcasterId;
             return (
-              <div key={idx} className="flex items-start gap-2 max-w-[90%] scale-in-chat">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden shadow-sm ${isBroadcaster ? 'ring-2 ring-orange-400' : 'bg-white/10'}`}>
+              <div key={idx} className="flex items-start gap-2.5 animate-fade-in-left">
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-lg ${isBroadcaster ? 'ring-2 ring-orange-400 ring-offset-2 ring-offset-black/50' : 'bg-white/10'}`}>
                   {chat.profilePicture
-                    ? <img src={chat.profilePicture} alt="" className="w-full h-full rounded-full object-cover" />
-                    : <div className={`w-full h-full flex items-center justify-center ${isBroadcaster ? 'bg-orange-500' : 'bg-white/20'}`}>
-                        <span className="text-[9px] text-white font-extrabold">{chat.name?.charAt(0)?.toUpperCase()}</span>
+                    ? <img src={chat.profilePicture} alt="" className="w-full h-full object-cover" />
+                    : <div className={`w-full h-full flex items-center justify-center ${isBroadcaster ? 'bg-gradient-to-br from-orange-400 to-amber-600' : 'bg-white/20'}`}>
+                        <span className="text-xs text-white font-black">{chat.name?.charAt(0)?.toUpperCase()}</span>
                       </div>
                   }
                 </div>
-                <div className="premium-glass rounded-2xl rounded-tl-none px-3 py-1.5 border-white/10 shadow-md">
-                  <span className={`text-[10px] font-black block leading-tight ${isBroadcaster ? 'text-orange-400' : isMe ? 'text-blue-300' : 'text-white/70'}`}>
-                    {chat.name}{isBroadcaster && ' ✨'}
-                  </span>
-                  <span className="text-white text-[12px] leading-snug font-medium">{chat.message}</span>
+                <div className="max-w-[85%]">
+                  <div className={`backdrop-blur-md rounded-2xl rounded-tl-none px-4 py-2 border shadow-lg ${
+                    isBroadcaster 
+                      ? 'bg-orange-500/20 border-orange-500/30' 
+                      : isMe 
+                      ? 'bg-white/20 border-white/30' 
+                      : 'bg-black/40 border-white/10'
+                  }`}>
+                    <span className={`text-[10px] font-black block mb-0.5 tracking-wider uppercase ${isBroadcaster ? 'text-orange-400' : isMe ? 'text-blue-400' : 'text-white/60'}`}>
+                      {chat.name}{isBroadcaster && ' ✨'}
+                    </span>
+                    <span className="text-white text-sm leading-relaxed font-medium tracking-tight">
+                      {chat.message}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -1637,7 +1647,7 @@ export default function LiveSessionViewPage() {
         <>
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210]" onClick={() => setShowCallTypeModal(false)} />
           <div className="fixed bottom-0 left-0 right-0 z-[210] animate-slide-up max-w-lg mx-auto">
-            <div className="bg-white rounded-t-3xl p-6 shadow-2xl">
+            <div className="bg-white rounded-t-3xl p-6 pb-safe shadow-2xl">
               <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-5" />
               <h3 className="text-lg font-bold text-gray-900 mb-1">Request a Call</h3>
               <p className="text-gray-500 text-sm mb-5">Choose how you'd like to connect with {broadcasterName}</p>

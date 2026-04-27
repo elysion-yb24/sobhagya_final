@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight, X, Gift, Loader2, Phone, Video } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, X, Gift, Loader2, Phone, Video, PhoneCall } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, getUserDetails, isAuthenticated, hasUserCalledBefore } from "../../../utils/auth-utils";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { initiateCall } from "../../../utils/calling-utils";
 import { fetchWalletBalance as simpleFetchWalletBalance } from "../../../utils/production-api";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckCircle, Star, Languages, GraduationCap, MessageSquare, Heart, Share2, Award } from "lucide-react";
 
 interface Astrologer {
     _id: string;
@@ -475,128 +476,112 @@ export default function CallAstrologerProfilePage() {
             <div className="relative -mt-4 sm:-mt-6 md:-mt-8">
                 <div className="px-4 sm:px-6">
                     <div className="max-w-5xl mx-auto">
-                        {/* Profile Card */}
+                        {/* Profile Card - Premium Glassmorphism */}
                         <motion.div
-                            className="mb-6 sm:mb-8 relative"
+                            className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20 mb-8"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6 }}
                         >
-                        {/* Mobile Layout - Stacked */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-8 md:gap-12">
-                            {/* Avatar with Online Status and Rating */}
-                            <div className="flex flex-col items-center flex-shrink-0">
-                                <img
-                                    src={
-                                        (astrologer.avatar && astrologer.avatar.startsWith('http')) ||
-                                            (astrologer.profileImage && astrologer.profileImage.startsWith('http'))
-                                            ? astrologer.avatar || astrologer.profileImage
-                                            : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                astrologer.name
-                                            )}&background=FF6B35&color=fff&size=120`
-                                    }
-                                    alt={astrologer.name}
-                                    className="w-24 h-24 sm:w-32 sm:h-32 md:w-[180px] md:h-[180px] lg:w-[209px] lg:h-[209px] rounded-full object-cover border-[2.5px] border-[#F7971E] shadow-lg"
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                            astrologer.name
-                                        )}&background=FF6B35&color=fff&size=120`;
-                                    }}
-                                />
+                            <div className="flex flex-col md:flex-row gap-8 lg:gap-12">
+                                {/* Avatar Section */}
+                                <div className="flex flex-col items-center flex-shrink-0">
+                                    <div className="relative group">
+                                        <img
+                                            src={
+                                                (astrologer.avatar && astrologer.avatar.startsWith('http')) ||
+                                                    (astrologer.profileImage && astrologer.profileImage.startsWith('http'))
+                                                    ? astrologer.avatar || astrologer.profileImage
+                                                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(astrologer.name)}&background=F7941D&color=fff&size=200`
+                                            }
+                                            alt={astrologer.name}
+                                            className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-3xl object-cover border-4 border-white shadow-2xl transition-transform duration-500 group-hover:scale-105"
+                                        />
+                                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full shadow-md border border-gray-100 flex items-center gap-1.5 whitespace-nowrap">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-green-600">Online Now</span>
+                                        </div>
+                                    </div>
 
-                                {/* Online Status */}
-                                <div className="mt-2 sm:mt-3 text-[#399932] text-xs sm:text-sm font-medium italic leading-relaxed">
-                                    Online
+                                    {/* Ratings Summary */}
+                                    <div className="mt-8 flex flex-col items-center">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                            <span className="text-2xl font-black text-gray-900">{getRatingValue(astrologer.rating).toFixed(1)}</span>
+                                            <div className="flex">
+                                                {renderStars(getRatingValue(astrologer.rating))}
+                                            </div>
+                                        </div>
+                                        <div className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+                                            {astrologer.callsCount || "12k+"} Consultations
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {/* Rating */}
-                                <div className="flex flex-col items-center mt-1 sm:mt-2">
-                                    <div className="flex items-center gap-1">
-                                        {renderStars(getRatingValue(astrologer.rating))}
+                                {/* Info Section */}
+                                <div className="flex-1">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-gray-900 tracking-tight" style={{ fontFamily: 'Poppins' }}>
+                                                {astrologer.name}
+                                            </h1>
+                                            <CheckCircle className="w-6 h-6 text-blue-500 fill-blue-50" />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button className="p-2.5 rounded-full bg-gray-50 border border-gray-200 text-gray-400 hover:text-orange-500 hover:border-orange-200 transition-all">
+                                                <Share2 className="w-5 h-5" />
+                                            </button>
+                                            <button className="p-2.5 rounded-full bg-gray-50 border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-all">
+                                                <Heart className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <span className="text-xs sm:text-sm text-gray-600 mt-1">Rating {getRatingValue(astrologer.rating).toFixed(1)}</span>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-orange-50/50 border border-orange-100/50">
+                                            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600">
+                                                <Award className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Expertise</p>
+                                                <p className="text-sm font-bold text-gray-700 line-clamp-1">{astrologer.specializations?.[0] || "Vedic Astrology"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-blue-50/50 border border-blue-100/50">
+                                            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600">
+                                                <Languages className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Languages</p>
+                                                <p className="text-sm font-bold text-gray-700 line-clamp-1">{(astrologer.languages || []).slice(0, 2).join(", ") || "English, Hindi"}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-8 italic">
+                                        "{astrologer.about || `Astrologer ${astrologer.name} is a renowned expert in spiritual guidance and cosmic alignment, helping individuals find clarity and success through accurate predictions.`}"
+                                    </p>
+
+                                    {/* Action Row */}
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        <div className="flex-1 min-w-[200px]">
+                                            <button
+                                                onClick={handleCall}
+                                                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all duration-500 flex items-center justify-center gap-3"
+                                            >
+                                                <Phone className="w-5 h-5" />
+                                                {userHasCalledBefore ? `Consult for ₹${astrologer?.rpm || 15}/min` : 'Claim 1st Free Consultation'}
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowGiftModal(true)}
+                                            className="px-6 py-4 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 font-black text-sm uppercase tracking-widest hover:bg-amber-100 transition-all flex items-center gap-2"
+                                        >
+                                            <Gift className="w-5 h-5" />
+                                            Dakshina
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Profile Info */}
-                            <div className="flex-1 text-center sm:text-left pt-0 sm:pt-4 md:pt-16">
-                                {/* Name */}
-                                <h1 className="text-xl sm:text-2xl md:text-3xl font-medium text-gray-900 mb-2 sm:mb-3" style={{
-                                    fontFamily: 'Poppins'
-                                }}>{astrologer.name}</h1>
-
-                                {/* Specializations */}
-                                <p className="text-[#373737] mb-1 text-sm sm:text-base md:text-lg">
-                                    {astrologer.talksAbout?.slice(0, 3).join(", ").replace("tarrot reading","Card reading") ||
-                                        astrologer.specializations?.join(", ").replace("tarrot reading","Card Reading") ||
-                                        "Card reading, Pranic healing, Vedic, Horoscope Readings"}
-                                </p>
-
-                                {/* Languages */}
-                                <p className="text-[#636161] mb-1 text-sm sm:text-base">
-                                    {(astrologer.languages || []).join(", ") || "Hindi, Sanskrit, English"}
-                                </p>
-
-                                {/* Experience */}
-                                <div className="text-[#373737] mb-1 text-sm sm:text-base">
-                                    Exp:- {astrologer.age || astrologer.experience || "2"}years
-                                </div>
-
-                                {/* Pricing */}
-                                <div className="text-lg sm:text-xl md:text-2xl font-bold text-[#373737] mb-2 sm:mb-3">
-                                    ₹ {astrologer.rpm || 108}/min
-                                </div>
-
-                                {/* Call & Message Stats */}
-                                <div className="flex items-center justify-center sm:justify-start gap-8 sm:gap-12 md:gap-20 my-2 sm:my-3 py-2 sm:py-3">
-                                    <div className="flex items-center gap-2 sm:gap-4">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-[1px] border-[#F7971E] rounded-full flex items-center justify-center bg-white text-[#F7971E]">
-                                            <Phone className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" aria-hidden="true" />
-                                        </div>
-                                        <div>
-                                            <p className="text-mono font-normal text-[#636161]-700 text-xs sm:text-sm">Call</p>
-                                            <p className="text-mono font-normal text-[#636161] text-xs sm:text-sm">{astrologer.callsCount || astrologer.calls || "580"}k mins</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-4">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 border-[1px] border-[#F7971E] rounded-full flex items-center justify-center bg-white">
-                                            <img src="/Group 13365.svg" alt="Message" className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-mono font-normal text-[#6316161] text-xs sm:text-sm">Message</p>
-                                            <p className="text-mono font-normal text-[#636161] text-xs sm:text-sm">{Math.floor((astrologer.callsCount || 488) * 0.84)}k mins</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Description */}
-                        <p className="text-gray-700 text-xs sm:text-sm leading-relaxed mb-4 sm:mb-6 w-full">
-                            {astrologer.about ||
-                                `Astrologer ${astrologer.name} is a renowned expert in ${(astrologer.talksAbout?.slice(0, 3) || astrologer.specializations || ["Card reading", "Pranic healing", "Vedic astrology"]).join(", ").replace("tarrot reading","Card Reading")}, and spiritual guidance. With years of experience, he provides deep insights into love, career, health, and life challenges. His accurate predictions and effective remedies have helped countless individuals find clarity and success. Whether you seek answers about your future or solutions to obstacles, ${astrologer.name} offers personalized consultations to align your life with cosmic energies.`}
-                        </p>
-
-                        {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6">
-                            <button className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] border border-[#f7971e] text-gray-700 rounded-lg text-xs sm:text-sm font-medium hover:bg-gray-50 transition-colors">
-                                Follow
-                            </button>
-                            <button
-                                onClick={() => setShowGiftModal(true)}
-                                className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#F7971E] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors flex items-center gap-1.5"
-                            >
-                                <Gift className="w-3.5 h-3.5" />
-                                Dakshina
-                            </button>
-                            <button
-                                onClick={handleCall}
-                                className="pt-[5px] pb-[5px] pr-[20px] pl-[20px] sm:pr-[28px] sm:pl-[28px] md:pr-[36px] md:pl-[36px] bg-[#F7971E] text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-orange-600 transition-colors"
-                            >
-                                {userHasCalledBefore ? `₹${astrologer?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
-                            </button>
-                        </div>
                         </motion.div>
                     </div>
                 </div>
@@ -639,7 +624,7 @@ export default function CallAstrologerProfilePage() {
                                      {similarAstrologers.map((similar) => (
                                          <div
                                              key={similar._id}
-                                             className="flex-shrink-0 w-[221px] sm:w-[221px] md:w-[220px] lg:w-[210px] bg-white rounded-lg border border-[#F7971E] p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200"
+                                             className="flex-shrink-0 w-[221px] sm:w-[221px] md:w-[220px] lg:w-[210px] bg-white rounded-2xl border border-orange-100 p-3 text-center cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-orange-200"
                                              onClick={() => router.push(`/call-with-astrologer/profile/${similar._id}`)}
                                          >
                                              {/* Profile Picture */}
@@ -852,43 +837,54 @@ export default function CallAstrologerProfilePage() {
                 </div>
             )}
 
-            {/* Call Options Modal */}
             {showCallOptions && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[110] p-4 font-['Inter']">
                     <motion.div
-                        className="bg-white rounded-lg p-4 sm:p-6 max-w-sm w-full mx-4"
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.3 }}
+                        className="bg-white rounded-[24px] p-6 max-w-[320px] w-full shadow-2xl border border-white/20 relative overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeOut' }}
                     >
-                        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4 text-center">
-                            Choose Call Type
-                        </h3>
-                        <p className="text-gray-600 text-center mb-4 sm:mb-6 text-sm sm:text-base">
-                            How would you like to connect with {selectedCallAstrologer?.name}?
-                        </p>
+                        <button 
+                            onClick={() => setShowCallOptions(false)}
+                            className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex flex-col items-center mb-6">
+                            <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-3 text-[#F7941D]">
+                                <PhoneCall className="w-6 h-6" strokeWidth={2} />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 text-center tracking-tight">
+                                Choose Call Type
+                            </h3>
+                            <p className="text-gray-500 text-center text-xs mt-1 font-medium leading-relaxed">
+                                Connect with <span className="text-[#F7941D] font-semibold">{selectedCallAstrologer?.name}</span>
+                            </p>
+                        </div>
                         
-                        <div className="space-y-2 sm:space-y-3">
+                        <div className="space-y-3">
                             <button
                                 onClick={() => handleCallTypeSelection('audio')}
-                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                className="w-full bg-[#F7941D] hover:bg-[#e8891a] text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md shadow-orange-500/10 transition-all duration-200"
                             >
-                                <Phone className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-                                Audio Call
+                                <Phone className="w-4 h-4" strokeWidth={2.5} />
+                                <span className="text-sm">Audio Call</span>
                             </button>
                             
                             <button
                                 onClick={() => handleCallTypeSelection('video')}
-                                className="w-full bg-[#F7971E] text-white py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-orange-600 transition-colors font-medium flex items-center justify-center gap-2 sm:gap-3 text-sm sm:text-base"
+                                className="w-full bg-[#333333] hover:bg-[#222222] text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md shadow-gray-900/10 transition-all duration-200"
                             >
-                                <Video className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-                                Video Call
+                                <Video className="w-4 h-4" strokeWidth={2.5} />
+                                <span className="text-sm">Video Call</span>
                             </button>
                         </div>
                         
                         <button
                             onClick={() => setShowCallOptions(false)}
-                            className="w-full mt-3 sm:mt-4 bg-gray-200 text-gray-700 py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm sm:text-base"
+                            className="w-full mt-5 text-gray-400 py-1 text-[11px] font-bold uppercase tracking-widest hover:text-gray-600 transition-colors"
                         >
                             Cancel
                         </button>

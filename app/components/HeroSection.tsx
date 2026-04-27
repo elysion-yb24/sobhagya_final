@@ -2,11 +2,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PhoneIcon } from '@heroicons/react/24/solid';
 
 const HeroSection: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   const [displayCount, setDisplayCount] = useState(0);
   const targetCount = 10023;
@@ -15,7 +16,7 @@ const HeroSection: React.FC = () => {
   useEffect(() => {
     setMounted(true);
     setParticlePositions(
-      Array.from({ length: 30 }).map(() => ({
+      Array.from({ length: shouldReduceMotion ? 8 : 30 }).map(() => ({
         left: Math.random() * 100,
         top: Math.random() * 100,
         delay: Math.random() * 3,
@@ -23,14 +24,19 @@ const HeroSection: React.FC = () => {
         size: 1 + Math.random() * 2,
       }))
     );
-  }, []);
+  }, [shouldReduceMotion]);
 
   // Animated counter
   useEffect(() => {
     if (!mounted) return;
+    if (shouldReduceMotion) {
+      setDisplayCount(targetCount);
+      return;
+    }
     let start = 0;
     const duration = 2000;
     const step = targetCount / (duration / 16);
+
     const timer = setInterval(() => {
       start += step;
       if (start >= targetCount) {
@@ -41,7 +47,7 @@ const HeroSection: React.FC = () => {
       }
     }, 16);
     return () => clearInterval(timer);
-  }, [mounted]);
+  }, [mounted, shouldReduceMotion]);
 
   const navigationCards = [
     {
@@ -69,7 +75,7 @@ const HeroSection: React.FC = () => {
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Hero Section */}
       <motion.section
-        className="text-white relative w-full flex flex-col justify-start pb-6 sm:pb-8 md:pb-10"
+        className="text-white relative w-full flex flex-col justify-start pt-2 sm:pt-3 pb-6 sm:pb-8 md:pb-10"
         style={{
           backgroundImage: "url(/bg-image1111.svg)",
           backgroundSize: "cover",
@@ -83,44 +89,46 @@ const HeroSection: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/10 z-0" />
 
         {/* Floating star particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
-          {particlePositions.map((pos, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full bg-white/40"
-              style={{
-                left: `${pos.left}%`,
-                top: `${pos.top}%`,
-                width: `${pos.size}px`,
-                height: `${pos.size}px`,
-              }}
-              animate={{
-                y: [-10, -80, -10],
-                opacity: [0, 0.8, 0],
-                scale: [0.5, 1.2, 0.5],
-              }}
-              transition={{
-                duration: pos.duration,
-                repeat: Infinity,
-                delay: pos.delay,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </div>
+        {!shouldReduceMotion && (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+            {particlePositions.map((pos, i) => (
+              <motion.div
+                key={i}
+                className="absolute rounded-full bg-white/40"
+                style={{
+                  left: `${pos.left}%`,
+                  top: `${pos.top}%`,
+                  width: `${pos.size}px`,
+                  height: `${pos.size}px`,
+                }}
+                animate={{
+                  y: [-10, -80, -10],
+                  opacity: [0, 0.8, 0],
+                  scale: [0.5, 1.2, 0.5],
+                }}
+                transition={{
+                  duration: pos.duration,
+                  repeat: Infinity,
+                  delay: pos.delay,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Content */}
         <div className="section-container relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-2 md:gap-6 lg:gap-10">
           {/* Left: Text Content */}
           <motion.div
-            className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left order-2 md:order-1 mt-4 sm:-mt-16 md:mt-0"
+            className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left order-2 md:order-1 mt-2 sm:-mt-10 md:mt-0"
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : -40 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
             <h1 className="font-bold leading-tight mb-2 sm:mb-3" style={{
               fontFamily: "EB Garamond",
-              fontSize: 'clamp(28px, 6vw, 55px)',
+              fontSize: 'clamp(26px, 7vw, 55px)',
               fontWeight: 700,
               lineHeight: 1.15,
             }}>
@@ -134,7 +142,7 @@ const HeroSection: React.FC = () => {
             </p>
             <Link href="/call-with-astrologer">
               <motion.button
-                className="bg-white text-orange-600 px-5 sm:px-7 py-3 sm:py-4 font-semibold rounded-xl shadow-lg hover:shadow-xl hover:bg-saffron-500 hover:text-white transition-all duration-300 flex items-center justify-center mx-auto md:mx-0 w-full xs:w-auto max-w-xs group"
+                className="bg-white text-orange-600 px-5 sm:px-7 py-3 sm:py-4 font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:bg-saffron-500 hover:text-white transition-all duration-300 flex items-center justify-center mx-auto md:mx-0 w-full xs:w-auto max-w-xs group border border-white/60"
                 style={{ fontFamily: "Poppins", fontSize: "clamp(15px, 3.5vw, 20px)" }}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
@@ -191,11 +199,16 @@ const HeroSection: React.FC = () => {
         <div className="relative z-20 -mt-2 xs:-mt-4 sm:-mt-20 md:-mt-8 lg:-mt-14 mb-6 sm:mb-10 md:mb-12">
           <div className="section-container">
             {/* Mobile: Compact horizontal buttons */}
-            <div className="flex flex-row justify-center gap-2 xs:gap-3 sm:hidden px-1">
+            <div className="flex justify-start gap-3 sm:hidden px-1 overflow-x-auto scrollbar-hide scroll-touch pb-1">
               {navigationCards.map((card, idx) => (
-                <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined} className="flex-1 max-w-[130px]">
+                <Link
+                  key={card.id}
+                  href={card.href}
+                  target={card.isExternal ? "_blank" : undefined}
+                  className="flex-shrink-0 min-w-[132px]"
+                >
                   <motion.div
-                    className="rounded-xl px-2.5 py-3 flex flex-col items-center justify-center shadow-lg bg-white text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card border border-gray-100"
+                    className="premium-surface rounded-2xl px-3 py-3.5 min-h-[108px] flex flex-col items-center justify-center shadow-lg text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 20 }}
                     transition={{ delay: 0.8 + idx * 0.1 }}
@@ -205,9 +218,9 @@ const HeroSection: React.FC = () => {
                       alt={card.title}
                       width={28}
                       height={28}
-                      className="mb-1.5 block"
+                      className="mb-2 block"
                     />
-                    <span className="text-[10px] xs:text-xs font-medium leading-tight text-center" style={{ fontFamily: "Poppins" }}>
+                    <span className="text-[11px] xs:text-xs font-semibold leading-tight text-center" style={{ fontFamily: "Poppins" }}>
                       {card.title}
                     </span>
                   </motion.div>

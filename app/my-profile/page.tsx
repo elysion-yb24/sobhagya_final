@@ -246,8 +246,9 @@ export default function MyProfilePage() {
                   </span>
                 )}
                 {email && (
-                  <span className="flex items-center gap-1.5 text-amber-200/70 text-sm">
-                    <Mail className="w-3.5 h-3.5" /> {email}
+                  <span className="flex items-center gap-1.5 text-amber-200/70 text-sm min-w-0 max-w-full">
+                    <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate break-anywhere">{email}</span>
                   </span>
                 )}
               </div>
@@ -320,6 +321,17 @@ export default function MyProfilePage() {
               <p className="text-sm text-gray-500 mt-0.5">Update your personal and astrological details</p>
             </div>
             <div className="px-6 py-6 space-y-5">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Enter your full name"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all text-gray-800"
+                />
+              </div>
               {/* About */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">About</label>

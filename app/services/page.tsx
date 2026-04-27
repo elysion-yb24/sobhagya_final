@@ -104,7 +104,7 @@ export default function Services() {
       <section className="bg-white w-full">
         {/* Enhanced Background Image for Heading with Animations */}
         <motion.div
-          className="relative bg-cover bg-center py-16 sm:py-20 overflow-hidden"
+          className="relative bg-cover bg-center py-12 sm:py-16 lg:py-20 overflow-hidden"
           style={{ backgroundImage: "url('/service.png')" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -136,7 +136,7 @@ export default function Services() {
           </div>
           
           <motion.h2 
-            className="relative text-center text-white text-3xl sm:text-5xl lg:text-6xl font-bold"
+            className="relative text-center text-white text-3xl sm:text-5xl lg:text-6xl font-bold px-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -144,18 +144,18 @@ export default function Services() {
             Our Services
           </motion.h2>
         </motion.div>
-  
-        <div className="w-full mx-auto px-4">
+
+        <div className="w-full mx-auto px-4 sm:px-5">
           {/* Featured Services Cards */}
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mb-8 mt-12 sm:mt-16 lg:mt-20"
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto mb-8 mt-8 sm:mt-12 lg:mt-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
             {/* Free Kundli Generator Card */}
             <motion.div
-              className="group p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
+              className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.1, delay: 0.7 }}
@@ -171,7 +171,7 @@ export default function Services() {
               </p>
               <button 
                 onClick={() => window.location.href = '/free-kundli'}
-                className="mt-4 bg-[#F7971D] text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
+                className="mt-4 w-full sm:w-auto bg-[#F7971D] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
               >
                 Generate Kundli
               </button>
@@ -179,7 +179,7 @@ export default function Services() {
 
             {/* Horoscope Card */}
             <motion.div
-              className="group p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
+              className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.1, delay: 0.8 }}
@@ -195,7 +195,7 @@ export default function Services() {
               </p>
               <button 
                 onClick={() => window.location.href = '/services/horoscope'}
-                className="mt-4 bg-[#F7971D] text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
+                className="mt-4 w-full sm:w-auto bg-[#F7971D] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
               >
                 Read Horoscope
               </button>
@@ -203,7 +203,7 @@ export default function Services() {
 
             {/* Gun Milan Card */}
             <motion.div
-              className="group p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
+              className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.1, delay: 0.9 }}
@@ -219,7 +219,7 @@ export default function Services() {
               </p>
               <button 
                 onClick={() => window.location.href = '/services/gun-milan'}
-                className="mt-4 bg-[#F7971D] text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
+                className="mt-4 w-full sm:w-auto bg-[#F7971D] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
               >
                 Calculate Now
               </button>
@@ -243,7 +243,7 @@ export default function Services() {
 
           {/* Enhanced Services Grid with Animations */}
           <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
@@ -252,7 +252,7 @@ export default function Services() {
               <div
                 key={index}
                 onClick={() => window.location.href = service.link}
-                className="group p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-white transition-all duration-25 ease-out shadow-md hover:shadow-2xl hover:border-orange-500 hover:-translate-y-1"
+                className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-white transition-all duration-25 ease-out shadow-md hover:shadow-2xl hover:border-orange-500 hover:-translate-y-1"
               >
                 <div className="relative w-[61px] h-[61px] flex items-center justify-center">
                   {/* Use plain <img> with URL-encoded src because next/image can fail silently
@@ -289,7 +289,7 @@ export default function Services() {
   
           {/* Enhanced Call to Action with Animation */}
           <motion.div 
-            className="bg-orange-50 py-16 sm:py-20 mt-12 mb-20 text-center px-4 sm:px-6 w-full"
+            className="bg-orange-50 py-12 sm:py-16 mt-10 sm:mt-12 mb-16 sm:mb-20 text-center px-4 sm:px-6 w-full rounded-2xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 2.0 }}

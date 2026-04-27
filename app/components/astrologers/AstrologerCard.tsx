@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { getAuthToken, getUserDetails, isAuthenticated } from "../../utils/auth-utils";
-import { Phone, Video } from "lucide-react";
+import { Phone, Video, CheckCircle, Star, Languages, GraduationCap, MessageSquare } from "lucide-react";
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
 import ChatConnectingModal from "../../components/ui/ChatConnectingModal";
@@ -346,133 +346,131 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
   return (
     <>
-      <div
-        className="relative bg-white rounded-xl border p-4 cursor-pointer transition-all duration-300 hover:shadow-xl flex flex-col w-full mx-auto overflow-hidden"
-        style={{
-          borderColor: "#F7941D",
-          boxShadow: "0 4px 16px rgba(247,148,29,0.15)",
-        }}
+      <motion.div
+        className="relative bg-white rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col w-full mx-auto overflow-hidden border border-orange-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-orange-200"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         onClick={handleCardClick}
       >
         {/* 🎁 Free Call Banner */}
+        {/* 🎁 Free Call Banner - Premium Ribbon Style */}
         {!hasCompletedFreeCall && (
-          <div
-            className="absolute top-3 -right-10 w-[160px] bg-[#F7941D] text-white text-[11px] text-center font-bold py-[2px] rotate-[45deg] flex items-center justify-center shadow-md z-50 whitespace-normal leading-tight"
-            style={{ transformOrigin: "center" }}
-          >
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1st Free Call
-            {/* OFFER: <br /> FREE 1st CALL */}
+          <div className="absolute top-0 right-0 z-20">
+            <div className="bg-gradient-to-l from-orange-600 to-orange-400 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl shadow-md flex items-center gap-1.5 uppercase tracking-wider border-b border-l border-white/20">
+              <Star className="w-3 h-3 fill-white" />
+              1st Free Call
+            </div>
           </div>
         )}
 
         {/* ⭐ Main Content */}
         <div className="flex gap-4 mb-4 relative z-10">
-          {/* Avatar */}
-          <div className="relative flex flex-col items-center">
-            <img
-              src={
-                (partner.avatar && partner.avatar.startsWith('http')) ||
-                (partner.profileImage && partner.profileImage.startsWith('http'))
-                  ? partner.avatar || partner.profileImage
-                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      name
-                    )}&background=F7941D&color=fff&size=70`
-              }
-              alt={name}
-              className="w-[70px] h-[70px] rounded-full object-cover border-2"
-              style={{
-                borderColor: partner.status === "online" 
-                  ? "#10B981" 
-                  : partner.status === "busy" 
-                  ? "#F97316" 
-                  : partner.status === "offline" 
-                  ? "#EF4444" 
-                  : "#F7941D",
-              }}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  name
-                )}&background=F7941D&color=fff&size=70`;
-              }}
-            />
-
-            {/* ⭐ Rating */}
-            <div className="mt-2 flex items-center text-yellow-500 text-sm">
-              {[...Array(5)].map((_, i) => {
-                const value = typeof rating === "number" ? rating : rating?.avg || 4.5;
-                return (
-                  <span key={i} className={i < Math.floor(value) ? "" : "text-gray-300"}>
-                    ★
-                  </span>
-                );
-              })}
+          {/* Avatar Section */}
+          <div className="relative flex-shrink-0">
+            <div className="relative group/avatar">
+              <img
+                src={
+                  (partner.avatar && partner.avatar.startsWith('http')) ||
+                  (partner.profileImage && partner.profileImage.startsWith('http'))
+                    ? partner.avatar || partner.profileImage
+                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F7941D&color=fff&size=80`
+                }
+                alt={name}
+                className="w-20 h-20 rounded-2xl object-cover border-2 shadow-inner transition-transform duration-500 group-hover/avatar:scale-105"
+                style={{
+                  borderColor: partner.status === "online" 
+                    ? "#10B981" 
+                    : partner.status === "busy" 
+                    ? "#F97316" 
+                    : partner.status === "offline" 
+                    ? "#EF4444" 
+                    : "#F7941D",
+                }}
+              />
+              {/* Online/Busy Indicator Ping */}
+              {partner.status === "online" && (
+                <span className="absolute -top-1 -left-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-2 border-white"></span>
+                </span>
+              )}
             </div>
-            <div className="text-xs text-gray-500 mt-1">
-              {calls || callsCount || "12986"} orders
+
+            {/* ⭐ Rating Badge */}
+            <div className="mt-3 flex flex-col items-center">
+              <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 shadow-sm">
+                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                <span className="text-xs font-bold text-amber-700">
+                  {typeof rating === "number" ? rating : rating?.avg || 4.8}
+                </span>
+              </div>
+              <div className="text-[10px] text-gray-400 mt-1.5 font-medium uppercase tracking-tighter">
+                {calls || callsCount || "12k+"} orders
+              </div>
             </div>
           </div>
 
-          {/* Details */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
-              <h3 className="text-lg font-bold text-gray-900 truncate">{name}</h3>
-              <img src="/orange_tick.png" alt="Verified" className="w-4 h-4" />
+          {/* Details Section */}
+          <div className="flex-1 min-w-0 pt-1">
+            <div className="flex items-center gap-1.5 mb-1">
+              <h3 className="text-[17px] font-bold text-gray-900 truncate tracking-tight">{name}</h3>
+              <CheckCircle className="w-4 h-4 text-blue-500 fill-blue-50/10" />
             </div>
-            {/* Status Text */}
-            {partner.status && (
-              <div className="flex items-center gap-1 mt-1">
-                <div 
-                  className={`w-2 h-2 rounded-full ${
-                    partner.status === "online" 
-                      ? "bg-green-500" 
-                      : partner.status === "busy" 
-                      ? "bg-orange-500" 
-                      : partner.status === "offline" 
-                      ? "bg-red-500" 
-                      : "bg-gray-500"
-                  }`}
-                ></div>
-                <span 
-                  className={`text-xs font-medium capitalize ${
-                    partner.status === "online" 
-                      ? "text-green-600" 
-                      : partner.status === "busy" 
-                      ? "text-orange-600" 
-                      : partner.status === "offline" 
-                      ? "text-red-600" 
-                      : "text-gray-600"
-                  }`}
-                >
-                  {partner.status}
-                </span>
+
+            {/* Status Pill */}
+            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 border ${
+              partner.status === "online" 
+                ? "bg-green-50 text-green-600 border-green-100" 
+                : partner.status === "busy" 
+                ? "bg-orange-50 text-orange-600 border-orange-100" 
+                : "bg-gray-50 text-gray-500 border-gray-100"
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                partner.status === "online" ? "bg-green-500" : partner.status === "busy" ? "bg-orange-500" : "bg-gray-400"
+              }`} />
+              {partner.status || 'Offline'}
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-2 text-gray-600">
+                <MessageSquare className="w-3.5 h-3.5 mt-0.5 text-orange-400 flex-shrink-0" />
+                <p className="text-xs font-medium line-clamp-1 leading-tight">
+                  {partner.talksAbout?.slice(0, 2).join(", ") || specializations?.slice(0, 2).join(", ") || "Vedic, Numerology"}
+                </p>
               </div>
-            )}
-            <p className="text-sm text-gray-600 mt-1 line-clamp-1">
-              {partner.talksAbout?.slice(0, 3).join(", ").replace("tarrot reading","Card Reading") ||
-                specializations?.join(", ") ||
-                "Numerology, Vedic, Vastu"}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {(languages || partner.language)?.join(", ") || "Hindi, Bhojpuri"}
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              Exp:- {age || experience || "1"} year
-            </p>
-            <div className="text-lg font-bold text-gray-900 mt-2">₹ {rpm || 18}/min.</div>
+              
+              <div className="flex items-center gap-2 text-gray-500">
+                <Languages className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                <p className="text-[11px] truncate">
+                  {(languages || partner.language)?.slice(0, 3).join(", ") || "English, Hindi"}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-gray-500">
+                <GraduationCap className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+                <p className="text-[11px]">
+                  Exp: <span className="font-bold text-gray-700">{age || experience || "5"} Years</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 flex items-baseline gap-1">
+              <span className="text-xl font-black text-gray-900">₹{rpm || 15}</span>
+              <span className="text-[10px] text-gray-400 font-bold uppercase">/min</span>
+            </div>
           </div>
         </div>
 
         {/* 🎯 Action Buttons */}
-        <div className="flex gap-3 mt-auto relative z-10">
+        <div className="flex gap-2.5 mt-auto relative z-10">
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleChatClick();
             }}
-            className="flex-1 border border-[#F7941D] text-[#F7941D] rounded-md py-2 text-xs font-medium flex items-center justify-center gap-2 hover:bg-orange-50 transition"
+            className="flex-1 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all duration-300"
           >
-            <img src="/message.png" alt="Chat" className="w-[10px] h-[10px]" />
+            <MessageSquare className="w-3.5 h-3.5" />
             Chat
           </button>
 
@@ -488,17 +486,14 @@ const AstrologerCard = React.memo(function AstrologerCard({
                   setIsCallMenuOpen((prev) => !prev);
                 }
               }}
-              className="w-full rounded-lg py-2 text-xs font-medium flex items-center justify-center gap-2 text-white shadow-md transition"
-              style={{
-                background: "linear-gradient(90deg, #F9A43A 0%, #F7941D 100%)",
-              }}
+              className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-xl py-2.5 text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all duration-500"
             >
               {isInitiatingCall ? (
-                "Connecting..."
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Phone className="w-3 h-3" />
-                  {hasCompletedFreeCall ? "Call" : "OFFER: 1st FREE Call"}
+                  <Phone className="w-3.5 h-3.5" />
+                  {hasCompletedFreeCall ? "Call" : "FREE 1st Call"}
                 </>
               )}
             </button>
@@ -510,20 +505,20 @@ const AstrologerCard = React.memo(function AstrologerCard({
               >
                 <button
                   onClick={handleAudioCallButtonClick}
-                  className="w-full px-4 py-2.5 text-left hover:bg-orange-50 text-gray-700 flex items-center gap-2.5 transition-colors duration-150 text-sm font-medium"
+                  className="w-full px-4 py-3 text-left hover:bg-orange-50 text-gray-700 flex items-center gap-3 transition-colors duration-150 text-sm font-bold"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center shadow-sm">
-                    <Phone className="w-3.5 h-3.5 text-white" />
+                  <div className="w-8 h-8 rounded-full bg-[#F7941D] flex items-center justify-center shadow-sm">
+                    <Phone className="w-4 h-4 text-white" strokeWidth={2.5} />
                   </div>
                   Audio Call
                 </button>
                 <div className="h-px bg-gray-100 mx-3" />
                 <button
                   onClick={handleVideoCall}
-                  className="w-full px-4 py-2.5 text-left hover:bg-blue-50 text-gray-700 flex items-center gap-2.5 transition-colors duration-150 text-sm font-medium"
+                  className="w-full px-4 py-3 text-left hover:bg-gray-50 text-gray-700 flex items-center gap-3 transition-colors duration-150 text-sm font-bold"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-sm">
-                    <Video className="w-3.5 h-3.5 text-white" />
+                  <div className="w-8 h-8 rounded-full bg-[#333333] flex items-center justify-center shadow-sm">
+                    <Video className="w-4 h-4 text-white" strokeWidth={2.5} />
                   </div>
                   Video Call
                 </button>
@@ -531,7 +526,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Insufficient Balance Modal */}
       {showInsufficientBalanceModal && insufficientBalanceData && (

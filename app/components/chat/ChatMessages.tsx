@@ -314,16 +314,52 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
   const avatar = getAvatar()
 
   return (
-    <div className={`flex items-end gap-1 sm:gap-2 mb-2 ${message.sender === 'user' ? 'justify-end flex-row' : 'justify-start flex-row-reverse'}`}>
-      {avatar ? (
-        <img src={avatar} alt="avatar" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" />
-      ) : (
-        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs sm:text-sm font-bold flex-shrink-0">
-          {message.sender === 'user' ? 'U' : 'A'}
+    <div 
+      className={`flex items-end gap-2 mb-4 ${
+        message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
+      }`}
+    >
+      {/* Avatar with Ring/Shadow */}
+      <div className="flex-shrink-0 mb-1">
+        {avatar ? (
+          <img 
+            src={avatar} 
+            alt="avatar" 
+            className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
+          />
+        ) : (
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${
+            message.sender === 'user' 
+              ? 'bg-orange-100 text-orange-600' 
+              : 'bg-gray-100 text-gray-600'
+          }`}>
+            {message.sender === 'user' ? 'U' : 'A'}
+          </div>
+        )}
+      </div>
+
+      {/* Message Bubble Container */}
+      <div className={`relative max-w-[75%] sm:max-w-[70%] group`}>
+        <div className={`
+          ${getBubbleClasses(message)} 
+          px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-200
+          ${message.sender === 'user' 
+            ? 'rounded-br-none bg-gradient-to-br from-orange-500 to-orange-600 text-white' 
+            : 'rounded-bl-none bg-white border border-gray-100 text-gray-800'
+          }
+        `}>
+          <div className="break-words text-[14px] sm:text-[15px] leading-relaxed">
+            {message.text || 'No message content'}
+          </div>
+          
+          {/* Timestamp or Status (Optional addition for polish) */}
+          <div className={`text-[10px] mt-1 opacity-70 ${
+            message.sender === 'user' ? 'text-right' : 'text-left'
+          }`}>
+            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
         </div>
-      )}
-      <div className={`${getBubbleClasses(message)} relative max-w-[85%] sm:max-w-xs md:max-w-md lg:max-w-lg`}>
-        <div className="break-words text-sm sm:text-base leading-relaxed">{message.text || 'No message content'}</div>
+
         {message.options && message.options.length > 0 && message.messageId && (
           <OptionsContainer 
             options={message.options} 

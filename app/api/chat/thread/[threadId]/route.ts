@@ -13,5 +13,5 @@ export async function GET(
       { status: 400 }
     );
   }
-  return proxyChatRequest(req, 'GET', `/thread/${encodeURIComponent(threadId)}`);
+  return proxyChatRequest(req, 'GET', `/chat/thread/${encodeURIComponent(threadId)}`);
 }

@@ -9,6 +9,7 @@ import FilterBar from "../components/astrologers/FilterBar";
 import { WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
 import { getApiBaseUrl, API_CONFIG } from "../config/api";
 import { isAuthenticated, getAuthToken, getUserDetails } from "../utils/auth-utils";
+import { Phone, Video, X, PhoneCall } from "lucide-react";
 
 interface Astrologer {
   _id: string;
@@ -413,10 +414,10 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
 
   return (
     <WalletBalanceProvider>
-      <div className="w-full bg-white min-h-screen">
+      <div className="w-full min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
         {/* 🟠 Hero Section */}
         <motion.div
-          className="relative h-[160px] sm:h-[180px] md:h-[200px] overflow-hidden mb-6 sm:mb-8"
+          className="relative h-[150px] sm:h-[180px] md:h-[210px] overflow-hidden mb-5 sm:mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
@@ -430,7 +431,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/60"></div>
           <div className="relative flex flex-col items-center justify-center h-full text-center px-6">
             <motion.h1
-              className="text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2"
+              className="text-white text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-1 sm:mb-2"
               style={{ fontFamily: "EB Garamond" }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -438,12 +439,15 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
             >
               Call with Astrologer
             </motion.h1>
+            <p className="text-orange-100/90 text-xs sm:text-sm font-medium tracking-wide">
+              Live experts • Instant guidance • Mobile-first experience
+            </p>
           </div>
         </motion.div>
 
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <motion.p
-            className="text-base sm:text-lg font-light mb-4 text-center"
+            className="text-sm sm:text-base md:text-lg font-light mb-3 text-center text-gray-700"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
@@ -451,7 +455,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
             Our astrology experts are ready to assist you! Whether you need a consultation or have inquiries, get immediate answers to your life's questions.
           </motion.p>
           <motion.p
-            className="text-base sm:text-lg font-light text-center"
+            className="text-sm sm:text-base md:text-lg font-light text-center text-gray-700"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
@@ -461,7 +465,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         </div>
 
         {/* 🎯 Filter Section */}
-        <section className="relative z-50 w-full max-w-6xl mx-auto px-6 py-2 mb-6">
+        <section className="z-50 w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 mb-6 sticky top-[106px] md:static bg-white/90 md:bg-transparent backdrop-blur-lg md:backdrop-blur-0 border-y border-orange-100/70 md:border-y-0">
           <FilterBar
             searchQuery={searchQuery}
             selectedSort={sortBy}
@@ -474,7 +478,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         </section>
 
         {/* 🟠 Astrologers */}
-        <div className="max-w-6xl mx-auto px-6 pb-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
           {error ? (
             <motion.div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="text-center max-w-md">
@@ -485,11 +489,11 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
               </div>
             </motion.div>
           ) : astrologers.length === 0 && !isLoading ? (
-            <div className="flex flex-col items-center py-16">
+            <div className="flex flex-col items-center py-16 text-center">
               <p className="text-gray-600">No astrologers found. Try adjusting your filters.</p>
               <button
                 onClick={clearFilters}
-                className="mt-4 px-6 py-3 rounded-lg bg-orange-600 text-white"
+                className="mt-4 px-6 py-3 rounded-xl bg-orange-600 text-white font-semibold shadow-sm hover:bg-orange-700 transition-colors"
               >
                 Clear Filters
               </button>
@@ -521,57 +525,54 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
           )}
         </div>
 
-        {/* Call Options Modal */}
         {showCallOptions && selectedCallAstrologer && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[110] font-['Inter'] p-4">
             <motion.div
-              className="bg-white rounded-3xl p-7 max-w-sm w-full mx-4 shadow-2xl border border-gray-100"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[24px] p-5 sm:p-6 max-w-[340px] w-full shadow-2xl border border-white/20 relative overflow-hidden"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
             >
-              {/* Header with icon */}
+              <button 
+                onClick={() => setShowCallOptions(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
               <div className="flex flex-col items-center mb-6">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center mb-4 shadow-lg shadow-orange-500/25">
-                  <svg className="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92V19.92C22 20.97 21.18 21.85 20.13 21.97C16.66 22.36 13.33 21.72 10.39 20.12C7.62 18.63 5.37 16.38 3.88 13.61C2.28 10.67 1.64 7.34 2.03 3.87C2.15 2.82 3.03 2 4.08 2H7.08C7.85 2 8.54 2.51 8.71 3.27C8.95 4.33 9.3 5.36 9.75 6.33C9.97 6.82 9.83 7.4 9.42 7.73L8.09 9.06C9.51 11.41 11.59 13.49 13.94 14.91L15.27 13.58C15.6 13.17 16.18 13.03 16.67 13.25C17.64 13.7 18.67 14.05 19.73 14.29C20.49 14.46 21 15.15 21 15.92V16.92" />
-                  </svg>
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-3 text-[#F7941D]">
+                  <PhoneCall className="w-6 h-6" strokeWidth={2} />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 text-center">
+                <h3 className="text-xl font-bold text-gray-900 text-center tracking-tight">
                   Choose Call Type
                 </h3>
-                <p className="text-gray-500 text-center text-sm mt-1">
-                  Connect with <span className="font-semibold text-gray-700">{selectedCallAstrologer?.name}</span>
+                <p className="text-gray-500 text-center text-xs mt-1 font-medium leading-relaxed">
+                  Connect with <span className="text-[#F7941D] font-semibold">{selectedCallAstrologer?.name}</span>
                 </p>
               </div>
 
               <div className="space-y-3">
                 <button
                   onClick={() => handleCallTypeSelection('audio')}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3.5 px-5 rounded-2xl hover:from-orange-600 hover:to-amber-600 transition-all duration-200 font-semibold flex items-center justify-center gap-3 shadow-lg shadow-orange-500/20 hover:shadow-orange-500/30"
+                  className="w-full bg-[#F7941D] hover:bg-[#e8891a] text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md shadow-orange-500/10 transition-all duration-200"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92V19.92C22 20.97 21.18 21.85 20.13 21.97C16.66 22.36 13.33 21.72 10.39 20.12C7.62 18.63 5.37 16.38 3.88 13.61C2.28 10.67 1.64 7.34 2.03 3.87C2.15 2.82 3.03 2 4.08 2H7.08C7.85 2 8.54 2.51 8.71 3.27" />
-                    <path d="M15 5V9M13 7H17" />
-                  </svg>
-                  Audio Call
+                  <Phone className="w-4 h-4" strokeWidth={2.5} />
+                  <span className="text-sm">Audio Call</span>
                 </button>
 
                 <button
                   onClick={() => handleCallTypeSelection('video')}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3.5 px-5 rounded-2xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 font-semibold flex items-center justify-center gap-3 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+                  className="w-full bg-[#333333] hover:bg-[#222222] text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md shadow-gray-900/10 transition-all duration-200"
                 >
-                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M23 7l-7 5 7 5V7z" />
-                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </svg>
-                  Video Call
+                  <Video className="w-4 h-4" strokeWidth={2.5} />
+                  <span className="text-sm">Video Call</span>
                 </button>
               </div>
 
               <button
                 onClick={() => setShowCallOptions(false)}
-                className="w-full mt-4 text-gray-500 py-2.5 px-4 rounded-2xl hover:bg-gray-50 transition-all duration-200 text-sm font-medium"
+                className="w-full mt-5 text-gray-400 py-1 text-[11px] font-bold uppercase tracking-widest hover:text-gray-600 transition-colors"
               >
                 Cancel
               </button>

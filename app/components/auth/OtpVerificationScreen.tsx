@@ -340,11 +340,11 @@ export default function OtpVerificationScreen({
 
       {/* Glassmorphism Card */}
       <motion.div 
-        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border-l-4 border-orange-400 p-3 sm:p-4 md:p-6 flex flex-col items-center relative z-10 animate-fade-in"
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
-        style={{ minHeight: '340px', marginTop: '2rem', marginBottom: '2rem' }}
+        className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_8px_40px_rgba(247,148,29,0.12)] border border-orange-100 p-4 sm:p-6 md:p-8 flex flex-col items-center relative z-10"
+        initial={{ opacity: 0, y: 30, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+        style={{ minHeight: '340px', marginTop: '1.5rem', marginBottom: '2rem' }}
       >
         <div className="w-full space-y-3 sm:space-y-4">
           {/* OTP Input Group */}
@@ -480,9 +480,9 @@ export default function OtpVerificationScreen({
       {/* Footer */}
       <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-400 px-4 select-none">
         <span>By continuing, you agree to our </span>
-        <button className="text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded">Terms of Service</button>
+        <button className="text-orange-500 hover:text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded transition-colors">Terms of Service</button>
         <span> and </span>
-        <button className="text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded">Privacy Policy</button>
+        <button className="text-orange-500 hover:text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded transition-colors">Privacy Policy</button>
       </footer>
     </div>
   );

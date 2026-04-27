@@ -11,13 +11,22 @@ export interface CreateSessionInfo {
   sessionId: string
 }
 
+export type CreateOrJoinResult =
+  | { ok: true; threadId: string; sessionId: string }
+  | { ok: false; message: string; status: number }
+
 interface SessionManagerContextType {
   socket: Socket | null
   isConnected: boolean
+  /** Last connection-error message surfaced by socket.io, or null. Lets the
+   *  chat page show a useful message when the chat-service is fully down
+   *  (CORS / firewall / 502) instead of an indefinite spinner. */
+  lastConnectError: string | null
   /** Creates (or re-uses) a chat session with the given astrologer.
-   *  Returns both the threadId (persistent conversation key) and the
-   *  sessionId (current live session doc id). */
-  createOrJoinSession: (providerId: string) => Promise<CreateSessionInfo | null>
+   *  On success returns `{ ok: true, threadId, sessionId }`.
+   *  On failure returns `{ ok: false, message, status }` with the
+   *  backend-supplied message (e.g. "Astrologer is busy"). */
+  createOrJoinSession: (providerId: string) => Promise<CreateOrJoinResult>
   /** Joins the socket room for the given thread. Backend needs both
    *  threadId and sessionId. */
   joinSessionRoom: (threadId: string, sessionId: string, isAstrologer?: boolean) => Promise<boolean>
@@ -44,11 +53,39 @@ interface SessionManagerProviderProps {
 export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ children }) => {
   const [socket, setSocket] = useState<Socket | null>(null)
   const [isConnected, setIsConnected] = useState(false)
+  const [lastConnectError, setLastConnectError] = useState<string | null>(null)
   const [currentSession, setCurrentSession] = useState<any | null>(null)
   const [sessionStatus, setSessionStatus] = useState<'pending' | 'active' | 'ended' | null>(null)
+  // `tokenVersion` is bumped whenever we detect the auth token has rotated, to
+  // re-run the connection effect with a fresh `token` query param.
+  const [tokenVersion, setTokenVersion] = useState(0)
   const socketRef = useRef<Socket | null>(null)
   const sessionUpdateCallbacks = useRef<Set<(sessionData: any) => void>>(new Set())
   const sessionStatusCallbacks = useRef<Set<(status: string, sessionId: string) => void>>(new Set())
+
+  // Watch for auth-token rotation: storage events (other tabs) + a 60s poll
+  // (same-tab updates don't fire `storage`). When the token changes we bump
+  // `tokenVersion` which forces the connection effect below to re-run.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    let lastToken = getAuthToken() || ''
+    const check = () => {
+      const t = getAuthToken() || ''
+      if (t !== lastToken) {
+        lastToken = t
+        setTokenVersion((v) => v + 1)
+      }
+    }
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key || e.key.toLowerCase().includes('token')) check()
+    }
+    window.addEventListener('storage', onStorage)
+    const id = window.setInterval(check, 60_000)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.clearInterval(id)
+    }
+  }, [])
 
   useEffect(() => {
     const userDetails = getUserDetails()
@@ -75,18 +112,18 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
     })
 
     newSocket.on('connect', () => {
-      console.log('✅ [SessionManager] Socket connected successfully:', newSocket.id);
       setIsConnected(true);
+      setLastConnectError(null);
     });
 
-    newSocket.on('disconnect', (reason) => {
-      console.log('⚠️ [SessionManager] Socket disconnected:', reason);
+    newSocket.on('disconnect', () => {
       setIsConnected(false);
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('❌ [SessionManager] Socket connection error:', error.message);
+      console.warn('[SessionManager] socket connect_error:', error?.message);
       setIsConnected(false);
+      setLastConnectError(error?.message || 'Connection error');
     });
 
     // Backend (chat-service/chatSocketNew.js) only emits these events:
@@ -116,49 +153,57 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
       setSocket(null)
       setIsConnected(false)
     }
-  }, [])
+    // Re-establish the socket when the auth token rotates so the chat-service
+    // re-validates with the new JWT (avoids 401-after-refresh edge cases).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokenVersion])
 
   // Creates (or reuses) a chat session via REST `POST /api/chat/create-session`.
   // The backend returns `{ thread, session }`. Our REST helper normalises that
   // to `{ threadId, sessionId }` which is what the rest of the UI needs.
-  const createOrJoinSession = async (providerId: string): Promise<CreateSessionInfo | null> => {
+  // Returns a discriminated union so the caller can show backend errors
+  // (e.g. "Astrologer is busy", "Insufficient balance to start session").
+  const createOrJoinSession = async (providerId: string): Promise<CreateOrJoinResult> => {
     const userDetails = getUserDetails()
     const userId = userDetails?.id || userDetails?._id
     if (!userId) {
-      console.error('[SessionManager] User not authenticated')
-      return null
+      console.warn('[SessionManager] User not authenticated')
+      return { ok: false, message: 'Please sign in to start a chat', status: 401 }
     }
     if (!providerId) {
-      console.error('[SessionManager] providerId is required')
-      return null
+      console.warn('[SessionManager] providerId is required')
+      return { ok: false, message: 'Astrologer not selected', status: 400 }
     }
 
+    let result: Awaited<ReturnType<typeof createChatSession>>
     try {
-      const result = await createChatSession(String(userId), String(providerId))
-      if (!result) return null
-
-      // Wait up to ~3s for the socket to be connected before joining.
-      // Without this, clicks that race the initial socket handshake silently
-      // fail to join the room and the user never receives `receive_message`.
-      if (!socketRef.current?.connected) {
-        await new Promise<void>((resolve) => {
-          const start = Date.now()
-          const tick = () => {
-            if (socketRef.current?.connected || Date.now() - start > 3000) return resolve()
-            setTimeout(tick, 100)
-          }
-          tick()
-        })
-      }
-
-      // Join the socket room and wait for the ack so the caller doesn't
-      // navigate to /chat before the room is joined.
-      await joinSessionRoom(result.threadId, result.sessionId, false).catch(() => false)
-      return { threadId: result.threadId, sessionId: result.sessionId }
-    } catch (err) {
-      console.error('[SessionManager] createOrJoinSession failed:', err)
-      return null
+      result = await createChatSession(String(userId), String(providerId))
+    } catch (err: any) {
+      console.warn('[SessionManager] createOrJoinSession failed:', err)
+      return { ok: false, message: err?.message || 'Failed to create chat session', status: 0 }
     }
+
+    if (!result.ok) {
+      return { ok: false, message: result.error.message, status: result.error.status }
+    }
+
+    // Wait up to ~3s for the socket to be connected before joining.
+    // Without this, clicks that race the initial socket handshake silently
+    // fail to join the room and the user never receives `receive_message`.
+    if (!socketRef.current?.connected) {
+      await new Promise<void>((resolve) => {
+        const start = Date.now()
+        const tick = () => {
+          if (socketRef.current?.connected || Date.now() - start > 3000) return resolve()
+          setTimeout(tick, 100)
+        }
+        tick()
+      })
+    }
+
+    // Join the socket room (best-effort — chat page also re-joins on mount).
+    await joinSessionRoom(result.data.threadId, result.data.sessionId, false).catch(() => false)
+    return { ok: true, threadId: result.data.threadId, sessionId: result.data.sessionId }
   }
 
   /** Joins the socket room for `threadId`. Backend event: `join_session`. */
@@ -205,6 +250,7 @@ export const SessionManagerProvider: React.FC<SessionManagerProviderProps> = ({ 
   const value: SessionManagerContextType = {
     socket,
     isConnected,
+    lastConnectError,
     createOrJoinSession,
     joinSessionRoom,
     currentSession,

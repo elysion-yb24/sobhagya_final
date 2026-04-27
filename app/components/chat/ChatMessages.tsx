@@ -31,7 +31,7 @@ interface Message {
   }>
   isAutomated?: boolean
   clientMessageId?: string
-  deliveryStatus?: 'sent' | 'delivered' | 'read'
+  deliveryStatus?: 'sent' | 'delivered' | 'read' | 'failed'
   internalIndex?: number
 }
 
@@ -46,6 +46,9 @@ interface ChatMessagesProps {
   } | null
   onReplyToMessage: (message: Message) => void
   onOptionSelect?: (optionId: string, messageId: string) => void
+  /** Called when the user clicks the retry icon on a failed message bubble.
+   *  Receives the bubble's `clientMessageId` so the parent can re-emit. */
+  onRetryMessage?: (clientMessageId: string) => void
   remainingTime?: number
   sessionStatus?: 'active' | 'ended' | 'pending'
   automatedFlowCompleted?: boolean
@@ -193,9 +196,9 @@ const OptionsContainer = ({ options, messageId, onOptionSelect, selectedOptionId
   </motion.div>
 )
 
-const MessageTicks = ({ status }: { status?: 'sent' | 'delivered' | 'read' }) => {
+const MessageTicks = ({ status }: { status?: 'sent' | 'delivered' | 'read' | 'failed' }) => {
   if (!status) return null
-  
+
   return (
     <span className="inline-flex ml-1">
       {status === 'sent' && (
@@ -215,11 +218,18 @@ const MessageTicks = ({ status }: { status?: 'sent' | 'delivered' | 'read' }) =>
           <path d="M8 8L10 10L14 6" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )}
+      {status === 'failed' && (
+        <svg className="w-4 h-4 text-red-200" viewBox="0 0 16 16" fill="none" aria-label="Failed to send">
+          <circle cx="8" cy="8" r="7" fill="#ef4444" />
+          <path d="M8 4v5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+          <circle cx="8" cy="11.5" r="0.9" fill="white" />
+        </svg>
+      )}
     </span>
   )
 }
 
-const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSelect, selectedOptionId }: {
+const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSelect, selectedOptionId, onRetryMessage }: {
   message: Message
   userId: string | null
   userRole?: string | null
@@ -229,6 +239,7 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
   } | null
   onOptionSelect?: (optionId: string, messageId: string) => void
   selectedOptionId?: string
+  onRetryMessage?: (clientMessageId: string) => void
 }) => {
   if (message.sender === 'system' && !message.isAutomated) {
     return (
@@ -341,44 +352,80 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
       {/* Message Bubble Container */}
       <div className={`relative max-w-[75%] sm:max-w-[70%] group`}>
         <div className={`
-          ${getBubbleClasses(message)} 
+          ${getBubbleClasses(message)}
           px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-200
-          ${message.sender === 'user' 
-            ? 'rounded-br-none bg-gradient-to-br from-orange-500 to-orange-600 text-white' 
+          ${message.sender === 'user'
+            ? `rounded-br-none ${message.deliveryStatus === 'failed'
+                ? 'bg-gradient-to-br from-red-500 to-red-600 text-white'
+                : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'}`
             : 'rounded-bl-none bg-white border border-gray-100 text-gray-800'
           }
         `}>
           <div className="break-words text-[14px] sm:text-[15px] leading-relaxed">
             {message.text || 'No message content'}
           </div>
-          
-          {/* Timestamp or Status (Optional addition for polish) */}
-          <div className={`text-[10px] mt-1 opacity-70 ${
-            message.sender === 'user' ? 'text-right' : 'text-left'
-          }`}>
-            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
         </div>
 
         {message.options && message.options.length > 0 && message.messageId && (
-          <OptionsContainer 
-            options={message.options} 
-            messageId={message.messageId} 
-            onOptionSelect={onOptionSelect || (() => {})} 
+          <OptionsContainer
+            options={message.options}
+            messageId={message.messageId}
+            onOptionSelect={onOptionSelect || (() => {})}
             selectedOptionId={selectedOptionId}
           />
         )}
-        <div className={`text-xs mt-1 flex justify-end items-center ${message.sender === 'user' ? 'text-orange-100' : 'text-gray-500'}`}>
+        <div className={`text-xs mt-1 flex justify-end items-center gap-1 ${message.sender === 'user' ? 'text-gray-500' : 'text-gray-500'}`}>
+          {message.deliveryStatus === 'failed' && message.sender === 'user' && (
+            <span className="text-red-500 font-medium mr-1">Failed</span>
+          )}
           {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-          {message.sender === 'user' && <MessageTicks status={message.deliveryStatus || 'sent'} />}
+          {message.sender === 'user' && (
+            <span className={message.deliveryStatus === 'failed' ? 'text-red-500' : 'text-gray-400'}>
+              <MessageTicks status={message.deliveryStatus || 'sent'} />
+            </span>
+          )}
+          {message.sender === 'user' && message.deliveryStatus === 'failed' && onRetryMessage && message.clientMessageId && (
+            <button
+              type="button"
+              onClick={() => onRetryMessage(message.clientMessageId!)}
+              className="ml-1 inline-flex items-center text-red-600 hover:text-red-700 underline-offset-2 hover:underline text-xs font-medium"
+              title="Retry sending"
+            >
+              Retry
+            </button>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
+const formatDateLabel = (iso?: string): string => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+  const startOfMessage = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+  const diffDays = Math.round((startOfToday - startOfMessage) / (24 * 60 * 60 * 1000))
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays > 0 && diffDays < 7) {
+    return d.toLocaleDateString([], { weekday: 'long' })
+  }
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: now.getFullYear() === d.getFullYear() ? undefined : 'numeric' })
+}
+
+const DateSeparator = ({ label }: { label: string }) => (
+  <div className="flex justify-center my-3 px-2">
+    <div className="bg-white/80 backdrop-blur-sm text-gray-600 text-xs font-medium px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+      {label}
+    </div>
+  </div>
+)
+
 const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
-  ({ messages, typingMessage, userId, userRole, selectedSession, onReplyToMessage, onOptionSelect, sessionStatus, automatedFlowCompleted }, ref) => {
+  ({ messages, typingMessage, userId, userRole, selectedSession, onReplyToMessage, onOptionSelect, onRetryMessage, sessionStatus, automatedFlowCompleted }, ref) => {
     // State to track selected options for each message
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
     
@@ -451,24 +498,34 @@ const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
 
         <div className="relative z-10">
           <AnimatePresence initial={false}>
-            {uniqueMessages.map((msg, index) => (
-              <motion.div
-                key={`message-${msg.internalIndex}-${msg.id || msg.clientMessageId || msg.messageId || index}`}
-                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                transition={{ duration: 0.15, delay: index * 0.02 }}
-              >
-                <MessageBubble 
-                  message={msg} 
-                  userId={userId} 
-                  userRole={userRole} 
-                  selectedSession={selectedSession} 
-                  onOptionSelect={handleOptionSelect} 
-                  selectedOptionId={selectedOptions[msg.messageId || '']}
-                />
-              </motion.div>
-            ))}
+            {uniqueMessages.map((msg, index) => {
+              const prev = index > 0 ? uniqueMessages[index - 1] : null
+              const currentLabel = formatDateLabel(msg.timestamp)
+              const prevLabel = prev ? formatDateLabel(prev.timestamp) : null
+              const showSeparator = currentLabel && currentLabel !== prevLabel
+              return (
+                <React.Fragment key={`group-${msg.internalIndex}-${msg.id || msg.clientMessageId || msg.messageId || index}`}>
+                  {showSeparator && <DateSeparator label={currentLabel} />}
+                  <motion.div
+                    key={`message-${msg.internalIndex}-${msg.id || msg.clientMessageId || msg.messageId || index}`}
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
+                    transition={{ duration: 0.15, delay: index * 0.02 }}
+                  >
+                    <MessageBubble
+                      message={msg}
+                      userId={userId}
+                      userRole={userRole}
+                      selectedSession={selectedSession}
+                      onOptionSelect={handleOptionSelect}
+                      selectedOptionId={selectedOptions[msg.messageId || '']}
+                      onRetryMessage={onRetryMessage}
+                    />
+                  </motion.div>
+                </React.Fragment>
+              )
+            })}
 
 
             {typingMessage && (

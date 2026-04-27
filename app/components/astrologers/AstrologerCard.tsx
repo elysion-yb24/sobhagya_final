@@ -11,6 +11,7 @@ import ChatConnectingModal from "../../components/ui/ChatConnectingModal";
 import { useWalletBalance } from "./WalletBalanceContext";
 import { useSessionManager } from "./SessionManager";
 import { initiateCall } from "../../utils/calling-utils";
+import { fetchThreads, declineSession, type BackendThread } from "../../utils/chat-api";
 
 interface Astrologer {
   _id: string;
@@ -84,6 +85,16 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
   // Chat connecting modal state
   const [showChatConnectingModal, setShowChatConnectingModal] = useState(false);
+
+  // Chat error message (e.g. "Astrologer is busy") shown as a transient toast
+  const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
+  // When the error is about an existing session, we surface a CTA that
+  // navigates to the user's active chat instead.
+  const [activeChatCta, setActiveChatCta] = useState<{
+    threadId: string;
+    sessionId: string | null;
+    label: string;
+  } | null>(null);
 
   // Free call check
   const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
@@ -279,75 +290,143 @@ const AstrologerCard = React.memo(function AstrologerCard({
     }
   };
 
-  // ✅ Chat handler
-  const handleChatClick = async () => {
-    if (isAuthenticated()) {
-      const profile = getUserDetails();
-      const currentUserId = profile?.id || profile?._id;
-      const currentUserName = profile?.displayName || profile?.name || "User";
-
-
-      if (!currentUserId) {
-        localStorage.setItem("initiateChatWithAstrologerId", _id);
-        router.push("/login");
-        return;
+  /**
+   * Look up the user's active chat thread (if any) so we can offer a
+   * "Open active chat" CTA when create-session is blocked. Prefers an
+   * exact match on this astrologer's id; falls back to any thread with
+   * `isActiveSession`.
+   */
+  const findActiveThread = async (
+    preferredProviderId: string
+  ): Promise<{ threadId: string; sessionId: string | null; matchesProvider: boolean } | null> => {
+    try {
+      const { threads } = await fetchThreads({ limit: 30 });
+      const list = threads as BackendThread[];
+      const exact = list.find(
+        (t) => String(t.providerId) === String(preferredProviderId) && t.isActiveSession
+      );
+      if (exact) {
+        return {
+          threadId: String(exact._id),
+          sessionId: exact.lastSessionId ? String(exact.lastSessionId) : null,
+          matchesProvider: true,
+        };
       }
-
-      // Show loading modal
-      setShowChatConnectingModal(true);
-
-      if (!isConnected) {
-        console.error('Session manager not connected, going to chat page');
-        // Go directly to chat page
-        setTimeout(() => {
-          setShowChatConnectingModal(false);
-          router.push('/chat');
-        }, 1500); // Show loading for at least 1.5 seconds
-        return;
+      const anyActive = list.find((t) => t.isActiveSession);
+      if (anyActive) {
+        return {
+          threadId: String(anyActive._id),
+          sessionId: anyActive.lastSessionId ? String(anyActive.lastSessionId) : null,
+          matchesProvider: false,
+        };
       }
-
-      try {
-        console.log('Creating/updating session with provider:', _id);
-        // createOrJoinSession now returns { threadId, sessionId } from REST
-        // POST /api/chat/create-session. The threadId is the persistent
-        // conversation key, sessionId is the current active session doc id.
-        const info = await createOrJoinSession(_id);
-        console.log('Session result:', info);
-
-        if (info && info.threadId) {
-          const qs = new URLSearchParams({ threadId: info.threadId });
-          if (info.sessionId) qs.set('sessionId', info.sessionId);
-          setTimeout(() => {
-            setShowChatConnectingModal(false);
-            router.push(`/chat?${qs.toString()}`);
-          }, 1500);
-        } else {
-          console.error('Failed to create session');
-          setTimeout(() => {
-            setShowChatConnectingModal(false);
-            router.push('/chat');
-          }, 1500);
-        }
-      } catch (error) {
-        console.error('Error in chat session management:', error);
-        setTimeout(() => {
-          setShowChatConnectingModal(false);
-          router.push('/chat');
-        }, 1500);
-      }
-
-    } else {
-      console.log('User not authenticated, redirecting to login');
-      localStorage.setItem("selectedAstrologerId", _id);
-      localStorage.setItem("chatIntent", "1");
-      router.push(`/calls/call1?astrologerId=${_id}`);
+      return null;
+    } catch {
+      return null;
     }
+  };
+
+  /** Treats any backend message that signals "you already have a session" */
+  const isExistingSessionError = (msg: string | undefined): boolean => {
+    if (!msg) return false;
+    const m = msg.toLowerCase();
+    return (
+      m.includes('ongoing session already exists') ||
+      m.includes('complete your existing call or chat') ||
+      m.includes('existing session')
+    );
+  };
+
+  // ✅ Chat handler
+  // Strategy: let the user start a chat with anyone, anytime.
+  // If the backend reports an existing active session for this user (either
+  // with this same astrologer or with a different one), we auto-resolve it:
+  //   - same astrologer → navigate to that thread
+  //   - different astrologer → end the old session via REST, then retry once
+  const handleChatClick = async () => {
+    if (!isAuthenticated()) {
+      localStorage.setItem('selectedAstrologerId', _id);
+      localStorage.setItem('chatIntent', '1');
+      router.push(`/calls/call1?astrologerId=${_id}`);
+      return;
+    }
+
+    const profile = getUserDetails();
+    const currentUserId = profile?.id || profile?._id;
+    if (!currentUserId) {
+      localStorage.setItem('initiateChatWithAstrologerId', _id);
+      router.push('/login');
+      return;
+    }
+
+    // Reset any previous error/CTA state
+    setChatErrorMessage(null);
+    setActiveChatCta(null);
+    setShowChatConnectingModal(true);
+
+    try {
+      // 1. Pre-check: if user already has an active thread with THIS astrologer,
+      //    skip create-session and navigate directly. Avoids the backend's
+      //    "An ongoing session already exists for this thread" 400.
+      const preExisting = await findActiveThread(_id);
+      if (preExisting && preExisting.matchesProvider) {
+        const qs = new URLSearchParams({ threadId: preExisting.threadId });
+        if (preExisting.sessionId) qs.set('sessionId', preExisting.sessionId);
+        setShowChatConnectingModal(false);
+        router.push(`/chat?${qs.toString()}`);
+        return;
+      }
+
+      // 2. Attempt to create/resume a session.
+      let result = await createOrJoinSession(_id);
+
+      // 3. If the backend blocked us due to an existing session with a
+      //    different astrologer, auto-end that session and retry once.
+      if (!result.ok && isExistingSessionError(result.message)) {
+        const active = preExisting || (await findActiveThread(_id));
+        if (active && active.sessionId) {
+          // Fire-and-forget the decline; backend marks session completed and
+          // resets the user's status so create-session will succeed on retry.
+          await declineSession(active.threadId, active.sessionId);
+          // Small delay to let backend status propagate (Redis + Mongo).
+          await new Promise((r) => setTimeout(r, 400));
+          result = await createOrJoinSession(_id);
+        }
+      }
+
+      setShowChatConnectingModal(false);
+
+      if (result.ok) {
+        const qs = new URLSearchParams({ threadId: result.threadId });
+        if (result.sessionId) qs.set('sessionId', result.sessionId);
+        router.push(`/chat?${qs.toString()}`);
+        return;
+      }
+
+      // 4. Anything still failing → surface the backend message.
+      setChatErrorMessage(result.message || 'Could not start chat. Please try again.');
+      setTimeout(() => setChatErrorMessage(null), 4000);
+    } catch (error: any) {
+      console.warn('Error in chat session management:', error);
+      setShowChatConnectingModal(false);
+      setChatErrorMessage(error?.message || 'Could not start chat. Please try again.');
+      setTimeout(() => setChatErrorMessage(null), 4000);
+    }
+  };
+
+  const handleActiveChatCtaClick = () => {
+    if (!activeChatCta) return;
+    const qs = new URLSearchParams({ threadId: activeChatCta.threadId });
+    if (activeChatCta.sessionId) qs.set('sessionId', activeChatCta.sessionId);
+    setActiveChatCta(null);
+    setChatErrorMessage(null);
+    router.push(`/chat?${qs.toString()}`);
   };
 
   return (
     <>
       <motion.div
-        className="relative bg-white rounded-2xl p-4 cursor-pointer transition-all duration-300 flex flex-col w-full mx-auto overflow-hidden border border-orange-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-orange-200"
+        className="relative bg-white rounded-2xl p-3.5 sm:p-4 cursor-pointer transition-all duration-300 flex flex-col w-full mx-auto overflow-hidden border border-orange-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-orange-200 active:scale-[0.99]"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         onClick={handleCardClick}
@@ -468,7 +547,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
               e.stopPropagation();
               handleChatClick();
             }}
-            className="flex-1 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl py-2.5 text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 transition-all duration-300"
+            className="flex-1 min-h-[44px] bg-gray-50 border border-gray-200 text-gray-700 rounded-xl py-3 text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 active:scale-95 transition-all duration-300"
           >
             <MessageSquare className="w-3.5 h-3.5" />
             Chat
@@ -486,7 +565,7 @@ const AstrologerCard = React.memo(function AstrologerCard({
                   setIsCallMenuOpen((prev) => !prev);
                 }
               }}
-              className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-xl py-2.5 text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 transition-all duration-500"
+              className="w-full min-h-[44px] bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-xl py-3 text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all duration-500"
             >
               {isInitiatingCall ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -544,6 +623,45 @@ const AstrologerCard = React.memo(function AstrologerCard({
         isOpen={showChatConnectingModal}
         astrologerName={name}
       />
+
+      {/* Chat error toast (e.g. "Astrologer is busy") */}
+      {chatErrorMessage && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 bottom-6 z-[9999] max-w-[92%] sm:max-w-md px-4 py-3 rounded-xl bg-gray-900 text-white shadow-2xl border border-gray-800 flex items-start gap-3"
+          role="alert"
+        >
+          <svg className="w-5 h-5 mt-0.5 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 19h13.86a2 2 0 001.732-3L13.732 4a2 2 0 00-3.464 0L3.34 16a2 2 0 001.732 3z" />
+          </svg>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold leading-tight">{chatErrorMessage}</p>
+            {!activeChatCta && (
+              <p className="text-xs text-gray-300 mt-0.5">Try another astrologer or wait a moment.</p>
+            )}
+            {activeChatCta && (
+              <button
+                onClick={handleActiveChatCtaClick}
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold transition-colors"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                {activeChatCta.label}
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              setChatErrorMessage(null);
+              setActiveChatCta(null);
+            }}
+            className="text-gray-400 hover:text-white p-1 -mr-1 -mt-1"
+            aria-label="Dismiss"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
     </>
   );

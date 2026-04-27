@@ -3,13 +3,21 @@ import { getChatBackendUrl } from '../../config/api';
 
 /**
  * Build the headers forwarded to the chat-service backend.
- * Backend middleware accepts the access token via `Authorization: Bearer ...`
- * and the refresh token via a custom `cookies` header (legacy convention).
  *
- * We extract:
- *  - access token from the Authorization header
- *  - refresh token from either the incoming `cookies` header or the
- *    `refresh_token` browser cookie
+ * Backend middleware (`chat-service/src/middlewares/authMiddleware.js`) requires:
+ *   - `Authorization: Bearer <access-token>`
+ *   - a refresh token readable from EITHER `req.cookies.token` (the standard
+ *     `Cookie: token=...` header, parsed by cookie-parser) OR `req.headers['cookies']`
+ *     (a legacy custom header).
+ *
+ * This project's login flow stores the JWT in both `localStorage.authToken` and
+ * a browser cookie named `token`. We therefore:
+ *   1. Forward the incoming `Cookie` header verbatim so the backend's
+ *      `req.cookies.token` is populated (same approach as `/api/wallet-balance`).
+ *   2. Additionally populate the custom `cookies` header, preferring:
+ *        incoming `cookies` header → `refresh_token` cookie → `token` cookie
+ *        → falling back to the access token itself.
+ *   3. Forward `Authorization` as-is.
  */
 export function buildChatBackendHeaders(
   req: NextRequest,
@@ -18,11 +26,19 @@ export function buildChatBackendHeaders(
   const authHeader = req.headers.get('authorization');
   const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
 
-  // Refresh token: honour explicit `cookies` header first, then fall back to
-  // reading `refresh_token` from the request cookie jar.
+  // 1. Locate a refresh-token value for the legacy `cookies` custom header.
   const forwardedCookiesHeader = req.headers.get('cookies');
   const refreshTokenCookie = req.cookies.get('refresh_token')?.value || null;
-  const refreshToken = forwardedCookiesHeader || refreshTokenCookie;
+  const tokenCookie = req.cookies.get('token')?.value || null;
+  const refreshToken =
+    forwardedCookiesHeader || refreshTokenCookie || tokenCookie || accessToken;
+
+  // 2. Forward the browser's Cookie header verbatim so `req.cookies.token`
+  //    resolves on the backend (cookie-parser reads the standard Cookie header).
+  //    If the incoming request has no Cookie header but we do have an access
+  //    token, synthesise a minimal `token=...` cookie so the backend's first
+  //    auth check (`req.cookies.token`) succeeds even for API-only clients.
+  const incomingCookieHeader = req.headers.get('cookie');
 
   const headers: Record<string, string> = {
     'Origin': 'https://sobhagya.in',
@@ -30,6 +46,11 @@ export function buildChatBackendHeaders(
   };
   if (authHeader) headers['Authorization'] = authHeader;
   if (refreshToken) headers['cookies'] = refreshToken;
+  if (incomingCookieHeader) {
+    headers['Cookie'] = incomingCookieHeader;
+  } else if (refreshToken) {
+    headers['Cookie'] = `token=${refreshToken}`;
+  }
 
   return { headers, accessToken, refreshToken };
 }

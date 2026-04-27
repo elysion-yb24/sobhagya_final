@@ -478,11 +478,11 @@ export default function OtpVerificationScreen({
       </motion.div>
 
       {/* Footer */}
-      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-400 px-4 select-none">
+      <footer className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-400 px-4 select-none leading-relaxed">
         <span>By continuing, you agree to our </span>
-        <button className="text-orange-500 hover:text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded transition-colors">Terms of Service</button>
+        <a href="/terms-and-conditions" className="text-orange-500 hover:text-orange-600 underline underline-offset-2 transition-colors">Terms of Service</a>
         <span> and </span>
-        <button className="text-orange-500 hover:text-orange-600 hover:underline touch-manipulation min-h-[44px] px-1 focus:outline-none focus:ring-2 focus:ring-orange-200 rounded transition-colors">Privacy Policy</button>
+        <a href="/privacy-policy" className="text-orange-500 hover:text-orange-600 underline underline-offset-2 transition-colors">Privacy Policy</a>
       </footer>
     </div>
   );

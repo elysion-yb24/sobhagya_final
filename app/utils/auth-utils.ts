@@ -43,17 +43,29 @@ export function getAuthToken(): string | null {
 
 /**
  * Returns the refresh token (distinct from the access token returned by
- * getAuthToken). Backend chat middleware reads it from the `cookies` header.
+ * getAuthToken). Backend chat middleware reads it from the `cookies` header
+ * OR the standard `Cookie: token=...` header.
+ *
+ * This app's login flow stores the JWT under several names; we look in
+ * priority order so the chat-service auth check never fails for lack of
+ * a refresh-token-shaped value.
  */
 export function getRefreshToken(): string | null {
   try {
     if (typeof window === 'undefined') return null;
+    // Explicit refresh-token locations (future-proof for when the backend
+    // starts issuing distinct refresh tokens)
     const lsRefresh = localStorage.getItem('refresh_token');
     if (lsRefresh) return lsRefresh;
+    const refreshCookieMatch = document.cookie.match(/(?:^|;\s*)refresh_token=([^;]+)/);
+    if (refreshCookieMatch) return decodeURIComponent(refreshCookieMatch[1]);
+    // Fallbacks: the JWT itself doubles as the refresh token in this app.
     const lsToken = localStorage.getItem('token');
     if (lsToken) return lsToken;
-    const match = document.cookie.match(/(?:^|;\s*)refresh_token=([^;]+)/);
-    if (match) return decodeURIComponent(match[1]);
+    const tokenCookieMatch = document.cookie.match(/(?:^|;\s*)token=([^;]+)/);
+    if (tokenCookieMatch) return decodeURIComponent(tokenCookieMatch[1]);
+    const lsAuth = localStorage.getItem('authToken');
+    if (lsAuth) return lsAuth;
     return null;
   } catch (e) {
     console.error('Error in getRefreshToken:', e);

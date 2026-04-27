@@ -70,8 +70,12 @@ function authHeaders(): Record<string, string> {
   const refresh = getRefreshToken();
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) h['Authorization'] = `Bearer ${token}`;
-  // Backend middleware reads the refresh token from the `cookies` header.
-  if (refresh && refresh !== token) h['cookies'] = refresh;
+  // Backend middleware requires a refresh-token-shaped value via the custom
+  // `cookies` header. In this app the JWT doubles as the refresh token, so
+  // always send whatever `getRefreshToken` could resolve (it falls back to
+  // the access token if no distinct refresh token exists).
+  const refreshValue = refresh || token;
+  if (refreshValue) h['cookies'] = refreshValue;
   return h;
 }
 
@@ -80,7 +84,8 @@ function authHeadersMultipart(): Record<string, string> {
   const refresh = getRefreshToken();
   const h: Record<string, string> = {};
   if (token) h['Authorization'] = `Bearer ${token}`;
-  if (refresh && refresh !== token) h['cookies'] = refresh;
+  const refreshValue = refresh || token;
+  if (refreshValue) h['cookies'] = refreshValue;
   return h;
 }
 
@@ -143,7 +148,7 @@ export async function fetchThreads(params: { lastTimeStamp?: string; limit?: num
   const url = `/api/chat/threads?${qs.toString()}`;
   const res = await fetch(url, { method: 'GET', headers: authHeaders(), credentials: 'include' });
   if (!res.ok) {
-    console.error('[chat-api] fetchThreads failed', res.status);
+    console.warn('[chat-api] fetchThreads failed', res.status);
     return { threads: [], hasMore: false };
   }
   const json = await parseJson(res);
@@ -165,7 +170,7 @@ export async function fetchMessages(
   const url = `/api/chat/messages/${encodeURIComponent(threadId)}${qs.toString() ? `?${qs}` : ''}`;
   const res = await fetch(url, { method: 'GET', headers: authHeaders(), credentials: 'include' });
   if (!res.ok) {
-    console.error('[chat-api] fetchMessages failed', res.status);
+    console.warn('[chat-api] fetchMessages failed', res.status);
     return [];
   }
   const json = await parseJson(res);
@@ -180,27 +185,52 @@ export interface CreateSessionResult {
   session: any;
 }
 
-export async function createChatSession(userId: string, providerId: string): Promise<CreateSessionResult | null> {
-  if (!userId || !providerId) return null;
-  const res = await fetch('/api/chat/create-session', {
-    method: 'POST',
-    headers: authHeaders(),
-    credentials: 'include',
-    body: JSON.stringify({ userId, providerId }),
-  });
+export interface CreateSessionError {
+  /** Human-readable error from the backend (e.g. "Astrologer is busy"). */
+  message: string;
+  /** HTTP status from the backend (e.g. 400, 401, 500). */
+  status: number;
+}
+
+/**
+ * Creates (or resumes) a chat session via POST /api/chat/create-session.
+ * Returns either the created session info OR a structured error so callers
+ * can surface the backend message (e.g. "Astrologer is busy") to the user.
+ */
+export async function createChatSession(
+  userId: string,
+  providerId: string
+): Promise<{ ok: true; data: CreateSessionResult } | { ok: false; error: CreateSessionError }> {
+  if (!userId || !providerId) {
+    return { ok: false, error: { message: 'Missing userId or providerId', status: 400 } };
+  }
+  let res: Response;
+  try {
+    res = await fetch('/api/chat/create-session', {
+      method: 'POST',
+      headers: authHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ userId, providerId }),
+    });
+  } catch (err: any) {
+    return { ok: false, error: { message: err?.message || 'Network error', status: 0 } };
+  }
   const json = await parseJson(res);
   if (!res.ok || !json?.success || !json?.data?.thread || !json?.data?.session) {
     const message = json?.message || `HTTP ${res.status}`;
-    console.error('[chat-api] createChatSession failed:', message);
-    return null;
+    console.warn('[chat-api] createChatSession failed:', message);
+    return { ok: false, error: { message, status: res.status } };
   }
   const thread = json.data.thread as BackendThread;
   const session = json.data.session;
   return {
-    threadId: String(thread._id),
-    sessionId: String(session._id),
-    thread,
-    session,
+    ok: true,
+    data: {
+      threadId: String(thread._id),
+      sessionId: String(session._id),
+      thread,
+      session,
+    },
   };
 }
 
@@ -234,7 +264,7 @@ export async function fetchChatServiceStatus(): Promise<{ ok: boolean; data: any
     const json = await parseJson(res);
     return { ok: Boolean(res.ok && json?.success !== false), data: json?.data ?? null };
   } catch (err) {
-    console.error('[chat-api] fetchChatServiceStatus failed:', err);
+    console.warn('[chat-api] fetchChatServiceStatus failed:', err);
     return { ok: false, data: null };
   }
 }
@@ -284,7 +314,7 @@ export async function uploadChatFile(file: File): Promise<UploadFileResult | nul
   });
   const json = await parseJson(res);
   if (!res.ok || !json?.success) {
-    console.error('[chat-api] uploadChatFile failed:', json?.message || res.status);
+    console.warn('[chat-api] uploadChatFile failed:', json?.message || res.status);
     return null;
   }
   const data = json?.data || {};

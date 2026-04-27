@@ -24,6 +24,11 @@ interface ChatHeaderProps {
   onEndSession: () => void
   onContinueChat?: () => void
   sessionDuration?: string | null
+  /** Wallet balance in rupees. `null` while still loading or for roles that
+   *  shouldn't see it (e.g. astrologer view). */
+  userBalance?: number | null
+  /** Peer's typing state — drives the "typing…" subtext under the name. */
+  peerTyping?: boolean
 }
 
 export default function ChatHeader({
@@ -33,7 +38,9 @@ export default function ChatHeader({
   endingSession,
   onEndSession,
   onContinueChat,
-  sessionDuration
+  sessionDuration,
+  userBalance,
+  peerTyping,
 }: ChatHeaderProps) {
   const router = useRouter()
 
@@ -99,13 +106,46 @@ export default function ChatHeader({
               `${userRole === 'friend' ? 'User' : 'Provider'} ${participant?._id?.slice(0, 8)}…`}
           </h3>
           <p className="text-xs text-orange-600 truncate">
-            {selectedSession.status === 'active' ? 'online' : 'last seen recently'}
+            {peerTyping
+              ? 'typing…'
+              : selectedSession.status === 'active'
+                ? 'online'
+                : selectedSession.status === 'pending'
+                  ? 'waiting…'
+                  : 'last seen recently'}
           </p>
         </div>
       </div>
 
       {/* Right-side Actions */}
       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+        {/* Session Duration pill — visible for the regular user role too. */}
+        {sessionDuration && selectedSession.status === 'active' && (
+          <div className="flex items-center gap-1 text-xs md:text-sm text-gray-700 bg-gray-100 px-2 md:px-3 py-1 rounded-full" title="Session duration">
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-mono tabular-nums">{sessionDuration}</span>
+          </div>
+        )}
+
+        {/* Wallet balance pill (user role only). Turns amber on low balance. */}
+        {userRole !== 'friend' && typeof userBalance === 'number' && (
+          <div
+            className={`hidden sm:flex items-center gap-1 text-xs md:text-sm px-2 md:px-3 py-1 rounded-full border ${
+              insufficientBalance
+                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                : 'bg-orange-50 text-orange-700 border-orange-200'
+            }`}
+            title="Wallet balance"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+            </svg>
+            <span className="font-medium">₹{Math.max(0, Math.floor(userBalance))}</span>
+          </div>
+        )}
+
         {/* Active Session → End Session button */}
         {selectedSession.status === 'active' && (
           <button
@@ -139,13 +179,6 @@ export default function ChatHeader({
             <span className="hidden md:inline">Continue Chat</span>
             <span className="md:hidden">Continue</span>
           </button>
-        )}
-
-        {/* Session Duration (for astrologer/friend role) */}
-        {sessionDuration && (
-          <div className="text-xs md:text-sm text-gray-600 bg-gray-100 px-2 md:px-3 py-1 rounded-full">
-            {sessionDuration}
-          </div>
         )}
       </div>
     </div>

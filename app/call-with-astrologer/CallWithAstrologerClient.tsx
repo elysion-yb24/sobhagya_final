@@ -417,7 +417,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
       <div className="w-full min-h-screen bg-gradient-to-b from-orange-50/40 via-white to-white">
         {/* 🟠 Hero Section */}
         <motion.div
-          className="relative h-[150px] sm:h-[180px] md:h-[210px] overflow-hidden mb-5 sm:mb-8"
+          className="relative h-[140px] sm:h-[180px] md:h-[210px] overflow-hidden mb-4 sm:mb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
@@ -465,7 +465,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         </div>
 
         {/* 🎯 Filter Section */}
-        <section className="z-50 w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 mb-6 sticky top-[106px] md:static bg-white/90 md:bg-transparent backdrop-blur-lg md:backdrop-blur-0 border-y border-orange-100/70 md:border-y-0">
+        <section className="z-50 w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 mb-6 sticky top-[92px] md:static bg-white/90 md:bg-transparent backdrop-blur-lg md:backdrop-blur-0 border-y border-orange-100/70 md:border-y-0">
           <FilterBar
             searchQuery={searchQuery}
             selectedSort={sortBy}

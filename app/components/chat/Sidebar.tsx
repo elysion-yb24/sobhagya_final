@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface PopulatedUser {
   _id: string
@@ -52,6 +53,7 @@ export default function Sidebar({
   loadingMore = false,
   onDeleteSession
 }: SidebarProps) {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [openMenuSessionId, setOpenMenuSessionId] = useState<string | null>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
@@ -85,18 +87,26 @@ export default function Sidebar({
   }
 
   const formatTime = (timestamp: string) => {
+    if (!timestamp) return ''
     const now = new Date()
     const messageTime = new Date(timestamp)
+    if (isNaN(messageTime.getTime())) return ''
     const diffInHours = (now.getTime() - messageTime.getTime()) / (1000 * 60 * 60)
 
     if (diffInHours < 24) {
       return messageTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    } else if (diffInHours < 48) {
-      return 'Yesterday'
-    } else {
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-      return days[messageTime.getDay()]
     }
+    if (diffInHours < 48) {
+      return 'Yesterday'
+    }
+    if (diffInHours < 24 * 7) {
+      return messageTime.toLocaleDateString([], { weekday: 'short' })
+    }
+    return messageTime.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      year: now.getFullYear() === messageTime.getFullYear() ? undefined : '2-digit',
+    })
   }
 
   const filteredSessions = sessions.filter(session => {
@@ -161,6 +171,26 @@ export default function Sidebar({
             />
           </div>
         </div>
+        {/* Wallet balance row — only for the regular user role. */}
+        {userRole !== 'friend' && (typeof userBalance === 'number' || balanceLoading) && (
+          <div className="mt-2 flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5 text-orange-700">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+              </svg>
+              <span className="font-medium">
+                {balanceLoading ? 'Loading…' : `Balance: ₹${Math.max(0, Math.floor(userBalance ?? 0))}`}
+              </span>
+            </div>
+            <button
+              onClick={onRefreshBalance}
+              className="text-orange-600 hover:text-orange-700 font-medium"
+              title="Refresh balance"
+            >
+              Refresh
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Chat List */}
@@ -173,7 +203,29 @@ export default function Sidebar({
         ) : error ? (
           <div className="p-6 text-center text-red-500">{error}</div>
         ) : filteredSessions.length === 0 ? (
-          <div className="p-6 text-center text-gray-500">No chats available</div>
+          <div className="p-6 text-center">
+            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-orange-50 flex items-center justify-center">
+              <svg className="w-7 h-7 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+            <p className="font-medium text-gray-700">
+              {searchQuery ? 'No matching chats' : 'No chats yet'}
+            </p>
+            {!searchQuery && (
+              <>
+                <p className="text-sm text-gray-500 mt-1 mb-4">Start your first conversation with an astrologer</p>
+                {userRole !== 'friend' && (
+                  <button
+                    onClick={() => router.push('/call-with-astrologer')}
+                    className="px-4 py-2 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Find an astrologer
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         ) : (
           <div>
             {filteredSessions.map(session => {

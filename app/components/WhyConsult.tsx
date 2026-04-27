@@ -150,20 +150,20 @@ const WhyConsult: React.FC = () => {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-[#745802] mb-6" style={{ fontFamily: "EB Garamond" }}>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-4 sm:mb-6" style={{ fontFamily: "EB Garamond" }}>
                 The Power of Astrological Wisdom
               </h2>
-              <p className="text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
+              <p className="text-base sm:text-lg text-gray-600 leading-relaxed mb-4 sm:mb-6" style={{ fontFamily: "Poppins" }}>
                 Astrology is not just about predicting the future—it's about understanding yourself at a deeper level. Your birth chart is a cosmic blueprint that reveals your unique personality, strengths, challenges, and life purpose.
               </p>
-              <p className="text-lg text-gray-600 leading-relaxed mb-6" style={{ fontFamily: "Poppins" }}>
+              <p className="text-base sm:text-lg text-gray-600 leading-relaxed mb-4 sm:mb-6" style={{ fontFamily: "Poppins" }}>
                 Through careful analysis of planetary positions, astrologers can provide insights that help you make informed decisions, understand your relationships better, and navigate life's challenges with confidence.
               </p>
             </motion.div>
@@ -175,7 +175,7 @@ const WhyConsult: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.4 }}
               viewport={{ once: true }}
             >
-              <div className="relative w-full h-80 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl overflow-hidden">
+              <div className="relative w-full h-56 sm:h-72 lg:h-80 bg-gradient-to-br from-orange-100 to-orange-50 rounded-2xl overflow-hidden">
                 <motion.div
                   className="absolute inset-0 bg-[#F7971D] opacity-10 rounded-2xl"
                   animate={{ scale: [1, 1.1, 1] }}
@@ -201,25 +201,25 @@ const WhyConsult: React.FC = () => {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-[#745802] mb-4" style={{ fontFamily: "EB Garamond" }}>
+          <div className="text-center mb-10 sm:mb-12 md:mb-16">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#745802] mb-3 sm:mb-4" style={{ fontFamily: "EB Garamond" }}>
               Transform Your Life Through Astrology
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto" style={{ fontFamily: "Poppins" }}>
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto px-2" style={{ fontFamily: "Poppins" }}>
               Discover how professional astrological guidance can bring clarity, direction, and positive change to every aspect of your life.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid md:grid-cols-2 gap-6 sm:gap-8 md:gap-12">
             <motion.div
-              className="flex items-start space-x-6"
+              className="flex items-start gap-4 sm:gap-6"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
+                className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.3 }}
               >
@@ -236,14 +236,14 @@ const WhyConsult: React.FC = () => {
             </motion.div>
 
             <motion.div
-              className="flex items-start space-x-6"
+              className="flex items-start gap-4 sm:gap-6"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
+                className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 transition={{ duration: 0.3 }}
               >
@@ -260,14 +260,14 @@ const WhyConsult: React.FC = () => {
             </motion.div>
 
             <motion.div
-              className="flex items-start space-x-6"
+              className="flex items-start gap-4 sm:gap-6"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
+                className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 transition={{ duration: 0.3 }}
               >
@@ -284,14 +284,14 @@ const WhyConsult: React.FC = () => {
             </motion.div>
 
             <motion.div
-              className="flex items-start space-x-6"
+              className="flex items-start gap-4 sm:gap-6"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
               viewport={{ once: true }}
             >
               <motion.div
-                className="w-16 h-16 flex items-center justify-center flex-shrink-0"
+                className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center flex-shrink-0"
                 whileHover={{ scale: 1.1, rotate: -5 }}
                 transition={{ duration: 0.3 }}
               >

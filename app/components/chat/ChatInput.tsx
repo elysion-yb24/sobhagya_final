@@ -25,6 +25,18 @@ export default function ChatInput({
   const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Clear any pending typing timeout when the input unmounts so we don't
+  // call `onStopTyping` against a torn-down parent.
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current)
+        typingTimeoutRef.current = null
+      }
+    }
+  }, [])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -57,18 +69,14 @@ export default function ChatInput({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value)
-    
-    // Trigger typing event if not already typing
+
     if (!isTyping && e.target.value.trim()) {
       setIsTyping(true)
       onTyping?.()
     }
-    
-    // Clear typing indicator after 1 second of no typing
-    if ((handleInputChange as any).typingTimeout) {
-      clearTimeout((handleInputChange as any).typingTimeout)
-    }
-    (handleInputChange as any).typingTimeout = setTimeout(() => {
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false)
       onStopTyping?.()
     }, 1000)

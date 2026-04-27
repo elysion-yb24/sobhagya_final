@@ -75,7 +75,7 @@ const HeroSection: React.FC = () => {
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Hero Section */}
       <motion.section
-        className="text-white relative w-full flex flex-col justify-start pt-2 sm:pt-3 pb-6 sm:pb-8 md:pb-10"
+        className="text-white relative w-full flex flex-col justify-start pt-3 sm:pt-10 pb-10 sm:pb-14 md:pb-16"
         style={{
           backgroundImage: "url(/bg-image1111.svg)",
           backgroundSize: "cover",
@@ -121,19 +121,20 @@ const HeroSection: React.FC = () => {
         <div className="section-container relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-2 md:gap-6 lg:gap-10">
           {/* Left: Text Content */}
           <motion.div
-            className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left order-2 md:order-1 mt-2 sm:-mt-10 md:mt-0"
+            className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left order-2 md:order-1 mt-4 sm:-mt-10 md:mt-0 px-1 xs:px-2 sm:px-0"
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : -40 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
-            <h1 className="font-bold leading-tight mb-2 sm:mb-3" style={{
+            <h1 className="font-bold leading-tight mb-2 sm:mb-3 break-words" style={{
               fontFamily: "EB Garamond",
-              fontSize: 'clamp(26px, 7vw, 55px)',
+              fontSize: 'clamp(22px, 6.2vw, 55px)',
               fontWeight: 700,
               lineHeight: 1.15,
             }}>
-              <span className="tabular-nums">{displayCount.toLocaleString()}</span>{" "}
-              <span>Consultations Done</span>
+              <span className="tabular-nums whitespace-nowrap">{displayCount.toLocaleString()}</span>
+              <span className="whitespace-nowrap"> Consultations</span>{" "}
+              <span className="whitespace-nowrap">Done</span>
             </h1>
             <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-semibold mb-4 sm:mb-6 opacity-90 px-2 sm:px-0" style={{
               fontFamily: "EB Garamond"
@@ -156,7 +157,7 @@ const HeroSection: React.FC = () => {
 
           {/* Right: Astrologer Image */}
           <motion.div
-            className="w-full md:w-1/2 lg:w-2/5 flex justify-center md:justify-end relative order-1 md:order-2 min-h-[260px] xs:min-h-[300px] sm:min-h-[380px] md:min-h-[420px] lg:min-h-[460px]"
+            className="w-full md:w-1/2 lg:w-2/5 flex justify-center md:justify-end relative order-1 md:order-2 min-h-[240px] xs:min-h-[280px] sm:min-h-[360px] md:min-h-[400px] lg:min-h-[440px]"
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : 40 }}
             transition={{ duration: 0.8, delay: 0.5 }}

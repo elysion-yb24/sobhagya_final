@@ -53,11 +53,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isFullScreenPage = pathname?.startsWith('/live-sessions/') ||
                            pathname?.startsWith('/video-call') ||
                            pathname?.startsWith('/audio-call') ||
-                           pathname === '/partner-info';
+                           pathname === '/partner-info' ||
+                           pathname === '/login';
 
   return (
     <>
-      <main className={`flex flex-col ${isFullScreenPage ? 'min-h-screen' : 'min-h-screen pt-16 md:pt-20 lg:pt-28'}`}>
+      <main className={`flex flex-col ${isFullScreenPage ? 'min-h-screen' : 'min-h-screen pt-[92px] md:pt-16 lg:pt-28'}`}>
         {children}
       </main>
       {showFooter && <div />}

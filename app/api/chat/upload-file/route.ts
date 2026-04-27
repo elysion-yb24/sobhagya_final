@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     // Do NOT set Content-Type manually — fetch will set the correct boundary.
     delete (headers as any)['Content-Type'];
 
-    const res = await fetch(`${getChatBackendUrl()}/upload-file`, {
+    const res = await fetch(`${getChatBackendUrl()}/chat/upload-file`, {
       method: 'POST',
       headers,
       body: fd,

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { Eagle_Lake } from "next/font/google";
-import { Menu, X, Phone, User, LogOut, ChevronDown, Wallet, History, Settings } from "lucide-react";
+import { Menu, X, Phone, User, LogOut, ChevronDown, Wallet, History } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
@@ -29,6 +29,15 @@ const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 const texts = ["Sobhagya", "सौभाग्य"];
 const delayBetween = 5000;
 
+type HeaderNavigationLink = {
+  label: string;
+  href: string;
+  icon: string;
+  bgColor: string;
+  hideForPartner?: boolean;
+  external?: boolean;
+};
+
 const Header = () => {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -37,7 +46,7 @@ const Header = () => {
   const [isAuthenticatedUser, setIsAuthenticatedUser] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { walletBalance, refreshWalletBalance } = useWalletBalance();
+  const { walletBalance } = useWalletBalance();
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -61,15 +70,52 @@ const Header = () => {
     }
     return pathname?.startsWith(href) || false;
   };
-  
 
-  
+  const navigationLinks: HeaderNavigationLink[] = [
+    { label: "About Us", href: "/about", icon: "✨", bgColor: "bg-indigo-100" },
+    { label: "Services", href: "/services", icon: "🔮", bgColor: "bg-amber-100" },
+    { label: "Live Sessions", href: "/live-sessions", icon: "🔴", bgColor: "bg-red-100", hideForPartner: true },
+    { label: "Call with Astrologer", href: "/call-with-astrologer", icon: "📞", bgColor: "bg-orange-100", hideForPartner: true },
+    { label: "Shop", href: "https://www.ramvarna.com", icon: "🛍️", bgColor: "bg-pink-100", external: true },
+    { label: "Blog", href: "/blog", icon: "📝", bgColor: "bg-green-100" },
+    { label: "Contact Us", href: "/contact", icon: "📧", bgColor: "bg-blue-100" },
+  ];
+
+  const visibleNavigationLinks = navigationLinks.filter(
+    (link) => !((userProfile?.role === 'astrologer' || userProfile?.role === 'friend') && link.hideForPartner)
+  );
+
   useEffect(() => {
     const interval = setInterval(() => {
       setTextIndex((prev) => (prev + 1) % texts.length);
     }, delayBetween);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    setIsOpen(false);
+    setShowProfileDropdown(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    document.addEventListener('keydown', onEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -199,13 +245,14 @@ const Header = () => {
     pathname?.startsWith('/video-call') || 
     pathname?.startsWith('/audio-call') || 
     (pathname?.startsWith('/live-sessions/') && pathname !== '/live-sessions') ||
-    pathname === '/partner-info'
+    pathname === '/partner-info' ||
+    pathname === '/login'
   ) {
     return null;
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[100] bg-white shadow-sm transition-all duration-300 animate-fadeIn font-sans">
+    <header className="fixed top-0 left-0 right-0 z-[100] bg-white/75 supports-[backdrop-filter]:bg-white/60 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/40 shadow-[0_8px_32px_-8px_rgba(247,148,29,0.12)] transition-all duration-300 animate-fadeIn font-sans">
       {/* DESKTOP HEADER — two-row layout with logo spanning full height */}
       <div className="hidden lg:block bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
@@ -293,7 +340,7 @@ const Header = () => {
 
                     {/* Dropdown Menu */}
                     {showProfileDropdown && (
-                      <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-[999] animate-fadeIn">
+                      <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-[0_10px_50px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden z-[999]" style={{ animation: 'fadeInDown 0.2s ease-out' }}>
                         {/* User Info Header */}
                         <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-4 border-b border-orange-100/60">
                           <div className="flex items-center gap-3">
@@ -365,20 +412,12 @@ const Header = () => {
               {/* Bottom row: Navigation links */}
               <div className="flex items-center justify-between py-3">
                 <nav className="flex items-center gap-3 lg:gap-4 xl:gap-6 2xl:gap-8 text-sm font-medium text-gray-600">
-                  {[
-                    { label: "About Us", href: "/about" },
-                    { label: "Services", href: "/services" },
-                    { label: "Live Sessions", href: "/live-sessions", hideForPartner: true },
-                    { label: "Call with Astrologer", href: "/call-with-astrologer", hideForPartner: true },
-                    { label: "Shop", href: "https://www.ramvarna.com" },
-                    { label: "Blog", href: "/blog" },
-                    { label: "Contact Us", href: "/contact" },
-                  ]
-                  .filter(link => !((userProfile?.role === 'astrologer' || userProfile?.role === 'friend') && link.hideForPartner))
-                  .map((link) => (
+                  {visibleNavigationLinks.map((link) => (
                     <Link
                       key={link.label}
                       href={link.href}
+                      target={link.external ? "_blank" : undefined}
+                      rel={link.external ? "noopener noreferrer" : undefined}
                       className={`relative py-1 transition-colors hover:text-orange-500 ${
                         isActiveLink(link.href)
                           ? "text-orange-600 font-semibold"
@@ -389,8 +428,6 @@ const Header = () => {
                     </Link>
                   ))}
                 </nav>
-
-
               </div>
             </div>
           </div>
@@ -463,90 +500,118 @@ const Header = () => {
         </div>
       </div>
 
-      {/* MOBILE HEADER with enhanced animations */}
+      {/* MOBILE HEADER — progressive disclosure, no clipping, refined motion */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between px-3 xs:px-4 py-2.5 xs:py-3">
-          {/* Mobile Logo */}
-          <Link href="/" className={`group flex items-center gap-2 transition-all duration-300 ${
-            isActiveLink('/') ? 'scale-105' : 'hover:scale-105'
-          }`}>
-          <Image
-              src="/sobhagya-logo.svg"
-            alt="Sobhagya"
-              width={40}
-              height={40}
-              className="w-10 h-10 object-contain"
-              priority
-              quality={100}
-            />
-            <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
+        <div className="flex items-center justify-between gap-2 px-3 xs:px-4 py-2 xs:py-2.5 min-w-0">
+          {/* Mobile Logo — never shrinks, gradient shimmer text */}
+          <Link
+            href="/"
+            className="group flex items-center gap-2 flex-shrink-0 min-w-0"
+            aria-label="Sobhagya — Home"
+          >
+            <div className="relative">
+              <Image
+                src="/sobhagya-logo.svg"
+                alt="Sobhagya"
+                width={36}
+                height={36}
+                className="w-9 h-9 xs:w-10 xs:h-10 object-contain drop-shadow-sm transition-transform duration-500 group-hover:rotate-[8deg] group-active:scale-95"
+                priority
+                quality={100}
+              />
+              {/* Subtle saffron halo */}
+              <span className="pointer-events-none absolute inset-0 rounded-full bg-orange-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            </div>
+            <span
+              className={`text-lg xs:text-xl font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-brand-shine whitespace-nowrap ${eagleLake.className}`}
+            >
               Sobhagya
             </span>
-        </Link>
+          </Link>
 
-          {/* Mobile Action Buttons */}
-          <div className="flex items-center gap-2">
-          <a
-            href="tel:+919211994461"
-            aria-label="Call +91 92119 94461"
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 active:scale-95"
-          >
-            <Phone size={18} />
-          </a>
-          <a
-            href="https://wa.me/919211994461"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="WhatsApp +91 92119 94461"
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-[#25D366] text-white shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110 active:scale-95"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-            </svg>
-          </a>
-
-          {mounted && isAuthenticatedUser && (
-            <Link
-              href="/wallet"
-              className="flex items-center gap-1.5 h-9 px-3 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 border border-green-200 text-green-700 hover:from-green-200 hover:to-emerald-200 transition-all duration-300"
-              title="Wallet"
+          {/* Action cluster — tightly packed, progressive disclosure */}
+          <div className="flex items-center gap-1.5 xs:gap-2 flex-shrink-0">
+            {/* Call & WhatsApp — hidden on <375px to protect logo */}
+            <a
+              href="tel:+919211994461"
+              aria-label="Call +91 92119 94461"
+              className="hidden xs:flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300 active:scale-90 hover:scale-110 relative"
             >
-              <Wallet size={14} />
-              <span className="text-xs font-bold">₹{Number(walletBalance || 0).toFixed(0)}</span>
-            </Link>
-          )}
+              <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 hover:opacity-100 transition-opacity" />
+              <Phone size={16} strokeWidth={2.5} className="relative" />
+            </a>
+            <a
+              href="https://wa.me/919211994461"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp +91 92119 94461"
+              className="hidden xs:flex items-center justify-center w-9 h-9 rounded-full bg-[#25D366] text-white shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 active:scale-90 hover:scale-110"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+              </svg>
+            </a>
 
-          {mounted && isAuthenticatedUser ? (
+            {/* Wallet pill — compact, with subtle live glow */}
+            {mounted && isAuthenticatedUser && (
+              <Link
+                href="/wallet"
+                aria-label={`Wallet balance ₹${Number(walletBalance || 0).toFixed(0)}, tap to recharge`}
+                className="group relative flex items-center gap-1 h-9 px-2.5 xs:px-3 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/80 shadow-sm hover:shadow-md active:scale-95 transition-all duration-300 overflow-hidden"
+              >
+                <span className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[900ms]" />
+                <Wallet size={13} className="text-green-600 flex-shrink-0" strokeWidth={2.5} />
+                <span className="text-[11px] xs:text-xs font-extrabold text-green-700 tabular-nums">
+                  ₹{Number(walletBalance || 0).toFixed(0)}
+                </span>
+              </Link>
+            )}
+
+            {/* Menu — the everything-else home; animates Menu→X */}
             <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-                className={`flex items-center justify-center w-9 h-9 rounded-full transition-all duration-300 hover:scale-110 ${
-                isLoggingOut 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                    : 'bg-red-100 text-red-600 hover:bg-red-200'
-              }`}
-              title={isLoggingOut ? "Logging out..." : "Logout"}
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={isOpen}
+              aria-controls="mobile-menu-panel"
+              className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/80 text-gray-700 shadow-sm hover:shadow-md hover:border-orange-200 hover:text-orange-600 active:scale-90 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
             >
-                <LogOut size={16} className={isLoggingOut ? 'animate-spin' : ''} />
+              <span className={`absolute transition-all duration-300 ${isOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`}>
+                <Menu size={17} strokeWidth={2.5} />
+              </span>
+              <span className={`absolute transition-all duration-300 ${isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`}>
+                <X size={17} strokeWidth={2.5} />
+              </span>
+              {/* Unread/new dot when logged out — nudges login */}
+              {mounted && !isAuthenticatedUser && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-orange-500 ring-2 ring-white animate-pulse" />
+              )}
             </button>
-          ) : (
-            <Link
-                href="/login"
-                className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 transition-all duration-300 hover:scale-110"
-            >
-                <User size={16} />
-            </Link>
-          )}
-          
-          <button 
-            onClick={() => setIsOpen(!isOpen)} 
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300 hover:scale-110 focus:outline-none"
-            aria-label="Toggle menu"
-          >
-              {isOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
+          </div>
         </div>
-      </div>
+        {/* Thin saffron accent line — on-brand bottom border */}
+        <div className="h-[2px] bg-gradient-to-r from-transparent via-orange-300/60 to-transparent" />
+
+        {!isOpen && (
+          <div className="md:hidden border-t border-orange-100/70 bg-white/85 backdrop-blur-xl">
+            <nav className="px-3 xs:px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide scroll-touch">
+              {visibleNavigationLinks.map((item) => (
+                <Link
+                  key={`quick-${item.label}`}
+                  href={item.href}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener noreferrer" : undefined}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border ${
+                    isActiveLink(item.href)
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300 hover:text-orange-600'
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        )}
 
         {/* MOBILE MENU with enhanced animations and improved scroll behavior */}
       <AnimatePresence>
@@ -560,195 +625,207 @@ const Header = () => {
               onClick={() => setIsOpen(false)}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[9998] md:hidden"
             />
-            <motion.div 
-              className="fixed top-0 left-0 w-full z-[9999] flex flex-col premium-glass shadow-2xl rounded-b-[2rem]"
+            <motion.div
+              id="mobile-menu-panel"
+              role="dialog"
+              aria-modal="true"
+              className="fixed top-0 left-0 w-full z-[9999] flex flex-col bg-white shadow-2xl rounded-b-[2rem] border-b border-orange-100"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              style={{ 
+              style={{
                 height: 'auto',
-                maxHeight: '100vh',
+                maxHeight: '100dvh',
                 overflowY: 'auto'
               }}
             >
-            {/* Mobile Menu Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
-              <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={() => setIsOpen(false)}>
-                <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
-                <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
-                  Sobhagya
-                </span>
-              </Link>
-              <button 
-                onClick={() => setIsOpen(false)} 
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300"
-                aria-label="Close menu"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Mobile Menu Content */}
-            <div className="px-4 py-8 space-y-6 bg-transparent">
-              {/* User Authentication Section */}
-              {mounted && isAuthenticatedUser ? (
-                <div className="space-y-4">
-                  {/* User Profile Card */}
-                  <Link
-                    href="/my-profile"
-                    className="block bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200 shadow-sm hover:shadow-md transition-shadow"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
-                        <User className="h-6 w-6 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-orange-700 font-medium">Welcome back!</p>
-                        <p className="text-lg font-bold text-orange-900 truncate">
-                          {getDisplayName()}
-                        </p>
-                        {needsProfileCompletion() && (
-                          <p className="text-xs text-orange-600 underline mt-1">
-                            Complete profile
-                          </p>
-                        )}
-                      </div>
-                      <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </Link>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="block w-full text-center bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl text-base font-bold shadow-lg hover:shadow-xl transition-all duration-300"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Signup/Login
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
+                <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={() => setIsOpen(false)}>
+                  <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
+                  <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
+                    Sobhagya
+                  </span>
                 </Link>
-              )}
+                <button 
+                  onClick={() => setIsOpen(false)} 
+                  className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all duration-300"
+                  aria-label="Close menu"
+                >
+                  <X size={20} />
+                </button>
+              </div>
 
-              {/* My Account Section (only when authenticated) */}
-              {mounted && isAuthenticatedUser && (
-                <div className="space-y-4">
-                  <div className="border-t border-gray-100 pt-4">
-                    <h3 className="text-sm font-semibold text-gray-500 mb-3">My Account</h3>
-                    
-                    {/* Wallet Balance — tap to recharge */}
+              {/* Mobile Menu Content */}
+              <div className="px-4 py-6 space-y-5 bg-white pb-8">
+                {/* Quick-contact row — always accessible, especially for <xs screens */}
+                <div className="xs:hidden grid grid-cols-2 gap-3">
+                  <a
+                    href="tel:+919211994461"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-bold text-sm shadow-md shadow-orange-500/25 active:scale-95 transition-transform"
+                    aria-label="Call +91 92119 94461"
+                  >
+                    <Phone size={16} strokeWidth={2.5} />
+                    Call Now
+                  </a>
+                  <a
+                    href="https://wa.me/919211994461"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center gap-2 h-12 rounded-2xl bg-[#25D366] text-white font-bold text-sm shadow-md shadow-green-500/25 active:scale-95 transition-transform"
+                    aria-label="WhatsApp"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                    WhatsApp
+                  </a>
+                </div>
+
+                {/* User Authentication Section */}
+                {mounted && isAuthenticatedUser ? (
+                  <div className="space-y-4">
+                    {/* User Profile Card */}
                     <Link
-                      href="/wallet"
+                      href="/my-profile"
+                      className="block bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl p-4 border border-orange-200 shadow-sm hover:shadow-md transition-shadow"
                       onClick={() => setIsOpen(false)}
-                      className="block bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200 shadow-sm mb-4 hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
-                          <Wallet className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+                          <User className="h-6 w-6 text-white" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm text-green-700 font-medium">Wallet Balance</p>
-                          <p className="text-xl font-bold text-green-800">₹{Number(walletBalance || 0).toFixed(2)}</p>
+                          <p className="text-sm text-orange-700 font-medium">Welcome back!</p>
+                          <p className="text-lg font-bold text-orange-900 truncate">
+                            {getDisplayName()}
+                          </p>
+                          {needsProfileCompletion() && (
+                            <p className="text-xs text-orange-600 underline mt-1">
+                              Complete profile
+                            </p>
+                          )}
                         </div>
-                        <span className="text-sm font-semibold text-white bg-orange-500 px-3 py-1.5 rounded-full shadow">
-                          + Recharge
-                        </span>
+                        <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </div>
                     </Link>
-                    
-                    {/* Account Menu Items */}
-                    <div className="space-y-3">
-                      <Link
-                        href="/my-profile"
-                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="flex-1">My Profile</span>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
-                          →
-                        </div>
-                      </Link>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="block w-full text-center bg-gradient-to-r from-orange-500 to-orange-600 text-white py-4 rounded-2xl text-base font-bold shadow-lg hover:shadow-xl transition-all duration-300"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Signup/Login
+                  </Link>
+                )}
 
+                {/* My Account Section (only when authenticated) */}
+                {mounted && isAuthenticatedUser && (
+                  <div className="space-y-4">
+                    <div className="border-t border-gray-100 pt-4">
+                      <h3 className="text-sm font-semibold text-gray-500 mb-3">My Account</h3>
+                      
+                      {/* Wallet Balance — tap to recharge */}
                       <Link
-                        href="/history/Transaction-history"
-                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-blue-200"
+                        href="/wallet"
                         onClick={() => setIsOpen(false)}
+                        className="block bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200 shadow-sm mb-4 hover:shadow-md transition-shadow"
                       >
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-md">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <span className="flex-1">Transaction History</span>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-blue-500">
-                          →
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
+                            <Wallet className="w-6 h-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm text-green-700 font-medium">Wallet Balance</p>
+                            <p className="text-xl font-bold text-green-800">₹{Number(walletBalance || 0).toFixed(2)}</p>
+                          </div>
+                          <span className="text-sm font-semibold text-white bg-orange-500 px-3 py-1.5 rounded-full shadow">
+                            + Recharge
+                          </span>
                         </div>
                       </Link>
                       
+                      {/* Account Menu Items */}
+                      <div className="space-y-3">
+                        <Link
+                          href="/my-profile"
+                          className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-md">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="flex-1">My Profile</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                            →
+                          </div>
+                        </Link>
+                        <Link
+                          href="/history/Transaction-history"
+                          className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-300 to-orange-500 rounded-full flex items-center justify-center shadow-md">
+                            <History className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="flex-1">Transaction History</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                            →
+                          </div>
+                        </Link>
+                        <Link
+                          href="/history/call-history"
+                          className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-300 to-orange-500 rounded-full flex items-center justify-center shadow-md">
+                            <Phone className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="flex-1">Call History</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                            →
+                          </div>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-t border-gray-100 pt-4">
+                  <h3 className="text-sm font-semibold text-gray-500 mb-3">Navigation</h3>
+                  <nav className="space-y-2">
+                    {visibleNavigationLinks.map((item, index) => (
                       <Link
-                        href="/history/call-history"
-                        className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-green-600 hover:bg-green-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-green-200"
+                        key={`${item.href}-${index}`}
+                        href={item.href}
+                        target={item.external ? "_blank" : undefined}
+                        rel={item.external ? "noopener noreferrer" : undefined}
+                        className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border ${
+                          isActiveLink(item.href)
+                            ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
+                            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
+                        }`}
                         onClick={() => setIsOpen(false)}
                       >
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-md">
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                          </svg>
+                        <div className={`w-10 h-10 rounded-full ${item.bgColor} flex items-center justify-center shadow-sm`}>
+                          <span className="text-lg">{item.icon}</span>
                         </div>
-                        <span className="flex-1">Call History</span>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-green-500">
+                        <span className="flex-1">{item.label}</span>
+                        <div className={`transition-opacity duration-300 ${
+                          isActiveLink(item.href) ? 'opacity-100 text-orange-500' : 'opacity-0 group-hover:opacity-100 text-orange-500'
+                        }`}>
                           →
                         </div>
                       </Link>
-                    </div>
-                  </div>
+                    ))}
+                  </nav>
                 </div>
-              )}
-
-              {/* Navigation Links */}
-              <div className="border-t border-gray-100 pt-4">
-                <h3 className="text-sm font-semibold text-gray-500 mb-3">Navigation</h3>
-                <nav className="space-y-2">
-                  {[
-                    { href: "/about", label: "About Us", icon: "✨", bgColor: "bg-indigo-100" },
-                    { href: "/services", label: "Services", icon: "🔮", bgColor: "bg-purple-100" },
-                    { href: "/live-sessions", label: "Live Sessions", icon: "🔴", bgColor: "bg-red-100", hideForPartner: true },
-                    { href: "/call-with-astrologer", label: "Call with Astrologer", icon: "📞", bgColor: "bg-orange-100", hideForPartner: true },
-                    { href: "https://www.ramvarna.com", label: "Shop", icon: "🛍️", bgColor: "bg-pink-100" },
-                    { href: "/blog", label: "Blog", icon: "📝", bgColor: "bg-green-100" },
-                    { href: "/contact", label: "Contact Us", icon: "📧", bgColor: "bg-blue-100" },
-                  ]
-                  .filter(link => !((userProfile?.role === 'astrologer' || userProfile?.role === 'friend') && (link as any).hideForPartner))
-                  .map((item, index) => (
-                    <Link 
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-3 w-full py-4 px-4 rounded-2xl transition-all duration-300 group text-base font-medium border ${
-                        isActiveLink(item.href)
-                          ? 'text-orange-600 bg-orange-50 border-orange-200 font-bold'
-                          : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50 border-gray-100 hover:border-orange-200'
-                      }`}
-                      onClick={() => setIsOpen(false)}
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <div className={`w-10 h-10 ${item.bgColor} rounded-full flex items-center justify-center`}>
-                        <span className="text-lg">{item.icon}</span>
-                      </div>
-                      <span className="flex-1">{item.label}</span>
-                      <div className={`transition-opacity duration-300 ${
-                        isActiveLink(item.href) ? 'opacity-100 text-orange-500' : 'opacity-0 group-hover:opacity-100 text-orange-500'
-                      }`}>
-                        →
-                      </div>
-                    </Link>
-                  ))}
-                  
-
-                </nav>
               </div>
 
               {/* Logout Button - Moved to bottom */}
@@ -771,7 +848,6 @@ const Header = () => {
                   </button>
                 </div>
               )}
-            </div>
           </motion.div>
         </>
       )}
@@ -780,5 +856,5 @@ const Header = () => {
     </header>
   );
   };
-  
+
 export default Header;

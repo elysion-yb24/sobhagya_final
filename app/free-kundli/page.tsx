@@ -721,7 +721,7 @@ export default function FreeKundliPage() {
         </script>
       </Head>
       
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-yellow-50 pb-safe">
       {/* Beautiful Error Notification */}
       {errorMessage && (
         <motion.div
@@ -744,36 +744,36 @@ export default function FreeKundliPage() {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-orange-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between min-h-16 py-3 gap-3">
             <Link 
               href="/" 
               className="flex items-center gap-2 text-gray-600 hover:text-orange-600 transition-colors duration-200"
             >
               <ArrowLeft className="w-5 h-5" />
-              <span className="font-medium">Back to Home</span>
+              <span className="font-medium text-sm sm:text-base">Back to Home</span>
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-gray-500">Free Kundli Generator</span>
+              <span className="text-xs sm:text-sm text-gray-500">Free Kundli Generator</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Hero Section */}
-      <div className="py-16 lg:py-24">
+      <div className="py-10 sm:py-14 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-16"
+            className="text-center mb-10 sm:mb-14"
           >
-            <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6">
               Free Kundli Generator
               <span className="block text-orange-600">Online Birth Chart Calculator</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-4xl mx-auto mb-8">
+            <p className="text-base sm:text-lg text-gray-600 max-w-4xl mx-auto mb-6 sm:mb-8">
               Generate your accurate Kundli (birth chart) online with our free Vedic astrology calculator. 
               Get detailed planetary positions, house analysis, and 12th house enemies analysis instantly. 
               No registration required - completely free!
@@ -785,10 +785,10 @@ export default function FreeKundliPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-xl border border-orange-100 p-8 mb-16"
+            className="bg-white rounded-2xl shadow-xl border border-orange-100 p-4 sm:p-6 lg:p-8 mb-12 sm:mb-16"
           >
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
                 Generate Your Free Kundli
               </h2>
               <p className="text-gray-600">
@@ -797,7 +797,7 @@ export default function FreeKundliPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Full Name *
@@ -832,7 +832,7 @@ export default function FreeKundliPage() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Date of Birth *
@@ -862,7 +862,7 @@ export default function FreeKundliPage() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="relative dropdown-container">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Country *
@@ -958,7 +958,7 @@ export default function FreeKundliPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold ${
+                  className={`w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold ${
                     isLoading
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-xl hover:scale-105'
@@ -984,7 +984,7 @@ export default function FreeKundliPage() {
 
       {/* Results Section */}
       {kundliData && (
-        <div id="kundli-results" className="py-16 lg:py-24 bg-white">
+        <div id="kundli-results" className="py-12 sm:py-16 lg:py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -992,24 +992,24 @@ export default function FreeKundliPage() {
               transition={{ duration: 0.8 }}
               className="text-center mb-12"
             >
-              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
                 Your Free Kundli Analysis
                 <span className="block text-orange-600">Birth Chart Results</span>
               </h2>
-              <p className="text-xl text-gray-600">
+              <p className="text-base sm:text-lg text-gray-600">
                 Detailed Vedic astrology analysis with planetary positions and house interpretations
               </p>
             </motion.div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
+            <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
               {/* Main Content */}
               <div className="lg:col-span-2">
                 {/* Language Toggle */}
                 <div className="flex justify-center mb-6">
-                  <div className="bg-gray-100 rounded-lg p-1 flex">
+                  <div className="bg-gray-100 rounded-lg p-1 flex w-full max-w-xs">
                     <button
                       onClick={() => setLanguage('english')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         language === 'english'
                           ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
@@ -1019,7 +1019,7 @@ export default function FreeKundliPage() {
                     </button>
                     <button
                       onClick={() => setLanguage('hindi')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                         language === 'hindi'
                           ? 'bg-white text-gray-900 shadow-sm'
                           : 'text-gray-600 hover:text-gray-900'
@@ -1032,10 +1032,10 @@ export default function FreeKundliPage() {
 
                 {/* View Mode Toggle */}
                 <div className="flex justify-center mb-6">
-                  <div className="bg-orange-100 rounded-lg p-1 flex">
+                  <div className="bg-orange-100 rounded-lg p-1 flex w-full max-w-sm">
                     <button
                       onClick={() => setViewMode('simple')}
-                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 px-3 sm:px-6 py-2 rounded-md text-sm font-medium transition-colors ${
                         viewMode === 'simple'
                           ? 'bg-white text-orange-600 shadow-sm'
                           : 'text-orange-600 hover:text-orange-700'
@@ -1045,7 +1045,7 @@ export default function FreeKundliPage() {
                     </button>
                     <button
                       onClick={() => setViewMode('detailed')}
-                      className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                      className={`flex-1 px-3 sm:px-6 py-2 rounded-md text-sm font-medium transition-colors ${
                         viewMode === 'detailed'
                           ? 'bg-white text-orange-600 shadow-sm'
                           : 'text-orange-600 hover:text-orange-700'
@@ -1069,7 +1069,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.6 }}
-                    className="bg-white rounded-2xl shadow-xl border border-blue-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-blue-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <Shield className="w-6 h-6 text-blue-600" />
@@ -1092,7 +1092,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.8 }}
-                    className="bg-white rounded-2xl shadow-xl border border-purple-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-purple-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <Zap className="w-6 h-6 text-purple-600" />
@@ -1137,7 +1137,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.9 }}
-                    className="bg-white rounded-2xl shadow-xl border border-indigo-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-indigo-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <Star className="w-6 h-6 text-indigo-600" />
@@ -1193,7 +1193,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 1.0 }}
-                    className="bg-white rounded-2xl shadow-xl border border-green-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-green-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <Star className="w-6 h-6 text-green-600" />
@@ -1238,7 +1238,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 1.1 }}
-                    className="bg-white rounded-2xl shadow-xl border border-orange-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-orange-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <AlertTriangle className="w-6 h-6 text-orange-600" />
@@ -1298,7 +1298,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 1.2 }}
-                    className="bg-white rounded-2xl shadow-xl border border-red-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-red-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <AlertTriangle className="w-6 h-6 text-red-600" />
@@ -1398,7 +1398,7 @@ export default function FreeKundliPage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 1.2 }}
-                    className="bg-white rounded-2xl shadow-xl border border-green-100 p-6 mt-8"
+                    className="bg-white rounded-2xl shadow-xl border border-green-100 p-4 sm:p-6 mt-8"
                   >
                     <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <CheckCircle className="w-6 h-6 text-green-600" />
@@ -1549,24 +1549,24 @@ export default function FreeKundliPage() {
                 className="space-y-6"
               >
                 {/* Personal Information */}
-                <div className="bg-white rounded-2xl shadow-xl border border-orange-100 p-6">
+                <div className="bg-white rounded-2xl shadow-xl border border-orange-100 p-4 sm:p-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-4">Personal Information</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between">
+                    <div className="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-0.5">
                       <span className="text-gray-600">Name:</span>
-                      <span className="font-semibold">{kundliData?.personalInfo?.name}</span>
+                      <span className="font-semibold break-anywhere xs:text-right">{kundliData?.personalInfo?.name}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-0.5">
                       <span className="text-gray-600">Birth Date:</span>
-                      <span className="font-semibold">{kundliData?.personalInfo?.dateOfBirth}</span>
+                      <span className="font-semibold break-anywhere xs:text-right">{kundliData?.personalInfo?.dateOfBirth}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-0.5">
                       <span className="text-gray-600">Birth Time:</span>
-                      <span className="font-semibold">{kundliData?.personalInfo?.timeOfBirth}</span>
+                      <span className="font-semibold break-anywhere xs:text-right">{kundliData?.personalInfo?.timeOfBirth}</span>
                     </div>
-                    <div className="flex justify-between">
+                    <div className="flex flex-col xs:flex-row xs:items-start xs:justify-between gap-0.5">
                       <span className="text-gray-600">Birth Place:</span>
-                      <span className="font-semibold">{kundliData?.personalInfo?.placeOfBirth}</span>
+                      <span className="font-semibold break-anywhere xs:text-right">{kundliData?.personalInfo?.placeOfBirth}</span>
                     </div>
                   </div>
                 </div>
@@ -1665,7 +1665,7 @@ export default function FreeKundliPage() {
       )}
 
       {/* Consult Astrologer Section */}
-      <div className="py-16 lg:py-24 bg-gradient-to-br from-orange-50 to-yellow-50">
+      <div className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-orange-50 to-yellow-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -1673,11 +1673,11 @@ export default function FreeKundliPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
               Need Professional Guidance?
               <span className="block text-orange-600">Consult Our Expert Astrologers</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto mb-6 sm:mb-8">
               Get personalized insights, detailed analysis, and expert guidance from our certified Vedic astrologers. 
               They can provide deeper interpretations and remedies for your specific situation.
             </p>
@@ -1685,14 +1685,14 @@ export default function FreeKundliPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
                 href="/call-astrologer"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-xl hover:scale-105"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-xl hover:scale-105"
               >
                 <Star className="w-5 h-5 mr-2" />
                 Consult Our Astrologer
               </Link>
               <Link
                 href="/services"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-2xl border-2 border-orange-200 text-orange-600 font-bold hover:bg-orange-50 transition-all duration-300"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-2xl border-2 border-orange-200 text-orange-600 font-bold hover:bg-orange-50 transition-all duration-300"
               >
                 View All Services
               </Link>

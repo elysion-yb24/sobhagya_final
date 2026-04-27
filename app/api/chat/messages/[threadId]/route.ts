@@ -20,7 +20,7 @@ export async function GET(
   return proxyChatRequest(
     req,
     'GET',
-    `/thread/messages/${encodeURIComponent(threadId)}`,
+    `/chat/thread/messages/${encodeURIComponent(threadId)}`,
     { searchParams: sp }
   );
 }

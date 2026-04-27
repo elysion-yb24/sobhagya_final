@@ -12,7 +12,7 @@ const inter = Inter({
 const Footer: React.FC = () => {
   return (
     <footer
-      className={`bg-[#373737] text-white py-8 sm:py-10 md:py-12 lg:py-14 relative overflow-hidden ${inter.className}`}
+      className={`bg-gradient-to-b from-[#2d2d2d] to-[#1a1a1a] text-white py-12 sm:py-16 md:py-20 relative overflow-hidden border-t border-white/5 ${inter.className}`}
     >
       {/* Top Left Zodiac Background Image */}
       <div className="absolute top-[-50px] left-[-150px] w-[300px] h-[200px] sm:w-[400px] sm:h-[300px] opacity-10 pointer-events-none">
@@ -36,7 +36,7 @@ const Footer: React.FC = () => {
 
       <div className="section-container">
         {/* Title text */}
-        <h2 className="text-[#F7941D] text-center text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl mb-4 sm:mb-6 lg:mb-10 underline decoration-[#F7941D] underline-offset-8 px-2 sm:px-4">
+        <h2 className="text-[#F7941D] text-center text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 lg:mb-10 underline decoration-[#F7941D] underline-offset-8 px-3 sm:px-4 font-medium tracking-tight">
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
         </h2>
 
@@ -220,14 +220,14 @@ const Footer: React.FC = () => {
           {/* Mobile: Contact Info */}
           <div className="text-center space-y-3">
             <h3 className="text-[#F7971E] font-semibold text-sm">GET IN TOUCH</h3>
-                         <div className="space-y-2">
+           <div className="space-y-2">
               {/* Email */}
-               <div className="flex items-center justify-center">
-                 <span className="inline-flex items-center justify-center w-3 h-3 text-[#F7971E] mr-2 leading-none">◆</span>
-                 <a href="mailto:info@sobhagya.in" className="text-white hover:text-[#F7971E] text-sm transition-colors">
-                   info@sobhagya.in
-                 </a>
-               </div>
+              <div className="flex items-center justify-center">
+                <span className="inline-flex items-center justify-center w-3 h-3 text-[#F7971E] mr-2 leading-none">◆</span>
+                <a href="mailto:info@sobhagya.in" className="text-white hover:text-[#F7971E] text-sm transition-colors">
+                  info@sobhagya.in
+                </a>
+              </div>
               <p className="text-white text-xs opacity-80">(we will respond within 24 hours)</p>
               
               {/* Phone */}
@@ -244,15 +244,15 @@ const Footer: React.FC = () => {
                 <p className="text-white text-xs">Elysion Softwares Services</p>
                 <p className="text-white text-xs">Private Limited, Delhi, India</p>
               </div>
-                             <div className="flex items-center justify-center gap-3 pt-2">
-                <Link href="https://www.instagram.com/sobhagya.bhaakti" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300">
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <Link href="https://www.instagram.com/sobhagya.bhaakti" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300 hover:scale-110">
                   <img 
                     src="/instagram.svg" 
                     alt="Instagram" 
                     className="w-6 h-6"
                   />
                 </Link>
-                                  <Link href="https://linkedin.com/company/sobhagya" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300">
+                <Link href="https://linkedin.com/company/sobhagya" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300 hover:scale-110">
                     <img 
                       src="/linkedin.svg" 
                       alt="LinkedIn" 
@@ -301,47 +301,47 @@ const Footer: React.FC = () => {
           </div>
 
             {/* Mobile: Horizontal Links Grid */}
-            <div className="grid grid-cols-2 gap-4 xs:gap-6">
-              <div className="space-y-4">
-              <h3 className="text-[#F7971E] font-semibold text-sm tracking-wider text-left border-b border-[#F7971E]/20 pb-1">QUICK LINKS</h3>
-                <div className="space-y-3 pt-1">
-                  <Link href="/privacy-policy" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+            <div className="grid grid-cols-2 gap-3 xs:gap-5">
+              <div className="space-y-3">
+                <h3 className="text-[#F7971E] font-bold text-[13px] tracking-wider uppercase text-left border-b border-[#F7971E]/30 pb-1.5">Quick Links</h3>
+                <div className="space-y-2.5 pt-0.5">
+                  <Link href="/privacy-policy" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
                     <span className="text-[#F7971E] text-[10px]">◆</span>
                     <span className="leading-tight">Privacy Policy</span>
                   </Link>
-                  <Link href="/refund-policy" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                  <Link href="/refund-policy" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
                     <span className="text-[#F7971E] text-[10px]">◆</span>
                     <span className="leading-tight">Refund Policy</span>
                   </Link>
-                  <Link href="/shipping-policy" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                  <Link href="/shipping-policy" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
                     <span className="text-[#F7971E] text-[10px]">◆</span>
                     <span className="leading-tight">Shipping Policy</span>
                   </Link>
-                  <Link href="/terms-and-conditions" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
+                  <Link href="/terms-and-conditions" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
                     <span className="text-[#F7971E] text-[10px]">◆</span>
-                    <span className="leading-tight">T&C</span>
+                    <span className="leading-tight">T&amp;C</span>
                   </Link>
                 </div>
               </div>
 
-              <div className="space-y-4">
-              <h3 className="text-[#F7971E] font-semibold text-sm tracking-wider text-left border-b border-[#F7971E]/20 pb-1">SERVICES</h3>
-              <div className="space-y-3 pt-1">
-                <Link href="/services/gun-milan" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
-                  <span className="text-[#F7971E] text-[10px]">◆</span>
-                  <span className="leading-tight">Gun Milan</span>
-                </Link>
-                <Link href="/call-with-astrologer" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
-                  <span className="text-[#F7971E] text-[10px]">◆</span>
-                  <span className="leading-tight">Consult Now</span>
-                </Link>
-                <Link href="/blog" className="flex items-center gap-2 text-white hover:text-[#F7971E] text-xs transition-all active:scale-95">
-                  <span className="text-[#F7971E] text-[10px]">◆</span>
-                  <span className="leading-tight">Blog</span>
-                </Link>
+              <div className="space-y-3">
+                <h3 className="text-[#F7971E] font-bold text-[13px] tracking-wider uppercase text-left border-b border-[#F7971E]/30 pb-1.5">Services</h3>
+                <div className="space-y-2.5 pt-0.5">
+                  <Link href="/services/gun-milan" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Gun Milan</span>
+                  </Link>
+                  <Link href="/call-with-astrologer" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Consult Now</span>
+                  </Link>
+                  <Link href="/blog" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Blog</span>
+                  </Link>
+                </div>
               </div>
             </div>
-          </div>
 
 
         </div>

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
@@ -12,6 +12,8 @@ import {
   ShieldCheck,
   Star,
   Lock,
+  PhoneCall,
+  X,
 } from 'lucide-react';
 
 import { getApiBaseUrl } from '@/app/config/api';
@@ -150,7 +152,7 @@ const AstrologerCarousel = () => {
 
   if (loading) {
     return (
-      <section
+      <div
         className="py-20"
         style={{ background: COLORS.cream }}
       >
@@ -162,16 +164,17 @@ const AstrologerCarousel = () => {
             />
           ))}
         </div>
-      </section>
+      </div>
     );
   }
 
+  // Main return block
   return (
-    <section
+    <div
       className="py-20 overflow-hidden"
       style={{ background: COLORS.cream }}
     >
-      <div className="max-w-7xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-4">
 
         {/* Heading */}
         <div className="text-center mb-14">
@@ -182,8 +185,8 @@ const AstrologerCarousel = () => {
             TRUSTED GUIDANCE
           </p>
 
-          <h2 className="text-4xl md:text-6xl font-bold mt-3 text-black">
-            Consult with India’s{' '}
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mt-3 text-black leading-tight">
+            Consult with India's{' '}
             <span style={{ color: COLORS.primary }}>
               Best Astrologers
             </span>
@@ -231,25 +234,25 @@ const AstrologerCarousel = () => {
           {/* Prev */}
           <button
             onClick={prevSlide}
-            className="absolute left-0 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+            className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
             style={{
               background: COLORS.primary,
               color: COLORS.white,
             }}
           >
-            <ChevronLeft />
+            <ChevronLeft size={20} />
           </button>
 
           {/* Next */}
           <button
             onClick={nextSlide}
-            className="absolute right-0 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full shadow-lg flex items-center justify-center"
+            className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
             style={{
               background: COLORS.primary,
               color: COLORS.white,
             }}
           >
-            <ChevronRight />
+            <ChevronRight size={20} />
           </button>
 
           <div className="overflow-hidden">
@@ -283,7 +286,7 @@ const AstrologerCarousel = () => {
                       onClick={() =>
                         handleProfile(astro._id)
                       }
-                      className="bg-white rounded-[28px] p-5 shadow-md hover:shadow-xl cursor-pointer h-[470px] flex flex-col"
+                      className="bg-white rounded-[28px] p-5 border border-orange-100 shadow-md hover:shadow-xl cursor-pointer h-[470px] flex flex-col hover:border-orange-200"
                     >
 
                       {/* TOP AREA */}
@@ -425,81 +428,67 @@ const AstrologerCarousel = () => {
       <AnimatePresence>
         {showCallOptions && (
           <motion.div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center px-4"
+            className="fixed inset-0 bg-black/70 backdrop-blur-md z-[110] flex items-center justify-center px-4 font-['Inter']"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-3xl p-6 w-full max-w-md"
-              initial={{
-                scale: 0.9,
-                y: 30,
-              }}
-              animate={{
-                scale: 1,
-                y: 0,
-              }}
-              exit={{
-                scale: 0.9,
-                y: 30,
-              }}
+              className="bg-white rounded-[24px] p-6 w-full max-w-[320px] shadow-2xl relative overflow-hidden"
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
             >
-              <h3 className="text-2xl font-bold text-center">
-                Choose Call Type
-              </h3>
+              <button 
+                onClick={() => setShowCallOptions(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+              >
+                <X size={16} />
+              </button>
 
-              <div className="space-y-3 mt-6">
+              {/* Header with icon */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center mb-3 text-[#F7941D]">
+                  <PhoneCall size={24} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 text-center tracking-tight">
+                  Choose Call Type
+                </h3>
+                <p className="text-gray-500 text-center text-xs mt-1 font-medium leading-relaxed">
+                  Connect with <span className="text-[#F7941D] font-semibold">{selectedCallAstrologer?.name}</span>
+                </p>
+              </div>
+
+              <div className="space-y-3">
                 <button
-                  onClick={() =>
-                    chooseCallType(
-                      'audio'
-                    )
-                  }
-                  className="w-full h-12 rounded-2xl text-white font-semibold flex items-center justify-center gap-2"
-                  style={{
-                    background:
-                      COLORS.primary,
-                  }}
+                  onClick={() => chooseCallType('audio')}
+                  className="w-full bg-[#F7941D] hover:bg-[#e8891a] text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md shadow-orange-500/10 transition-all duration-200"
                 >
-                  <Phone size={18} />
-                  Audio Call
+                  <Phone size={16} strokeWidth={2.5} />
+                  <span className="text-sm">Audio Call</span>
                 </button>
 
                 <button
-                  onClick={() =>
-                    chooseCallType(
-                      'video'
-                    )
-                  }
-                  className="w-full h-12 rounded-2xl font-semibold flex items-center justify-center gap-2"
-                  style={{
-                    background:
-                      COLORS.gold,
-                    color:
-                      COLORS.dark,
-                  }}
+                  onClick={() => chooseCallType('video')}
+                  className="w-full bg-[#333333] hover:bg-[#222222] text-white py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-3 shadow-md shadow-gray-900/10 transition-all duration-200"
                 >
-                  <Video size={18} />
-                  Video Call
-                </button>
-
-                <button
-                  onClick={() =>
-                    setShowCallOptions(
-                      false
-                    )
-                  }
-                  className="w-full h-12 rounded-2xl bg-gray-100"
-                >
-                  Cancel
+                  <Video size={16} strokeWidth={2.5} />
+                  <span className="text-sm">Video Call</span>
                 </button>
               </div>
+
+              <button
+                onClick={() => setShowCallOptions(false)}
+                className="w-full mt-5 text-gray-400 py-1 text-[11px] font-bold uppercase tracking-widest hover:text-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </section>
+    </div>
   );
 };
 

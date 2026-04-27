@@ -429,15 +429,15 @@ const WalletPage = () => {
           />
         </div>
 
-        <div className="relative p-6 pb-8">
-          <div className="flex justify-between items-center mb-5">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
-                <WalletIcon className="h-6 w-6" />
+        <div className="relative p-5 sm:p-6 pb-7 sm:pb-8">
+          <div className="flex justify-between items-center mb-4 sm:mb-5 gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className="p-2.5 sm:p-3 bg-white/20 backdrop-blur-sm rounded-2xl shrink-0">
+                <WalletIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">My Wallet</h1>
-                <p className="text-white/80 text-sm">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight truncate">My Wallet</h1>
+                <p className="text-white/80 text-xs sm:text-sm truncate">
                   Manage your balance & consultations
                 </p>
               </div>
@@ -445,61 +445,55 @@ const WalletPage = () => {
             <motion.button
               onClick={refreshWalletBalance}
               disabled={isFetching}
-              className="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors disabled:opacity-50"
+              aria-label="Refresh wallet balance"
+              className="shrink-0 p-2 sm:p-2.5 rounded-xl bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors disabled:opacity-50"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               <RefreshCw
-                className={`h-5 w-5 ${isFetching ? "animate-spin" : ""}`}
+                className={`h-4 w-4 sm:h-5 sm:w-5 ${isFetching ? "animate-spin" : ""}`}
               />
             </motion.button>
           </div>
 
           <motion.div
-            className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20"
+            className="bg-white/10 backdrop-blur-sm rounded-2xl p-5 sm:p-6 border border-white/20"
             whileHover={{ scale: 1.01 }}
             transition={{ duration: 0.2 }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-white/20 rounded-xl">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className="p-2.5 bg-white/20 rounded-xl shrink-0">
                   <IndianRupee className="h-5 w-5" />
                 </div>
-                <div>
-                  <p className="text-white/80 text-sm font-medium">
+                <div className="min-w-0">
+                  <p className="text-white/80 text-xs sm:text-sm font-medium">
                     Current Balance
                   </p>
-                  <div className="flex items-center gap-2">
-                    <AnimatePresence mode="wait">
-                      <motion.span
-                        key={balanceDisplay}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="text-3xl font-bold tracking-tight"
-                      >
-                        {showBalance ? balanceDisplay : "₹***.**"}
-                      </motion.span>
-                    </AnimatePresence>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight">
+                      {showBalance ? balanceDisplay : "₹ ••••"}
+                    </p>
                     <button
-                      onClick={() => setShowBalance(!showBalance)}
-                      className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
+                      onClick={() => setShowBalance((v) => !v)}
+                      aria-label={showBalance ? "Hide balance" : "Show balance"}
+                      className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
                     >
                       {showBalance ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff className="h-4 w-4 text-white/80" />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 text-white/80" />
                       )}
                     </button>
                   </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="flex items-center gap-2 text-green-300">
+              <div className="text-right shrink-0">
+                <div className="flex items-center gap-1.5 text-green-300 justify-end">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm font-medium">Live</span>
+                  <span className="text-xs sm:text-sm font-semibold">Live</span>
                 </div>
-                <p className="text-white/50 text-xs mt-1">Synced with server</p>
+                <p className="text-white/50 text-[10px] sm:text-xs mt-1">Synced with server</p>
               </div>
             </div>
           </motion.div>

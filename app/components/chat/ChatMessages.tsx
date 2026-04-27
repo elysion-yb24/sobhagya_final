@@ -1,6 +1,6 @@
 'use client'
 
-import React, { forwardRef, useState } from 'react'
+import React, { forwardRef, useState, useMemo } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -46,350 +46,224 @@ interface ChatMessagesProps {
   } | null
   onReplyToMessage: (message: Message) => void
   onOptionSelect?: (optionId: string, messageId: string) => void
-  /** Called when the user clicks the retry icon on a failed message bubble.
-   *  Receives the bubble's `clientMessageId` so the parent can re-emit. */
   onRetryMessage?: (clientMessageId: string) => void
   remainingTime?: number
   sessionStatus?: 'active' | 'ended' | 'pending'
   automatedFlowCompleted?: boolean
 }
 
-const TypingIndicator = ({ selectedSession }: { selectedSession?: any }) => {
+/* ----------------------------------------------------------------------- */
+/*                          Devotional chat wallpaper                       */
+/* ----------------------------------------------------------------------- */
+
+const CHAT_BG_PATTERN =
+  "url(\"data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23F7941D' stroke-opacity='0.04'%3E%3Cpath d='M60 10 L65 55 L110 60 L65 65 L60 110 L55 65 L10 60 L55 55 Z'/%3E%3Ccircle cx='60' cy='60' r='15'/%3E%3C/g%3E%3C/svg%3E\")"
+
+const CHAT_BG_STYLE: React.CSSProperties = {
+  backgroundColor: '#FDF8F0',
+  backgroundImage: `${CHAT_BG_PATTERN}, linear-gradient(180deg, rgba(253, 248, 240, 0.8) 0%, rgba(255, 255, 255, 0.4) 100%)`,
+  backgroundRepeat: 'repeat',
+  backgroundSize: '120px 120px',
+  backgroundAttachment: 'fixed'
+}
+
+/* ----------------------------------------------------------------------- */
+/*                              Sub components                              */
+/* ----------------------------------------------------------------------- */
+
+const TypingIndicator = () => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 10, scale: 0.9 }}
-      transition={{ duration: 0.2 }}
-      className="flex items-end gap-1 md:gap-2 mb-2 justify-start"
-      style={{ height: '40px' }} // Fixed height to prevent shifting
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex items-end gap-2 mb-4 justify-start ml-2"
     >
-      {/* Always show Sobhagya logo for bot typing */}
-      <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-        <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={24} height={24} className="w-4 h-4 md:w-6 md:h-6 object-contain" />
+      <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden ring-2 ring-orange-50 shadow-sm">
+        <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={20} height={20} className="w-5 h-5 object-contain" />
       </div>
-      
-      <div className="bg-white text-gray-800 px-3 md:px-4 py-2 md:py-3 rounded-2xl rounded-bl-sm shadow-lg relative max-w-xs min-h-[36px] md:min-h-[40px] flex items-center">
-        <div className="flex items-center justify-center">
-          <div className="flex space-x-1">
-            <motion.div
-              className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.4, 1, 0.4]
+      <div className="bg-white text-gray-500 px-4 py-2.5 rounded-2xl rounded-bl-none shadow-sm border border-orange-50">
+        <div className="flex items-center gap-1.5 h-4">
+          {[0, 0.2, 0.4].map((delay, i) => (
+            <motion.span
+              key={i}
+              className="w-1.5 h-1.5 bg-orange-300 rounded-full"
+              animate={{ 
+                y: [0, -4, 0],
+                backgroundColor: ['#FDBA74', '#F97316', '#FDBA74']
               }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                repeatType: "loop",
-                ease: "easeInOut",
-                delay: 0
-              }}
+              transition={{ duration: 0.8, repeat: Infinity, ease: 'easeInOut', delay }}
             />
-            <motion.div
-              className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.4, 1, 0.4]
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                repeatType: "loop",
-                ease: "easeInOut",
-                delay: 0.2
-              }}
-            />
-            <motion.div
-              className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.4, 1, 0.4]
-              }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                repeatType: "loop",
-                ease: "easeInOut",
-                delay: 0.4
-              }}
-            />
-          </div>
+          ))}
         </div>
       </div>
     </motion.div>
-  );
-}
-
-const LoadingSpinner = () => (
-  <div className="flex items-center justify-center">
-    <div className="relative">
-      <div className="w-6 h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
-    </div>
-  </div>
-)
-
-const WaitingForAstrologer = ({ astrologerName }: { astrologerName?: string }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: 10 }}
-    className="flex justify-center my-3 sm:my-4 px-2"
-  >
-    <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 text-orange-700 px-3 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm shadow-sm max-w-xs sm:max-w-none">
-      <div className="flex items-center gap-2 sm:gap-3">
-        <LoadingSpinner />
-        <span className="text-center">Waiting for {astrologerName || 'astrologer'} to join...</span>
-      </div>
-    </div>
-  </motion.div>
-)
-
-const OptionButton = ({ option, messageId, onOptionSelect, isSelected }: {
-  option: { optionId: string; optionText: string; disabled?: boolean }
-  messageId: string
-  onOptionSelect: (optionId: string, messageId: string) => void
-  isSelected?: boolean
-}) => (
-  <motion.button
-    whileHover={{ scale: isSelected ? 1 : 1.02 }}
-    whileTap={{ scale: isSelected ? 1 : 0.98 }}
-    onClick={() => !option.disabled && !isSelected && onOptionSelect(option.optionId, messageId)}
-    disabled={option.disabled || isSelected}
-    className={`px-3 md:px-4 py-2 md:py-2.5 m-1 rounded-xl text-xs md:text-sm font-medium transition-all duration-300 border-2 min-h-[44px] flex items-center justify-center ${
-      option.disabled
-        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
-        : isSelected
-        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-green-500 shadow-lg cursor-default transform scale-105'
-        : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 hover:shadow-lg border-orange-500 hover:border-orange-600 active:scale-95 hover:scale-105'
-    }`}
-  >
-    {isSelected && (
-      <motion.span
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        className="mr-2"
-      >
-        ✓
-      </motion.span>
-    )}
-    {option.optionText}
-  </motion.button>
-)
-
-const OptionsContainer = ({ options, messageId, onOptionSelect, selectedOptionId }: {
-  options: Array<{ optionId: string; optionText: string; disabled?: boolean }>
-  messageId: string
-  onOptionSelect: (optionId: string, messageId: string) => void
-  selectedOptionId?: string
-}) => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-3 flex flex-wrap gap-2">
-    {options.map((option, index) => (
-      <OptionButton 
-        key={`${messageId}-opt-${option.optionId}-${index}`} 
-        option={option} 
-        messageId={messageId} 
-        onOptionSelect={onOptionSelect}
-        isSelected={selectedOptionId === option.optionId}
-      />
-    ))}
-  </motion.div>
-)
-
-const MessageTicks = ({ status }: { status?: 'sent' | 'delivered' | 'read' | 'failed' }) => {
-  if (!status) return null
-
-  return (
-    <span className="inline-flex ml-1">
-      {status === 'sent' && (
-        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-          <path d="M5 8L7 10L11 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )}
-      {status === 'delivered' && (
-        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-          <path d="M2 8L4 10L8 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 8L10 10L14 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )}
-      {status === 'read' && (
-        <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none">
-          <path d="M2 8L4 10L8 6" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M8 8L10 10L14 6" stroke="#2196F3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )}
-      {status === 'failed' && (
-        <svg className="w-4 h-4 text-red-200" viewBox="0 0 16 16" fill="none" aria-label="Failed to send">
-          <circle cx="8" cy="8" r="7" fill="#ef4444" />
-          <path d="M8 4v5" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
-          <circle cx="8" cy="11.5" r="0.9" fill="white" />
-        </svg>
-      )}
-    </span>
   )
 }
 
-const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSelect, selectedOptionId, onRetryMessage }: {
+const MessageTicks = ({ status }: { status?: 'sent' | 'delivered' | 'read' | 'failed' }) => {
+  if (!status) return null
+  if (status === 'failed') {
+    return (
+      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10" className="text-red-500 fill-red-50" />
+        <line x1="12" y1="8" x2="12" y2="12" strokeWidth="2" strokeLinecap="round" className="text-red-500" />
+        <line x1="12" y1="16" x2="12.01" y2="16" strokeWidth="2" strokeLinecap="round" className="text-red-500" />
+      </svg>
+    )
+  }
+  
+  const isRead = status === 'read'
+  const color = isRead ? '#4FC3F7' : 'currentColor'
+  
+  return (
+    <div className={`flex items-center ${isRead ? 'text-[#4FC3F7]' : 'text-gray-400'}`}>
+      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+        {status !== 'sent' && (
+          <polyline points="20 6 9 17 4 12" className="translate-x-1" />
+        )}
+      </svg>
+    </div>
+  )
+}
+
+const formatBubbleTime = (iso?: string) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+}
+
+/* ----------------------------------------------------------------------- */
+/*                              MessageBubble                               */
+/* ----------------------------------------------------------------------- */
+
+const MessageBubble = ({
+  message,
+  showAvatar,
+  showTail,
+  onOptionSelect,
+  selectedOptionId,
+  onRetryMessage,
+}: {
   message: Message
-  userId: string | null
-  userRole?: string | null
-  selectedSession?: {
-    userId?: { _id: string; name?: string; avatar?: string } | string
-    providerId: { _id: string; name?: string; avatar?: string } | string
-  } | null
+  showAvatar: boolean
+  showTail: boolean
   onOptionSelect?: (optionId: string, messageId: string) => void
   selectedOptionId?: string
   onRetryMessage?: (clientMessageId: string) => void
 }) => {
-  if (message.sender === 'system' && !message.isAutomated) {
+  const isUser = message.sender === 'user'
+  
+  // System / Info messages
+  if (message.sender === 'system' || message.messageType === 'informative') {
     return (
-      <div className="flex justify-center my-2 px-2">
-        <div className="bg-gray-200 text-gray-700 text-xs sm:text-sm px-3 py-2 rounded-lg border border-gray-300 italic text-center max-w-xs sm:max-w-sm">
-          {message.text || 'No message content'}
+      <div className="flex justify-center my-4 px-4">
+        <div className="bg-orange-50/80 backdrop-blur-sm text-orange-800 text-[11px] sm:text-xs font-medium px-4 py-1.5 rounded-full border border-orange-100 shadow-sm text-center max-w-[85%] leading-relaxed">
+          {message.text}
         </div>
       </div>
     )
   }
 
-  if (message.text && (message.text.includes('Estimated Time') || message.text.includes('Our team is working'))) {
-    return (
-      <div className="flex justify-center my-2 px-2">
-        <div className="bg-orange-50 text-orange-700 text-xs sm:text-sm px-3 py-2 rounded-lg border border-orange-200 italic text-center max-w-xs sm:max-w-sm">
-          {message.text || 'No message content'}
-        </div>
-      </div>
-    )
-  }
-
-  // Special styling for astrologer join messages
-  if (message.text && message.text.includes('has joined the session')) {
-    return (
-      <div className="flex justify-center my-3 px-2">
-        <div className="bg-green-50 text-green-700 text-sm sm:text-base px-4 py-3 rounded-lg border border-green-200 font-medium text-center shadow-sm max-w-xs sm:max-w-sm">
-          {message.text || 'No message content'}
-        </div>
-      </div>
-    )
-  }
-
-  if (message.isAutomated) {
-    const hasOptions = message.options && message.options.length > 0 && message.messageId;
-    
-    return (
-      <div className="flex items-end gap-1 sm:gap-2 mb-2 justify-start">
-        <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-          <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={24} height={24} className="w-4 h-4 sm:w-6 sm:h-6 object-contain" />
-        </div>
-        <div className="relative max-w-[85%] sm:max-w-xs md:max-w-md">
-          {/* Message bubble - only show if there's text content */}
-          {message.text && message.text !== 'No message content' && (
-            <div className="bg-white text-gray-800 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-bl-sm shadow-sm mb-2">
-              <div className="break-words text-sm sm:text-base leading-relaxed">{message.text}</div>
-              <div className="text-xs mt-1 flex justify-end items-center text-gray-500">
-                {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-              </div>
-            </div>
-          )}
-          
-          {/* Options container - separate from message bubble */}
-          {hasOptions && message.options && message.messageId && (
-            <OptionsContainer 
-              options={message.options} 
-              messageId={message.messageId} 
-              onOptionSelect={onOptionSelect || (() => {})} 
-              selectedOptionId={selectedOptionId}
-            />
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  const getBubbleClasses = (msg: Message) =>
-    msg.sender === 'user'
-      ? 'bg-orange-500 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-br-sm shadow-sm'
-      : 'bg-white text-gray-800 px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-bl-sm shadow-sm'
-
-  const getAvatar = () => {
-    if (message.sender === 'user') {
-      return message.sentByProfileImage ||
-        (typeof selectedSession?.userId !== 'string' ? selectedSession?.userId?.avatar : null)
-    }
-    if (message.sender === 'astrologer') {
-      return message.sentByProfileImage ||
-        (typeof selectedSession?.providerId !== 'string' ? selectedSession?.providerId?.avatar : null)
-    }
-    return null
-  }
-
-  const avatar = getAvatar()
+  const bubbleRadius = isUser 
+    ? `rounded-2xl ${showTail ? 'rounded-tr-none' : ''}`
+    : `rounded-2xl ${showTail ? 'rounded-tl-none' : ''}`
 
   return (
-    <div 
-      className={`flex items-end gap-2 mb-4 ${
-        message.sender === 'user' ? 'flex-row-reverse' : 'flex-row'
-      }`}
-    >
-      {/* Avatar with Ring/Shadow */}
-      <div className="flex-shrink-0 mb-1">
-        {avatar ? (
-          <img 
-            src={avatar} 
-            alt="avatar" 
-            className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-gray-100" 
-          />
-        ) : (
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm ${
-            message.sender === 'user' 
-              ? 'bg-orange-100 text-orange-600' 
-              : 'bg-gray-100 text-gray-600'
-          }`}>
-            {message.sender === 'user' ? 'U' : 'A'}
+    <div className={`flex w-full mb-1 group ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex max-w-[85%] sm:max-w-[75%] gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        
+        {/* Avatar Container */}
+        {!isUser && (
+          <div className="flex-shrink-0 w-8 h-8 self-end mb-1">
+            {showAvatar ? (
+              message.isAutomated ? (
+                <div className="w-full h-full rounded-full bg-orange-100 flex items-center justify-center ring-2 ring-white shadow-sm overflow-hidden">
+                  <Image src="/sobhagya-logo.svg" alt="S" width={20} height={20} />
+                </div>
+              ) : message.sentByProfileImage ? (
+                <img src={message.sentByProfileImage} alt="" className="w-full h-full rounded-full object-cover ring-2 ring-white shadow-sm" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-orange-400 to-amber-500 text-white flex items-center justify-center font-bold text-xs ring-2 ring-white shadow-sm">
+                  {(message.sentByName || 'A').charAt(0)}
+                </div>
+              )
+            ) : null}
           </div>
         )}
-      </div>
 
-      {/* Message Bubble Container */}
-      <div className={`relative max-w-[75%] sm:max-w-[70%] group`}>
-        <div className={`
-          ${getBubbleClasses(message)}
-          px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-200
-          ${message.sender === 'user'
-            ? `rounded-br-none ${message.deliveryStatus === 'failed'
-                ? 'bg-gradient-to-br from-red-500 to-red-600 text-white'
-                : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'}`
-            : 'rounded-bl-none bg-white border border-gray-100 text-gray-800'
-          }
-        `}>
-          <div className="break-words text-[14px] sm:text-[15px] leading-relaxed">
-            {message.text || 'No message content'}
+        <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+          <div className="relative group">
+            {/* Message Tail SVG */}
+            {showTail && (
+              <div className={`absolute top-0 w-3 h-4 ${isUser ? '-right-2' : '-left-2'}`}>
+                <svg viewBox="0 0 12 16" className={`w-full h-full ${isUser ? 'text-[#FEF3C7]' : 'text-white'}`} fill="currentColor">
+                  {isUser ? (
+                    <path d="M0 0 C0 0, 12 0, 12 0 C12 0, 12 16, 12 16 C12 16, 0 8, 0 0" />
+                  ) : (
+                    <path d="M12 0 C12 0, 0 0, 0 0 C0 0, 0 16, 0 16 C0 16, 12 8, 12 0" />
+                  )
+                  }
+                </svg>
+              </div>
+            )}
+
+            {/* Bubble Content */}
+            <div className={`px-3 py-2 shadow-sm ${bubbleRadius} ${
+              isUser 
+                ? 'bg-[#FEF3C7] text-orange-950 border border-orange-100/50' 
+                : 'bg-white text-gray-800 border border-orange-50'
+            }`}>
+              {/* Sender Name for non-user group messages */}
+              {!isUser && showAvatar && message.sentByName && !message.isAutomated && (
+                <div className="text-[11px] font-bold text-orange-600 mb-0.5 px-0.5">
+                  {message.sentByName}
+                </div>
+              )}
+
+              <div className="text-[14px] sm:text-[15px] leading-normal break-words whitespace-pre-wrap min-w-[50px]">
+                {message.text}
+                {/* Float time/ticks to bottom right */}
+                <div className="h-4 float-right w-16 md:w-20"></div>
+              </div>
+
+              {/* Absolute positioned time and status */}
+              <div className={`absolute bottom-1.5 right-2 flex items-center gap-1 leading-none select-none ${isUser ? 'text-orange-700/60' : 'text-gray-400'}`}>
+                <span className="text-[10px] sm:text-[11px] font-medium uppercase">
+                  {formatBubbleTime(message.timestamp)}
+                </span>
+                {isUser && <MessageTicks status={message.deliveryStatus || 'sent'} />}
+              </div>
+            </div>
           </div>
-        </div>
 
-        {message.options && message.options.length > 0 && message.messageId && (
-          <OptionsContainer
-            options={message.options}
-            messageId={message.messageId}
-            onOptionSelect={onOptionSelect || (() => {})}
-            selectedOptionId={selectedOptionId}
-          />
-        )}
-        <div className={`text-xs mt-1 flex justify-end items-center gap-1 ${message.sender === 'user' ? 'text-gray-500' : 'text-gray-500'}`}>
-          {message.deliveryStatus === 'failed' && message.sender === 'user' && (
-            <span className="text-red-500 font-medium mr-1">Failed</span>
+          {/* Options for automated flows */}
+          {message.options && message.options.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {message.options.map((opt) => (
+                <button
+                  key={opt.optionId}
+                  disabled={opt.disabled || !!selectedOptionId}
+                  onClick={() => onOptionSelect?.(opt.optionId, message.messageId!)}
+                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 border shadow-sm active:scale-95 ${
+                    selectedOptionId === opt.optionId
+                      ? 'bg-orange-500 text-white border-orange-600 shadow-orange-100'
+                      : 'bg-white text-orange-600 border-orange-200 hover:bg-orange-50'
+                  }`}
+                >
+                  {opt.optionText}
+                </button>
+              ))}
+            </div>
           )}
-          {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
-          {message.sender === 'user' && (
-            <span className={message.deliveryStatus === 'failed' ? 'text-red-500' : 'text-gray-400'}>
-              <MessageTicks status={message.deliveryStatus || 'sent'} />
-            </span>
-          )}
-          {message.sender === 'user' && message.deliveryStatus === 'failed' && onRetryMessage && message.clientMessageId && (
-            <button
-              type="button"
-              onClick={() => onRetryMessage(message.clientMessageId!)}
-              className="ml-1 inline-flex items-center text-red-600 hover:text-red-700 underline-offset-2 hover:underline text-xs font-medium"
-              title="Retry sending"
+
+          {/* Retry Button */}
+          {isUser && message.deliveryStatus === 'failed' && (
+            <button 
+              onClick={() => onRetryMessage?.(message.clientMessageId!)}
+              className="mt-1 text-red-500 text-[11px] font-bold hover:underline px-2"
             >
               Retry
             </button>
@@ -400,124 +274,89 @@ const MessageBubble = ({ message, userId, userRole, selectedSession, onOptionSel
   )
 }
 
-const formatDateLabel = (iso?: string): string => {
-  if (!iso) return ''
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return ''
-  const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
-  const startOfMessage = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-  const diffDays = Math.round((startOfToday - startOfMessage) / (24 * 60 * 60 * 1000))
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Yesterday'
-  if (diffDays > 0 && diffDays < 7) {
-    return d.toLocaleDateString([], { weekday: 'long' })
-  }
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: now.getFullYear() === d.getFullYear() ? undefined : 'numeric' })
-}
+/* ----------------------------------------------------------------------- */
+/*                            Date separator                                */
+/* ----------------------------------------------------------------------- */
 
 const DateSeparator = ({ label }: { label: string }) => (
-  <div className="flex justify-center my-3 px-2">
-    <div className="bg-white/80 backdrop-blur-sm text-gray-600 text-xs font-medium px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+  <div className="flex justify-center my-6 sticky top-2 z-20">
+    <div className="bg-[#E1F3FB] text-[#54656F] text-[11px] font-bold px-3 py-1.5 rounded-lg shadow-sm uppercase tracking-wider border border-white/50">
       {label}
     </div>
   </div>
 )
 
+const formatDateLabel = (iso?: string): string => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diffDays = Math.round((today.getTime() - msgDate.getTime()) / (24 * 60 * 60 * 1000))
+  
+  if (diffDays === 0) return 'Today'
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return d.toLocaleDateString([], { weekday: 'long' })
+  return d.toLocaleDateString([], { day: 'numeric', month: 'long', year: now.getFullYear() === d.getFullYear() ? undefined : 'numeric' })
+}
+
+/* ----------------------------------------------------------------------- */
+/*                                  Main                                   */
+/* ----------------------------------------------------------------------- */
+
 const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
-  ({ messages, typingMessage, userId, userRole, selectedSession, onReplyToMessage, onOptionSelect, onRetryMessage, sessionStatus, automatedFlowCompleted }, ref) => {
-    // State to track selected options for each message
+  ({ messages, typingMessage, userRole, onOptionSelect, onRetryMessage }, ref) => {
     const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
-    
-    // Enhanced option select handler that tracks selection
+
     const handleOptionSelect = (optionId: string, messageId: string) => {
-      // Mark this option as selected for this message
-      setSelectedOptions(prev => ({
-        ...prev,
-        [messageId]: optionId
-      }))
-      
-      // Call the original handler
-      if (onOptionSelect) {
-        onOptionSelect(optionId, messageId)
-      }
+      setSelectedOptions(prev => ({ ...prev, [messageId]: optionId }))
+      onOptionSelect?.(optionId, messageId)
     }
-    const filteredMessages = userRole === 'friend'
-      ? messages.filter(msg => msg && !msg.isAutomated && msg.sender !== 'system')
-      : messages.filter(msg => msg && msg.id) // Ensure messages have valid IDs
 
-    const sortedMessages = [...filteredMessages].sort((a, b) => {
-      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0
-      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0
-      return timeA - timeB
-    })
-
-    // ✅ Simple deduplication without complex key generation
-    const seenIds = new Set();
-    const uniqueMessages = sortedMessages.filter((message, index) => {
-      // Use multiple identifiers to avoid duplicates
-      const identifier = message.id || message.clientMessageId || message.messageId || `${message.timestamp}-${message.text}-${index}`;
-      
-      if (seenIds.has(identifier)) {
-        return false;
-      }
-      seenIds.add(identifier);
-      return true;
-    }).map((msg, index) => ({
-      ...msg,
-      internalIndex: index // Add guaranteed unique index
-    }));
+    const processedMessages = useMemo(() => {
+      const filtered = messages.filter(m => m && (userRole !== 'friend' || (!m.isAutomated && m.sender !== 'system')))
+      return [...filtered].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    }, [messages, userRole])
 
     return (
-      <div
+      <div 
         ref={ref}
-        className="h-full overflow-y-auto px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 relative"
-        style={{
-          height: '100%',
-          maxHeight: '100%',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          WebkitOverflowScrolling: 'touch', // iOS smooth scrolling
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f0f0f0' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          backgroundColor: '#f0f2f5'
-        }}
+        className="h-full overflow-y-auto px-3 sm:px-6 py-4 relative scroll-smooth overscroll-contain"
+        style={CHAT_BG_STYLE}
       >
-        {/* Background logo - responsive positioning */}
-        <div className="fixed flex items-center justify-center pointer-events-none z-0"
-          style={{ 
-            top: '50%', 
-            left: typeof window !== 'undefined' && window.innerWidth < 768 ? '50%' : 'calc(50% + 160px)', 
-            transform: 'translate(-50%, -50%)', 
-            width: '100vw', 
-            height: '100vh' 
-          }}>
-          <div className="opacity-5 md:opacity-10 blur-sm transform scale-75 sm:scale-100 md:scale-150">
-            <Image src="/sobhagya-logo.svg" alt="Sobhagya Logo" width={384} height={384} className="w-48 h-48 sm:w-64 sm:h-64 md:w-96 md:h-96 object-contain" />
-          </div>
+        {/* Sacred Watermark */}
+        <div className="fixed inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] z-0">
+          <Image src="/sobhagya-logo.svg" alt="" width={400} height={400} className="w-64 h-64 sm:w-96 sm:h-96" />
         </div>
 
-        <div className="relative z-10">
+        <div className="relative z-10 max-w-4xl mx-auto flex flex-col">
           <AnimatePresence initial={false}>
-            {uniqueMessages.map((msg, index) => {
-              const prev = index > 0 ? uniqueMessages[index - 1] : null
-              const currentLabel = formatDateLabel(msg.timestamp)
-              const prevLabel = prev ? formatDateLabel(prev.timestamp) : null
-              const showSeparator = currentLabel && currentLabel !== prevLabel
+            {processedMessages.map((msg, idx) => {
+              const prev = idx > 0 ? processedMessages[idx - 1] : null
+              const next = idx < processedMessages.length - 1 ? processedMessages[idx + 1] : null
+              
+              const dateLabel = formatDateLabel(msg.timestamp)
+              const prevDateLabel = prev ? formatDateLabel(prev.timestamp) : null
+              const showDate = dateLabel !== prevDateLabel
+
+              // Grouping logic for WhatsApp style
+              const isFirstInGroup = !prev || prev.sender !== msg.sender || showDate
+              const isLastInGroup = !next || next.sender !== msg.sender || formatDateLabel(next.timestamp) !== dateLabel
+              
               return (
-                <React.Fragment key={`group-${msg.internalIndex}-${msg.id || msg.clientMessageId || msg.messageId || index}`}>
-                  {showSeparator && <DateSeparator label={currentLabel} />}
+                <React.Fragment key={msg.id || msg.clientMessageId || idx}>
+                  {showDate && <DateSeparator label={dateLabel} />}
                   <motion.div
-                    key={`message-${msg.internalIndex}-${msg.id || msg.clientMessageId || msg.messageId || index}`}
-                    initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                    transition={{ duration: 0.15, delay: index * 0.02 }}
+                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className={isLastInGroup ? 'mb-3' : 'mb-0.5'}
                   >
                     <MessageBubble
                       message={msg}
-                      userId={userId}
-                      userRole={userRole}
-                      selectedSession={selectedSession}
+                      showAvatar={isLastInGroup}
+                      showTail={isFirstInGroup}
                       onOptionSelect={handleOptionSelect}
                       selectedOptionId={selectedOptions[msg.messageId || '']}
                       onRetryMessage={onRetryMessage}
@@ -527,19 +366,7 @@ const ChatMessages = forwardRef<HTMLDivElement, ChatMessagesProps>(
               )
             })}
 
-
-            {typingMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="z-20"
-                style={{ minHeight: '44px' }} // Reserve space to prevent jumping
-              >
-                <TypingIndicator selectedSession={selectedSession} />
-              </motion.div>
-            )}
+            {typingMessage && <TypingIndicator key="typing" />}
           </AnimatePresence>
         </div>
       </div>

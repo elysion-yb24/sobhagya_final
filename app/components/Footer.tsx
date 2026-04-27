@@ -184,7 +184,7 @@ const Footer: React.FC = () => {
                       href="https://apps.apple.com/in/app/sobhagya/id6755958411"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
+                      className="inline-flex no-underline hover:opacity-80 transition-opacity duration-300"
                     >
                       <Image
                         src="/app-store.svg"
@@ -198,7 +198,7 @@ const Footer: React.FC = () => {
                       href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
+                      className="inline-flex no-underline hover:opacity-80 transition-opacity duration-300"
                     >
                       <Image
                         src="/play-store.svg"
@@ -263,36 +263,36 @@ const Footer: React.FC = () => {
               
               {/* Download Our App Section - Mobile */}
               <div className="pt-3 border-t border-white/20 mt-3">
-                <p className="text-white text-xs opacity-90 mb-2 text-center">
+                <p className="text-white text-xs opacity-90 mb-3 text-center">
                   Download our app for instant astrology guidance on the go!
                 </p>
-                <div className="flex flex-row space-x-3 justify-center">
+                <div className="flex flex-row gap-3 justify-center items-center">
                   <Link
                     href="https://apps.apple.com/in/app/sobhagya/id6755958411"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
+                    className="inline-flex no-underline hover:opacity-80 transition-opacity duration-300"
                   >
                     <Image
                       src="/app-store.svg"
                       alt="Download on App Store"
-                      width={40}
-                      height={40}
-                      className="w-10 h-10"
+                      width={140}
+                      height={42}
+                      className="h-10 w-auto"
                     />
                  </Link>
                   <Link
                     href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity duration-300"
+                    className="inline-flex no-underline hover:opacity-80 transition-opacity duration-300"
                   >
                     <Image
                       src="/play-store.svg"
                       alt="Download on Google Play"
-                      width={40}
-                      height={40}
-                      className="w-10 h-10"
+                      width={140}
+                      height={42}
+                      className="h-10 w-auto"
                     />
                  </Link>
                 </div>

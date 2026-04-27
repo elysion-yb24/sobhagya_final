@@ -199,17 +199,17 @@ const HeroSection: React.FC = () => {
       <div className="relative">
         <div className="relative z-20 -mt-2 xs:-mt-4 sm:-mt-20 md:-mt-8 lg:-mt-14 mb-6 sm:mb-10 md:mb-12">
           <div className="section-container">
-            {/* Mobile: Compact horizontal buttons */}
-            <div className="flex justify-start gap-3 sm:hidden px-1 overflow-x-auto scrollbar-hide scroll-touch pb-1">
+            {/* Mobile: 3-column grid that fits the viewport */}
+            <div className="grid grid-cols-3 gap-2 xs:gap-3 sm:hidden px-1">
               {navigationCards.map((card, idx) => (
                 <Link
                   key={card.id}
                   href={card.href}
                   target={card.isExternal ? "_blank" : undefined}
-                  className="flex-shrink-0 min-w-[132px]"
+                  className="block w-full"
                 >
                   <motion.div
-                    className="premium-surface rounded-2xl px-3 py-3.5 min-h-[108px] flex flex-col items-center justify-center shadow-lg text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card"
+                    className="premium-surface rounded-2xl px-2 py-3 min-h-[100px] flex flex-col items-center justify-center shadow-lg text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 20 }}
                     transition={{ delay: 0.8 + idx * 0.1 }}
@@ -219,9 +219,12 @@ const HeroSection: React.FC = () => {
                       alt={card.title}
                       width={28}
                       height={28}
-                      className="mb-2 block"
+                      className="mb-1.5 block"
                     />
-                    <span className="text-[11px] xs:text-xs font-semibold leading-tight text-center" style={{ fontFamily: "Poppins" }}>
+                    <span
+                      className="text-[10.5px] xs:text-xs font-semibold leading-tight text-center break-words hyphens-auto"
+                      style={{ fontFamily: "Poppins" }}
+                    >
                       {card.title}
                     </span>
                   </motion.div>

@@ -63,6 +63,66 @@ export default function CallAstrologerProfilePage() {
     const [isSendingGift, setIsSendingGift] = useState(false);
     const [giftSentSuccess, setGiftSentSuccess] = useState(false);
 
+    // Share / Favorite (like) states
+    const [isFavorited, setIsFavorited] = useState(false);
+    const [shareToast, setShareToast] = useState<string | null>(null);
+
+    // Hydrate favorite state from localStorage on mount / id change.
+    useEffect(() => {
+        if (typeof window === 'undefined' || !astrologerId) return;
+        try {
+            const raw = localStorage.getItem('favoriteAstrologers');
+            const list: string[] = raw ? JSON.parse(raw) : [];
+            setIsFavorited(Array.isArray(list) && list.includes(astrologerId));
+        } catch {
+            setIsFavorited(false);
+        }
+    }, [astrologerId]);
+
+    const showFlashToast = (msg: string) => {
+        setShareToast(msg);
+        window.setTimeout(() => setShareToast(null), 2000);
+    };
+
+    const handleToggleFavorite = () => {
+        if (typeof window === 'undefined' || !astrologerId) return;
+        try {
+            const raw = localStorage.getItem('favoriteAstrologers');
+            const list: string[] = raw ? JSON.parse(raw) : [];
+            const has = list.includes(astrologerId);
+            const next = has ? list.filter((id) => id !== astrologerId) : [...list, astrologerId];
+            localStorage.setItem('favoriteAstrologers', JSON.stringify(next));
+            setIsFavorited(!has);
+            showFlashToast(has ? 'Removed from favorites' : 'Added to favorites');
+        } catch (e) {
+            console.warn('favorite toggle failed', e);
+        }
+    };
+
+    const handleShare = async () => {
+        if (typeof window === 'undefined') return;
+        const shareUrl = window.location.href;
+        const shareData = {
+            title: `${astrologer?.name || 'Astrologer'} on Sobhagya`,
+            text: `Consult ${astrologer?.name || 'this astrologer'} on Sobhagya for trusted astrology guidance.`,
+            url: shareUrl,
+        };
+        try {
+            if (typeof navigator !== 'undefined' && (navigator as any).share) {
+                await (navigator as any).share(shareData);
+                return;
+            }
+        } catch (e) {
+            // User cancelled or share unavailable — fall through to clipboard.
+        }
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            showFlashToast('Profile link copied');
+        } catch {
+            showFlashToast('Could not copy link');
+        }
+    };
+
     useEffect(() => {
         if (astrologerId) {
             fetchAstrologerProfile();
@@ -527,11 +587,26 @@ export default function CallAstrologerProfilePage() {
                                             <CheckCircle className="w-6 h-6 text-blue-500 fill-blue-50" />
                                         </div>
                                         <div className="flex gap-2">
-                                            <button className="p-2.5 rounded-full bg-gray-50 border border-gray-200 text-gray-400 hover:text-orange-500 hover:border-orange-200 transition-all">
+                                            <button
+                                                onClick={handleShare}
+                                                aria-label="Share profile"
+                                                title="Share profile"
+                                                className="p-2.5 rounded-full bg-gray-50 border border-gray-200 text-gray-500 hover:text-orange-500 hover:border-orange-200 transition-all"
+                                            >
                                                 <Share2 className="w-5 h-5" />
                                             </button>
-                                            <button className="p-2.5 rounded-full bg-gray-50 border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-all">
-                                                <Heart className="w-5 h-5" />
+                                            <button
+                                                onClick={handleToggleFavorite}
+                                                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                                                aria-pressed={isFavorited}
+                                                title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                                                className={`p-2.5 rounded-full border transition-all ${
+                                                    isFavorited
+                                                        ? 'bg-red-50 border-red-200 text-red-500'
+                                                        : 'bg-gray-50 border-gray-200 text-gray-500 hover:text-red-500 hover:border-red-200'
+                                                }`}
+                                            >
+                                                <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
                                             </button>
                                         </div>
                                     </div>
@@ -891,6 +966,22 @@ export default function CallAstrologerProfilePage() {
                     </motion.div>
                 </div>
             )}
+
+            {/* Share / Favorite toast */}
+            <AnimatePresence>
+                {shareToast && (
+                    <motion.div
+                        key="share-toast"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ duration: 0.18 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[10000] bg-gray-900 text-white text-sm px-4 py-2 rounded-full shadow-lg"
+                    >
+                        {shareToast}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

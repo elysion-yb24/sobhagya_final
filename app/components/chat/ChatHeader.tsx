@@ -24,10 +24,7 @@ interface ChatHeaderProps {
   onEndSession: () => void
   onContinueChat?: () => void
   sessionDuration?: string | null
-  /** Wallet balance in rupees. `null` while still loading or for roles that
-   *  shouldn't see it (e.g. astrologer view). */
   userBalance?: number | null
-  /** Peer's typing state — drives the "typing…" subtext under the name. */
   peerTyping?: boolean
 }
 
@@ -48,139 +45,98 @@ export default function ChatHeader({
     router.push('/chat')
   }
 
-  // Pick the correct participant (friend sees user, astrologer sees provider)
-  const participant =
-    userRole === 'friend' ? selectedSession.userId : selectedSession.providerId
-
-  const avatarLetter =
-    participant?.name?.charAt(0)?.toUpperCase() ||
-    participant?._id?.charAt(0)?.toUpperCase() ||
-    '?'
+  const participant = userRole === 'friend' ? selectedSession.userId : selectedSession.providerId
+  const avatarLetter = participant?.name?.charAt(0)?.toUpperCase() || '?'
 
   return (
-    <div className="flex items-center justify-between px-3 md:px-4 py-3 bg-white border-b border-orange-200 shadow-sm">
-      {/* Back Button + Avatar + Name + Status */}
-      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-        {/* Back Button - Only show on mobile */}
+    <header className="flex items-center justify-between px-3 md:px-5 py-2.5 bg-white/95 backdrop-blur-md border-b border-orange-100/50 shadow-[0_2px_15px_-3px_rgba(247,148,29,0.07)] sticky top-0 z-50">
+      {/* Participant Info */}
+      <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
         <button
           onClick={handleBackClick}
-          className="md:hidden p-2 hover:bg-orange-50 rounded-full transition-colors flex-shrink-0"
-          title="Back to chat list"
+          className="p-1.5 hover:bg-orange-50 rounded-full transition-all duration-200 active:scale-90 group"
+          title="Back"
         >
-          <svg
-            className="w-5 h-5 text-orange-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg className="w-6 h-6 text-orange-600 group-hover:text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
-        {/* Avatar */}
         <div className="relative flex-shrink-0">
-          {participant?.avatar ? (
-            <img
-              src={participant.avatar}
-              alt={participant.name || 'Avatar'}
-              className="w-8 h-8 md:w-10 md:h-10 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-semibold text-xs md:text-sm">
-              {avatarLetter}
-            </div>
-          )}
-
-          {/* Online indicator */}
+          <div className="w-10 h-10 md:w-11 md:h-11 rounded-full ring-2 ring-orange-50 overflow-hidden shadow-sm">
+            {participant?.avatar ? (
+              <img src={participant.avatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-orange-700 font-bold text-sm">
+                {avatarLetter}
+              </div>
+            )}
+          </div>
           {selectedSession.status === 'active' && (
-            <div className="absolute -bottom-0.5 -right-0.5 md:-bottom-1 md:-right-1 w-2.5 h-2.5 md:w-3 md:h-3 bg-white rounded-full flex items-center justify-center">
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-500"></div>
-            </div>
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm animate-pulse" />
           )}
         </div>
 
-        {/* Name + Status */}
-        <div className="flex flex-col min-w-0 flex-1">
-          <h3 className="text-sm md:text-base font-medium text-orange-800 truncate">
-            {participant?.name ||
-              `${userRole === 'friend' ? 'User' : 'Provider'} ${participant?._id?.slice(0, 8)}…`}
-          </h3>
-          <p className="text-xs text-orange-600 truncate">
-            {peerTyping
-              ? 'typing…'
-              : selectedSession.status === 'active'
-                ? 'online'
-                : selectedSession.status === 'pending'
-                  ? 'waiting…'
-                  : 'last seen recently'}
-          </p>
+        <div className="flex flex-col min-w-0">
+          <h1 className="text-sm md:text-[15px] font-bold text-gray-900 truncate tracking-tight">
+            {participant?.name || 'Astrologer'}
+          </h1>
+          <div className="flex items-center gap-1.5">
+            {peerTyping ? (
+              <span className="text-[11px] md:text-xs font-semibold text-green-600 animate-pulse">typing...</span>
+            ) : (
+              <span className={`text-[11px] md:text-xs font-medium ${selectedSession.status === 'active' ? 'text-orange-500' : 'text-gray-400'}`}>
+                {selectedSession.status === 'active' ? 'Online' : 'Last seen recently'}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Right-side Actions */}
-      <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-        {/* Session Duration pill — visible for the regular user role too. */}
+      {/* Actions */}
+      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+        {/* Timer Pill */}
         {sessionDuration && selectedSession.status === 'active' && (
-          <div className="flex items-center gap-1 text-xs md:text-sm text-gray-700 bg-gray-100 px-2 md:px-3 py-1 rounded-full" title="Session duration">
-            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="font-mono tabular-nums">{sessionDuration}</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-orange-50 rounded-full border border-orange-100/50 shadow-sm">
+            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping" />
+            <span className="text-xs md:text-sm font-bold font-mono text-orange-700">{sessionDuration}</span>
           </div>
         )}
 
-        {/* Wallet balance pill (user role only). Turns amber on low balance. */}
+        {/* Balance (User Role) */}
         {userRole !== 'friend' && typeof userBalance === 'number' && (
-          <div
-            className={`hidden sm:flex items-center gap-1 text-xs md:text-sm px-2 md:px-3 py-1 rounded-full border ${
-              insufficientBalance
-                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                : 'bg-orange-50 text-orange-700 border-orange-200'
-            }`}
-            title="Wallet balance"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+          <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-colors ${
+            insufficientBalance ? 'bg-red-50 text-red-700 border-red-100' : 'bg-green-50 text-green-700 border-green-100'
+          }`}>
+            <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="font-medium">₹{Math.max(0, Math.floor(userBalance))}</span>
+            <span className="text-xs md:text-sm font-bold">₹{Math.floor(userBalance)}</span>
           </div>
         )}
 
-        {/* Active Session → End Session button */}
-        {selectedSession.status === 'active' && (
+        {/* Action Button */}
+        {selectedSession.status === 'active' ? (
           <button
             onClick={onEndSession}
             disabled={endingSession}
-            className={`px-2 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-colors ${
-              endingSession
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-red-500 text-white hover:bg-red-600 shadow-sm hover:shadow-md'
-            }`}
+            className="px-3 md:px-5 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 text-white text-xs md:text-sm font-bold rounded-xl shadow-lg shadow-red-100 hover:shadow-red-200 transition-all duration-200 active:scale-95"
           >
-            <span className="hidden md:inline">{endingSession ? 'Ending...' : 'End Session'}</span>
-            <span className="md:hidden">{endingSession ? 'End...' : 'End'}</span>
+            {endingSession ? 'Ending...' : 'End Chat'}
           </button>
-        )}
-
-        {/* Pending Session Indicator */}
-        {selectedSession.status === 'pending' && (
-          <div className="px-2 md:px-3 py-1 md:py-1.5 bg-yellow-100 text-yellow-700 rounded-lg text-xs font-medium border border-yellow-200">
-            <span className="hidden md:inline">Waiting for provider...</span>
-            <span className="md:hidden">Waiting...</span>
-          </div>
-        )}
-
-        {/* Ended Session → Continue Chat (non-friend users) */}
-        {selectedSession.status === 'ended' && onContinueChat && userRole !== 'friend' && (
+        ) : selectedSession.status === 'ended' && onContinueChat && userRole !== 'friend' ? (
           <button
             onClick={onContinueChat}
-            className="px-2 md:px-3 py-1 md:py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600 shadow-sm hover:shadow-md transition-colors"
+            className="px-3 md:px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm font-bold rounded-xl shadow-lg shadow-orange-100 hover:shadow-orange-200 transition-all duration-200 active:scale-95"
           >
-            <span className="hidden md:inline">Continue Chat</span>
-            <span className="md:hidden">Continue</span>
+            Continue
           </button>
-        )}
+        ) : selectedSession.status === 'pending' ? (
+          <div className="px-3 py-1.5 bg-amber-50 text-amber-700 text-[11px] font-bold rounded-lg border border-amber-100 animate-pulse uppercase tracking-wider">
+            Connecting...
+          </div>
+        ) : null}
       </div>
-    </div>
+    </header>
   )
 }

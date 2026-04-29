@@ -1,47 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildApiUrl, API_CONFIG } from '../../../config/api';
+import { setAuthCookies, parseRefreshTokenFromSetCookie } from '../../../lib/server-auth';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Proxying verify-otp request body:', body);
-
     const { phone, otp, notifyToken, session_id, name, gender, dob, placeOfBirth, timeOfBirth, languages, interests } = body;
 
-    // Validate required fields
     if (!phone) {
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { phone: "Phone number is required" } 
-      }, { status: 400 });
+      return NextResponse.json(
+        { name: 'ExpressValidatorErr', errors: { phone: 'Phone number is required' } },
+        { status: 400 }
+      );
     }
 
     if (!otp) {
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { otp: "OTP is required" } 
-      }, { status: 400 });
+      return NextResponse.json(
+        { name: 'ExpressValidatorErr', errors: { otp: 'OTP is required' } },
+        { status: 400 }
+      );
     }
 
-    // Check if OTP is an object (which would be wrong)
     if (typeof otp === 'object') {
-      console.error('❌ OTP received as object, not string:', otp);
-      return NextResponse.json({ 
-        name: "ExpressValidatorErr", 
-        errors: { otp: "Invalid OTP format" } 
-      }, { status: 400 });
+      return NextResponse.json(
+        { name: 'ExpressValidatorErr', errors: { otp: 'Invalid OTP format' } },
+        { status: 400 }
+      );
     }
 
-    const requestBody: any = {
+    const requestBody: Record<string, any> = {
       phone,
       otp,
       notifyToken: notifyToken || 'placeholder_token',
     };
-
-    // Add session_id if provided
     if (session_id) requestBody.session_id = session_id;
-
-    // Forward user details for RabbitMQ userRegistration (fixes missing profile)
     if (name) requestBody.name = name;
     if (gender) requestBody.gender = gender;
     if (dob) requestBody.dob = dob;
@@ -50,69 +42,60 @@ export async function POST(request: NextRequest) {
     if (languages) requestBody.languages = languages;
     if (interests) requestBody.interests = interests;
 
-    // Prepare request headers
-    const headers = new Headers(request.headers);
-    headers.set('Content-Type', 'application/json');
-    headers.delete('host');
-    headers.delete('content-length');
-
-    // Use configured API URL
     const targetUrl = buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.VERIFY_OTP);
-    console.log('Making request to:', targetUrl);
 
-    // Forward the request to backend
     const response = await fetch(targetUrl, {
       method: 'POST',
-      headers,
+      headers: {
+        'Content-Type': 'application/json',
+        'Origin': 'https://sobhagya.in',
+      },
       body: JSON.stringify(requestBody),
-      credentials: 'include', // if backend uses cookies
     });
 
-    const responseBody = await response.text(); // read as text to avoid stream locking
-    console.log('Verify-OTP response status:', response.status);
-    console.log('Verify-OTP response body:', responseBody);
+    const responseText = await response.text();
+    let parsed: any;
+    try {
+      parsed = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      parsed = { success: false, message: responseText };
+    }
 
-    // Create NextResponse with status
-    const proxyResponse = new NextResponse(responseBody, {
-      status: response.status,
-      statusText: response.statusText,
-    });
+    if (response.ok) {
+      const headerAccess = response.headers.get('auth-token');
+      const accessToken =
+        (headerAccess && headerAccess !== 'null' ? headerAccess : null) ||
+        parsed?.accessToken ||
+        parsed?.data?.access_token ||
+        parsed?.token ||
+        null;
 
-    // Forward ALL response headers from backend to client
-    response.headers.forEach((value, key) => {
-      proxyResponse.headers.set(key, value);
-    });
+      const refreshToken =
+        parseRefreshTokenFromSetCookie(response.headers) ||
+        parsed?.refreshToken ||
+        parsed?.data?.refresh_token ||
+        null;
 
-    // Set CORS headers manually if needed (optional)
-    proxyResponse.headers.set('Access-Control-Allow-Origin', '*');
-    proxyResponse.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    proxyResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      if (accessToken || refreshToken) {
+        await setAuthCookies({ accessToken, refreshToken });
+      }
 
-    return proxyResponse;
+      if (accessToken && parsed && typeof parsed === 'object') {
+        parsed.accessToken = accessToken;
+        parsed.token = accessToken;
+      }
+    }
 
+    return NextResponse.json(parsed, { status: response.status });
   } catch (error) {
     console.error('Proxy error in verify-otp:', error);
     return NextResponse.json(
       { error: 'Internal server error', message: 'Failed to verify OTP' },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        },
-      }
+      { status: 500 }
     );
   }
 }
 
 export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  });
+  return new NextResponse(null, { status: 200 });
 }

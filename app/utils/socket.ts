@@ -24,7 +24,7 @@ class SocketManager {
   private isConnected: boolean = false;
 
   // Initialize socket connection
-  connect(channelId: string): Promise<void> {
+  connect(channelId: string | null = null): Promise<void> {
     return new Promise((resolve, reject) => {
       const userDetails = getUserDetails();
       const userId = userDetails?.id || userDetails?._id;
@@ -75,6 +75,10 @@ class SocketManager {
 
       this.socket.on('end_call', (data) => {
         console.log('Call ended:', data);
+      });
+      
+      this.socket.on('incoming_call', (data) => {
+        console.log('Incoming call received:', data);
       });
     });
   }
@@ -364,6 +368,32 @@ class SocketManager {
     });
   }
 
+  // Accept a call (for astrologers)
+  async acceptCall(channelId: string, isLivekit: boolean = true): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.socket || !this.isConnected) {
+        reject(new Error('Socket not connected'));
+        return;
+      }
+
+      console.log('Accepting call:', { channelId, isLivekit });
+
+      // Emit accept_call event
+      this.socket.emit('accept_call', {
+        channelId: channelId,
+        isLivekit: isLivekit
+      }, (response: any) => {
+        if (response && !response.error && response.success) {
+          console.log('Call accepted successfully:', response);
+          resolve(response.data);
+        } else {
+          console.error('Failed to accept call:', response);
+          reject(new Error(response?.message || 'Failed to accept call'));
+        }
+      });
+    });
+  }
+
   // Disconnect socket
   disconnect() {
     if (this.socket) {
@@ -473,6 +503,30 @@ class SocketManager {
   onReceiveGift(callback: (data: any) => void) {
     if (!this.socket) return;
     this.socket.on('receive_gift', callback);
+  }
+
+  // Listen for incoming calls (for astrologers)
+  onIncomingCall(callback: (data: any) => void) {
+    if (!this.socket) return;
+    this.socket.on('incoming_call', callback);
+  }
+
+  // Remove incoming call listener
+  offIncomingCall(callback: (data: any) => void) {
+    if (!this.socket) return;
+    this.socket.off('incoming_call', callback);
+  }
+
+  // Listen for call end (global)
+  onCallEndGlobal(callback: (data: any) => void) {
+    if (!this.socket) return;
+    this.socket.on('call_end', callback);
+  }
+  
+  // Remove call end listener
+  offCallEndGlobal(callback: (data: any) => void) {
+    if (!this.socket) return;
+    this.socket.off('call_end', callback);
   }
 
   // Request a gift (optional, for requesting a gift from the other side)

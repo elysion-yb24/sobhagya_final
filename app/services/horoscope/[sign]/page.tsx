@@ -777,7 +777,7 @@ export default function ZodiacSignPage() {
               {/* Current Period Horoscope */}
               <div className="bg-white rounded-lg p-6 mb-6">
                 <h2 className="text-2xl font-bold text-[#745802] mb-4">{currentHoroscope.title}</h2>
-                <p className="text-black leading-relaxed mb-6 text-lg">
+                <p className="text-black leading-relaxed mb-6 text-lg text-justify">
                   {currentHoroscope.content}
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -794,7 +794,7 @@ export default function ZodiacSignPage() {
                 <h2 className="text-2xl font-bold text-[#745802] mb-4">
                   {(currentSign.loveRelationships as any)[selectedPeriod]?.title || (currentSign.loveRelationships as any).title || "Love & Relationships"}
                 </h2>
-                <p className="text-black leading-relaxed mb-6 text-lg">
+                <p className="text-black leading-relaxed mb-6 text-lg text-justify">
                   {(currentSign.loveRelationships as any)[selectedPeriod]?.content || (currentSign.loveRelationships as any).content || "Your relationships are influenced by your zodiac sign's natural characteristics."}
                 </p>
                 <div className="flex flex-wrap gap-3">
@@ -811,7 +811,7 @@ export default function ZodiacSignPage() {
                 <h2 className="text-2xl font-bold text-[#745802] mb-4">
                   {(currentSign.personalLife as any)[selectedPeriod]?.title || (currentSign.personalLife as any).title || "Personal Life"}
                 </h2>
-                <p className="text-black leading-relaxed mb-6 text-lg">
+                <p className="text-black leading-relaxed mb-6 text-lg text-justify">
                   {(currentSign.personalLife as any)[selectedPeriod]?.content || (currentSign.personalLife as any).content || "Your personal life is guided by your zodiac sign's unique characteristics and planetary influences."}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

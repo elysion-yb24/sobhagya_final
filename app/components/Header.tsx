@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { Eagle_Lake } from "next/font/google";
-import { Menu, X, Phone, User, LogOut, ChevronDown, Wallet, History } from "lucide-react";
+import { Menu, X, Phone, User, LogOut, ChevronDown, Wallet, History, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
@@ -76,6 +76,7 @@ const Header = () => {
     { label: "Services", href: "/services", icon: "🔮", bgColor: "bg-amber-100" },
     { label: "Live Sessions", href: "/live-sessions", icon: "🔴", bgColor: "bg-red-100", hideForPartner: true },
     { label: "Call with Astrologer", href: "/call-with-astrologer", icon: "📞", bgColor: "bg-orange-100", hideForPartner: true },
+    { label: "Chat", href: "/chat", icon: "💬", bgColor: "bg-amber-100", hideForPartner: true },
     { label: "Shop", href: "https://www.ramvarna.com", icon: "🛍️", bgColor: "bg-pink-100", external: true },
     { label: "Blog", href: "/blog", icon: "📝", bgColor: "bg-green-100" },
     { label: "Contact Us", href: "/contact", icon: "📧", bgColor: "bg-blue-100" },
@@ -502,7 +503,7 @@ const Header = () => {
 
       {/* MOBILE HEADER — progressive disclosure, no clipping, refined motion */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between gap-2 px-3 xs:px-4 py-2 xs:py-2.5 min-w-0">
+        <div className="flex items-center justify-between gap-2 px-3 xs:px-4 py-1.5 xs:py-2 min-w-0">
           {/* Mobile Logo — never shrinks, gradient shimmer text */}
           <Link
             href="/"
@@ -573,13 +574,19 @@ const Header = () => {
               aria-label={isOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isOpen}
               aria-controls="mobile-menu-panel"
-              className="relative flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200/80 text-gray-700 shadow-sm hover:shadow-md hover:border-orange-200 hover:text-orange-600 active:scale-90 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300"
+              className="relative flex items-center justify-center w-9 h-9 rounded-full bg-white border border-orange-200/70 text-gray-700 shadow-sm hover:shadow-md hover:border-orange-300 hover:text-orange-600 active:scale-90 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-1 touch-manipulation"
             >
-              <span className={`absolute transition-all duration-300 ${isOpen ? 'opacity-0 rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'}`}>
-                <Menu size={17} strokeWidth={2.5} />
-              </span>
-              <span className={`absolute transition-all duration-300 ${isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`}>
-                <X size={17} strokeWidth={2.5} />
+              <span className="relative inline-flex w-[18px] h-[18px] items-center justify-center">
+                <Menu
+                  size={18}
+                  strokeWidth={2.5}
+                  className={`absolute transition-all duration-300 ease-out ${isOpen ? 'opacity-0 rotate-90 scale-75' : 'opacity-100 rotate-0 scale-100'}`}
+                />
+                <X
+                  size={18}
+                  strokeWidth={2.5}
+                  className={`absolute transition-all duration-300 ease-out ${isOpen ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-75'}`}
+                />
               </span>
               {/* Unread/new dot when logged out — nudges login */}
               {mounted && !isAuthenticatedUser && (
@@ -591,27 +598,7 @@ const Header = () => {
         {/* Thin saffron accent line — on-brand bottom border */}
         <div className="h-[2px] bg-gradient-to-r from-transparent via-orange-300/60 to-transparent" />
 
-        {!isOpen && (
-          <div className="md:hidden border-t border-orange-100/70 bg-white/85 backdrop-blur-xl">
-            <nav className="px-3 xs:px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide scroll-touch">
-              {visibleNavigationLinks.map((item) => (
-                <Link
-                  key={`quick-${item.label}`}
-                  href={item.href}
-                  target={item.external ? "_blank" : undefined}
-                  rel={item.external ? "noopener noreferrer" : undefined}
-                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-colors border ${
-                    isActiveLink(item.href)
-                      ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-orange-300 hover:text-orange-600'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
+
 
         {/* MOBILE MENU with enhanced animations and improved scroll behavior */}
       <AnimatePresence>
@@ -658,7 +645,7 @@ const Header = () => {
               </div>
 
               {/* Mobile Menu Content */}
-              <div className="px-4 py-6 space-y-5 bg-white pb-8">
+              <div className="px-4 py-6 space-y-6 bg-white pb-20 safe-bottom">
                 {/* Quick-contact row — always accessible, especially for <xs screens */}
                 <div className="xs:hidden grid grid-cols-2 gap-3">
                   <a
@@ -792,6 +779,19 @@ const Header = () => {
                             →
                           </div>
                         </Link>
+                        <Link
+                          href="/chat"
+                          className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-md">
+                            <MessageSquare className="w-5 h-5 text-white" />
+                          </div>
+                          <span className="flex-1">My Chats</span>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
+                            →
+                          </div>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -830,23 +830,24 @@ const Header = () => {
 
               {/* Logout Button - Moved to bottom */}
               {mounted && isAuthenticatedUser && (
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-6 pb-4">
                   <button
                     onClick={() => {
                       handleLogout();
                       setIsOpen(false);
                     }}
                     disabled={isLoggingOut}
-                    className={`flex items-center justify-center w-full py-4 rounded-2xl font-medium transition-all duration-300 text-base border-2 ${
+                    className={`flex items-center justify-center w-full py-4 rounded-2xl font-bold shadow-sm transition-all duration-300 text-base border-2 ${
                       isLoggingOut
                         ? 'text-gray-400 border-gray-300 cursor-not-allowed bg-gray-100'
-                        : 'text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50 hover:border-red-400'
+                        : 'text-red-600 hover:text-red-700 border-red-500 bg-red-50/30 hover:bg-red-50 hover:border-red-600 active:scale-[0.98]'
                     }`}
                   >
                     <LogOut className={`h-5 w-5 mr-2 transition-transform duration-300 ${isLoggingOut ? 'animate-spin' : ''}`} />
                     {isLoggingOut ? 'Logging out...' : 'Logout'}
                   </button>
                 </div>
+
               )}
           </motion.div>
         </>

@@ -1,7 +1,6 @@
 import { Inter, EB_Garamond } from "next/font/google";
 import "./globals.css";
-import Header from "@/app/components/Header";
-import Footer from "@/app/components/Footer";
+import ConditionalHeader from "@/app/components/ConditionalHeader";
 import { Suspense } from "react";
 import Loading from "./rashi/[name]/loading";
 import ClientLayout from "./ClientLayout";
@@ -48,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WalletBalanceProvider>
             <SessionManagerProvider>  {/* 👈 wrap everything inside */}
               <AuthErrorHandler />
-              <Header />
+              <ConditionalHeader />
                <ClientLayout>
                 {children}
               </ClientLayout>

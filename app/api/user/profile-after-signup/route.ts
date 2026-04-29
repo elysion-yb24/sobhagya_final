@@ -1,55 +1,8 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { apiFetch } from '../../../lib/server-auth';
 
-const BACKEND_BASE = process.env.BACKEND_BASE_URL || 'https://micro.sobhagya.in';
-
-/**
- * POST /api/user/profile-after-signup
- * Proxy to backend POST /user/api/profile-after-sign-up (authenticated)
- * Accepts: { name, age, topic, aboutUs, avatar, gender, dob, placeOfBirth, timeOfBirth, languages, interests }
- */
 export async function POST(req: NextRequest) {
-  try {
-    const authHeader = req.headers.get('authorization');
-    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-
-    if (!authHeader) {
-      return NextResponse.json({ success: false, message: 'No auth token' }, { status: 401 });
-    }
-
-    const body = await req.json().catch(() => ({}));
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Authorization': authHeader,
-      'Origin': 'https://sobhagya.in',
-    };
-    if (bearerToken) {
-      headers['Cookie'] = `token=${bearerToken}`;
-      headers['cookies'] = bearerToken;
-    }
-
-    const backendUrl = `${BACKEND_BASE}/user/api/profile-after-sign-up`;
-    console.log('[profile-after-signup] POST:', backendUrl, JSON.stringify(body));
-
-    const res = await fetch(backendUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    const text = await res.text();
-    console.log('[profile-after-signup] Response:', res.status, text.substring(0, 300));
-
-    let parsed: any;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = { success: false, message: text };
-    }
-
-    return NextResponse.json(parsed, { status: res.status });
-  } catch (err: any) {
-    console.error('[profile-after-signup] Error:', err);
-    return NextResponse.json({ success: false, message: err.message }, { status: 500 });
-  }
+  const body = await req.json().catch(() => ({}));
+  const result = await apiFetch('/user/api/profile-after-sign-up', { method: 'POST', body });
+  return NextResponse.json(result.data, { status: result.status });
 }

@@ -141,7 +141,7 @@ const AstrologerList: React.FC<AstrologerListProps> = ({
         {ordered.map((astrologer, index) => (
           <div
           key={`${astrologer._id}-${index}`}
-            className="animate-fadeInUp flex justify-center"
+            className="animate-fadeInUp flex justify-center relative z-0"
             style={{ animationDelay: `${(index % 6) * 0.1}s` }}
           >
             <AstrologerCard

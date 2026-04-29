@@ -2,15 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, ChevronLeft, ChevronRight, X, Gift, Loader2, Phone, Video, PhoneCall } from "lucide-react";
+import DakshinaModal from '../../../components/calling/ui/DakshinaModal';
+import {
+    ArrowLeft, CheckCircle, Share2, Heart, Award, Languages, Phone, Gift,
+    ChevronLeft, ChevronRight, X, PhoneCall, Video, Star
+} from 'lucide-react';
 import { getApiBaseUrl } from "../../../config/api";
-import { getAuthToken, getUserDetails, isAuthenticated, hasUserCalledBefore } from "../../../utils/auth-utils";
+import { getAuthToken, getUserDetails, isAuthenticated } from "../../../utils/auth-utils";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { initiateCall } from "../../../utils/calling-utils";
 import { fetchWalletBalance as simpleFetchWalletBalance } from "../../../utils/production-api";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, Star, Languages, GraduationCap, MessageSquare, Heart, Share2, Award } from "lucide-react";
 
 interface Astrologer {
     _id: string;
@@ -53,7 +56,7 @@ export default function CallAstrologerProfilePage() {
     const [error, setError] = useState<string | null>(null);
     const [showCallOptions, setShowCallOptions] = useState(false);
     const [selectedCallAstrologer, setSelectedCallAstrologer] = useState<Astrologer | null>(null);
-    const [userHasCalledBefore, setUserHasCalledBefore] = useState(false);
+    const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
 
     // Dakshina/Gift states
     const [showGiftModal, setShowGiftModal] = useState(false);
@@ -131,26 +134,66 @@ export default function CallAstrologerProfilePage() {
         }
     }, [astrologerId]);
 
-    // Check user call status
+    // Check free-call eligibility — same source of truth as AstrologerCard
+    // (localStorage cache + /api/calling/call-log lookup), so the listing
+    // and profile pages can never disagree.
     useEffect(() => {
-        const checkUserCallStatus = () => {
-            const hasCalled = hasUserCalledBefore();
-            setUserHasCalledBefore(hasCalled);
+        const checkCallHistory = async () => {
+            try {
+                const token = getAuthToken();
+                const userDetails = getUserDetails();
+                if (!token || !userDetails?.id) return;
+
+                const response = await fetch(`/api/calling/call-log?skip=0&limit=10&role=user`, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    let totalCalls = 0;
+                    if (data.data?.list && Array.isArray(data.data.list)) totalCalls = data.data.list.length;
+                    else if (data.list && Array.isArray(data.list)) totalCalls = data.list.length;
+                    else if (Array.isArray(data.data)) totalCalls = data.data.length;
+                    else if (Array.isArray(data)) totalCalls = data.length;
+
+                    if (totalCalls > 0) {
+                        setHasCompletedFreeCall(true);
+                        localStorage.setItem('userHasCalledBefore', 'true');
+                    }
+                }
+            } catch {
+                const cached = localStorage.getItem('userHasCalledBefore');
+                if (cached === 'true') setHasCompletedFreeCall(true);
+            }
         };
 
-        checkUserCallStatus();
-
-        // Listen for call status changes
-        const handleCallStatusChange = () => {
-            checkUserCallStatus();
+        const runCheck = () => {
+            if (!isAuthenticated()) {
+                setHasCompletedFreeCall(false);
+                return;
+            }
+            const cached = localStorage.getItem('userHasCalledBefore');
+            const lastCheckTime = localStorage.getItem('lastCallHistoryCheck');
+            const now = Date.now();
+            if (cached === 'true') {
+                setHasCompletedFreeCall(true);
+            } else if (!lastCheckTime || now - parseInt(lastCheckTime) > 300000) {
+                checkCallHistory();
+                localStorage.setItem('lastCallHistoryCheck', now.toString());
+            }
         };
 
-        window.addEventListener('user-call-status-changed', handleCallStatusChange);
-        window.addEventListener('user-auth-changed', handleCallStatusChange);
-
+        runCheck();
+        window.addEventListener('user-auth-changed', runCheck);
+        window.addEventListener('user-call-status-changed', runCheck);
         return () => {
-            window.removeEventListener('user-call-status-changed', handleCallStatusChange);
-            window.removeEventListener('user-auth-changed', handleCallStatusChange);
+            window.removeEventListener('user-auth-changed', runCheck);
+            window.removeEventListener('user-call-status-changed', runCheck);
         };
     }, []);
 
@@ -303,17 +346,22 @@ export default function CallAstrologerProfilePage() {
     const fetchGifts = async () => {
         try {
             const token = getAuthToken();
-            const response = await fetch(`${getApiBaseUrl()}/calling/api/gift/get-gifts`, {
+            if (!token) return;
+            const response = await fetch(`/api/calling/gift/get-gifts`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 credentials: 'include',
             });
             if (response.ok) {
                 const data = await response.json();
-                setGifts(data.data || []);
+                const list = Array.isArray(data?.data) ? data.data : [];
+                const normalized = list
+                    .map((g: any) => ({ ...g, price: Math.round(Number(g.price) || 0) }))
+                    .sort((a: any, b: any) => a.price - b.price);
+                setGifts(normalized);
             }
         } catch (error) {
             console.error('Error fetching gifts:', error);
@@ -331,48 +379,49 @@ export default function CallAstrologerProfilePage() {
         }
     };
 
-    const handleSendGift = async (gift: {_id: string; name: string; icon: string; price: number}) => {
+    const handleSendGift = async (gift: any) => {
+        const token = getAuthToken();
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
+        if (typeof gift._id === 'string' && gift._id.startsWith('preset_')) {
+            fetchGifts();
+            throw new Error('Offerings not loaded yet. Please try again.');
+        }
+
+        const price = Math.round(Number(gift.price) || 0);
+        if (walletBalance < price) {
+            throw new Error('Insufficient wallet balance. Please recharge your wallet.');
+        }
+
         try {
-            if (walletBalance < gift.price) {
-                alert('Insufficient wallet balance. Please add funds.');
-                return;
-            }
-            setIsSendingGift(true);
-            const token = getAuthToken();
-            const userDetails = getUserDetails();
-            if (!token || !userDetails?.id) {
-                throw new Error('Authentication required');
-            }
-            const response = await fetch(`${getApiBaseUrl()}/calling/api/gift/send-gift`, {
+            const response = await fetch(`/api/calling/gift/send-gift`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     id: gift._id,
                     receiverUserId: astrologerId,
-                    giftId: gift._id,
-                    amount: gift.price,
                 }),
                 credentials: 'include',
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to send gift');
+
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data?.success === false) {
+                throw new Error(data?.message || 'Failed to send Dakshina');
             }
-            setWalletBalance(prev => prev - gift.price);
-            setGiftSentSuccess(true);
-            setTimeout(() => {
-                setShowGiftModal(false);
-                setGiftSentSuccess(false);
-                setSelectedGift(null);
-            }, 2000);
+
+            // Optimistic debit; server-side balance refresh reconciles below.
+            setWalletBalance(prev => Math.max(0, prev - price));
+            fetchWalletBalance();
+            return true;
         } catch (error) {
             console.error('Error sending gift:', error);
-            alert(error instanceof Error ? error.message : 'Failed to send gift');
-        } finally {
-            setIsSendingGift(false);
+            throw error;
         }
     };
 
@@ -636,20 +685,44 @@ export default function CallAstrologerProfilePage() {
                                         "{astrologer.about || `Astrologer ${astrologer.name} is a renowned expert in spiritual guidance and cosmic alignment, helping individuals find clarity and success through accurate predictions.`}"
                                     </p>
 
+                                    <div className="flex items-baseline gap-2 mb-6">
+                                        {hasCompletedFreeCall ? (
+                                            <>
+                                                <span className="text-3xl font-black text-gray-900">₹{astrologer?.rpm || 15}</span>
+                                                <span className="text-sm text-gray-400 font-bold uppercase">/min</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="text-3xl font-black text-green-600">FREE</span>
+                                                <span className="text-sm text-gray-500 font-bold">first consultation</span>
+                                                <span className="ml-2 text-sm text-gray-400 line-through font-semibold">₹{astrologer?.rpm || 15}/min</span>
+                                            </>
+                                        )}
+                                    </div>
+
                                     {/* Action Row */}
-                                    <div className="flex flex-wrap items-center gap-4">
-                                        <div className="flex-1 min-w-[200px]">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                        <div className="relative flex-1">
+                                            {/* 1st Free Call ribbon — mirrors AstrologerCard treatment */}
+                                            {!hasCompletedFreeCall && (
+                                                <div className="absolute -top-2 right-3 z-10 pointer-events-none">
+                                                    <div className="bg-gradient-to-l from-orange-600 to-orange-400 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider border border-white/30">
+                                                        <Star className="w-3 h-3 fill-white" />
+                                                        1st Free Call
+                                                    </div>
+                                                </div>
+                                            )}
                                             <button
                                                 onClick={handleCall}
-                                                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all duration-500 flex items-center justify-center gap-3"
+                                                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all duration-500 flex items-center justify-center gap-3 active:scale-[0.98]"
                                             >
                                                 <Phone className="w-5 h-5" />
-                                                {userHasCalledBefore ? `Consult for ₹${astrologer?.rpm || 15}/min` : 'Claim 1st Free Consultation'}
+                                                {hasCompletedFreeCall ? "Call Now" : "Claim 1st Free Consultation"}
                                             </button>
                                         </div>
                                         <button
                                             onClick={() => setShowGiftModal(true)}
-                                            className="px-6 py-4 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 font-black text-sm uppercase tracking-widest hover:bg-amber-100 transition-all flex items-center gap-2"
+                                            className="px-8 py-4 rounded-2xl bg-white text-amber-600 border border-amber-200 font-black text-sm uppercase tracking-widest hover:bg-amber-50 hover:border-amber-300 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
                                         >
                                             <Gift className="w-5 h-5" />
                                             Dakshina
@@ -760,7 +833,7 @@ export default function CallAstrologerProfilePage() {
                                                      }}
                                                      className="w-[171px] h-[30px] bg-[#F7971E] text-white text-[10px] font-medium hover:bg-orange-600 transition-colors uppercase flex items-center justify-center rounded-md"
                                                  >
-                                                     {userHasCalledBefore ? `₹${similar?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
+                                                     {hasCompletedFreeCall ? `₹${similar?.rpm || 15}/min` : 'OFFER: FREE 1st call'}
                                                  </button>
                                              </div>
                                          </div>
@@ -822,95 +895,14 @@ export default function CallAstrologerProfilePage() {
             </div>
 
             {/* Dakshina Gift Modal */}
-            {showGiftModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <motion.div
-                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden"
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                    >
-                        {/* Header with astrology theme */}
-                        <div className="bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 px-6 py-4 relative overflow-hidden">
-                            <div className="absolute inset-0 opacity-10">
-                                <div className="absolute top-1 right-3 text-4xl">🙏</div>
-                                <div className="absolute bottom-1 left-3 text-3xl">✨</div>
-                            </div>
-                            <div className="flex justify-between items-center relative z-10">
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">Send Dakshina</h2>
-                                    <p className="text-white/80 text-xs mt-0.5">Offer blessings to {astrologer?.name}</p>
-                                </div>
-                                <button
-                                    onClick={() => { setShowGiftModal(false); setSelectedGift(null); setGiftSentSuccess(false); }}
-                                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                                >
-                                    <X className="h-4 w-4 text-white" />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="p-6">
-                            {giftSentSuccess ? (
-                                <div className="text-center py-8">
-                                    <div className="text-5xl mb-3 animate-bounce">🎉</div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-1">Dakshina Sent!</h3>
-                                    <p className="text-gray-600 text-sm">Your blessings have been sent to {astrologer?.name}</p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between items-center mb-4">
-                                        <span className="text-sm text-gray-500">Wallet Balance</span>
-                                        <span className="font-bold text-orange-600">₹{walletBalance}</span>
-                                    </div>
-
-                                    {gifts.length > 0 ? (
-                                        <div className="grid grid-cols-2 gap-3 mb-4">
-                                            {gifts.map((gift) => (
-                                                <button
-                                                    key={gift._id}
-                                                    onClick={() => setSelectedGift(gift)}
-                                                    disabled={walletBalance < gift.price}
-                                                    className={`p-3 rounded-xl border-2 transition-all duration-200 ${
-                                                        selectedGift?._id === gift._id
-                                                            ? 'border-orange-500 bg-orange-50 shadow-md scale-[1.02]'
-                                                            : 'border-gray-200 hover:border-orange-300 hover:shadow-sm'
-                                                    } ${walletBalance < gift.price ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-                                                >
-                                                    <div className="flex flex-col items-center text-center">
-                                                        <img src={gift.icon} alt={gift.name} className="w-10 h-10 mb-1.5" />
-                                                        <h3 className="font-semibold text-gray-900 text-xs">{gift.name}</h3>
-                                                        <p className="text-orange-600 font-bold text-sm">₹{gift.price}</p>
-                                                    </div>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-8">
-                                            <Gift className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                                            <p className="text-gray-500 text-sm">No gifts available</p>
-                                        </div>
-                                    )}
-
-                                    {selectedGift && (
-                                        <button
-                                            onClick={() => handleSendGift(selectedGift)}
-                                            disabled={isSendingGift}
-                                            className="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white py-3 rounded-xl font-semibold transition-all duration-300 hover:shadow-lg disabled:opacity-60 flex items-center justify-center gap-2"
-                                        >
-                                            {isSendingGift ? (
-                                                <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</>
-                                            ) : (
-                                                <>Send {selectedGift.name} (₹{selectedGift.price})</>
-                                            )}
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    </motion.div>
-                </div>
-            )}
+            <DakshinaModal
+                isOpen={showGiftModal}
+                onClose={() => setShowGiftModal(false)}
+                onSend={handleSendGift}
+                receiverName={astrologer?.name || 'Astrologer'}
+                gifts={gifts}
+                onFetchGifts={fetchGifts}
+            />
 
             {showCallOptions && (
                 <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[110] p-4 font-['Inter']">

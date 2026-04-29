@@ -74,20 +74,18 @@ export function getRefreshToken(): string | null {
 }
 
 /**
- * Stores the authentication token in localStorage and cookies
+ * Stores the authentication token in localStorage.
+ *
+ * Authoritative auth state lives in HttpOnly cookies set by /api/auth/verify-otp
+ * (see app/lib/server-auth.ts). localStorage is kept as a backward-compat mirror
+ * so legacy components reading getAuthToken() keep working. We deliberately do
+ * NOT mirror the access token to a JS-readable `token` cookie — that name is
+ * reserved for the HttpOnly refresh cookie and collisions break the proxy auth.
  */
 export function storeAuthToken(token: string): boolean {
   try {
-    // Store in localStorage
     localStorage.setItem('authToken', token);
-    
-    // Store timestamp
     localStorage.setItem('tokenTimestamp', Date.now().toString());
-    
-    // Store in cookies for server-side access (using same name as working APIs)
-    const isSecure = window.location.protocol === 'https:';
-    document.cookie = `token=${token}; path=/; max-age=${60*60*24*365}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
-    
     return true;
   } catch (e) {
     console.error("Error storing token:", e);
@@ -770,21 +768,6 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
 
   // Update token activity before making the request
   updateTokenActivity();
-
-  // Ensure token is also set as cookie (some microservices expect this)
-  if (typeof document !== 'undefined') {
-    try {
-      const isSecure = window.location.protocol === 'https:';
-      const cookieOptions = `; path=/; max-age=${60*60*24*365}; SameSite=Lax${isSecure ? '; Secure' : ''}`;
-      document.cookie = `token=${token}${cookieOptions}`;
-      // Also set for .sobhagya.in if applicable
-      if (window.location.hostname.includes('sobhagya.in')) {
-        document.cookie = `token=${token}${cookieOptions}; domain=.sobhagya.in`;
-      }
-    } catch (e) {
-      console.warn('Failed to sync token cookie:', e);
-    }
-  }
 
   // Add authorization header
   const headers = {

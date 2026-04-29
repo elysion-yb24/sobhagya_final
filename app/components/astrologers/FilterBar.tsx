@@ -94,7 +94,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
     "bg-white text-gray-700 hover:bg-[#FFF9F0] hover:text-[#E65C00] border border-orange-200/60";
 
   return (
-    <div className="relative z-[60] w-full">
+    <div className="relative z-[95] w-full">
       <div
         className="relative overflow-visible rounded-2xl sm:rounded-[2rem] p-3 sm:p-5 flex flex-col lg:flex-row lg:flex-wrap lg:items-center gap-3 sm:gap-4 transition-all duration-300"
         style={{
@@ -203,13 +203,13 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 {/* Backdrop on mobile for tap-to-close UX */}
                 <div
                   onClick={() => setLangOpen(false)}
-                  className="lg:hidden fixed inset-0 z-[70] bg-black/10"
+                  className="lg:hidden fixed inset-0 z-[98] bg-black/10"
                   aria-hidden
                 />
                 <div
                   role="listbox"
                   aria-label="Select language"
-                  className="absolute top-[calc(100%+8px)] left-0 right-0 lg:right-auto lg:min-w-[220px] z-[80] bg-white/98 backdrop-blur-xl rounded-2xl overflow-hidden shadow-[0_15px_40px_rgba(247,148,29,0.2)] animate-fadeInDown"
+                  className="absolute top-[calc(100%+8px)] left-0 right-0 lg:right-auto lg:min-w-[220px] z-[99] bg-white rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] animate-fadeInDown border border-orange-100"
                   style={{ border: "1px solid rgba(247,148,29,0.2)" }}
                 >
                   {LANGUAGES.map((lang) => {
@@ -223,8 +223,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
                           onSortChange({ type: "language", language: lang });
                           setLangOpen(false);
                         }}
-                        className={`relative px-5 py-3 text-left text-sm transition-colors duration-200 border-b border-[#F7941D]/10 last:border-0 w-full flex items-center justify-between ${
-                          active ? "bg-orange-50/70" : "hover:bg-[#FFF9F0] active:bg-[#FFF0DA]"
+                        className={`relative px-5 py-3 text-left text-sm transition-colors duration-200 border-b border-gray-50 last:border-0 w-full flex items-center justify-between ${
+                          active ? "bg-orange-50" : "hover:bg-gray-50 active:bg-gray-100"
                         }`}
                       >
                         <span

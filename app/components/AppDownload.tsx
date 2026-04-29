@@ -4,7 +4,7 @@ import Image from "next/image";
 const DownloadAppSection = () => {
   return (
     <section
-      className="py-8 sm:py-12 md:py-16 lg:py-20 px-4 sm:px-6"
+      className="section-spacing px-4 sm:px-6 relative overflow-hidden"
       style={{
         backgroundImage: "url('/orange.png')",
         backgroundSize: "cover",

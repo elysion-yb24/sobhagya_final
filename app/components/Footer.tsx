@@ -95,6 +95,10 @@ const Footer: React.FC = () => {
                   <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 group-hover:text-[#F7971E]">◆</span>
                   <span>Call with Astrologer</span>
                 </Link>
+                <Link href="/chat" className="flex items-center gap-x-3 text-white hover:text-[#F7971E] text-xs sm:text-sm lg:text-base transition-colors leading-none group">
+                  <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 group-hover:text-[#F7971E]">◆</span>
+                  <span>Chat with Astrologer</span>
+                </Link>
               </div>
             </div>
 
@@ -334,6 +338,10 @@ const Footer: React.FC = () => {
                   <Link href="/call-with-astrologer" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
                     <span className="text-[#F7971E] text-[10px]">◆</span>
                     <span className="leading-tight">Consult Now</span>
+                  </Link>
+                  <Link href="/chat" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
+                    <span className="text-[#F7971E] text-[10px]">◆</span>
+                    <span className="leading-tight">Chat</span>
                   </Link>
                   <Link href="/blog" className="flex items-center gap-2 py-1 text-white hover:text-[#F7971E] text-[13px] transition-all active:scale-95">
                     <span className="text-[#F7971E] text-[10px]">◆</span>

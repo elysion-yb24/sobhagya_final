@@ -23,7 +23,7 @@ const StatsBar: React.FC = () => {
   }, []);
 
   return (
-    <section ref={sectionRef} className="relative text-white py-8 sm:py-10 md:py-12 lg:py-14 overflow-hidden">
+    <section ref={sectionRef} className="relative text-white section-spacing overflow-hidden py-10 sm:py-12">
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full">
         <Image

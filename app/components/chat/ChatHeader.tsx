@@ -1,7 +1,10 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ArrowLeft, MoreVertical, X, Wallet, LogOut } from 'lucide-react'
+import Image from 'next/image'
+import PresenceDot from './PresenceDot'
 
 interface PopulatedUser {
   _id: string
@@ -40,102 +43,198 @@ export default function ChatHeader({
   peerTyping,
 }: ChatHeaderProps) {
   const router = useRouter()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
-  const handleBackClick = () => {
-    router.push('/chat')
-  }
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const handleBack = () => router.push('/chat')
 
   const participant = userRole === 'friend' ? selectedSession.userId : selectedSession.providerId
-  const avatarLetter = participant?.name?.charAt(0)?.toUpperCase() || '?'
+  const presence: 'online' | 'busy' | 'offline' =
+    selectedSession.status === 'active' ? 'online' : selectedSession.status === 'pending' ? 'busy' : 'offline'
+
+  const statusText =
+    peerTyping && selectedSession.status === 'active'
+      ? 'typing…'
+      : selectedSession.status === 'active'
+      ? 'online'
+      : selectedSession.status === 'pending'
+      ? 'connecting…'
+      : 'last seen recently'
+
+  // close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [menuOpen])
 
   return (
-    <header className="flex items-center justify-between px-3 md:px-5 py-2.5 bg-white/95 backdrop-blur-md border-b border-orange-100/50 shadow-[0_2px_15px_-3px_rgba(247,148,29,0.07)] sticky top-0 z-50">
-      {/* Participant Info */}
-      <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
-        <button
-          onClick={handleBackClick}
-          className="p-1.5 hover:bg-orange-50 rounded-full transition-all duration-200 active:scale-90 group"
-          title="Back"
-        >
-          <svg className="w-6 h-6 text-orange-600 group-hover:text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+    <header className="flex items-center gap-2 px-2 sm:px-4 h-14 sm:h-16 bg-white/95 backdrop-blur-xl border-b border-saffron-100/70 shadow-[0_2px_15px_-3px_rgba(247,148,29,0.08)] sticky top-0 z-30">
+      {/* Back */}
+      <button
+        onClick={handleBack}
+        className="p-2 -ml-1 rounded-full text-saffron-700 hover:bg-saffron-50 active:scale-90 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300"
+        aria-label="Back to chats"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
 
+      {/* Avatar + identity */}
+      <button
+        onClick={() => router.push('/call-with-astrologer')}
+        className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 -ml-1 px-1 py-1 rounded-lg hover:bg-saffron-50/60 transition text-left"
+      >
         <div className="relative flex-shrink-0">
-          <div className="w-10 h-10 md:w-11 md:h-11 rounded-full ring-2 ring-orange-50 overflow-hidden shadow-sm">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden ring-2 ring-saffron-100 shadow-sm relative">
             {participant?.avatar ? (
-              <img src={participant.avatar} alt="" className="w-full h-full object-cover" />
+              <Image src={participant.avatar} alt={participant?.name || ''} fill className="object-cover" />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center text-orange-700 font-bold text-sm">
-                {avatarLetter}
+              <div className="w-full h-full bg-gradient-to-br from-saffron-300 to-saffron-500 flex items-center justify-center text-white font-semibold">
+                {(participant?.name || 'A').charAt(0).toUpperCase()}
               </div>
             )}
           </div>
-          {selectedSession.status === 'active' && (
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full shadow-sm animate-pulse" />
-          )}
+          <span className="absolute bottom-0 right-0">
+            <PresenceDot status={presence} size={11} />
+          </span>
         </div>
-
         <div className="flex flex-col min-w-0">
-          <h1 className="text-sm md:text-[15px] font-bold text-gray-900 truncate tracking-tight">
+          <h1 className="font-garamond text-lg sm:text-xl font-bold text-gray-900 truncate leading-tight">
             {participant?.name || 'Astrologer'}
           </h1>
-          <div className="flex items-center gap-1.5">
-            {peerTyping ? (
-              <span className="text-[11px] md:text-xs font-semibold text-green-600 animate-pulse">typing...</span>
-            ) : (
-              <span className={`text-[11px] md:text-xs font-medium ${selectedSession.status === 'active' ? 'text-orange-500' : 'text-gray-400'}`}>
-                {selectedSession.status === 'active' ? 'Online' : 'Last seen recently'}
-              </span>
-            )}
-          </div>
+          <span
+            className={`text-[11px] font-bold uppercase tracking-widest truncate ${
+              peerTyping
+                ? 'text-emerald-600 animate-pulse'
+                : selectedSession.status === 'active'
+                ? 'text-emerald-500'
+                : 'text-gray-400'
+            }`}
+          >
+            {statusText}
+          </span>
         </div>
-      </div>
+      </button>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-        {/* Timer Pill */}
-        {sessionDuration && selectedSession.status === 'active' && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-orange-50 rounded-full border border-orange-100/50 shadow-sm">
-            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping" />
-            <span className="text-xs md:text-sm font-bold font-mono text-orange-700">{sessionDuration}</span>
+      {/* Right cluster */}
+      <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        {mounted && sessionDuration && selectedSession.status === 'active' && (
+          <div
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-xs font-mono font-bold tabular-nums border shadow-sm ${
+              insufficientBalance
+                ? 'bg-red-50 text-red-600 border-red-100'
+                : 'bg-saffron-50 text-saffron-700 border-saffron-100'
+            }`}
+            title="Session duration"
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                insufficientBalance ? 'bg-red-500' : 'bg-saffron-500'
+              } animate-pulse`}
+            />
+            {sessionDuration}
           </div>
         )}
 
-        {/* Balance (User Role) */}
-        {userRole !== 'friend' && typeof userBalance === 'number' && (
-          <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm transition-colors ${
-            insufficientBalance ? 'bg-red-50 text-red-700 border-red-100' : 'bg-green-50 text-green-700 border-green-100'
-          }`}>
-            <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-xs md:text-sm font-bold">₹{Math.floor(userBalance)}</span>
-          </div>
+        {mounted && userRole !== 'friend' && typeof userBalance === 'number' && (
+          <button
+            onClick={() => router.push('/payment')}
+            className={`inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm transition ${
+              insufficientBalance
+                ? 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100 animate-pulse'
+                : 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100'
+            }`}
+            title={insufficientBalance ? 'Recharge to keep chatting' : 'Wallet balance'}
+          >
+            <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-80" />
+            ₹{Math.max(0, Math.floor(userBalance))}
+          </button>
         )}
 
-        {/* Action Button */}
         {selectedSession.status === 'active' ? (
           <button
             onClick={onEndSession}
             disabled={endingSession}
-            className="px-3 md:px-5 py-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-200 text-white text-xs md:text-sm font-bold rounded-xl shadow-lg shadow-red-100 hover:shadow-red-200 transition-all duration-200 active:scale-95"
+            className="hidden sm:inline-flex px-3 py-1.5 bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white text-xs font-bold rounded-full shadow-sm shadow-red-200 active:scale-95 transition"
           >
-            {endingSession ? 'Ending...' : 'End Chat'}
+            {endingSession ? 'Ending…' : 'End'}
           </button>
         ) : selectedSession.status === 'ended' && onContinueChat && userRole !== 'friend' ? (
           <button
             onClick={onContinueChat}
-            className="px-3 md:px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm font-bold rounded-xl shadow-lg shadow-orange-100 hover:shadow-orange-200 transition-all duration-200 active:scale-95"
+            className="hidden sm:inline-flex px-3 py-1.5 bg-gradient-to-r from-saffron-500 to-saffron-600 text-white text-xs font-bold rounded-full shadow-sm shadow-saffron-200 active:scale-95 transition"
           >
-            Continue
+            Chat again
           </button>
-        ) : selectedSession.status === 'pending' ? (
-          <div className="px-3 py-1.5 bg-amber-50 text-amber-700 text-[11px] font-bold rounded-lg border border-amber-100 animate-pulse uppercase tracking-wider">
-            Connecting...
-          </div>
         ) : null}
+
+        {/* Overflow */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="p-2 rounded-full text-gray-600 hover:bg-saffron-50 active:scale-90 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300"
+            aria-label="More options"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-full mt-1.5 w-48 bg-white rounded-xl shadow-xl border border-saffron-100 overflow-hidden z-50 animate-in">
+              {selectedSession.status === 'active' && (
+                <button
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onEndSession()
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 font-semibold hover:bg-red-50 transition flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  End session
+                </button>
+              )}
+              {selectedSession.status === 'ended' && onContinueChat && userRole !== 'friend' && (
+                <button
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onContinueChat()
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-saffron-700 font-semibold hover:bg-saffron-50 transition"
+                >
+                  Chat again
+                </button>
+              )}
+              {userRole !== 'friend' && (
+                <button
+                  onClick={() => {
+                    setMenuOpen(false)
+                    router.push('/payment')
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-saffron-50 transition flex items-center gap-2"
+                >
+                  <Wallet className="w-4 h-4 text-saffron-500" />
+                  Recharge wallet
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  router.push('/chat')
+                }}
+                className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-saffron-50 transition flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Back to chats
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )

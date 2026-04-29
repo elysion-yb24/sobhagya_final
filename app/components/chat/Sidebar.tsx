@@ -1,7 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { Search, X, Wallet, Plus, Filter, MessageSquare, Star } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import PresenceDot from './PresenceDot'
 
 interface PopulatedUser {
   _id: string
@@ -14,6 +18,7 @@ interface Session {
   userId: PopulatedUser
   sessionId: string
   lastMessage: string
+  lastMessageType?: string
   createdAt: string
   status: 'active' | 'ended' | 'pending'
   userUnreadCount?: number
@@ -30,11 +35,9 @@ interface SidebarProps {
   error: string | null
   onSelectSession: (session: Session) => void
   onRefreshBalance: () => void
-  onToggleSidebar?: () => void
   onLoadMoreSessions?: () => void
   hasMoreSessions?: boolean
   loadingMore?: boolean
-  onDeleteSession?: (session: Session) => void
 }
 
 export default function Sidebar({
@@ -47,18 +50,20 @@ export default function Sidebar({
   error,
   onSelectSession,
   onRefreshBalance,
-  onToggleSidebar,
   onLoadMoreSessions,
   hasMoreSessions = false,
   loadingMore = false,
-  onDeleteSession
 }: SidebarProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [openMenuSessionId, setOpenMenuSessionId] = useState<string | null>(null)
+  const [onlineOnly, setOnlineOnly] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement>(null)
 
-  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -68,232 +73,229 @@ export default function Sidebar({
       },
       { threshold: 0.1 }
     )
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current)
-    }
-
+    const node = loadMoreRef.current
+    if (node) observer.observe(node)
     return () => {
-      if (loadMoreRef.current) {
-        observer.unobserve(loadMoreRef.current)
-      }
+      if (node) observer.unobserve(node)
     }
   }, [hasMoreSessions, loadingMore, onLoadMoreSessions])
 
-  const getChatUser = (session: Session): PopulatedUser | null => {
-    if (!userRole) return null
-    return userRole === 'user' ? session.providerId : session.userId
-  }
-
-  const formatTime = (timestamp: string) => {
-    if (!timestamp) return ''
-    const now = new Date()
-    const messageTime = new Date(timestamp)
-    if (isNaN(messageTime.getTime())) return ''
-    const diffInHours = (now.getTime() - messageTime.getTime()) / (1000 * 60 * 60)
-
-    if (diffInHours < 24) {
-      return messageTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
-    }
-    if (diffInHours < 48) {
-      return 'Yesterday'
-    }
-    if (diffInHours < 24 * 7) {
-      return messageTime.toLocaleDateString([], { weekday: 'short' })
-    }
-    return messageTime.toLocaleDateString([], {
-      month: 'short',
-      day: 'numeric',
+  const filteredSessions = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim()
+    return sessions.filter((s) => {
+      const peer = userRole === 'user' ? s.providerId : s.userId
+      if (onlineOnly && s.status !== 'active') return false
+      if (!q) return true
+      return peer?.name?.toLowerCase().includes(q) || s.lastMessage?.toLowerCase().includes(q)
     })
-  }
+  }, [sessions, searchQuery, onlineOnly, userRole])
 
-  const filteredSessions = sessions.filter(session => {
-    const user = getChatUser(session)
-    const searchText = (user?.name || '').toLowerCase()
-    const lastMsg = (session.lastMessage || '').toLowerCase()
-    const query = searchQuery.toLowerCase()
-    return searchText.includes(query) || lastMsg.includes(query)
-  })
-
-  const handleMenuToggle = (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setOpenMenuSessionId(openMenuSessionId === sessionId ? null : sessionId)
-  }
-
-  const handleDeleteSession = (session: Session, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (onDeleteSession) {
-      onDeleteSession(session)
-    }
-    setOpenMenuSessionId(null)
-  }
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element
-      if (!target.closest('.dropdown-menu') && !target.closest('.menu-toggle-button')) {
-        setOpenMenuSessionId(null)
-      }
-    }
-    document.addEventListener('click', handleClickOutside)
-    return () => document.removeEventListener('click', handleClickOutside)
-  }, [])
+  const totalUnread = useMemo(() => {
+    return sessions.reduce((sum, s) => sum + (userRole === 'user' ? s.userUnreadCount || 0 : s.providerUnreadCount || 0), 0)
+  }, [sessions, userRole])
 
   return (
-    <aside className="w-full sm:w-85 md:w-96 bg-white flex flex-col border-r border-orange-100/50 h-screen overflow-hidden shadow-xl z-30">
+    <aside className="w-full h-full bg-white flex flex-col relative overflow-hidden border-r border-saffron-100">
       {/* Sidebar Header */}
-      <div className="px-5 py-4 bg-white sticky top-0 z-10 space-y-4">
+      <div className="px-4 pt-6 pb-4 bg-gradient-to-b from-saffron-50/50 to-white space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">Chats</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-garamond text-2xl font-bold text-saffron-900">Chats</h2>
+            {totalUnread > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-saffron-500 text-white text-[10px] font-bold shadow-sm">
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
+          </div>
           <button 
             onClick={() => router.push('/call-with-astrologer')}
-            className="p-2 text-orange-600 hover:bg-orange-50 rounded-full transition-all duration-200"
-            title="New Chat"
+            className="p-2 rounded-full bg-saffron-100 text-saffron-700 hover:bg-saffron-200 transition active:scale-95"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
+            <MessageSquare className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search Bar */}
         <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search messages or people"
+            placeholder="Search conversations"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-gray-100 border-none rounded-xl focus:ring-2 focus:ring-orange-200 text-sm placeholder:text-gray-500 transition-all duration-200"
+            className="w-full pl-9 pr-9 py-2.5 bg-gray-50 border border-saffron-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 transition-all placeholder:text-gray-400"
           />
-          <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Wallet (Optional row) */}
-        {userRole !== 'friend' && (typeof userBalance === 'number' || balanceLoading) && (
-          <div className="flex items-center justify-between px-3 py-2 bg-orange-50/50 rounded-lg border border-orange-100/50">
-            <div className="flex items-center gap-2 text-orange-800">
-               <span className="text-[11px] font-bold uppercase tracking-wider opacity-60">Balance</span>
-               <span className="text-sm font-bold">{balanceLoading ? '...' : `₹${Math.max(0, Math.floor(userBalance ?? 0))}`}</span>
-            </div>
-            <button onClick={onRefreshBalance} className="text-[11px] font-bold text-orange-600 hover:underline uppercase tracking-wider">Refill</button>
-          </div>
-        )}
+        {/* Quick Filters & Balance */}
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => setOnlineOnly(!onlineOnly)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition ${
+              onlineOnly 
+                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm' 
+                : 'bg-white text-gray-600 border-saffron-100 hover:border-saffron-300'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${onlineOnly ? 'bg-white' : 'bg-emerald-500'}`} />
+            Online
+          </button>
+
+          {mounted && userRole === 'user' && (
+            <button
+              onClick={() => router.push('/payment')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-saffron-500 to-amber-500 text-white text-xs font-bold shadow-md shadow-saffron-100 active:scale-95 transition"
+            >
+              <Wallet className="w-3.5 h-3.5" />
+              {balanceLoading ? '...' : `₹${Math.floor(userBalance ?? 0)}`}
+              <Plus className="w-3 h-3" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Sessions List */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide divide-y divide-gray-50">
+      <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
         {loading ? (
-          <div className="p-8 flex flex-col items-center justify-center space-y-4">
-             <div className="w-10 h-10 border-3 border-orange-500 border-t-transparent rounded-full animate-spin" />
-             <p className="text-sm text-gray-500 font-medium animate-pulse">Loading conversations...</p>
+          <div className="flex flex-col items-center justify-center p-12 gap-3">
+             <div className="w-8 h-8 border-[3px] border-saffron-500 border-t-transparent rounded-full animate-spin" />
+             <p className="text-xs text-gray-400 font-medium italic">Aligning stars...</p>
           </div>
         ) : filteredSessions.length === 0 ? (
-          <div className="p-10 text-center space-y-4">
-            <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mx-auto">
-               <svg className="w-10 h-10 text-orange-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
-               </svg>
-            </div>
-            <div className="space-y-1">
-              <p className="font-bold text-gray-900">No chats found</p>
-              <p className="text-xs text-gray-500 leading-relaxed px-4">
-                {searchQuery ? "We couldn't find any chats matching your search." : "Your conversation list is empty. Start your journey today!"}
-              </p>
-            </div>
-          </div>
+          <EmptyState
+            searchQuery={searchQuery}
+            onlineOnly={onlineOnly}
+            onFindAstrologer={() => router.push('/call-with-astrologer')}
+          />
         ) : (
-          filteredSessions.map(session => {
-            const user = getChatUser(session)
-            const isSelected = selectedSession?.sessionId === session.sessionId
-            const unreadCount = (userRole === 'user' || userRole === 'friend') ? session.userUnreadCount : session.providerUnreadCount
+          <div className="flex flex-col">
+            {filteredSessions.map((session) => {
+              const peer = userRole === 'user' ? session.providerId : session.userId
+              const isSelected = selectedSession?.sessionId === session.sessionId
+              const unreadCount = userRole === 'user' ? session.userUnreadCount || 0 : session.providerUnreadCount || 0
+              const isOnline = session.status === 'active'
 
-            return (
-              <div
-                key={session.sessionId}
-                onClick={() => onSelectSession(session)}
-                className={`flex items-center gap-4 px-5 py-4 cursor-pointer transition-all duration-200 border-l-4 ${
-                  isSelected ? 'bg-orange-50 border-orange-500 shadow-inner' : 'hover:bg-gray-50 border-transparent'
-                }`}
-              >
-                {/* Avatar */}
-                <div className="relative flex-shrink-0">
-                  <div className="w-14 h-14 rounded-full ring-2 ring-white shadow-sm overflow-hidden">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-500 font-bold text-lg">
-                        {user?.name?.charAt(0).toUpperCase()}
+              return (
+                <button
+                  key={session.sessionId}
+                  onClick={() => onSelectSession(session)}
+                  className={`flex items-center gap-3 px-4 py-3.5 text-left transition relative ${
+                    isSelected ? 'bg-saffron-50/80' : 'hover:bg-gray-50'
+                  }`}
+                >
+                  {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-saffron-500" />}
+                  
+                  <div className="relative flex-shrink-0">
+                    {/* Instagram-style gradient story-ring for online astrologers */}
+                    <div
+                      className={`p-[2px] rounded-full ${
+                        isOnline
+                          ? 'bg-gradient-to-tr from-saffron-500 via-amber-400 to-saffron-300 shadow-sm'
+                          : 'bg-saffron-100'
+                      }`}
+                    >
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-white relative ring-2 ring-white">
+                        {peer?.avatar ? (
+                          <Image src={peer.avatar} alt={peer?.name || ''} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-saffron-200 to-saffron-400 flex items-center justify-center text-white font-bold text-lg">
+                            {peer?.name?.charAt(0)}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5">
+                      <PresenceDot status={isOnline ? 'online' : 'offline'} size={12} />
+                    </div>
                   </div>
-                  {session.status === 'active' && (
-                    <span className="absolute bottom-0 right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm" />
-                  )}
-                </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className={`text-[15px] font-bold truncate ${isSelected ? 'text-orange-900' : 'text-gray-900'}`}>
-                      {user?.name || 'User'}
-                    </h3>
-                    <span className="text-[11px] font-medium text-gray-400 whitespace-nowrap ml-2">
-                      {formatTime(session.createdAt)}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-xs truncate ${unreadCount && unreadCount > 0 ? 'text-gray-950 font-bold' : 'text-gray-500'}`}>
-                      {session.lastMessage || 'No messages yet'}
-                    </p>
-                    {unreadCount && unreadCount > 0 ? (
-                      <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 bg-orange-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                        {unreadCount}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <h3 className={`text-[15px] truncate ${unreadCount > 0 ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
+                        {peer?.name || 'User'}
+                      </h3>
+                      <span className={`text-[10px] tabular-nums whitespace-nowrap ${unreadCount > 0 ? 'text-saffron-600 font-bold' : 'text-gray-400'}`}>
+                        {mounted ? formatSidebarTime(session.createdAt) : ''}
                       </span>
-                    ) : (
-                      <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-                         <button 
-                           onClick={(e) => handleMenuToggle(session.sessionId, e)}
-                           className="menu-toggle-button p-1 hover:bg-gray-200 rounded-md transition-colors"
-                         >
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                         </button>
-                         {openMenuSessionId === session.sessionId && (
-                           <div className="dropdown-menu absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-2xl border border-gray-100 z-50 overflow-hidden">
-                              <button
-                                onClick={(e) => handleDeleteSession(session, e)}
-                                className="w-full px-4 py-2 text-left text-xs text-red-600 font-bold hover:bg-red-50 transition-colors flex items-center gap-2"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                Clear Chat
-                              </button>
-                           </div>
-                         )}
-                      </div>
-                    )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-[13px] truncate ${unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                        {session.lastMessageType === 'image' && '📷 Photo'}
+                        {session.lastMessage || 'Start a conversation'}
+                      </p>
+                      {unreadCount > 0 && (
+                        <span className="flex-shrink-0 min-w-[20px] h-5 px-1.5 bg-saffron-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            )
-          })
-        )}
-
-        {/* Load More */}
-        {hasMoreSessions && (
-          <div ref={loadMoreRef} className="p-6 flex items-center justify-center">
-            {loadingMore ? (
-              <div className="w-6 h-6 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <span className="text-xs text-gray-400 font-medium">Scroll to load more</span>
-            )}
+                </button>
+              )
+            })}
           </div>
         )}
+        <div ref={loadMoreRef} className="h-4" />
       </div>
     </aside>
+  )
+}
+
+function formatSidebarTime(iso: string) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const now = new Date()
+  const diffH = (now.getTime() - d.getTime()) / 3600000
+  if (diffH < 24) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+  if (diffH < 48) return 'Yesterday'
+  if (diffH < 168) return d.toLocaleDateString([], { weekday: 'short' })
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short' })
+}
+
+function EmptyState({
+  searchQuery,
+  onlineOnly,
+  onFindAstrologer,
+}: {
+  searchQuery: string
+  onlineOnly: boolean
+  onFindAstrologer: () => void
+}) {
+  if (searchQuery || onlineOnly) {
+    return (
+      <div className="p-10 text-center space-y-3">
+        <div className="w-14 h-14 mx-auto rounded-full bg-saffron-50 flex items-center justify-center">
+          <Filter className="w-6 h-6 text-saffron-400" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-800">No matches</p>
+          <p className="text-xs text-gray-500 mt-1">Try a different search or filter.</p>
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="p-10 text-center space-y-4">
+      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-saffron-100 to-saffron-200 flex items-center justify-center shadow-inner">
+        <span className="text-3xl">🪔</span>
+      </div>
+      <div className="space-y-1">
+        <p className="font-garamond text-lg text-saffron-900 font-semibold">Begin your journey</p>
+        <p className="text-xs text-gray-500 leading-relaxed px-4">
+          Connect with a Sobhagya astrologer for guidance, blessings, and clarity.
+        </p>
+      </div>
+      <button
+        onClick={onFindAstrologer}
+        className="px-5 py-2.5 rounded-full bg-gradient-to-r from-saffron-500 to-saffron-600 text-white text-sm font-semibold shadow hover:shadow-lg active:scale-95 transition"
+      >
+        Find an astrologer
+      </button>
+    </div>
   )
 }

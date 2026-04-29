@@ -1,6 +1,21 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
+import { Plus, Image as ImageIcon, Send, X, Wallet } from 'lucide-react'
+import ReplyPreview from './ReplyPreview'
+
+export interface PendingImage {
+  id: string
+  previewUrl: string
+  file: File
+}
+
+export interface ReplyTarget {
+  id: string
+  authorLabel: string
+  text: string
+  imageUrl?: string
+}
 
 interface ChatInputProps {
   newMessage: string
@@ -9,7 +24,18 @@ interface ChatInputProps {
   isDisabled?: boolean
   onTyping?: () => void
   onStopTyping?: () => void
-  onFileUpload?: (file: File) => void | Promise<void>
+
+  replyTarget?: ReplyTarget | null
+  onClearReply?: () => void
+
+  pendingImages?: PendingImage[]
+  onSelectImages?: (files: File[]) => void
+  onRemovePending?: (id: string) => void
+  maxAttachments?: number
+
+  isInsufficient?: boolean
+  onRecharge?: () => void
+  isSending?: boolean
 }
 
 export default function ChatInput({
@@ -19,59 +45,54 @@ export default function ChatInput({
   isDisabled = false,
   onTyping,
   onStopTyping,
-  onFileUpload,
+  replyTarget,
+  onClearReply,
+  pendingImages = [],
+  onSelectImages,
+  onRemovePending,
+  maxAttachments = 4,
+  isInsufficient = false,
+  onRecharge,
+  isSending = false,
 }: ChatInputProps) {
   const [isTyping, setIsTyping] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current)
-        typingTimeoutRef.current = null
-      }
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     }
   }, [])
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !onFileUpload) return
-    try {
-      setUploading(true)
-      await onFileUpload(file)
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }
-
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`
-    }
+    const t = textareaRef.current
+    if (!t) return
+    t.style.height = 'auto'
+    t.style.height = `${Math.min(t.scrollHeight, 140)}px`
   }, [newMessage])
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  useEffect(() => {
+    if (replyTarget) textareaRef.current?.focus()
+  }, [replyTarget])
+
+  const canSend =
+    !isDisabled && !isSending && (newMessage.trim().length > 0 || pendingImages.length > 0)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      if (newMessage.trim() && !isDisabled) {
-        onSendMessage()
-      }
+      if (canSend) onSendMessage()
     }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value)
-
     if (!isTyping && e.target.value.trim()) {
       setIsTyping(true)
       onTyping?.()
     }
-
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false)
@@ -79,88 +100,142 @@ export default function ChatInput({
     }, 1500)
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'))
+    if (files.length === 0) return
+    const remaining = Math.max(0, maxAttachments - pendingImages.length)
+    if (remaining === 0) return
+    onSelectImages?.(files.slice(0, remaining))
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  // Disabled-because-session-ended (different visual from disabled-due-to-balance)
+  if (isDisabled && !isInsufficient) {
+    return (
+      <footer className="p-3 sm:p-4 bg-saffron-50/70 backdrop-blur border-t border-saffron-100 safe-area-pb">
+        <p className="text-center text-[12px] text-gray-500">
+          🪔 This session has ended. Start a new one from the chat list.
+        </p>
+      </footer>
+    )
+  }
+
   return (
-    <footer className="p-3 md:p-4 bg-[#FDF8F0]/80 backdrop-blur-md border-t border-orange-100/50 safe-area-pb">
-      <div className="max-w-4xl mx-auto flex items-end gap-2 md:gap-3">
-        
-        {/* Attachment Button */}
-        <div className="flex-shrink-0 mb-0.5">
+    <footer className="bg-[#FDF8F0]/90 backdrop-blur-md border-t border-saffron-100/70 safe-area-pb">
+      {/* Insufficient balance strip */}
+      {isInsufficient && onRecharge && (
+        <button
+          onClick={onRecharge}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold border-b border-amber-100 transition"
+        >
+          <Wallet className="w-3.5 h-3.5" />
+          Low balance — tap to recharge and keep chatting
+        </button>
+      )}
+
+      {/* Reply preview */}
+      {replyTarget && (
+        <div className="px-3 sm:px-4 pt-2.5">
+          <ReplyPreview
+            authorLabel={replyTarget.authorLabel}
+            text={replyTarget.text}
+            imageUrl={replyTarget.imageUrl}
+            onDismiss={onClearReply}
+            variant="composer"
+          />
+        </div>
+      )}
+
+      {/* Image preview tray */}
+      {pendingImages.length > 0 && (
+        <div className="px-3 sm:px-4 pt-2.5 flex gap-2 overflow-x-auto scrollbar-hide">
+          {pendingImages.map((img) => (
+            <div
+              key={img.id}
+              className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-saffron-200 bg-white shadow-sm"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img.previewUrl} alt="" className="w-full h-full object-cover" />
+              <button
+                onClick={() => onRemovePending?.(img.id)}
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition"
+                aria-label="Remove image"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {pendingImages.length < maxAttachments && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-shrink-0 w-16 h-16 rounded-lg border-2 border-dashed border-saffron-200 bg-white/50 hover:bg-saffron-50 text-saffron-500 flex items-center justify-center transition"
+              aria-label="Add more"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="p-2.5 sm:p-3 flex items-end gap-2">
+        {/* Attach */}
+        <div className="flex-shrink-0 relative">
           <input
             ref={fileInputRef}
             type="file"
             className="hidden"
-            accept="image/*,video/*,application/pdf"
+            accept="image/*"
+            multiple
             onChange={handleFileChange}
-            disabled={isDisabled || uploading || !onFileUpload}
           />
           <button
             type="button"
-            disabled={isDisabled || uploading || !onFileUpload}
             onClick={() => fileInputRef.current?.click()}
-            className="p-2.5 rounded-full text-orange-600 hover:bg-orange-100/50 transition-all duration-200 active:scale-90 disabled:opacity-30"
-            title="Attach file"
+            disabled={pendingImages.length >= maxAttachments}
+            className="w-11 h-11 rounded-full text-saffron-700 bg-white border border-saffron-100 hover:bg-saffron-50 active:scale-90 transition flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Attach photo"
+            aria-label="Attach photo"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
+            <ImageIcon className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Input Box */}
-        <div className="flex-1 relative bg-white rounded-[24px] shadow-sm border border-orange-100/50 group focus-within:border-orange-300 transition-all duration-200">
+        {/* Composer */}
+        <div className="flex-1 min-w-0 bg-white rounded-3xl shadow-sm border border-saffron-100/70 focus-within:border-saffron-300 transition flex items-end">
           <textarea
             ref={textareaRef}
             value={newMessage}
             onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder={isDisabled ? "Chat session ended" : "Type your message..."}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              pendingImages.length > 0 ? 'Add a caption…' : 'Message your astrologer…'
+            }
             disabled={isDisabled}
-            className="w-full pl-5 pr-12 py-3 bg-transparent resize-none focus:outline-none text-[15px] md:text-base text-gray-800 placeholder:text-gray-400 leading-normal scrollbar-hide"
             rows={1}
             maxLength={2000}
-            style={{ minHeight: '46px', maxHeight: '120px' }}
+            className="flex-1 min-w-0 bg-transparent px-4 py-3 text-[15px] text-gray-800 placeholder:text-gray-400 leading-snug resize-none focus:outline-none scrollbar-hide"
+            style={{ minHeight: '44px', maxHeight: '140px' }}
           />
-          
-          {/* Emoji / Secondary Action placeholder */}
-          <div className="absolute right-3 bottom-2.5">
-             <button className="p-1 text-gray-400 hover:text-orange-500 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-             </button>
-          </div>
         </div>
 
-        {/* Send / Voice Button */}
-        <div className="flex-shrink-0 mb-0.5">
-          {newMessage.trim() ? (
-            <button
-              onClick={onSendMessage}
-              disabled={isDisabled}
-              className="p-3 bg-orange-600 hover:bg-orange-700 text-white rounded-full shadow-lg shadow-orange-200 transition-all duration-200 active:scale-90 flex items-center justify-center"
-            >
-              <svg className="w-6 h-6 translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
+        {/* Send */}
+        <button
+          onClick={onSendMessage}
+          disabled={!canSend}
+          className={`flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center transition active:scale-90 shadow-md ${
+            canSend
+              ? 'bg-gradient-to-br from-saffron-500 to-saffron-600 text-white shadow-saffron-200 hover:shadow-saffron-300'
+              : 'bg-saffron-100 text-saffron-300'
+          }`}
+          aria-label="Send"
+        >
+          {isSending ? (
+            <span className="w-4 h-4 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
           ) : (
-            <button
-              disabled={isDisabled}
-              className="p-3 bg-white text-orange-600 border border-orange-100 rounded-full shadow-sm hover:bg-orange-50 transition-all duration-200 active:scale-90 flex items-center justify-center disabled:opacity-50"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </button>
+            <Send className={`w-5 h-5 ${canSend ? 'translate-x-0.5' : ''}`} />
           )}
-        </div>
+        </button>
       </div>
-      
-      {isDisabled && (
-        <p className="text-center text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-widest">
-          This session is closed
-        </p>
-      )}
     </footer>
   )
 }

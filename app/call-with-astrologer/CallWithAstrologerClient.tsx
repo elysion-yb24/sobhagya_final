@@ -465,7 +465,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         </div>
 
         {/* 🎯 Filter Section */}
-        <section className="z-50 w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 mb-6 sticky top-[92px] md:static bg-white/90 md:bg-transparent backdrop-blur-lg md:backdrop-blur-0 border-y border-orange-100/70 md:border-y-0">
+        <section className="z-[95] isolate w-full max-w-6xl mx-auto px-4 sm:px-6 py-2 mb-6 sticky top-[98px] md:top-[64px] lg:top-[112px] bg-white border-y border-orange-100/70 shadow-sm transition-all duration-300">
           <FilterBar
             searchQuery={searchQuery}
             selectedSort={sortBy}
@@ -478,7 +478,7 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         </section>
 
         {/* 🟠 Astrologers */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-12 relative z-0">
           {error ? (
             <motion.div className="flex flex-col items-center justify-center py-16 px-4">
               <div className="text-center max-w-md">

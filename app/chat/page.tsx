@@ -1,20 +1,20 @@
 'use client';
 
-// Native chat page wired directly to the chat-service REST + Socket.IO
-// (replaces the previous iframe-into-chat.sobhagya.in approach which was
-// blocked by X-Frame-Options / CSP and CORS for localhost).
+// Native chat page wired directly to the chat-service REST + Socket.IO.
 //
 // Layout:
-//   /chat                           → thread list (sidebar full width on mobile)
-//   /chat?threadId=...&sessionId=...→ active conversation (sidebar hidden on mobile)
+//   /chat                            → thread list (full screen on mobile, split view ≥ md)
+//   /chat?threadId=...&sessionId=... → active conversation (full screen on mobile)
 //
-// Realtime: uses the global Socket.IO connection from `SessionManagerProvider`
-// (path `/chat-socket/socket.io/`). Backend events used:
-//   - emit `join_session`     → join the thread room
-//   - emit `send_message`     → server saves + broadcasts `receive_message`
-//   - emit `end_session`      → server broadcasts `session_ended`
-//   - emit `typing`
-//   - listen `receive_message`, `astrologer_joined`, `session_ended`, `typing`
+// Realtime events used:
+//   emit:   join_session, send_message, end_session, typing, read_message
+//   listen: receive_message, astrologer_joined, session_ended, typing
+//
+// New in this redesign (text + image only, mobile-first):
+//   - reply-to-message (uses backend replyMessage field)
+//   - image attachments (Azure SAS via uploadChatFile, sent as messageType: 'image')
+//   - image lightbox + long-press actions sheet
+//   - session-ended card with rate / dakshina / chat-again
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -27,6 +27,8 @@ import {
   fetchThreadById,
   fetchThreads,
   declineSession as apiDeclineSession,
+  uploadChatFile,
+  createChatSession,
   type BackendMessage,
   type BackendThread,
   type ChatThreadView,
@@ -34,35 +36,38 @@ import {
 import { useSessionManager } from '../components/astrologers/SessionManager';
 import Sidebar from '../components/chat/Sidebar';
 import ChatHeader from '../components/chat/ChatHeader';
-import ChatMessages from '../components/chat/ChatMessages';
-import ChatInput from '../components/chat/ChatInput';
+import ChatMessages, { type Message as UIMessageBase } from '../components/chat/ChatMessages';
+import ChatInput, {
+  type PendingImage,
+  type ReplyTarget,
+} from '../components/chat/ChatInput';
+import ImageLightbox from '../components/chat/ImageLightbox';
+import MessageActionsSheet, {
+  type MessageActionsTarget,
+} from '../components/chat/MessageActionsSheet';
+import SessionEndedCard from '../components/chat/SessionEndedCard';
+import RatingModal from '../components/ui/RatingModal';
+import DakshinaModal from '../components/calling/ui/DakshinaModal';
 
-// Default chat rate per minute used when the backend doesn't expose one on the
-// thread payload. Matches `partner.chatRpm` default in chat-service.
 const DEFAULT_CHAT_RPM = 5;
 
-interface UIMessage {
-  id: string;
-  text: string;
-  sender: 'user' | 'astrologer' | 'system';
-  timestamp: string;
-  messageType?: 'text' | 'voice' | 'image' | 'video' | 'file' | 'options' | 'informative' | 'call';
-  fileLink?: string;
-  sentByName?: string;
-  sentByProfileImage?: string;
-  isAutomated?: boolean;
-  clientMessageId?: string;
-  deliveryStatus?: 'sent' | 'delivered' | 'read' | 'failed';
-  messageId?: string;
-}
+// Default in-app dakshina gift menu — backend currently has no chat-side gift fetch,
+// so we surface a sensible local set to keep the post-session flow working without
+// touching the backend. Pricing aligns with the calling-side dakshina tiers.
+const DEFAULT_DAKSHINA_GIFTS = [
+  { _id: 'd-11', name: 'Diya', icon: 'diya', price: 11 },
+  { _id: 'd-21', name: 'Lotus', icon: 'lotus', price: 21 },
+  { _id: 'd-51', name: 'Namaste', icon: 'namaste', price: 51 },
+  { _id: 'd-101', name: 'Nakshatra', icon: 'nakshatra', price: 101 },
+  { _id: 'd-251', name: 'Trishul', icon: 'trishul', price: 251 },
+  { _id: 'd-501', name: 'Om', icon: 'om', price: 501 },
+];
+
+type UIMessage = UIMessageBase;
 
 /** Normalise a backend message into the UI message shape. */
-function adaptMessage(
-  msg: BackendMessage,
-  currentUserId: string | null
-): UIMessage {
+function adaptMessage(msg: BackendMessage, currentUserId: string | null): UIMessage {
   const mine = currentUserId && String(msg.sentBy) === String(currentUserId);
-  // Welcome / system info messages from the bot
   const isInfo = msg.messageType === 'info' || msg.messageType === 'informative';
   return {
     id: String(msg._id || msg.chatId),
@@ -72,7 +77,8 @@ function adaptMessage(
     timestamp: msg.createdAt,
     messageType: (msg.messageType as UIMessage['messageType']) || 'text',
     fileLink: msg.fileLink,
-    isAutomated: isInfo,
+    replyMessage: msg.replyMessage || null,
+    isAutomated: Boolean(msg.isAutomated || isInfo),
     deliveryStatus: mine ? 'sent' : undefined,
   };
 }
@@ -85,11 +91,42 @@ export default function ChatPage() {
   const threadIdParam = searchParams?.get('threadId') || null;
   const sessionIdParam = searchParams?.get('sessionId') || null;
 
-  // -------- auth gate (runs only on client) --------
+  // -------- auth gate --------
   const [authChecked, setAuthChecked] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('user');
+
+  // Measure the global site header so the chat panel always sits cleanly
+  // below it (the site header is two rows on desktop, one row on tablet/mobile,
+  // and grows further at 150%+ browser zoom — a hardcoded offset can never
+  // match all of those at once).
+  const [siteHeaderHeight, setSiteHeaderHeight] = useState(64);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // Look for the first <header> that's positioned fixed at the top.
+    const headers = Array.from(document.querySelectorAll('header')) as HTMLElement[];
+    let target: HTMLElement | null = null;
+    for (const h of headers) {
+      const cs = window.getComputedStyle(h);
+      if (cs.position === 'fixed' && (cs.top === '0px' || cs.top === '0')) {
+        target = h;
+        break;
+      }
+    }
+    if (!target) return;
+    const update = () => {
+      if (target) setSiteHeaderHeight(target.offsetHeight);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(target);
+    window.addEventListener('resize', update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -114,13 +151,11 @@ export default function ChatPage() {
     setThreadsError(null);
     try {
       const { threads: backendThreads } = await fetchThreads({ limit: 30 });
-      const adapted = (backendThreads as BackendThread[]).map((t) =>
-        adaptThread(t, userId)
-      );
+      const adapted = (backendThreads as BackendThread[]).map((t) => adaptThread(t, userId));
       setThreads(adapted);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn('[chat] loadThreads failed', err);
-      setThreadsError(err?.message || 'Failed to load conversations');
+      setThreadsError(err instanceof Error ? err.message : 'Failed to load conversations');
     } finally {
       setThreadsLoading(false);
     }
@@ -132,11 +167,8 @@ export default function ChatPage() {
 
   // -------- active thread / session --------
   const [activeThread, setActiveThread] = useState<ChatThreadView | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(
-    sessionIdParam
-  );
-  const [sessionStatus, setSessionStatus] =
-    useState<'active' | 'ended' | 'pending'>('active');
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(sessionIdParam);
+  const [sessionStatus, setSessionStatus] = useState<'active' | 'ended' | 'pending'>('active');
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [newMessage, setNewMessage] = useState('');
@@ -144,23 +176,37 @@ export default function ChatPage() {
   const [typingFromOther, setTypingFromOther] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
 
+  // Composer state.
+  const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [isSending, setIsSending] = useState(false);
+
+  // Lightbox state.
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxStartId, setLightboxStartId] = useState<string | null>(null);
+
+  // Action sheet state.
+  const [actionsTarget, setActionsTarget] = useState<MessageActionsTarget | null>(null);
+
+  // Post-session modals.
+  const [showRating, setShowRating] = useState(false);
+  const [showDakshina, setShowDakshina] = useState(false);
+  const [chatAgainPending, setChatAgainPending] = useState(false);
+
   // Live billing/timer state.
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [elapsedSecs, setElapsedSecs] = useState(0);
   const sessionStartedAtRef = useRef<number | null>(null);
 
-  // Load-older-history state.
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [hasMoreHistory, setHasMoreHistory] = useState(false);
   const loadingOlderRef = useRef(false);
 
-  // Smart auto-scroll state.
   const [showJumpToBottom, setShowJumpToBottom] = useState(false);
   const isNearBottomRef = useRef(true);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Reconnection toast (briefly shown when isConnected flips false → true).
   const [showReconnectedToast, setShowReconnectedToast] = useState(false);
   const wasConnectedRef = useRef(isConnected);
   useEffect(() => {
@@ -172,9 +218,7 @@ export default function ChatPage() {
     wasConnectedRef.current = isConnected;
   }, [isConnected]);
 
-  // Track whether the user is near the bottom of the message list. Used to
-  // (a) decide if we should auto-scroll on new messages and (b) toggle the
-  // floating "↓ Jump to latest" button.
+  // Track whether user is near the bottom of the message list.
   useEffect(() => {
     const el = messagesEndRef.current;
     if (!el) return;
@@ -184,7 +228,6 @@ export default function ChatPage() {
       isNearBottomRef.current = near;
       setShowJumpToBottom(!near && messages.length > 0);
 
-      // Trigger load-older when user reaches the top.
       if (
         el.scrollTop <= 8 &&
         !loadingOlderRef.current &&
@@ -200,9 +243,7 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, hasMoreHistory, threadIdParam]);
 
-  // Auto-scroll to bottom only when the user is already near the bottom OR
-  // the most-recent message is the user's own. Prevents yanking the viewport
-  // away when the user scrolls up to read older messages.
+  // Auto-scroll to bottom only when user is near bottom OR last message is mine.
   useEffect(() => {
     const el = messagesEndRef.current;
     if (!el) return;
@@ -235,6 +276,11 @@ export default function ChatPage() {
     setHasMoreHistory(false);
     isNearBottomRef.current = true;
     setShowJumpToBottom(false);
+    setReplyTarget(null);
+    setPendingImages((prev) => {
+      prev.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+      return [];
+    });
 
     const HISTORY_PAGE = 20;
     (async () => {
@@ -246,16 +292,16 @@ export default function ChatPage() {
 
       if (thread) {
         const view = adaptThread(thread, userId);
-        // Backend may not return userProfileImage/providerProfileImage; fill
-        // from the embedded `user`/`provider` fields if present.
-        const t = thread as any;
+        const t = thread as unknown as {
+          user?: { avatar?: string; name?: string };
+          provider?: { avatar?: string; name?: string };
+        };
         if (t.user?.avatar) view.userId.avatar = t.user.avatar;
         if (t.user?.name) view.userId.name = t.user.name;
         if (t.provider?.avatar) view.providerId.avatar = t.provider.avatar;
         if (t.provider?.name) view.providerId.name = t.provider.name;
         setActiveThread(view);
         setSessionStatus(view.status);
-        // If sessionIdParam not in URL, fall back to lastSessionId from thread
         if (!sessionIdParam && view.lastSessionId) {
           setActiveSessionId(view.lastSessionId);
         }
@@ -278,7 +324,15 @@ export default function ChatPage() {
     };
   }, [authed, threadIdParam, userId, sessionIdParam]);
 
-  // Join the socket room once we have a connected socket + thread + session.
+  // Cleanup any remaining object URLs on unmount.
+  useEffect(() => {
+    return () => {
+      pendingImages.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Join socket room.
   useEffect(() => {
     if (!socket || !isConnected) return;
     if (!threadIdParam || !activeSessionId) return;
@@ -294,7 +348,7 @@ export default function ChatPage() {
     };
   }, [socket, isConnected, threadIdParam, activeSessionId, joinSessionRoom]);
 
-  // Wire socket events scoped to the active threadId.
+  // Wire socket events.
   useEffect(() => {
     if (!socket) return;
     if (!threadIdParam) return;
@@ -304,17 +358,15 @@ export default function ChatPage() {
       if (msg.threadId && String(msg.threadId) !== String(threadIdParam)) return;
       const ui = adaptMessage(msg, userId);
       setMessages((prev) => {
-        // De-dupe by chatId / _id
         if (prev.some((p) => p.id === ui.id)) return prev;
         return [...prev, ui];
       });
     };
 
-    const onAstrologerJoined = (sessionData: any) => {
+    const onAstrologerJoined = (sessionData: { threadId?: string } | null | undefined) => {
       if (!sessionData) return;
       if (sessionData.threadId && String(sessionData.threadId) !== String(threadIdParam)) return;
       setSessionStatus('active');
-      // Show a friendly system message in the transcript.
       setMessages((prev) => [
         ...prev,
         {
@@ -327,19 +379,11 @@ export default function ChatPage() {
       ]);
     };
 
-    const onSessionEnded = (payload: any) => {
+    const onSessionEnded = (payload: { data?: { threadId?: string }; threadId?: string } | undefined) => {
       const ended = payload?.data || payload;
       if (ended?.threadId && String(ended.threadId) !== String(threadIdParam)) return;
       setSessionStatus('ended');
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `session-ended-${Date.now()}`,
-          text: 'Session has ended',
-          sender: 'system',
-          timestamp: new Date().toISOString(),
-        },
-      ]);
+      setShowRating(true);
     };
 
     const onTyping = (payload: { isTyping?: boolean } | undefined) => {
@@ -359,11 +403,9 @@ export default function ChatPage() {
     };
   }, [socket, threadIdParam, userId]);
 
-  // -------- load older history (paginate up) --------
+  // load older history.
   const loadOlderHistory = useCallback(async () => {
     if (loadingOlderRef.current || !hasMoreHistory || !threadIdParam) return;
-    // Pick the genuinely-oldest timestamp; messages can arrive out of order
-    // (initial load is newest-first; live ones are appended in arrival order).
     let oldestTs: string | null = null;
     for (const m of messages) {
       if (!m.timestamp) continue;
@@ -391,18 +433,11 @@ export default function ChatPage() {
       }
       const adapted = older.map((m) => adaptMessage(m, userId));
       setMessages((prev) => {
-        // Prepend older without losing any existing messages.
         const existingIds = new Set(prev.map((m) => m.id));
-        const merged = [
-          ...adapted.filter((m) => !existingIds.has(m.id)),
-          ...prev,
-        ];
-        return merged;
+        return [...adapted.filter((m) => !existingIds.has(m.id)), ...prev];
       });
       setHasMoreHistory(older.length >= PAGE);
 
-      // Restore scroll position so the user stays anchored to the same
-      // message they were reading before the prepend.
       requestAnimationFrame(() => {
         if (el) {
           const newScrollHeight = el.scrollHeight;
@@ -418,41 +453,45 @@ export default function ChatPage() {
   }, [hasMoreHistory, threadIdParam, messages, userId]);
 
   // -------- send / retry message --------
-  // Inner emit keeps the same `clientMessageId` across original-send and
-  // retry so the optimistic bubble flips between sent → delivered/failed
-  // without ever creating a duplicate row in the list.
+  type SendOptions = {
+    text?: string;
+    messageType?: 'text' | 'image';
+    fileLink?: string | null;
+    replyMessage?: object | null;
+    clientMessageId: string;
+  };
+
   const emitSend = useCallback(
-    (text: string, clientId: string) => {
+    (opts: SendOptions) => {
       if (!socket || !isConnected) return;
       if (!threadIdParam || !activeSessionId) return;
+      const cid = opts.clientMessageId;
       socket.emit(
         'send_message',
         {
           sessionId: activeSessionId,
           threadId: threadIdParam,
           sentBy: userId,
-          message: text,
-          messageType: 'text',
-          fileLink: null,
-          replyMessage: null,
+          message: opts.text || '',
+          messageType: opts.messageType || 'text',
+          fileLink: opts.fileLink || null,
+          replyMessage: opts.replyMessage || null,
           voiceMessageDuration: 0,
         },
-        (response: any) => {
+        (response: { success?: boolean; message?: string; data?: BackendMessage }) => {
           if (!response?.success) {
             console.warn('[chat] send_message failed:', response?.message);
             setMessages((prev) =>
               prev.map((m) =>
-                m.clientMessageId === clientId
-                  ? { ...m, deliveryStatus: 'failed' as const }
-                  : m
+                m.clientMessageId === cid ? { ...m, deliveryStatus: 'failed' as const } : m
               )
             );
           } else if (response?.data) {
             const saved = adaptMessage(response.data as BackendMessage, userId);
             setMessages((prev) =>
               prev.map((m) =>
-                m.clientMessageId === clientId
-                  ? { ...saved, clientMessageId: clientId, deliveryStatus: 'delivered' as const }
+                m.clientMessageId === cid
+                  ? { ...saved, clientMessageId: cid, deliveryStatus: 'delivered' as const }
                   : m
               )
             );
@@ -463,45 +502,139 @@ export default function ChatPage() {
     [socket, isConnected, threadIdParam, activeSessionId, userId]
   );
 
-  const sendMessage = useCallback(() => {
-    const text = newMessage.trim();
-    if (!text) return;
+  const buildReplyPayload = useCallback(
+    (target: ReplyTarget | null) => {
+      if (!target) return null;
+      // Backend `replyMessage` expects: id, message, replyTo, replyBy, messageType, voiceMessageDuration.
+      const replied = messages.find((m) => m.id === target.id);
+      return {
+        id: target.id,
+        message: target.text,
+        replyTo: replied?.sender === 'user' ? userId || '' : '',
+        replyBy: userId || '',
+        messageType: replied?.messageType || 'text',
+        voiceMessageDuration: 0,
+      };
+    },
+    [messages, userId]
+  );
+
+  const sendCurrentComposer = useCallback(async () => {
     if (!socket || !isConnected) return;
     if (!threadIdParam || !activeSessionId) return;
     if (sessionStatus === 'ended') return;
+    if (isSending) return;
 
-    const clientId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const optimistic: UIMessage = {
-      id: clientId,
-      clientMessageId: clientId,
-      text,
-      sender: 'user',
-      timestamp: new Date().toISOString(),
-      messageType: 'text',
-      deliveryStatus: 'sent',
-    };
-    setMessages((prev) => [...prev, optimistic]);
+    const text = newMessage.trim();
+    const images = pendingImages;
+    if (!text && images.length === 0) return;
+
+    const replyPayload = buildReplyPayload(replyTarget);
+
+    // Pull state we care about, then reset composer optimistically.
+    setIsSending(true);
     setNewMessage('');
-    // Sending guarantees we want to see the new bubble.
+    setReplyTarget(null);
+    setPendingImages([]);
     isNearBottomRef.current = true;
     setShowJumpToBottom(false);
 
-    emitSend(text, clientId);
-  }, [newMessage, socket, isConnected, threadIdParam, activeSessionId, sessionStatus, emitSend]);
+    try {
+      // Image messages first — caption attaches to the first image only.
+      if (images.length > 0) {
+        for (let i = 0; i < images.length; i++) {
+          const img = images[i];
+          const cid = `client-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`;
+          const optimistic: UIMessage = {
+            id: cid,
+            clientMessageId: cid,
+            text: i === 0 ? text : '',
+            sender: 'user',
+            timestamp: new Date().toISOString(),
+            messageType: 'image',
+            fileLink: img.previewUrl,
+            replyMessage: i === 0 ? replyPayload : null,
+            deliveryStatus: 'sent',
+          };
+          setMessages((prev) => [...prev, optimistic]);
+
+          const result = await uploadChatFile(img.file);
+          if (!result?.fileLink) {
+            setMessages((prev) =>
+              prev.map((m) => (m.clientMessageId === cid ? { ...m, deliveryStatus: 'failed' } : m))
+            );
+            URL.revokeObjectURL(img.previewUrl);
+            continue;
+          }
+
+          // Patch optimistic with real fileLink so the bubble shows the persisted URL.
+          setMessages((prev) =>
+            prev.map((m) => (m.clientMessageId === cid ? { ...m, fileLink: result.fileLink } : m))
+          );
+          URL.revokeObjectURL(img.previewUrl);
+
+          emitSend({
+            text: i === 0 ? text : '',
+            messageType: 'image',
+            fileLink: result.fileLink,
+            replyMessage: i === 0 ? replyPayload : null,
+            clientMessageId: cid,
+          });
+        }
+      } else if (text) {
+        const cid = `client-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const optimistic: UIMessage = {
+          id: cid,
+          clientMessageId: cid,
+          text,
+          sender: 'user',
+          timestamp: new Date().toISOString(),
+          messageType: 'text',
+          replyMessage: replyPayload,
+          deliveryStatus: 'sent',
+        };
+        setMessages((prev) => [...prev, optimistic]);
+        emitSend({
+          text,
+          messageType: 'text',
+          fileLink: null,
+          replyMessage: replyPayload,
+          clientMessageId: cid,
+        });
+      }
+    } finally {
+      setIsSending(false);
+    }
+  }, [
+    socket,
+    isConnected,
+    threadIdParam,
+    activeSessionId,
+    sessionStatus,
+    isSending,
+    newMessage,
+    pendingImages,
+    replyTarget,
+    buildReplyPayload,
+    emitSend,
+  ]);
 
   const retryMessage = useCallback(
     (clientId: string) => {
       const target = messages.find((m) => m.clientMessageId === clientId);
-      if (!target || !target.text) return;
+      if (!target) return;
       if (!socket || !isConnected) return;
       if (sessionStatus === 'ended') return;
-      // Flip status back to 'sent' (in-flight) before re-emitting.
       setMessages((prev) =>
-        prev.map((m) =>
-          m.clientMessageId === clientId ? { ...m, deliveryStatus: 'sent' as const } : m
-        )
+        prev.map((m) => (m.clientMessageId === clientId ? { ...m, deliveryStatus: 'sent' } : m))
       );
-      emitSend(target.text, clientId);
+      emitSend({
+        text: target.text,
+        messageType: target.messageType === 'image' ? 'image' : 'text',
+        fileLink: target.fileLink || null,
+        replyMessage: (target.replyMessage as object | null) || null,
+        clientMessageId: clientId,
+      });
     },
     [messages, socket, isConnected, sessionStatus, emitSend]
   );
@@ -521,7 +654,7 @@ export default function ChatPage() {
     socket.emit('typing', { threadId: threadIdParam, isTyping: false });
   }, [socket, isConnected, threadIdParam]);
 
-  // -------- end session (with confirmation) --------
+  // -------- end session --------
   const requestEndSession = useCallback(() => setShowEndConfirm(true), []);
   const cancelEndSession = useCallback(() => setShowEndConfirm(false), []);
 
@@ -531,7 +664,6 @@ export default function ChatPage() {
     setShowEndConfirm(false);
     setEndingSession(true);
     try {
-      // Prefer socket emit so other side gets `session_ended` immediately.
       if (socket && isConnected) {
         await new Promise<void>((resolve) => {
           socket.emit(
@@ -544,14 +676,13 @@ export default function ChatPage() {
             },
             () => resolve()
           );
-          // Safety timeout
           setTimeout(resolve, 4000);
         });
       } else {
-        // Fallback to REST decline
         await apiDeclineSession(threadIdParam, activeSessionId);
       }
       setSessionStatus('ended');
+      setShowRating(true);
     } catch (err) {
       console.warn('[chat] end session failed', err);
     } finally {
@@ -560,10 +691,6 @@ export default function ChatPage() {
   }, [threadIdParam, activeSessionId, endingSession, socket, isConnected]);
 
   // -------- mark thread as read --------
-  // Tells the backend the user has seen all current messages and clears the
-  // local unread badge so the sidebar reflects it immediately. Triggered when
-  // the active thread is opened and whenever a new message arrives while the
-  // user is focused on this thread.
   useEffect(() => {
     if (!socket || !isConnected) return;
     if (!threadIdParam || !activeSessionId) return;
@@ -571,14 +698,12 @@ export default function ChatPage() {
     socket.emit('read_message', { threadId: threadIdParam, sessionId: activeSessionId });
     setThreads((prev) =>
       prev.map((t) =>
-        t.threadId === threadIdParam
-          ? { ...t, userUnreadCount: 0, providerUnreadCount: t.providerUnreadCount }
-          : t
+        t.threadId === threadIdParam ? { ...t, userUnreadCount: 0 } : t
       )
     );
   }, [socket, isConnected, threadIdParam, activeSessionId, messages.length, sessionStatus]);
 
-  // -------- session timer (mm:ss) --------
+  // -------- session timer --------
   useEffect(() => {
     if (sessionStatus !== 'active') {
       setElapsedSecs(0);
@@ -624,12 +749,9 @@ export default function ChatPage() {
     refreshBalance();
   }, [authed, userRole, refreshBalance]);
 
-  // Periodic balance refresh while a paid session is active.
   useEffect(() => {
     if (sessionStatus !== 'active' || userRole === 'friend') return;
-    const id = window.setInterval(() => {
-      refreshBalance();
-    }, 30_000);
+    const id = window.setInterval(() => refreshBalance(), 30_000);
     return () => window.clearInterval(id);
   }, [sessionStatus, userRole, refreshBalance]);
 
@@ -638,6 +760,128 @@ export default function ChatPage() {
     if (typeof walletBalance !== 'number') return false;
     return walletBalance < DEFAULT_CHAT_RPM * 2;
   }, [walletBalance, userRole]);
+
+  // -------- composer handlers --------
+  const handleReplyToMessage = useCallback(
+    (m: UIMessage) => {
+      const isMine = m.sender === 'user';
+      const peer = activeThread?.providerId.name;
+      setReplyTarget({
+        id: m.id,
+        authorLabel: isMine ? 'You' : peer || 'Astrologer',
+        text: m.messageType === 'image' ? '' : m.text,
+        imageUrl: m.messageType === 'image' ? m.fileLink : undefined,
+      });
+    },
+    [activeThread]
+  );
+
+  const handleClearReply = useCallback(() => setReplyTarget(null), []);
+
+  const handleSelectImages = useCallback((files: File[]) => {
+    setPendingImages((prev) => {
+      const next: PendingImage[] = [...prev];
+      for (const f of files) {
+        next.push({
+          id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          file: f,
+          previewUrl: URL.createObjectURL(f),
+        });
+      }
+      return next;
+    });
+  }, []);
+
+  const handleRemovePending = useCallback((id: string) => {
+    setPendingImages((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  }, []);
+
+  const handleRecharge = useCallback(() => router.push('/payment'), [router]);
+
+  // -------- lightbox --------
+  const galleryImages = useMemo(() => {
+    return messages
+      .filter((m) => m.messageType === 'image' && !!m.fileLink)
+      .map((m) => ({
+        id: m.id,
+        url: m.fileLink || '',
+        caption: m.text || undefined,
+        senderName:
+          m.sender === 'user' ? 'You' : activeThread?.providerId.name || 'Astrologer',
+        timestamp: m.timestamp,
+      }));
+  }, [messages, activeThread]);
+
+  const handleOpenImage = useCallback((messageId: string) => {
+    setLightboxStartId(messageId);
+    setLightboxOpen(true);
+  }, []);
+
+  const lightboxStartIndex = useMemo(() => {
+    if (!lightboxStartId) return 0;
+    const idx = galleryImages.findIndex((g) => g.id === lightboxStartId);
+    return idx >= 0 ? idx : 0;
+  }, [lightboxStartId, galleryImages]);
+
+  // -------- action sheet --------
+  const handleRequestActions = useCallback((m: UIMessage, isMine: boolean) => {
+    setActionsTarget({
+      id: m.id,
+      text: m.text,
+      isMine,
+      isImage: m.messageType === 'image',
+    });
+  }, []);
+
+  const handleActionReply = useCallback(
+    (target: MessageActionsTarget) => {
+      const m = messages.find((x) => x.id === target.id);
+      if (m) handleReplyToMessage(m);
+    },
+    [messages, handleReplyToMessage]
+  );
+
+  const handleActionCopy = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleActionDelete = useCallback((target: MessageActionsTarget) => {
+    // Local-only hide — backend has no soft-delete contract.
+    setMessages((prev) => prev.filter((m) => m.id !== target.id));
+  }, []);
+
+  // -------- post-session actions --------
+  const handleRate = useCallback(() => setShowRating(true), []);
+
+  const handleChatAgain = useCallback(async () => {
+    if (!userId || !activeThread) return;
+    if (chatAgainPending) return;
+    setChatAgainPending(true);
+    try {
+      const result = await createChatSession(userId, activeThread.providerId._id);
+      if (result.ok) {
+        const qs = new URLSearchParams({
+          threadId: result.data.threadId,
+          sessionId: result.data.sessionId,
+        });
+        router.push(`/chat?${qs.toString()}`);
+      } else {
+        console.warn('[chat] chat again failed:', result.error.message);
+      }
+    } finally {
+      setChatAgainPending(false);
+    }
+  }, [userId, activeThread, chatAgainPending, router]);
+
+  const handleSendDakshina = useCallback(() => setShowDakshina(true), []);
 
   // -------- selected session shape for child components --------
   const selectedSessionForHeader = useMemo(() => {
@@ -678,21 +922,29 @@ export default function ChatPage() {
   // -------- render --------
   if (!authChecked) {
     return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-white" style={{ top: 64 }}>
-        <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+      <div
+        className="fixed inset-0 z-40 flex items-center justify-center bg-white"
+        style={{ top: siteHeaderHeight }}
+      >
+        <div className="w-10 h-10 border-4 border-saffron-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!authed) {
     return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center bg-white p-6" style={{ top: 64 }}>
+      <div
+        className="fixed inset-0 z-40 flex items-center justify-center bg-white p-6"
+        style={{ top: siteHeaderHeight }}
+      >
         <div className="text-center max-w-sm">
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Please sign in to chat</h2>
-          <p className="text-gray-600 mb-6">You need to be logged in to view your conversations.</p>
+          <p className="text-gray-600 mb-6">
+            You need to be logged in to view your conversations.
+          </p>
           <button
             onClick={() => router.push('/login')}
-            className="px-6 py-3 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+            className="px-6 py-3 rounded-xl bg-saffron-500 text-white font-medium hover:bg-saffron-600"
           >
             Sign In
           </button>
@@ -704,13 +956,13 @@ export default function ChatPage() {
   const showChatPanel = Boolean(threadIdParam);
 
   return (
-    <div className="fixed inset-0 z-40 bg-white flex" style={{ top: 64 }}>
+    <div className="fixed inset-0 z-40 bg-white flex" style={{ top: siteHeaderHeight }}>
       {/* Sidebar — full width on mobile when no thread selected */}
       <div
-        className={`${showChatPanel ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-80 md:border-r md:border-gray-200`}
+        className={`${showChatPanel ? 'hidden md:flex' : 'flex'} flex-col w-full md:w-[340px] md:border-r md:border-saffron-100`}
       >
         <Sidebar
-          sessions={sidebarSessions as any}
+          sessions={sidebarSessions as never}
           selectedSession={
             activeThread
               ? ({
@@ -720,7 +972,7 @@ export default function ChatPage() {
                   lastMessage: activeThread.lastMessage,
                   createdAt: activeThread.createdAt,
                   status: activeThread.status,
-                } as any)
+                } as never)
               : null
           }
           userRole={userRole}
@@ -728,7 +980,7 @@ export default function ChatPage() {
           balanceLoading={balanceLoading}
           loading={threadsLoading}
           error={threadsError}
-          onSelectSession={handleSelectSession as any}
+          onSelectSession={handleSelectSession as never}
           onRefreshBalance={refreshBalance}
           onLoadMoreSessions={undefined}
           hasMoreSessions={false}
@@ -737,30 +989,39 @@ export default function ChatPage() {
       </div>
 
       {/* Chat panel */}
-      <div className={`${showChatPanel ? 'flex' : 'hidden md:flex'} flex-1 flex-col h-full min-w-0`}>
+      <div
+        className={`${showChatPanel ? 'flex' : 'hidden md:flex'} flex-1 flex-col h-full min-w-0`}
+      >
         {!showChatPanel ? (
-          <div className="flex-1 hidden md:flex items-center justify-center bg-gray-50">
-            <div className="text-center px-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-orange-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+          <div className="flex-1 hidden md:flex items-center justify-center bg-gradient-to-b from-saffron-50/40 to-white relative overflow-hidden">
+            <div className="text-center px-6 relative z-10">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center text-3xl">
+                🕉️
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">Select a conversation</h3>
-              <p className="text-sm text-gray-500">Choose a chat from the list to start messaging.</p>
+              <h3 className="font-garamond text-xl text-saffron-900 font-semibold mb-1">
+                Pick a chat to begin
+              </h3>
+              <p className="text-sm text-gray-500">
+                Choose an astrologer from the list to continue your conversation.
+              </p>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none">
+              <span className="font-garamond text-[14rem] text-saffron-700 leading-none">ॐ</span>
             </div>
           </div>
         ) : !activeThread ? (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="flex-1 flex items-center justify-center bg-saffron-50/30">
             {messagesLoading ? (
-              <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+              <div className="w-10 h-10 border-4 border-saffron-500 border-t-transparent rounded-full animate-spin" />
             ) : (
               <div className="text-center px-6">
                 <p className="text-gray-700 font-medium mb-2">Conversation unavailable</p>
-                <p className="text-sm text-gray-500 mb-4">We couldn&apos;t load this thread. It may have ended or been removed.</p>
+                <p className="text-sm text-gray-500 mb-4">
+                  We couldn&apos;t load this thread. It may have ended or been removed.
+                </p>
                 <button
                   onClick={() => router.push('/chat')}
-                  className="px-5 py-2.5 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+                  className="px-5 py-2.5 rounded-xl bg-saffron-500 text-white font-medium hover:bg-saffron-600"
                 >
                   Back to chats
                 </button>
@@ -770,17 +1031,18 @@ export default function ChatPage() {
         ) : (
           <>
             <ChatHeader
-              selectedSession={selectedSessionForHeader as any}
+              selectedSession={selectedSessionForHeader as never}
               userRole={userRole}
               insufficientBalance={insufficientBalance}
               endingSession={endingSession}
               onEndSession={requestEndSession}
+              onContinueChat={handleChatAgain}
               sessionDuration={sessionDurationLabel}
               userBalance={walletBalance}
               peerTyping={typingFromOther}
             />
 
-            {/* Reconnect / connection-down banner. Sticky above messages. */}
+            {/* Connection / balance banners */}
             <AnimatePresence>
               {!isConnected && sessionStatus !== 'ended' && (
                 <motion.div
@@ -791,8 +1053,8 @@ export default function ChatPage() {
                   transition={{ duration: 0.18 }}
                   className="overflow-hidden"
                 >
-                  <div className="bg-orange-50 border-b border-orange-200 text-orange-700 text-xs sm:text-sm px-3 py-2 flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs sm:text-sm px-3 py-2 flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
                     <span>
                       {lastConnectError
                         ? 'Cannot reach chat service — retrying…'
@@ -810,31 +1072,21 @@ export default function ChatPage() {
                   transition={{ duration: 0.18 }}
                   className="overflow-hidden"
                 >
-                  <div className="bg-green-50 border-b border-green-200 text-green-700 text-xs sm:text-sm px-3 py-1.5 flex items-center gap-2">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <div className="bg-emerald-50 border-b border-emerald-200 text-emerald-700 text-xs sm:text-sm px-3 py-1.5 flex items-center gap-2">
+                    <svg
+                      className="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     <span>Reconnected</span>
-                  </div>
-                </motion.div>
-              )}
-              {insufficientBalance && sessionStatus === 'active' && (
-                <motion.div
-                  key="low-balance-banner"
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                  className="overflow-hidden"
-                >
-                  <div className="bg-amber-50 border-b border-amber-200 text-amber-800 text-xs sm:text-sm px-3 py-2 flex items-center justify-between gap-2">
-                    <span>Low balance — please recharge to keep this session running.</span>
-                    <button
-                      onClick={() => router.push('/payment')}
-                      className="px-2.5 py-1 rounded-md bg-amber-600 text-white text-xs font-medium hover:bg-amber-700"
-                    >
-                      Recharge
-                    </button>
                   </div>
                 </motion.div>
               )}
@@ -842,14 +1094,14 @@ export default function ChatPage() {
 
             <div className="flex-1 min-h-0 relative">
               {loadingOlder && (
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-white/90 border border-gray-200 px-3 py-1 rounded-full shadow-sm text-xs text-gray-600 flex items-center gap-2">
-                  <div className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-white/90 border border-saffron-100 px-3 py-1 rounded-full shadow-sm text-xs text-saffron-700 flex items-center gap-2">
+                  <div className="w-3 h-3 border-2 border-saffron-500 border-t-transparent rounded-full animate-spin" />
                   Loading older messages…
                 </div>
               )}
               <ChatMessages
-                ref={messagesEndRef as any}
-                messages={messages as any}
+                ref={messagesEndRef}
+                messages={messages}
                 typingMessage={
                   typingFromOther
                     ? ({
@@ -857,31 +1109,48 @@ export default function ChatPage() {
                         text: '',
                         sender: 'astrologer',
                         timestamp: new Date().toISOString(),
-                      } as any)
+                      } as UIMessage)
                     : null
                 }
                 userId={userId}
                 userRole={userRole}
                 selectedSession={
                   activeThread
-                    ? ({
+                    ? {
                         userId: activeThread.userId,
                         providerId: activeThread.providerId,
-                      } as any)
+                      }
                     : null
                 }
-                onReplyToMessage={() => {}}
+                onReplyToMessage={handleReplyToMessage}
                 onRetryMessage={retryMessage}
+                onOpenImage={handleOpenImage}
+                onRequestActions={handleRequestActions}
                 sessionStatus={sessionStatus}
+                onRate={handleRate}
+                onSendDakshina={handleSendDakshina}
+                onChatAgain={handleChatAgain}
               />
+
+
               {showJumpToBottom && (
                 <button
                   onClick={scrollToBottom}
-                  className="absolute right-3 bottom-3 z-20 w-10 h-10 rounded-full bg-white border border-gray-200 shadow-md text-orange-600 hover:bg-orange-50 flex items-center justify-center"
+                  className="absolute right-3 bottom-3 z-20 w-10 h-10 rounded-full bg-white border border-saffron-100 shadow-md text-saffron-600 hover:bg-saffron-50 flex items-center justify-center"
                   title="Jump to latest"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                    />
                   </svg>
                 </button>
               )}
@@ -890,10 +1159,18 @@ export default function ChatPage() {
             <ChatInput
               newMessage={newMessage}
               setNewMessage={setNewMessage}
-              onSendMessage={sendMessage}
+              onSendMessage={sendCurrentComposer}
               isDisabled={sessionStatus === 'ended' || !isConnected}
               onTyping={handleTyping}
               onStopTyping={handleStopTyping}
+              replyTarget={replyTarget}
+              onClearReply={handleClearReply}
+              pendingImages={pendingImages}
+              onSelectImages={handleSelectImages}
+              onRemovePending={handleRemovePending}
+              isInsufficient={insufficientBalance && sessionStatus === 'active'}
+              onRecharge={handleRecharge}
+              isSending={isSending}
             />
 
             {/* End-session confirmation modal */}
@@ -918,7 +1195,8 @@ export default function ChatPage() {
                   >
                     <h3 className="text-base font-semibold text-gray-900">End this session?</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Your wallet will stop being charged. You can start a new session with this astrologer anytime.
+                      Your wallet will stop being charged. You can start a new session with this
+                      astrologer anytime.
                     </p>
                     <div className="mt-4 flex justify-end gap-2">
                       <button
@@ -946,6 +1224,51 @@ export default function ChatPage() {
           </>
         )}
       </div>
+
+      {/* Lightbox */}
+      <ImageLightbox
+        images={galleryImages.map(({ url, caption, senderName, timestamp }) => ({
+          url,
+          caption,
+          senderName,
+          timestamp,
+        }))}
+        startIndex={lightboxStartIndex}
+        isOpen={lightboxOpen && galleryImages.length > 0}
+        onClose={() => setLightboxOpen(false)}
+      />
+
+      {/* Long-press / hover action sheet */}
+      <MessageActionsSheet
+        target={actionsTarget}
+        onClose={() => setActionsTarget(null)}
+        onReply={handleActionReply}
+        onCopy={handleActionCopy}
+        onDelete={handleActionDelete}
+      />
+
+      {/* Rating modal */}
+      <RatingModal
+        isOpen={showRating}
+        onClose={() => setShowRating(false)}
+        onContinueChat={() => {
+          setShowRating(false);
+          handleChatAgain();
+        }}
+        onRatingSubmit={() => {
+          // Backend has no rating endpoint exposed for chat; close after collecting locally.
+          setShowRating(false);
+        }}
+      />
+
+      {/* Dakshina modal */}
+      <DakshinaModal
+        isOpen={showDakshina}
+        onClose={() => setShowDakshina(false)}
+        onSend={() => setShowDakshina(false)}
+        receiverName={activeThread?.providerId.name || 'Astrologer'}
+        gifts={DEFAULT_DAKSHINA_GIFTS}
+      />
     </div>
   );
 }

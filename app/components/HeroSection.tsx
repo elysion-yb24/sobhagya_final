@@ -75,7 +75,7 @@ const HeroSection: React.FC = () => {
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Hero Section */}
       <motion.section
-        className="text-white relative w-full flex flex-col justify-start pt-3 sm:pt-10 pb-10 sm:pb-14 md:pb-16"
+        className="text-white relative w-full flex flex-col justify-start pt-6 sm:pt-14 pb-10 sm:pb-16 md:pb-20 lg:pb-24"
         style={{
           backgroundImage: "url(/bg-image1111.svg)",
           backgroundSize: "cover",
@@ -121,7 +121,7 @@ const HeroSection: React.FC = () => {
         <div className="section-container relative z-10 flex flex-col-reverse md:flex-row items-center justify-between gap-2 md:gap-6 lg:gap-10">
           {/* Left: Text Content */}
           <motion.div
-            className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left order-2 md:order-1 mt-4 sm:-mt-10 md:mt-0 px-1 xs:px-2 sm:px-0"
+            className="w-full md:w-1/2 lg:w-3/5 text-center md:text-left order-2 md:order-1 mt-6 sm:-mt-10 md:mt-0 px-2 xs:px-4 sm:px-0"
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : -40 }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -197,10 +197,10 @@ const HeroSection: React.FC = () => {
 
       {/* Navigation Cards */}
       <div className="relative">
-        <div className="relative z-20 -mt-2 xs:-mt-4 sm:-mt-20 md:-mt-8 lg:-mt-14 mb-6 sm:mb-10 md:mb-12">
+        <div className="relative z-20 -mt-8 xs:-mt-10 sm:-mt-24 md:-mt-16 lg:-mt-20 mb-8 sm:mb-12 md:mb-16">
           <div className="section-container">
             {/* Mobile: 3-column grid that fits the viewport */}
-            <div className="grid grid-cols-3 gap-2 xs:gap-3 sm:hidden px-1">
+            <div className="grid grid-cols-3 gap-2 xs:gap-4 sm:hidden px-2">
               {navigationCards.map((card, idx) => (
                 <Link
                   key={card.id}
@@ -209,7 +209,7 @@ const HeroSection: React.FC = () => {
                   className="block w-full"
                 >
                   <motion.div
-                    className="premium-surface rounded-2xl px-2 py-3 min-h-[100px] flex flex-col items-center justify-center shadow-lg text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card"
+                    className="premium-surface rounded-2xl px-2 py-4 min-h-[110px] flex flex-col items-center justify-center shadow-premium text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card border border-orange-100/50"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 20 }}
                     transition={{ delay: 0.8 + idx * 0.1 }}

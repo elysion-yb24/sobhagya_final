@@ -117,7 +117,7 @@ const OurProducts = () => {
                 setProductIndex(prev => prev === 0 ? 1 : 0);
               }
             }}
-            className="absolute left-0 xs:left-1 sm:left-3 md:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
+            className="absolute left-0 xs:left-1 sm:left-3 md:left-6 lg:left-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E] min-h-0"
             aria-label="Previous products"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -349,7 +349,7 @@ const OurProducts = () => {
                 setProductIndex(prev => prev === 0 ? 1 : 0);
               }
             }}
-            className="absolute right-0 xs:right-1 sm:right-3 md:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E]"
+            className="absolute right-0 xs:right-1 sm:right-3 md:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 lg:w-12 lg:h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-[#F7971E] hover:bg-[#F7971E] hover:text-white text-[#F7971E] min-h-0"
             aria-label="Next products"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,7 +365,7 @@ const OurProducts = () => {
                 <button
                   key={index}
                   onClick={() => setProductIndex(index)}
-                  className={`rounded-full w-2.5 h-2.5 sm:w-3 sm:h-3 transition-all duration-300 ${productIndex === index
+                  className={`rounded-full w-2.5 h-2.5 sm:w-3 sm:h-3 transition-all duration-300 min-h-0 ${productIndex === index
                       ? 'bg-[#F7971E]' 
                       : 'bg-gray-300 hover:bg-gray-400' 
                     }`}
@@ -378,12 +378,12 @@ const OurProducts = () => {
               <>
                 <button
                   onClick={() => setProductIndex(0)}
-                  className={`rounded-full w-3 h-3 transition-all duration-300 ${productIndex === 0 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
+                  className={`rounded-full w-3 h-3 transition-all duration-300 min-h-0 ${productIndex === 0 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
                   aria-label="Go to first set of products"
                 />
                 <button
                   onClick={() => setProductIndex(1)}
-                  className={`rounded-full w-3 h-3 transition-all duration-300 ${productIndex === 1 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
+                  className={`rounded-full w-3 h-3 transition-all duration-300 min-h-0 ${productIndex === 1 ? 'bg-[#F7971E]' : 'bg-gray-300 hover:bg-gray-400'}`}
                   aria-label="Go to second set of products"
                 />
               </>

@@ -141,7 +141,7 @@ export default async function RashiPage({ params, searchParams }: Props) {
           {/* Overview Section */}
           <div className="mb-10 sm:mb-12">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#745802] mb-3 sm:mb-4" style={{ fontFamily: "EB Garamond, serif" }}>Overview</h2>
-            <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+            <p className="text-gray-700 leading-relaxed text-sm sm:text-base text-justify">
               {getOverview(rashi.name)}
             </p>
           </div>
@@ -169,7 +169,7 @@ export default async function RashiPage({ params, searchParams }: Props) {
           {/* Love Section */}
           <section className="mb-10 sm:mb-12">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#745802] mb-3 sm:mb-4" style={{ fontFamily: "EB Garamond, serif" }}>Love & Relationships</h2>
-            <p className="text-gray-700 leading-relaxed mb-4 text-sm sm:text-base">{getLoveLife(rashi.name)}</p>
+            <p className="text-gray-700 leading-relaxed mb-4 text-sm sm:text-base text-justify">{getLoveLife(rashi.name)}</p>
             <div className="bg-gradient-to-br from-pink-50 to-rose-50 border border-pink-100 rounded-2xl p-5 sm:p-6">
               <h4 className="font-semibold text-rose-700 mb-3 text-sm sm:text-base">Compatible Signs</h4>
               <div className="flex flex-wrap gap-2">
@@ -185,7 +185,7 @@ export default async function RashiPage({ params, searchParams }: Props) {
           {/* Career Section */}
           <section className="mb-10 sm:mb-12">
             <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#745802] mb-3 sm:mb-4" style={{ fontFamily: "EB Garamond, serif" }}>Career & Finance</h2>
-            <p className="text-gray-700 leading-relaxed mb-4 text-sm sm:text-base">{getCareer(rashi.name)}</p>
+            <p className="text-gray-700 leading-relaxed mb-4 text-sm sm:text-base text-justify">{getCareer(rashi.name)}</p>
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 rounded-2xl p-5 sm:p-6">
               <h4 className="font-semibold text-[#745802] mb-3 text-sm sm:text-base">Recommended Careers</h4>
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -201,7 +201,7 @@ export default async function RashiPage({ params, searchParams }: Props) {
           {/* Health Section */}
           <section>
             <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-[#745802] mb-3 sm:mb-4" style={{ fontFamily: "EB Garamond, serif" }}>Health & Wellness</h2>
-            <p className="text-gray-700 leading-relaxed mb-5 sm:mb-6 text-sm sm:text-base">{getHealth(rashi.name)}</p>
+            <p className="text-gray-700 leading-relaxed mb-5 sm:mb-6 text-sm sm:text-base text-justify">{getHealth(rashi.name)}</p>
             <div className="grid md:grid-cols-2 gap-5 sm:gap-6">
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-5 sm:p-6">
                 <h4 className="font-semibold text-blue-800 mb-3 text-sm sm:text-base">Health Strengths</h4>

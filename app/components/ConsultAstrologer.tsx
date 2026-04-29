@@ -171,7 +171,7 @@ const AstrologerCarousel = () => {
   // Main return block
   return (
     <div
-      className="py-20 overflow-hidden"
+      className="section-spacing overflow-hidden"
       style={{ background: COLORS.cream }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-4">
@@ -234,7 +234,7 @@ const AstrologerCarousel = () => {
           {/* Prev */}
           <button
             onClick={prevSlide}
-            className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            className="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform min-h-0"
             style={{
               background: COLORS.primary,
               color: COLORS.white,
@@ -246,7 +246,7 @@ const AstrologerCarousel = () => {
           {/* Next */}
           <button
             onClick={nextSlide}
-            className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform"
+            className="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform min-h-0"
             style={{
               background: COLORS.primary,
               color: COLORS.white,
@@ -286,7 +286,7 @@ const AstrologerCarousel = () => {
                       onClick={() =>
                         handleProfile(astro._id)
                       }
-                      className="bg-white rounded-[28px] p-5 border border-orange-100 shadow-md hover:shadow-xl cursor-pointer h-[470px] flex flex-col hover:border-orange-200"
+                      className="bg-white rounded-[28px] p-5 border border-orange-100 shadow-premium hover:shadow-xl cursor-pointer h-[470px] flex flex-col hover:border-orange-200"
                     >
 
                       {/* TOP AREA */}
@@ -407,7 +407,7 @@ const AstrologerCarousel = () => {
                 onClick={() =>
                   setCurrentIndex(i)
                 }
-                className="h-2 rounded-full"
+                className="h-2 rounded-full min-h-0"
                 style={{
                   width:
                     i === currentIndex

@@ -344,10 +344,11 @@ export default function CallAstrologerProfilePage() {
 
 
     const fetchGifts = async () => {
-        try {
-            const token = getAuthToken();
-            if (!token) return;
-            const response = await fetch(`/api/calling/gift/get-gifts`, {
+        const token = getAuthToken();
+        if (!token) return;
+
+        const tryEndpoint = async (url: string) => {
+            const res = await fetch(url, {
                 method: 'GET',
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -355,16 +356,38 @@ export default function CallAstrologerProfilePage() {
                 },
                 credentials: 'include',
             });
-            if (response.ok) {
-                const data = await response.json();
-                const list = Array.isArray(data?.data) ? data.data : [];
-                const normalized = list
-                    .map((g: any) => ({ ...g, price: Math.round(Number(g.price) || 0) }))
-                    .sort((a: any, b: any) => a.price - b.price);
-                setGifts(normalized);
+            if (!res.ok) return null;
+            const json = await res.json().catch(() => null);
+            const list = Array.isArray(json?.data)
+                ? json.data
+                : Array.isArray(json?.gifts)
+                    ? json.gifts
+                    : Array.isArray(json)
+                        ? json
+                        : [];
+            return list.length > 0 ? list : null;
+        };
+
+        const endpoints = [
+            `/api/calling/gift/get-gifts`,
+            `${getApiBaseUrl()}/calling/api/gift/get-gifts`,
+            `${getApiBaseUrl()}/api/gift/get-gifts`,
+            `${getApiBaseUrl()}/gift/get-gifts`,
+        ];
+
+        for (const url of endpoints) {
+            try {
+                const list = await tryEndpoint(url);
+                if (list) {
+                    const normalized = list
+                        .map((g: any) => ({ ...g, price: Math.round(Number(g.price) || 0) }))
+                        .sort((a: any, b: any) => a.price - b.price);
+                    setGifts(normalized);
+                    return;
+                }
+            } catch (error) {
+                console.warn('Error fetching gifts from', url, error);
             }
-        } catch (error) {
-            console.error('Error fetching gifts:', error);
         }
     };
 

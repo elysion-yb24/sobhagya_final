@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Star, Gift, MessageCircle, Heart } from 'lucide-react'
+import { Star, Gift, MessageCircle, CheckCircle2 } from 'lucide-react'
 
 interface SessionEndedCardProps {
   onRate: () => void
@@ -21,61 +21,60 @@ export default function SessionEndedCard({
 }: SessionEndedCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      className="max-w-md mx-auto my-8 p-6 bg-white rounded-3xl shadow-xl border border-saffron-100 relative overflow-hidden"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="w-full max-w-3xl mx-auto my-4 px-4 sm:px-5 py-3 sm:py-4 bg-white rounded-2xl shadow-sm border border-saffron-100"
     >
-      {/* Background Mandala Watermark */}
-      <div className="absolute top-0 right-0 -translate-y-1/4 translate-x-1/4 opacity-[0.05] pointer-events-none">
-        <svg width="200" height="200" viewBox="0 0 100 100" fill="none" stroke="#F7941D">
-          <circle cx="50" cy="50" r="45" strokeWidth="0.5" />
-          <path d="M50 5 L55 45 L95 50 L55 55 L50 95 L45 55 L5 50 L45 45 Z" strokeWidth="0.5" />
-        </svg>
-      </div>
-
-      <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="w-20 h-20 rounded-full overflow-hidden ring-4 ring-saffron-50 shadow-lg mb-4">
-          {astrologerAvatar ? (
-            <img src={astrologerAvatar} alt={astrologerName} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-saffron-400 to-saffron-600 flex items-center justify-center text-white text-2xl font-bold">
-              {astrologerName.charAt(0)}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+        {/* Left: avatar + status */}
+        <div className="flex items-center gap-3 min-w-0 sm:flex-1">
+          <div className="relative shrink-0">
+            <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-saffron-100">
+              {astrologerAvatar ? (
+                <img src={astrologerAvatar} alt={astrologerName} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-saffron-400 to-saffron-600 flex items-center justify-center text-white text-lg font-bold">
+                  {astrologerName.charAt(0)}
+                </div>
+              )}
             </div>
-          )}
+            <CheckCircle2 className="absolute -bottom-0.5 -right-0.5 w-4 h-4 text-green-600 bg-white rounded-full" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="font-garamond text-base sm:text-lg font-bold text-saffron-900 truncate">Session Completed</h3>
+            </div>
+            <p className="text-xs sm:text-sm text-gray-500 truncate">
+              with <span className="font-semibold text-gray-700">{astrologerName}</span>
+            </p>
+          </div>
         </div>
 
-        <h2 className="font-garamond text-2xl font-bold text-saffron-900 mb-1">Session Completed</h2>
-        <p className="text-gray-500 text-sm mb-6">Your session with <span className="font-semibold text-gray-700">{astrologerName}</span> has ended. May you find peace and clarity.</p>
-
-        <div className="grid grid-cols-1 gap-3 w-full">
+        {/* Right: actions */}
+        <div className="flex items-center gap-2 sm:gap-2.5 sm:shrink-0">
           <button
             onClick={onRate}
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-saffron-50 text-saffron-700 rounded-2xl font-bold hover:bg-saffron-100 transition active:scale-95 border border-saffron-200"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-saffron-50 text-saffron-700 rounded-lg text-sm font-semibold hover:bg-saffron-100 transition active:scale-95 border border-saffron-200"
           >
-            <Star className="w-5 h-5 fill-current" />
-            Rate Session
+            <Star className="w-4 h-4 fill-current" />
+            <span>Rate</span>
           </button>
 
           <button
             onClick={onSendDakshina}
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-2xl font-bold hover:shadow-lg transition active:scale-95 shadow-orange-200"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-sm font-semibold hover:shadow-md transition active:scale-95"
           >
-            <Gift className="w-5 h-5" />
-            Send Dakshina
+            <Gift className="w-4 h-4" />
+            <span>Dakshina</span>
           </button>
 
           <button
             onClick={onChatAgain}
-            className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-white text-gray-700 rounded-2xl font-bold hover:bg-gray-50 transition active:scale-95 border border-gray-200"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition active:scale-95 border border-gray-200"
           >
-            <MessageCircle className="w-5 h-5" />
-            Chat Again
+            <MessageCircle className="w-4 h-4" />
+            <span>Chat Again</span>
           </button>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-gray-100 w-full flex items-center justify-center gap-2 text-saffron-400">
-          <Heart className="w-4 h-4 fill-current" />
-          <span className="text-xs font-semibold uppercase tracking-widest italic font-garamond">Sobhagya Blessings</span>
         </div>
       </div>
     </motion.div>

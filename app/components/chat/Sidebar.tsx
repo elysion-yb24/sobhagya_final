@@ -148,7 +148,7 @@ export default function Sidebar({
 
           {mounted && userRole === 'user' && (
             <button
-              onClick={() => router.push('/payment')}
+              onClick={() => router.push('/wallet')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-saffron-500 to-amber-500 text-white text-xs font-bold shadow-md shadow-saffron-100 active:scale-95 transition"
             >
               <Wallet className="w-3.5 h-3.5" />

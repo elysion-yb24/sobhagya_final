@@ -47,7 +47,7 @@ export default function Services() {
         },
         {
           name: "Matrimony",
-          image: "/Group 13366.png",
+          image: "/Gun Milan.svg",
           description: "Astrology insights for a destined union, ensuring harmony, compatibility, and lifelong happiness.",
           link: "/call-with-astrologer"
         },

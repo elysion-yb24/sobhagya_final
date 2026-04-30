@@ -445,7 +445,7 @@ export default function HoroscopeService() {
                 Get detailed insights and remedies from our expert astrologers.
               </p>
               <Link
-                href="/call-astrologer"
+                href="/call-with-astrologer"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-colors duration-200"
               >
                 <Star className="w-5 h-5" />

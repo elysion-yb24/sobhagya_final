@@ -146,7 +146,7 @@ export default function ChatHeader({
 
         {mounted && userRole !== 'friend' && typeof userBalance === 'number' && (
           <button
-            onClick={() => router.push('/payment')}
+            onClick={() => router.push('/wallet')}
             className={`inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm transition ${
               insufficientBalance
                 ? 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100 animate-pulse'
@@ -214,7 +214,7 @@ export default function ChatHeader({
                 <button
                   onClick={() => {
                     setMenuOpen(false)
-                    router.push('/payment')
+                    router.push('/wallet')
                   }}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-saffron-50 transition flex items-center gap-2"
                 >

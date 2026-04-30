@@ -1650,7 +1650,7 @@ export default function FreeKundliPage() {
                       Share Kundli
                     </button>
                     <Link
-                      href="/call-astrologer"
+                      href="/call-with-astrologer"
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-600 text-white font-semibold rounded-xl hover:bg-orange-700 transition-colors duration-200"
                     >
                       <Star className="w-4 h-4" />
@@ -1684,7 +1684,7 @@ export default function FreeKundliPage() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link
-                href="/call-astrologer"
+                href="/call-with-astrologer"
                 className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-2xl shadow-lg transition-all duration-300 font-bold bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:shadow-xl hover:scale-105"
               >
                 <Star className="w-5 h-5 mr-2" />

@@ -19,8 +19,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getUserDetails, isAuthenticated } from '../utils/auth-utils';
+import { getAuthToken, getUserDetails, isAuthenticated } from '../utils/auth-utils';
 import { fetchWalletBalance } from '../utils/production-api';
+import { getApiBaseUrl } from '../config/api';
 import {
   adaptThread,
   fetchMessages,
@@ -50,18 +51,6 @@ import RatingModal from '../components/ui/RatingModal';
 import DakshinaModal from '../components/calling/ui/DakshinaModal';
 
 const DEFAULT_CHAT_RPM = 5;
-
-// Default in-app dakshina gift menu — backend currently has no chat-side gift fetch,
-// so we surface a sensible local set to keep the post-session flow working without
-// touching the backend. Pricing aligns with the calling-side dakshina tiers.
-const DEFAULT_DAKSHINA_GIFTS = [
-  { _id: 'd-11', name: 'Diya', icon: 'diya', price: 11 },
-  { _id: 'd-21', name: 'Lotus', icon: 'lotus', price: 21 },
-  { _id: 'd-51', name: 'Namaste', icon: 'namaste', price: 51 },
-  { _id: 'd-101', name: 'Nakshatra', icon: 'nakshatra', price: 101 },
-  { _id: 'd-251', name: 'Trishul', icon: 'trishul', price: 251 },
-  { _id: 'd-501', name: 'Om', icon: 'om', price: 501 },
-];
 
 type UIMessage = UIMessageBase;
 
@@ -191,6 +180,7 @@ export default function ChatPage() {
   // Post-session modals.
   const [showRating, setShowRating] = useState(false);
   const [showDakshina, setShowDakshina] = useState(false);
+  const [gifts, setGifts] = useState<any[]>([]);
   const [chatAgainPending, setChatAgainPending] = useState(false);
 
   // Live billing/timer state.
@@ -800,7 +790,7 @@ export default function ChatPage() {
     });
   }, []);
 
-  const handleRecharge = useCallback(() => router.push('/payment'), [router]);
+  const handleRecharge = useCallback(() => router.push('/wallet'), [router]);
 
   // -------- lightbox --------
   const galleryImages = useMemo(() => {
@@ -882,6 +872,98 @@ export default function ChatPage() {
   }, [userId, activeThread, chatAgainPending, router]);
 
   const handleSendDakshina = useCallback(() => setShowDakshina(true), []);
+
+  const fetchGifts = useCallback(async () => {
+    const token = getAuthToken();
+    if (!token) return;
+
+    const tryEndpoint = async (url: string, withAuth: boolean) => {
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: withAuth
+          ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+          : { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      const json = await res.json().catch(() => null);
+      const list = Array.isArray(json?.data)
+        ? json.data
+        : Array.isArray(json?.gifts)
+          ? json.gifts
+          : Array.isArray(json)
+            ? json
+            : [];
+      return list.length > 0 ? list : null;
+    };
+
+    const endpoints: Array<[string, boolean]> = [
+      ['/api/calling/gift/get-gifts', true],
+      [`${getApiBaseUrl()}/calling/api/gift/get-gifts`, true],
+      [`${getApiBaseUrl()}/api/gift/get-gifts`, true],
+      [`${getApiBaseUrl()}/gift/get-gifts`, true],
+    ];
+
+    for (const [url, withAuth] of endpoints) {
+      try {
+        const list = await tryEndpoint(url, withAuth);
+        if (list) {
+          const normalized = list
+            .map((g: any) => ({ ...g, price: Math.round(Number(g.price) || 0) }))
+            .sort((a: any, b: any) => a.price - b.price);
+          setGifts(normalized);
+          return;
+        }
+      } catch (err) {
+        console.warn('[chat] fetchGifts failed for', url, err);
+      }
+    }
+  }, []);
+
+  const handleSendGift = useCallback(async (gift: any) => {
+    const token = getAuthToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (typeof gift._id === 'string' && gift._id.startsWith('preset_')) {
+      fetchGifts();
+      throw new Error('Offerings not loaded yet. Please try again.');
+    }
+
+    const receiverUserId = activeThread?.providerId?._id;
+    if (!receiverUserId) {
+      throw new Error('Astrologer not available.');
+    }
+
+    const price = Math.round(Number(gift.price) || 0);
+    if (typeof walletBalance === 'number' && walletBalance < price) {
+      throw new Error('Insufficient wallet balance. Please recharge your wallet.');
+    }
+
+    const response = await fetch(`/api/calling/gift/send-gift`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        id: gift._id,
+        receiverUserId,
+      }),
+      credentials: 'include',
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data?.success === false) {
+      throw new Error(data?.message || 'Failed to send Dakshina');
+    }
+
+    setWalletBalance(prev => Math.max(0, (prev ?? 0) - price));
+    refreshBalance();
+    return true;
+  }, [activeThread, walletBalance, router, fetchGifts, refreshBalance]);
 
   // -------- selected session shape for child components --------
   const selectedSessionForHeader = useMemo(() => {
@@ -995,13 +1077,16 @@ export default function ChatPage() {
         {!showChatPanel ? (
           <div className="flex-1 hidden md:flex items-center justify-center bg-gradient-to-b from-saffron-50/40 to-white relative overflow-hidden">
             <div className="text-center px-6 relative z-10">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-md flex items-center justify-center text-3xl">
-                🕉️
+              <div className="relative w-24 h-24 mx-auto mb-5">
+                <div className="absolute inset-0 rounded-full bg-saffron-100/70" />
+                <div className="absolute inset-2 rounded-full bg-white shadow-md ring-1 ring-saffron-100 flex items-center justify-center">
+                  <span className="font-garamond text-4xl text-saffron-600 leading-none">ॐ</span>
+                </div>
               </div>
-              <h3 className="font-garamond text-xl text-saffron-900 font-semibold mb-1">
+              <h3 className="font-garamond text-2xl text-saffron-900 font-semibold mb-1.5">
                 Pick a chat to begin
               </h3>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 max-w-xs mx-auto">
                 Choose an astrologer from the list to continue your conversation.
               </p>
             </div>
@@ -1265,9 +1350,10 @@ export default function ChatPage() {
       <DakshinaModal
         isOpen={showDakshina}
         onClose={() => setShowDakshina(false)}
-        onSend={() => setShowDakshina(false)}
+        onSend={handleSendGift}
         receiverName={activeThread?.providerId.name || 'Astrologer'}
-        gifts={DEFAULT_DAKSHINA_GIFTS}
+        gifts={gifts}
+        onFetchGifts={fetchGifts}
       />
     </div>
   );

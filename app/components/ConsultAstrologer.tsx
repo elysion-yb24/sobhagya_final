@@ -19,6 +19,8 @@ import {
 import { getApiBaseUrl } from '@/app/config/api';
 import {
   isAuthenticated,
+  getAuthToken,
+  getUserDetails,
 } from '@/app/utils/auth-utils';
 
 interface Astrologer {
@@ -58,6 +60,69 @@ const AstrologerCarousel = () => {
   const [isMobile, setIsMobile] = useState(false);
 
   const [showCallOptions, setShowCallOptions] = useState(false);
+  const [hasCompletedFreeCall, setHasCompletedFreeCall] = useState(false);
+
+  // Same source of truth as AstrologerCard / profile page — never disagree on
+  // whether the user has already used their free first consultation.
+  useEffect(() => {
+    const checkCallHistory = async () => {
+      try {
+        const token = getAuthToken();
+        const userDetails = getUserDetails();
+        if (!token || !userDetails?.id) return;
+
+        const response = await fetch(`/api/calling/call-log?skip=0&limit=10&role=user`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          let totalCalls = 0;
+          if (data.data?.list && Array.isArray(data.data.list)) totalCalls = data.data.list.length;
+          else if (data.list && Array.isArray(data.list)) totalCalls = data.list.length;
+          else if (Array.isArray(data.data)) totalCalls = data.data.length;
+          else if (Array.isArray(data)) totalCalls = data.length;
+
+          if (totalCalls > 0) {
+            setHasCompletedFreeCall(true);
+            localStorage.setItem('userHasCalledBefore', 'true');
+          }
+        }
+      } catch {
+        const cached = localStorage.getItem('userHasCalledBefore');
+        if (cached === 'true') setHasCompletedFreeCall(true);
+      }
+    };
+
+    const runCheck = () => {
+      if (!isAuthenticated()) {
+        setHasCompletedFreeCall(false);
+        return;
+      }
+      const cached = localStorage.getItem('userHasCalledBefore');
+      const lastCheckTime = localStorage.getItem('lastCallHistoryCheck');
+      const now = Date.now();
+      if (cached === 'true') {
+        setHasCompletedFreeCall(true);
+      } else if (!lastCheckTime || now - parseInt(lastCheckTime) > 300000) {
+        checkCallHistory();
+        localStorage.setItem('lastCallHistoryCheck', now.toString());
+      }
+    };
+
+    runCheck();
+    window.addEventListener('user-auth-changed', runCheck);
+    window.addEventListener('user-call-status-changed', runCheck);
+    return () => {
+      window.removeEventListener('user-auth-changed', runCheck);
+      window.removeEventListener('user-call-status-changed', runCheck);
+    };
+  }, []);
   const [selectedCallAstrologer, setSelectedCallAstrologer] =
     useState<Astrologer | null>(null);
 
@@ -387,7 +452,9 @@ const AstrologerCarousel = () => {
                           }}
                         >
                           <Phone size={16} />
-                          FREE 1st Call
+                          {hasCompletedFreeCall
+                            ? `Call • ₹${astro.rpm || 15}/min`
+                            : 'FREE 1st Call'}
                         </button>
                       </div>
                     </motion.div>

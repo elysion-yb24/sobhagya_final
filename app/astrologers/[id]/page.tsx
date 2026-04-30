@@ -314,7 +314,7 @@ export default function AstrologerProfilePage() {
       }
 
       const response = await fetch(
-        `${getApiBaseUrl()}/user/api/users?skip=0&limit=20`,
+        `${getApiBaseUrl()}/user/api/users-list?skip=0&limit=20`,
         {
           method: "GET",
           headers: {
@@ -326,7 +326,8 @@ export default function AstrologerProfilePage() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch similar astrologers");
+        console.warn("Similar astrologers fetch failed:", response.status);
+        return;
       }
 
       const result = await response.json();
@@ -419,48 +420,49 @@ export default function AstrologerProfilePage() {
         console.log("Specific endpoint not available, falling back to search");
       }
 
-      // If specific endpoint didn't work, search through all astrologers
+      // If specific endpoint didn't work, search through the listing endpoint.
+      // Use /user/api/users-list (the actual listing path on this backend);
+      // /user/api/users returns 4xx and was the cause of "Failed to fetch astrologer profile".
       if (!foundAstrologer) {
         let currentSkip = 0;
-        const limit = 50; // Larger batch size for better performance
+        const limit = 50;
         let searchCompleted = false;
 
         while (!searchCompleted && !foundAstrologer) {
-          console.log(`🔍 Searching for astrologer ${astrologerId} in batch starting at ${currentSkip}`);
-          
-          const response = await fetch(
-            `${getApiBaseUrl()}/user/api/users?skip=${currentSkip}&limit=${limit}`,
-            {
-              method: "GET",
-              headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
-              credentials: 'include',
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error("Failed to fetch astrologer profile");
-          }
-
-          const result = await response.json();
           let astrologers: any[] = [];
-          
-          if (result?.data?.list && Array.isArray(result.data.list)) {
-            astrologers = result.data.list;
-          } else if (result?.list && Array.isArray(result.list)) {
-            astrologers = result.list;
+          try {
+            const response = await fetch(
+              `${getApiBaseUrl()}/user/api/users-list?skip=${currentSkip}&limit=${limit}`,
+              {
+                method: "GET",
+                headers: {
+                  "Authorization": `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                credentials: 'include',
+              }
+            );
+
+            if (response.ok) {
+              const result = await response.json();
+              if (result?.data?.list && Array.isArray(result.data.list)) {
+                astrologers = result.data.list;
+              } else if (result?.list && Array.isArray(result.list)) {
+                astrologers = result.list;
+              }
+            } else {
+              console.warn(`Listing endpoint returned ${response.status}, stopping search.`);
+            }
+          } catch (listErr) {
+            console.warn("Listing fetch failed:", listErr);
           }
 
-          // Search for the astrologer in current batch
-          foundAstrologer = astrologers.find(ast => 
-            ast._id === astrologerId || 
-            ast.id === astrologerId || 
+          foundAstrologer = astrologers.find(ast =>
+            ast._id === astrologerId ||
+            ast.id === astrologerId ||
             ast.numericId?.toString() === astrologerId
           );
 
-          // If found or no more results, stop searching
           if (foundAstrologer || astrologers.length < limit) {
             searchCompleted = true;
           } else {

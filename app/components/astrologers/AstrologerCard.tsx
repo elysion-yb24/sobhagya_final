@@ -426,183 +426,185 @@ const AstrologerCard = React.memo(function AstrologerCard({
   return (
     <>
       <motion.div
-        className="relative bg-white rounded-2xl p-3.5 sm:p-4 cursor-pointer transition-all duration-300 flex flex-col w-full mx-auto overflow-hidden border border-orange-100 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-orange-200 active:scale-[0.99]"
+        className="group relative bg-white rounded-2xl cursor-pointer transition-all duration-300 flex flex-col w-full mx-auto overflow-hidden border border-orange-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-orange-300 active:scale-[0.99]"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         onClick={handleCardClick}
       >
-        {/* 🎁 Free Call Banner */}
-        {/* 🎁 Free Call Banner - Premium Ribbon Style */}
-        {!hasCompletedFreeCall && (
-          <div className="absolute top-0 right-0 z-20">
-            <div className="bg-gradient-to-l from-orange-600 to-orange-400 text-white text-[10px] font-black px-4 py-1.5 rounded-bl-2xl shadow-md flex items-center gap-1.5 uppercase tracking-wider border-b border-l border-white/20">
-              <Star className="w-3 h-3 fill-white" />
-              1st Free Call
+        {/* Saffron accent bar */}
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500" />
+
+        <div className="p-4 sm:p-5 flex flex-col flex-1">
+          {/* Header: Avatar + Identity */}
+          <div className="flex gap-3.5 sm:gap-4">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div className="relative w-[72px] h-[72px] sm:w-[78px] sm:h-[78px] rounded-2xl overflow-hidden ring-2 ring-orange-100 shadow-sm">
+                <img
+                  src={
+                    (partner.avatar && partner.avatar.startsWith('http')) ||
+                    (partner.profileImage && partner.profileImage.startsWith('http'))
+                      ? partner.avatar || partner.profileImage
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F7941D&color=fff&size=120`
+                  }
+                  alt={name}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+              {/* Status dot */}
+              <span
+                className={`absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full ring-2 ring-white ${
+                  partner.status === 'online'
+                    ? 'bg-green-500'
+                    : partner.status === 'busy'
+                      ? 'bg-orange-500'
+                      : 'bg-gray-400'
+                }`}
+                aria-label={partner.status || 'offline'}
+              >
+                {partner.status === 'online' && (
+                  <span className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-75" />
+                )}
+              </span>
+            </div>
+
+            {/* Identity */}
+            <div className="flex-1 min-w-0">
+              {/* Name row */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-[16px] sm:text-[17px] font-bold text-gray-900 truncate leading-tight">
+                      {name}
+                    </h3>
+                    <CheckCircle className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                  </div>
+                  {/* Rating + orders inline */}
+                  <div className="mt-1 flex items-center gap-2 text-xs">
+                    <span className="inline-flex items-center gap-1 text-amber-700 font-semibold">
+                      <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                      {typeof rating === 'number' ? rating : rating?.avg || 4.8}
+                    </span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-gray-500 font-medium">
+                      {calls || callsCount || '12k+'} orders
+                    </span>
+                  </div>
+                </div>
+
+                {/* Free call pill (replaces overlapping ribbon) */}
+                {!hasCompletedFreeCall && (
+                  <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-bold uppercase tracking-wider border border-orange-200">
+                    <Star className="w-2.5 h-2.5 fill-current" />
+                    Free
+                  </span>
+                )}
+              </div>
+
+              {/* Specialization chips */}
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {(partner.talksAbout?.slice(0, 2) ||
+                  specializations?.slice(0, 2) || ['Vedic', 'Numerology']).map((tag, i) => (
+                  <span
+                    key={`${tag}-${i}`}
+                    className="px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 text-[11px] font-semibold capitalize border border-orange-100"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-        )}
 
-        {/* ⭐ Main Content */}
-        <div className="flex gap-4 mb-4 relative z-10">
-          {/* Avatar Section */}
-          <div className="relative flex-shrink-0">
-            <div className="relative group/avatar">
-              <img
-                src={
-                  (partner.avatar && partner.avatar.startsWith('http')) ||
-                  (partner.profileImage && partner.profileImage.startsWith('http'))
-                    ? partner.avatar || partner.profileImage
-                    : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F7941D&color=fff&size=80`
-                }
-                alt={name}
-                className="w-20 h-20 rounded-2xl object-cover border-2 shadow-inner transition-transform duration-500 group-hover/avatar:scale-105"
-                style={{
-                  borderColor: partner.status === "online" 
-                    ? "#10B981" 
-                    : partner.status === "busy" 
-                    ? "#F97316" 
-                    : partner.status === "offline" 
-                    ? "#EF4444" 
-                    : "#F7941D",
-                }}
-              />
-              {/* Online/Busy Indicator Ping */}
-              {partner.status === "online" && (
-                <span className="absolute -top-1 -left-1 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-2 border-white"></span>
-                </span>
-              )}
-            </div>
-
-            {/* ⭐ Rating Badge */}
-            <div className="mt-3 flex flex-col items-center">
-              <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 shadow-sm">
-                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                <span className="text-xs font-bold text-amber-700">
-                  {typeof rating === "number" ? rating : rating?.avg || 4.8}
-                </span>
-              </div>
-              <div className="text-[10px] text-gray-400 mt-1.5 font-medium uppercase tracking-tighter">
-                {calls || callsCount || "12k+"} orders
-              </div>
-            </div>
+          {/* Meta row: language · experience */}
+          <div className="mt-3.5 flex items-center gap-3 text-[11.5px] text-gray-600">
+            <span className="inline-flex items-center gap-1.5 min-w-0">
+              <Languages className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
+              <span className="truncate">
+                {(languages || partner.language)?.slice(0, 3).join(', ') || 'English, Hindi'}
+              </span>
+            </span>
+            <span className="text-gray-200">|</span>
+            <span className="inline-flex items-center gap-1.5 flex-shrink-0">
+              <GraduationCap className="w-3.5 h-3.5 text-orange-400" />
+              <span className="font-semibold text-gray-700">{age || experience || '5'} yrs</span>
+            </span>
           </div>
 
-          {/* Details Section */}
-          <div className="flex-1 min-w-0 pt-1">
-            <div className="flex items-center gap-1.5 mb-1">
-              <h3 className="text-[17px] font-bold text-gray-900 truncate tracking-tight">{name}</h3>
-              <CheckCircle className="w-4 h-4 text-blue-500 fill-blue-50/10" />
-            </div>
-
-            {/* Status Pill */}
-            <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-2 border ${
-              partner.status === "online" 
-                ? "bg-green-50 text-green-600 border-green-100" 
-                : partner.status === "busy" 
-                ? "bg-orange-50 text-orange-600 border-orange-100" 
-                : "bg-gray-50 text-gray-500 border-gray-100"
-            }`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                partner.status === "online" ? "bg-green-500" : partner.status === "busy" ? "bg-orange-500" : "bg-gray-400"
-              }`} />
-              {partner.status || 'Offline'}
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-start gap-2 text-gray-600">
-                <MessageSquare className="w-3.5 h-3.5 mt-0.5 text-orange-400 flex-shrink-0" />
-                <p className="text-xs font-medium line-clamp-1 leading-tight">
-                  {partner.talksAbout?.slice(0, 2).join(", ") || specializations?.slice(0, 2).join(", ") || "Vedic, Numerology"}
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-2 text-gray-500">
-                <Languages className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
-                <p className="text-[11px] truncate">
-                  {(languages || partner.language)?.slice(0, 3).join(", ") || "English, Hindi"}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 text-gray-500">
-                <GraduationCap className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
-                <p className="text-[11px]">
-                  Exp: <span className="font-bold text-gray-700">{age || experience || "5"} Years</span>
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 flex items-baseline gap-1">
-              <span className="text-xl font-black text-gray-900">₹{rpm || 15}</span>
-              <span className="text-[10px] text-gray-400 font-bold uppercase">/min</span>
-            </div>
+          {/* Price strip */}
+          <div className="mt-3.5 flex items-center justify-between rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 px-3 py-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-orange-700">
+              Consultation
+            </span>
+            <span className="flex items-baseline gap-0.5">
+              <span className="text-lg font-extrabold text-gray-900">₹{rpm || 15}</span>
+              <span className="text-[10px] text-gray-500 font-semibold">/min</span>
+            </span>
           </div>
-        </div>
 
-        {/* 🎯 Action Buttons */}
-        <div className="flex gap-2.5 mt-auto relative z-10">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleChatClick();
-            }}
-            className="flex-1 min-h-[44px] bg-gray-50 border border-gray-200 text-gray-700 rounded-xl py-3 text-xs font-bold flex items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 active:scale-95 transition-all duration-300"
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            Chat
-          </button>
-
-          {/* Call Dropdown */}
-          <div className="relative flex-1">
+          {/* Actions */}
+          <div className="mt-3.5 flex gap-2">
             <button
-              ref={callButtonRef}
               onClick={(e) => {
                 e.stopPropagation();
-                if (source === "callWithAstrologer") {
-                  handleCallModalClick(e);
-                } else {
-                  setIsCallMenuOpen((prev) => !prev);
-                }
+                handleChatClick();
               }}
-              className="w-full min-h-[44px] bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-xl py-3 text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20 active:scale-95 transition-all duration-500"
+              className="flex-1 min-h-[42px] bg-white border border-orange-200 text-orange-600 rounded-xl text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-orange-50 hover:border-orange-300 active:scale-95 transition-all duration-200"
             >
-              {isInitiatingCall ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Phone className="w-3.5 h-3.5" />
-                  {hasCompletedFreeCall ? "Call" : "FREE 1st Call"}
-                </>
-              )}
+              <MessageSquare className="w-4 h-4" />
+              Chat
             </button>
 
-            {isCallMenuOpen && (
-              <div
-                ref={callMenuRef}
-                className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-xl shadow-xl z-50 overflow-hidden border border-gray-100"
+            <div className="relative flex-1">
+              <button
+                ref={callButtonRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (source === 'callWithAstrologer') {
+                    handleCallModalClick(e);
+                  } else {
+                    setIsCallMenuOpen((prev) => !prev);
+                  }
+                }}
+                className="w-full min-h-[42px] bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl text-[13px] font-bold inline-flex items-center justify-center gap-1.5 shadow-md shadow-orange-500/25 active:scale-95 transition-all duration-200"
               >
-                <button
-                  onClick={handleAudioCallButtonClick}
-                  className="w-full px-4 py-3 text-left hover:bg-orange-50 text-gray-700 flex items-center gap-3 transition-colors duration-150 text-sm font-bold"
+                {isInitiatingCall ? (
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Phone className="w-4 h-4" />
+                    {hasCompletedFreeCall ? 'Call Now' : 'Free 1st Call'}
+                  </>
+                )}
+              </button>
+
+              {isCallMenuOpen && (
+                <div
+                  ref={callMenuRef}
+                  className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-xl shadow-xl z-50 overflow-hidden border border-gray-100"
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#F7941D] flex items-center justify-center shadow-sm">
-                    <Phone className="w-4 h-4 text-white" strokeWidth={2.5} />
-                  </div>
-                  Audio Call
-                </button>
-                <div className="h-px bg-gray-100 mx-3" />
-                <button
-                  onClick={handleVideoCall}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-50 text-gray-700 flex items-center gap-3 transition-colors duration-150 text-sm font-bold"
-                >
-                  <div className="w-8 h-8 rounded-full bg-[#333333] flex items-center justify-center shadow-sm">
-                    <Video className="w-4 h-4 text-white" strokeWidth={2.5} />
-                  </div>
-                  Video Call
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={handleAudioCallButtonClick}
+                    className="w-full px-4 py-3 text-left hover:bg-orange-50 text-gray-700 flex items-center gap-3 transition-colors duration-150 text-sm font-semibold"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center shadow-sm">
+                      <Phone className="w-4 h-4 text-white" strokeWidth={2.5} />
+                    </div>
+                    Audio Call
+                  </button>
+                  <div className="h-px bg-gray-100 mx-3" />
+                  <button
+                    onClick={handleVideoCall}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-50 text-gray-700 flex items-center gap-3 transition-colors duration-150 text-sm font-semibold"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center shadow-sm">
+                      <Video className="w-4 h-4 text-white" strokeWidth={2.5} />
+                    </div>
+                    Video Call
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </motion.div>

@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
-
+import { getAuthCookies } from '../../../lib/server-auth';
 const BACKEND_BASE = process.env.BACKEND_BASE_URL || 'https://micro.sobhagya.in';
 
 // Build CORS headers dynamically so we can echo the incoming origin and allow credentials
@@ -28,24 +28,23 @@ export async function GET(req: NextRequest) {
     // Build the target URL with existing search params
     const backendQueryParams = new URLSearchParams(url.searchParams);
 
-    const authHeader = req.headers.get('authorization');
-    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    const { accessToken, refreshToken } = await getAuthCookies();
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json({ success: false, message: 'Authentication failed, Please log in.' }, { 
+        status: 401,
+        headers: getCorsHeaders(req)
+      });
+    }
 
     const backendUrl = `${BACKEND_BASE}/calling/api/call/call-token-livekit?${backendQueryParams.toString()}`;
 
     const forwardHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'Cookie': `token=${refreshToken}`,
+      'cookies': refreshToken,
     };
-
-    if (authHeader) forwardHeaders['Authorization'] = authHeader;
-
-    // Construct proper Cookie header for backend auth middleware
-    // Backend expects: req.cookies.token (refresh token) via cookie-parser
-    // Fallback: req.headers['cookies'] (bare JWT value)
-    if (bearerToken) {
-      forwardHeaders['Cookie'] = `token=${bearerToken}`;
-      forwardHeaders['cookies'] = bearerToken;
-    }
 
     console.log('[call-token-livekit] GET Proxying to:', backendUrl);
 
@@ -77,8 +76,15 @@ export async function POST(req: NextRequest) {
     const channel = url.searchParams.get('channel') || '';
     const body = await req.json();
 
-    const authHeader = req.headers.get('authorization');
-    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    const { accessToken, refreshToken } = await getAuthCookies();
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json({ success: false, message: 'Authentication failed, Please log in.' }, { 
+        status: 401,
+        headers: getCorsHeaders(req)
+      });
+    }
+
     const backendQueryParams = new URLSearchParams(url.searchParams);
 
     const backendUrl = `${BACKEND_BASE}/calling/api/call/call-token-livekit?${backendQueryParams.toString()}`;
@@ -86,22 +92,14 @@ export async function POST(req: NextRequest) {
     const forwardHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Origin': 'https://sobhagya.in',
+      'Authorization': `Bearer ${accessToken}`,
+      'Cookie': `token=${refreshToken}`,
+      'cookies': refreshToken,
     };
-
-    if (authHeader) forwardHeaders['Authorization'] = authHeader;
-
-    // Construct proper Cookie header for backend auth middleware
-    // Backend expects: req.cookies.token (refresh token) via cookie-parser
-    // Fallback: req.h
-    // eaders['cookies'] (bare JWT value)
-    if (bearerToken) {
-      forwardHeaders['Cookie'] = `token=${bearerToken}`;
-      forwardHeaders['cookies'] = bearerToken;
-    }
 
     console.log('[call-token-livekit] POST Proxying to:', backendUrl);
     console.log('[call-token-livekit] receiverUserId:', body.receiverUserId);
-    console.log('[call-token-livekit] Auth present:', !!authHeader);
+    console.log('[call-token-livekit] Auth present:', !!accessToken);
 
     // Pre-flight: ensure caller has a profile in user-service (fixes missing profile bug)
     try {

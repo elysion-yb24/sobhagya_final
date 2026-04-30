@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getAuthCookies } from '../../../lib/server-auth';
 
 export async function POST(req: Request) {
   try {
@@ -9,23 +10,19 @@ export async function POST(req: Request) {
     const backendBase = process.env.BACKEND_BASE_URL || 'https://micro.sobhagya.in';
     const backendUrl = `${backendBase}/calling/api/call/call-token-livekit?channel=${encodeURIComponent(channel)}`;
 
+    const { accessToken, refreshToken } = await getAuthCookies();
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.json({ success: false, message: 'Authentication failed, Please log in.' }, { status: 401 });
+    }
+
     // Forward incoming headers (Authorization, cookies, etc.) to backend
     const forwardHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'Cookie': `token=${refreshToken}`,
+      'cookies': refreshToken,
     };
-
-    // Explicitly forward Authorization
-    const authHeader = req.headers.get('authorization');
-    if (authHeader) forwardHeaders['Authorization'] = authHeader;
-
-    // Construct proper Cookie header for backend auth middleware
-    // Backend expects: req.cookies.token (refresh token) via cookie-parser
-    // Fallback: req.headers['cookies'] (bare JWT value)
-    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-    if (bearerToken) {
-      forwardHeaders['Cookie'] = `token=${bearerToken}`;
-      forwardHeaders['cookies'] = bearerToken;
-    }
 
     console.log('[proxy-livekit-token] forwarding body:', JSON.stringify(body));
     console.log('[proxy-livekit-token] to backendUrl:', backendUrl);

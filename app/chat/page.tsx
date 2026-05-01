@@ -485,6 +485,10 @@ export default function ChatPage() {
                   : m
               )
             );
+            // Refresh header wallet balance after each delivered message.
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('wallet-balance-refresh'));
+            }
           }
         }
       );

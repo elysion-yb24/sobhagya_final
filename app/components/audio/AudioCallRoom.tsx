@@ -554,7 +554,12 @@ export default function AudioCallRoom({
   const handleRoomDisconnected = useCallback(() => {
     console.log('🎵 Audio call room disconnected');
     setRoom(null);
-    
+
+    // Refresh header wallet balance now that the call has ended.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('wallet-balance-refresh'));
+    }
+
     // Call onDisconnect when room is disconnected
     if (onDisconnect) {
       onDisconnect();

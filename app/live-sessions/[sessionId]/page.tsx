@@ -933,7 +933,13 @@ export default function LiveSessionViewPage() {
     };
 
     init();
-    return () => { leaveSession(sessionId); };
+    return () => {
+      leaveSession(sessionId);
+      // Refresh header wallet now that the live session is ending.
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('wallet-balance-refresh'));
+      }
+    };
   }, [isConnected, sessionId]);
 
   /* ── real-time listeners ── */

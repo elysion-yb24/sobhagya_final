@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { Search, X, Wallet, Plus, Filter, MessageSquare, Star } from 'lucide-react'
+import { Search, X, Filter, MessageSquare } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PresenceDot from './PresenceDot'
 
@@ -132,30 +132,19 @@ export default function Sidebar({
           )}
         </div>
 
-        {/* Quick Filters & Balance */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Quick Filters */}
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setOnlineOnly(!onlineOnly)}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition ${
-              onlineOnly 
-                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm' 
+              onlineOnly
+                ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
                 : 'bg-white text-gray-600 border-saffron-100 hover:border-saffron-300'
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${onlineOnly ? 'bg-white' : 'bg-emerald-500'}`} />
             Online
           </button>
-
-          {mounted && userRole === 'user' && (
-            <button
-              onClick={() => router.push('/wallet')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-saffron-500 to-amber-500 text-white text-xs font-bold shadow-md shadow-saffron-100 active:scale-95 transition"
-            >
-              <Wallet className="w-3.5 h-3.5" />
-              {balanceLoading ? '...' : `₹${Math.floor(userBalance ?? 0)}`}
-              <Plus className="w-3 h-3" />
-            </button>
-          )}
         </div>
       </div>
 

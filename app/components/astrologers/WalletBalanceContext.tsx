@@ -101,12 +101,22 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       }, 100);
     };
 
+    // Manual/external refresh trigger — any component can call
+    // window.dispatchEvent(new Event('wallet-balance-refresh')) to force a refetch.
+    const handleManualRefresh = () => {
+      if (!isAuthenticated()) return;
+      fetchWalletBalance();
+    };
+
     // Listen for custom logout event
     window.addEventListener('user-logout', handleLogout);
-    
+
     // Listen for auth change events (login/logout)
     window.addEventListener('user-auth-changed', handleAuthChange);
-    
+
+    // Listen for explicit wallet refresh requests (after calls, chat msgs, etc.)
+    window.addEventListener('wallet-balance-refresh', handleManualRefresh);
+
     // Also check periodically if user is still authenticated
     const checkAuthInterval = setInterval(() => {
       if (!isAuthenticated()) {
@@ -117,6 +127,7 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       window.removeEventListener('user-logout', handleLogout);
       window.removeEventListener('user-auth-changed', handleAuthChange);
+      window.removeEventListener('wallet-balance-refresh', handleManualRefresh);
       clearInterval(checkAuthInterval);
     };
   }, [fetchWalletBalance]);

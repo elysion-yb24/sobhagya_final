@@ -643,7 +643,12 @@ export default function VideoCallRoom({
     isDisconnectingRef.current = true;
     roomRef.current = null;
     setCallStats(prev => ({ ...prev, isConnected: false }));
-   
+
+    // Refresh header wallet balance now that the call has ended.
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('wallet-balance-refresh'));
+    }
+
     setTimeout(() => {
       if (onDisconnect) {
         onDisconnect();

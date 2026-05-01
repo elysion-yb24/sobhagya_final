@@ -2,11 +2,11 @@
 
 import React from 'react'
 import { motion } from 'framer-motion'
-import { Star, Gift, MessageCircle, CheckCircle2 } from 'lucide-react'
+import { Star, MessageCircle, CheckCircle2 } from 'lucide-react'
 
 interface SessionEndedCardProps {
   onRate: () => void
-  onSendDakshina: () => void
+  onSendDakshina?: () => void
   onChatAgain: () => void
   astrologerName: string
   astrologerAvatar?: string
@@ -14,7 +14,6 @@ interface SessionEndedCardProps {
 
 export default function SessionEndedCard({
   onRate,
-  onSendDakshina,
   onChatAgain,
   astrologerName,
   astrologerAvatar,
@@ -58,14 +57,6 @@ export default function SessionEndedCard({
           >
             <Star className="w-4 h-4 fill-current" />
             <span>Rate</span>
-          </button>
-
-          <button
-            onClick={onSendDakshina}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-lg text-sm font-semibold hover:shadow-md transition active:scale-95"
-          >
-            <Gift className="w-4 h-4" />
-            <span>Dakshina</span>
           </button>
 
           <button

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import DakshinaModal from '../../../components/calling/ui/DakshinaModal';
 import {
     ArrowLeft, CheckCircle, Share2, Heart, Award, Languages, Phone, Gift,
-    ChevronLeft, ChevronRight, X, PhoneCall, Video, Star
+    ChevronLeft, ChevronRight, X, PhoneCall, Video, Star, MessageSquare
 } from 'lucide-react';
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, getUserDetails, isAuthenticated } from "../../../utils/auth-utils";
@@ -14,6 +14,7 @@ import Footer from "../../../components/Footer";
 import { initiateCall } from "../../../utils/calling-utils";
 import { fetchWalletBalance as simpleFetchWalletBalance } from "../../../utils/production-api";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSessionManager } from "../../../components/astrologers/SessionManager";
 
 interface Astrologer {
     _id: string;
@@ -448,10 +449,39 @@ export default function CallAstrologerProfilePage() {
         }
     };
 
+    const { createOrJoinSession } = useSessionManager();
+    const [isStartingChat, setIsStartingChat] = useState(false);
+
     const handleCall = () => {
-        
+
         setSelectedCallAstrologer(astrologer);
         setShowCallOptions(true);
+    };
+
+    const handleChat = async () => {
+        if (!astrologerId) return;
+        if (!isAuthenticated()) {
+            localStorage.setItem('selectedAstrologerId', astrologerId);
+            localStorage.setItem('chatIntent', '1');
+            router.push('/login');
+            return;
+        }
+        if (isStartingChat) return;
+        setIsStartingChat(true);
+        try {
+            const result = await createOrJoinSession(astrologerId);
+            if (result.ok) {
+                const qs = new URLSearchParams({ threadId: result.threadId });
+                if (result.sessionId) qs.set('sessionId', result.sessionId);
+                router.push(`/chat?${qs.toString()}`);
+            } else {
+                alert(result.message || 'Could not start chat. Please try again.');
+            }
+        } catch (err: any) {
+            alert(err?.message || 'Could not start chat. Please try again.');
+        } finally {
+            setIsStartingChat(false);
+        }
     };
 
     const initiateDirectCall = async (callType: 'audio' | 'video') => {
@@ -723,32 +753,42 @@ export default function CallAstrologerProfilePage() {
                                         )}
                                     </div>
 
-                                    {/* Action Row */}
-                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-                                        <div className="relative flex-1">
-                                            {/* 1st Free Call ribbon — mirrors AstrologerCard treatment */}
+                                    {/* Action Row — Chat / Audio / Video */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                        <button
+                                            onClick={handleChat}
+                                            disabled={isStartingChat}
+                                            className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98]"
+                                        >
+                                            <MessageSquare className="w-5 h-5" />
+                                            {isStartingChat ? 'Starting…' : 'Chat'}
+                                        </button>
+
+                                        <div className="relative">
+                                            {/* 1st Free Call ribbon — only on the audio call CTA */}
                                             {!hasCompletedFreeCall && (
                                                 <div className="absolute -top-2 right-3 z-10 pointer-events-none">
                                                     <div className="bg-gradient-to-l from-orange-600 to-orange-400 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-md flex items-center gap-1 uppercase tracking-wider border border-white/30">
                                                         <Star className="w-3 h-3 fill-white" />
-                                                        1st Free Call
+                                                        1st Free
                                                     </div>
                                                 </div>
                                             )}
                                             <button
-                                                onClick={handleCall}
-                                                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all duration-500 flex items-center justify-center gap-3 active:scale-[0.98]"
+                                                onClick={() => handleCallTypeSelection('audio')}
+                                                className="w-full bg-gradient-to-r from-orange-500 via-orange-600 to-orange-500 bg-[length:200%_auto] hover:bg-right text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-orange-500/20 transition-all duration-500 flex items-center justify-center gap-2 active:scale-[0.98]"
                                             >
                                                 <Phone className="w-5 h-5" />
-                                                {hasCompletedFreeCall ? "Call Now" : "Claim 1st Free Consultation"}
+                                                Audio Call
                                             </button>
                                         </div>
+
                                         <button
-                                            onClick={() => setShowGiftModal(true)}
-                                            className="px-8 py-4 rounded-2xl bg-white text-amber-600 border border-amber-200 font-black text-sm uppercase tracking-widest hover:bg-amber-50 hover:border-amber-300 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+                                            onClick={() => handleCallTypeSelection('video')}
+                                            className="bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white rounded-2xl py-4 text-sm font-black uppercase tracking-widest shadow-xl shadow-indigo-500/20 transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98]"
                                         >
-                                            <Gift className="w-5 h-5" />
-                                            Dakshina
+                                            <Video className="w-5 h-5" />
+                                            Video Call
                                         </button>
                                     </div>
                                 </div>

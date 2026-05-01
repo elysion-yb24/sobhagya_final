@@ -655,8 +655,11 @@ export default function VideoCallRoom({
       } else {
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('returning_from_video_call', 'true');
+          // Hard reload so destination is fresh (header wallet, etc.).
+          window.location.replace('/astrologers');
+        } else {
+          router.push('/astrologers');
         }
-        router.push('/astrologers');
       }
     }, 1500);
   }, [onDisconnect, router]);

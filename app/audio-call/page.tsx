@@ -90,10 +90,15 @@ export default function AudioCallPage() {
     if (typeof window !== 'undefined') localStorage.removeItem('callSource');
 
     setTimeout(() => {
-      if (callSource === 'astrologerProfile' && astrologerId) {
-        router.replace(`/call-with-astrologer/profile/${astrologerId}`);
+      const dest =
+        callSource === 'astrologerProfile' && astrologerId
+          ? `/call-with-astrologer/profile/${astrologerId}`
+          : '/call-with-astrologer';
+      // Hard reload so destination page (and header wallet) is fresh.
+      if (typeof window !== 'undefined') {
+        window.location.replace(dest);
       } else {
-        router.replace('/call-with-astrologer');
+        router.replace(dest);
       }
     }, 100);
   };

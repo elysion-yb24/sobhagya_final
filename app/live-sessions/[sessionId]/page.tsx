@@ -1225,12 +1225,14 @@ export default function LiveSessionViewPage() {
             {sessionEnded ? 'Thank you for watching. May your path be illuminated.' : error}
           </p>
           <div className="flex gap-3 justify-center">
-            <Link href="/live-sessions" className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-orange-200 active:scale-95 transition-all">
+            {/* Plain anchors so the destination page does a full reload
+                (refreshes header wallet after the live session ends). */}
+            <a href="/live-sessions" className="bg-gradient-to-r from-orange-500 to-amber-500 text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-orange-200 active:scale-95 transition-all">
               Browse Live
-            </Link>
-            <Link href="/call-with-astrologer" className="bg-white border border-orange-200 text-orange-600 px-6 py-3 rounded-full font-bold text-sm hover:bg-orange-50 transition-all">
+            </a>
+            <a href="/call-with-astrologer" className="bg-white border border-orange-200 text-orange-600 px-6 py-3 rounded-full font-bold text-sm hover:bg-orange-50 transition-all">
               Astrologers
-            </Link>
+            </a>
           </div>
         </div>
       </div>
@@ -1300,7 +1302,7 @@ export default function LiveSessionViewPage() {
           LIVE/Eye/X chips are swapped for mute + end-call controls. */}
       <div className="relative z-10 flex items-start justify-between px-3 pt-3 pb-2 safe-top" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.5) 65%, transparent 100%)' }}>
         <div className="flex items-start gap-2.5">
-          <button onClick={() => router.push('/live-sessions')} className="w-9 h-9 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-orange-600 active:scale-90 transition-transform">
+          <button onClick={() => { window.location.href = '/live-sessions'; }} className="w-9 h-9 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-orange-600 active:scale-90 transition-transform">
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className={`premium-glass rounded-2xl pl-0.5 pr-3.5 py-0.5 shadow-sm border-white/40 ${isInCall ? 'pb-1.5' : ''}`}>
@@ -1377,7 +1379,7 @@ export default function LiveSessionViewPage() {
                 <Eye className="w-3 h-3 text-orange-500" />
                 <span className="text-gray-800 text-[11px] font-bold">{viewers}</span>
               </div>
-              <button onClick={() => router.push('/live-sessions')} className="w-8 h-8 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-gray-400 active:scale-90 transition-transform hover:text-red-500">
+              <button onClick={() => { window.location.href = '/live-sessions'; }} className="w-8 h-8 rounded-full bg-white shadow-md border border-orange-100 flex items-center justify-center text-gray-400 active:scale-90 transition-transform hover:text-red-500">
                 <X className="w-4 h-4" />
               </button>
             </>

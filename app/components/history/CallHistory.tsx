@@ -134,13 +134,17 @@ export default function CallHistory() {
     }
   };
 
-  // ✅ Updated formatDuration to MM:SS
-  const formatDuration = (seconds: number) => {
-    if (typeof seconds !== "number" || isNaN(seconds) || seconds < 0) return "0:00";
+  // Backend returns `duration` inflated by 60x (stores actual_seconds * 60),
+  // so a 56-second call comes back as 3360. Normalize once here.
+  const toActualSeconds = (raw: number) => {
+    if (typeof raw !== "number" || isNaN(raw) || raw <= 0) return 0;
+    return Math.floor(raw / 60);
+  };
 
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-
+  const formatDuration = (raw: number) => {
+    const totalSecs = toActualSeconds(raw);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 

@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { ConsultingTopic } from '@/types';
 import { useEffect, useRef, useState } from 'react';
+import SectionHeader from './ui/SectionHeader';
 
 const consultingTopics: ConsultingTopic[] = [
   {
@@ -54,13 +55,12 @@ const ConsultingSection: React.FC = () => {
 
       <div className="section-container relative z-10">
         <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-          <h2 className="section-heading text-center mb-3 sm:mb-4 md:mb-6 text-[#745802]">
-            Problems and Consulting
-          </h2>
-          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-4 sm:mb-6" />
-          <p className="text-center mb-8 sm:mb-12 md:mb-14 text-[#745802] text-sm sm:text-base md:text-lg font-medium max-w-2xl mx-auto px-2" style={{ fontFamily: 'Poppins' }}>
-            Solve Your Life&apos;s Biggest Problems with Astrologers
-          </p>
+          <SectionHeader
+            tag="Consultation"
+            title="Problems and Consulting"
+            subtitle="Solve Your Life's Biggest Problems with Astrologers"
+            center
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 lg:gap-16 items-center max-w-6xl mx-auto">
@@ -81,7 +81,6 @@ const ConsultingSection: React.FC = () => {
 
           {/* Right: Topics timeline */}
           <div className={`relative transition-all duration-1000 delay-300 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
-            <div className="absolute left-5 sm:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#E69126] via-[#F7971E] to-[#E69126]/30" />
             <div className="absolute left-5 sm:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-[#F7941D] via-[#F7941D] to-[#F7941D]/30" />
             
             <div className="space-y-6 sm:space-y-8 md:space-y-10">

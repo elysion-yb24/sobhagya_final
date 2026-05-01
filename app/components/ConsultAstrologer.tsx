@@ -15,6 +15,7 @@ import {
   PhoneCall,
   X,
 } from 'lucide-react';
+import SectionHeader from "./ui/SectionHeader";
 
 import { getApiBaseUrl } from '@/app/config/api';
 import {
@@ -241,57 +242,37 @@ const AstrologerCarousel = () => {
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-4">
 
-        {/* Heading */}
-        <div className="text-center mb-14">
-          <p
-            className="font-semibold tracking-wider text-sm"
-            style={{ color: COLORS.primary }}
-          >
-            TRUSTED GUIDANCE
-          </p>
-
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mt-3 text-black leading-tight">
-            Consult with India's{' '}
-            <span style={{ color: COLORS.primary }}>
-              Best Astrologers
-            </span>
-          </h2>
-
-          <div className="flex flex-wrap justify-center gap-6 mt-6 text-sm text-[#555]">
-            <span className="flex items-center gap-2">
-              <ShieldCheck
-                size={16}
-                color={COLORS.gold}
-              />
-              Verified Experts
-            </span>
-
-            <span className="flex items-center gap-2">
-              <Star
-                size={16}
-                fill={COLORS.gold}
-                color={COLORS.gold}
-              />
-              4.8+ Rating
-            </span>
-
-            <span className="flex items-center gap-2">
-              <Phone
-                size={16}
-                color={COLORS.gold}
-              />
-              Instant Connect
-            </span>
-
-            <span className="flex items-center gap-2">
-              <Lock
-                size={16}
-                color={COLORS.gold}
-              />
-              Confidential
-            </span>
-          </div>
-        </div>
+        {/* Standardized Heading */}
+        <SectionHeader
+          tag="Trusted Guidance"
+          title={
+            <>
+              Consult with India's{' '}
+              <span className="text-[#F7971E]">Best Astrologers</span>
+            </>
+          }
+          subtitle={
+            <div className="flex flex-wrap justify-center gap-6 mt-2 text-sm text-[#555]">
+              <span className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-[#EDB000]" />
+                Verified Experts
+              </span>
+              <span className="flex items-center gap-2">
+                <Star size={16} className="text-[#EDB000] fill-[#EDB000]" />
+                4.8+ Rating
+              </span>
+              <span className="flex items-center gap-2">
+                <Phone size={16} className="text-[#EDB000]" />
+                Instant Connect
+              </span>
+              <span className="flex items-center gap-2">
+                <Lock size={16} className="text-[#EDB000]" />
+                Confidential
+              </span>
+            </div>
+          }
+          center
+        />
 
         {/* Slider */}
         <div className="relative">

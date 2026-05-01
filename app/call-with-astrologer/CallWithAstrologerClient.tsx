@@ -7,7 +7,7 @@ import Image from "next/image";
 import AstrologerList from "../components/astrologers/AstrologerList";
 import FilterBar from "../components/astrologers/FilterBar";
 import { WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
-import { getApiBaseUrl, API_CONFIG } from "../config/api";
+import { getApiBaseUrl } from "../config/api";
 import { isAuthenticated, getAuthToken, getUserDetails } from "../utils/auth-utils";
 import { Phone, Video, X, PhoneCall } from "lucide-react";
 
@@ -122,29 +122,24 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         const token = getAuthToken();
         const skip = (page - 1) * 10;
         const limit = 10;
-        let endpoint = "";
 
         const safeQuery = query.replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
 
-        // /search requires name length > 2 and auth — otherwise fall through to users-list + client filter
-        if (safeQuery.length >= 3 && token) {
-          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(safeQuery)}&skip=${skip}&limit=${limit}`;
-          if (language && language !== "All") endpoint += `&language=${encodeURIComponent(language)}`;
-          if (sort && sort !== "audio" && sort !== "video") endpoint += `&sortBy=${encodeURIComponent(sort)}`;
-        } else {
-          // Short queries or unauthenticated: fetch a bigger page and filter by name client-side
-          const queryLimit = safeQuery ? 200 : limit;
-          const queryParts = [
-            `skip=${skip}`,
-            `limit=${queryLimit}`,
-            `asc=-1`,
-            language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
-            sort === "video" ? `video=true` : "",
-            sort !== "video" && sort !== "audio" && sort ? `sortBy=${encodeURIComponent(sort)}` : ""
-          ];
-          const queryString = queryParts.filter(Boolean).join("&");
-          endpoint = `${getApiBaseUrl()}/user/api/users-list?${queryString}`;
-        }
+        // Always use users-list and filter by name client-side. The /search endpoint is
+        // unreliable (auth-gated, inconsistent response shape) and produces empty results
+        // for valid queries. users-list is permissive and works for all users.
+        const queryLimit = safeQuery ? 200 : limit;
+        const querySkip = safeQuery ? 0 : skip;
+        const queryParts = [
+          `skip=${querySkip}`,
+          `limit=${queryLimit}`,
+          `asc=-1`,
+          language && language !== "All" ? `language=${encodeURIComponent(language)}` : "",
+          sort === "video" ? `video=true` : "",
+          sort !== "video" && sort !== "audio" && sort ? `sortBy=${encodeURIComponent(sort)}` : ""
+        ];
+        const queryString = queryParts.filter(Boolean).join("&");
+        const endpoint = `${getApiBaseUrl()}/user/api/users-list?${queryString}`;
 
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -174,24 +169,12 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         }
 
         const data = await res.json();
-        let newAstrologers: Astrologer[] = query
-          ? data.data?.list || data.users || data.data || []
-          : data.data?.list || [];
+        let newAstrologers: Astrologer[] = data.data?.list || data.users || data.data || [];
 
-        // --- CLIENT-SIDE COMPENSATIONS FOR BACKEND LIMITATIONS ---
-        const usedSearchEndpoint = safeQuery.length >= 3 && !!token;
-        if (safeQuery && !usedSearchEndpoint) {
-          // Fell through to users-list — filter by name locally
-          newAstrologers = newAstrologers.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
-        }
-        if (usedSearchEndpoint) {
-          // /search ignores language and sort — apply manually
-          if (language && language !== "All") {
-            newAstrologers = newAstrologers.filter(a => a.languages?.includes(language));
-          }
-          if (sort === "video") {
-            newAstrologers = newAstrologers.filter(a => a.hasVideo);
-          }
+        // Filter by name client-side since users-list doesn't support search
+        if (safeQuery) {
+          const q = safeQuery.toLowerCase();
+          newAstrologers = newAstrologers.filter(a => a.name?.toLowerCase().includes(q));
         }
 
         setAstrologers(prev => {
@@ -266,27 +249,20 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         const skip = 0;
         // Fetch exactly the amount we currently have loaded to maintain infinite scroll depth
         const limit = Math.max(10, astrologers.length);
-        let endpoint = "";
 
         const safeQuery = searchQuery.replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
 
-        if (safeQuery.length >= 3 && token) {
-          endpoint = `${getApiBaseUrl()}${API_CONFIG.ENDPOINTS.USER.SEARCH}?name=${encodeURIComponent(safeQuery)}&skip=${skip}&limit=${limit}`;
-          if (languageFilter && languageFilter !== "All") endpoint += `&language=${encodeURIComponent(languageFilter)}`;
-          if (sortBy && sortBy !== "audio" && sortBy !== "video") endpoint += `&sortBy=${encodeURIComponent(sortBy)}`;
-        } else {
-          const queryLimit = safeQuery ? 200 : limit;
-          const queryParts = [
-            `skip=${skip}`,
-            `limit=${queryLimit}`,
-            `asc=-1`,
-            languageFilter && languageFilter !== "All" ? `language=${encodeURIComponent(languageFilter)}` : "",
-            sortBy === "video" ? `video=true` : "",
-            sortBy !== "video" && sortBy !== "audio" && sortBy ? `sortBy=${encodeURIComponent(sortBy)}` : ""
-          ];
-          const queryString = queryParts.filter(Boolean).join("&");
-          endpoint = `${getApiBaseUrl()}/user/api/users-list?${queryString}`;
-        }
+        const queryLimit = safeQuery ? 200 : limit;
+        const queryParts = [
+          `skip=${skip}`,
+          `limit=${queryLimit}`,
+          `asc=-1`,
+          languageFilter && languageFilter !== "All" ? `language=${encodeURIComponent(languageFilter)}` : "",
+          sortBy === "video" ? `video=true` : "",
+          sortBy !== "video" && sortBy !== "audio" && sortBy ? `sortBy=${encodeURIComponent(sortBy)}` : ""
+        ];
+        const queryString = queryParts.filter(Boolean).join("&");
+        const endpoint = `${getApiBaseUrl()}/user/api/users-list?${queryString}`;
 
         const headers: Record<string, string> = {
           "Content-Type": "application/json",
@@ -306,22 +282,11 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         }
 
         const data = await res.json();
-        let freshList: Astrologer[] = searchQuery
-          ? data.data?.list || data.users || data.data || []
-          : data.data?.list || [];
+        let freshList: Astrologer[] = data.data?.list || data.users || data.data || [];
 
-        // Sync client-side filters for polling
-        const pollUsedSearch = safeQuery.length >= 3 && !!token;
-        if (safeQuery && !pollUsedSearch) {
-          freshList = freshList.filter(a => a.name?.toLowerCase().includes(safeQuery.toLowerCase()));
-        }
-        if (pollUsedSearch) {
-          if (languageFilter && languageFilter !== "All") {
-            freshList = freshList.filter(a => a.languages?.includes(languageFilter));
-          }
-          if (sortBy === "video") {
-            freshList = freshList.filter(a => a.hasVideo);
-          }
+        if (safeQuery) {
+          const q = safeQuery.toLowerCase();
+          freshList = freshList.filter(a => a.name?.toLowerCase().includes(q));
         }
 
         if (freshList && freshList.length > 0) {

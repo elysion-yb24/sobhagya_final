@@ -222,7 +222,7 @@ const HeroSection: React.FC = () => {
                       className="mb-1.5 block"
                     />
                     <span
-                      className="text-[10.5px] xs:text-xs font-semibold leading-tight text-center break-words hyphens-auto"
+                      className="text-[10px] xs:text-xs font-semibold leading-tight text-center break-words hyphens-auto"
                       style={{ fontFamily: "Poppins" }}
                     >
                       {card.title}

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { BlogPost } from "@/types";
+import SectionHeader from "./ui/SectionHeader";
 import { getAuthToken } from "@/app/utils/auth-utils";
 import { buildApiUrl, API_CONFIG } from "@/app/config/api";
 
@@ -53,15 +54,12 @@ const BlogSection = () => {
     return (
       <section className="section-spacing bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden">
         <div className="section-container relative z-10">
-          <div className="text-center mb-8 sm:mb-12 md:mb-14">
-            <h2 className="section-heading text-[#745802] mb-3 sm:mb-4">
-              Our Blogs
-            </h2>
-            <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-3 sm:mb-4" />
-            <p className="text-[#745802] text-sm sm:text-base font-medium">
-              Your daily source for astrology insights & guidance
-            </p>
-          </div>
+          <SectionHeader
+            tag="Blog"
+            title="Astrology Insights"
+            subtitle="Your daily source for astrology insights & guidance"
+            center
+          />
           {/* Skeleton Loader */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto">
             {[1, 2, 3].map((i) => (
@@ -95,15 +93,12 @@ const BlogSection = () => {
   return (
     <section className="section-spacing bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden sacred-pattern">
       <div className="section-container relative z-10">
-        <div className="text-center mb-8 sm:mb-12 md:mb-14">
-          <h2 className="section-heading text-[#745802] mb-3 sm:mb-4">
-            Our Blogs
-          </h2>
-          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-3 sm:mb-4" />
-          <p className="text-[#745802] text-sm sm:text-base font-medium">
-            Your daily source for astrology insights & guidance
-          </p>
-        </div>
+        <SectionHeader
+          tag="Blog"
+          title="Astrology Insights"
+          subtitle="Your daily source for astrology insights & guidance"
+          center
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto">
           {blogs.map((blog) => (

@@ -1,4 +1,4 @@
-import { Inter, EB_Garamond } from "next/font/google";
+import { Inter, EB_Garamond, Poppins } from "next/font/google";
 import "./globals.css";
 import ConditionalHeader from "@/app/components/ConditionalHeader";
 import { Suspense } from "react";
@@ -24,6 +24,13 @@ const ebGaramond = EB_Garamond({
   variable: "--font-eb-garamond"
 });
 
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-poppins"
+});
+
 export const metadata = {
   title: "Sobhagya",
   description: "Your trusted astrology consultation platform",
@@ -42,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <meta name="theme-color" content="#F7941D" />
       </head>
-      <body className={`${inter.variable} ${ebGaramond.variable}`}>
+      <body className={`${inter.variable} ${ebGaramond.variable} ${poppins.variable}`}>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
             <SessionManagerProvider>  {/* 👈 wrap everything inside */}

@@ -144,21 +144,6 @@ export default function ChatHeader({
           </div>
         )}
 
-        {mounted && userRole !== 'friend' && typeof userBalance === 'number' && (
-          <button
-            onClick={() => router.push('/wallet')}
-            className={`inline-flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold border shadow-sm transition ${
-              insufficientBalance
-                ? 'bg-red-50 text-red-700 border-red-100 hover:bg-red-100 animate-pulse'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100'
-            }`}
-            title={insufficientBalance ? 'Recharge to keep chatting' : 'Wallet balance'}
-          >
-            <Wallet className="w-3 h-3 sm:w-3.5 sm:h-3.5 opacity-80" />
-            ₹{Math.max(0, Math.floor(userBalance))}
-          </button>
-        )}
-
         {selectedSession.status === 'active' ? (
           <button
             onClick={onEndSession}

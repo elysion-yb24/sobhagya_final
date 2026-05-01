@@ -1339,7 +1339,14 @@ export default function ChatPage() {
       {/* Rating modal */}
       <RatingModal
         isOpen={showRating}
-        onClose={() => setShowRating(false)}
+        onClose={() => {
+          setShowRating(false);
+          // Chat session is fully wrapped up — hard reload so the page (and
+          // header wallet) reflects the post-chat state from scratch.
+          if (sessionStatus === 'ended' && typeof window !== 'undefined') {
+            window.location.href = '/chat';
+          }
+        }}
         onContinueChat={() => {
           setShowRating(false);
           handleChatAgain();
@@ -1347,6 +1354,9 @@ export default function ChatPage() {
         onRatingSubmit={() => {
           // Backend has no rating endpoint exposed for chat; close after collecting locally.
           setShowRating(false);
+          if (sessionStatus === 'ended' && typeof window !== 'undefined') {
+            window.location.href = '/chat';
+          }
         }}
       />
 

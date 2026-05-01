@@ -16,6 +16,8 @@ const CATEGORIES = [
   { id: 12, name: "Angel Numbers" },
 ];
 
+import SectionHeader from "@/app/components/ui/SectionHeader";
+
 export default function BlogPage() {
   const router = useRouter();
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
@@ -61,34 +63,34 @@ export default function BlogPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50/60 via-white to-amber-50/30">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-[#1a0a2e] via-[#2d1654] to-[#1a0e2e] overflow-hidden">
+      <div className="relative bg-gradient-to-br from-[#1a0a2e] via-[#2d1654] to-[#1a0e2e] overflow-hidden pt-10 pb-20">
         <div className="absolute inset-0 pointer-events-none opacity-[0.06]">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-amber-300 rounded-full" style={{ animation: 'blog-spin 90s linear infinite' }}></div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-orange-400 rounded-full" style={{ animation: 'blog-spin 60s linear infinite reverse' }}></div>
         </div>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-amber-500/10 rounded-full blur-[80px]"></div>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 md:pt-20 pb-14 sm:pb-20 text-center">
-          <p className="text-amber-300/80 text-xs sm:text-sm font-medium tracking-widest uppercase mb-2 sm:mb-3">Sobhagya Blog</p>
-          <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-white mb-3 sm:mb-4 tracking-tight leading-tight">
-            Astrology Insights & Guidance
-          </h1>
-          <p className="text-white/50 max-w-xl mx-auto text-sm sm:text-base px-2">
-            Explore articles on horoscopes, gemstones, tarot, and cosmic wisdom to guide your spiritual journey.
-          </p>
+        <div className="relative z-10 section-container">
+          <SectionHeader
+            tag="Sobhagya Blog"
+            title="Astrology Insights & Guidance"
+            subtitle="Explore articles on horoscopes, gemstones, tarot, and cosmic wisdom to guide your spiritual journey."
+            center
+            light
+          />
         </div>
       </div>
 
       {/* Category Filter */}
-      <div className="max-w-6xl mx-auto px-3 sm:px-6 -mt-6 relative z-10">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-1.5 sm:p-2 flex gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar scroll-touch">
+      <div className="section-container -mt-8 relative z-20">
+        <div className="bg-white rounded-2xl shadow-premium border border-gray-100 p-2 flex gap-2 overflow-x-auto no-scrollbar scroll-touch">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.name}
               onClick={() => handleCategoryChange(cat.id)}
-              className={`flex-shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all active:scale-95 ${
+              className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all active:scale-95 ${
                 activeCategory === cat.id
                   ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md"
                   : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
@@ -101,7 +103,7 @@ export default function BlogPage() {
       </div>
 
       {/* Blog Grid */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      <div className="section-container py-16">
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map((i) => (

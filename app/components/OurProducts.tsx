@@ -1,5 +1,7 @@
-'use client'
+"use client";
+
 import React, { useState } from 'react';
+import SectionHeader from "./ui/SectionHeader";
 
 interface Product {
   id: number;
@@ -95,16 +97,20 @@ const OurProducts = () => {
   return (
     <section className="bg-white w-full section-spacing om-watermark">
       <div className="section-container">
-        {/* Enhanced Main Heading */}
-        <div className="text-center mb-6 sm:mb-10 md:mb-14">
-          <h2 className="section-heading text-[#F7971E] mb-3 sm:mb-4">
-            Featured from RamVarna
-          </h2>
-          <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto px-4">
-            Hand-picked spiritual essentials from our sister brand <a href="https://ramvarna.com" target="_blank" rel="noopener noreferrer" className="text-[#F7971E] font-semibold hover:underline">ramvarna.com</a>.
-          </p>
-          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mt-4" />
-        </div>
+        {/* Standardized Main Heading */}
+        <SectionHeader
+          tag="RamVarna"
+          title="Spiritual Essentials"
+          subtitle={
+            <span>
+              Hand-picked spiritual essentials from our sister brand{' '}
+              <a href="https://ramvarna.com" target="_blank" rel="noopener noreferrer" className="text-[#F7971E] font-semibold hover:underline">
+                ramvarna.com
+              </a>
+            </span>
+          }
+          center
+        />
 
         {/* Products Slider - 3 Cards at a Time */}
         <div className="relative overflow-hidden">

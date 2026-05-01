@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PhoneIcon } from '@heroicons/react/24/solid';
 import { ArrowRight } from 'lucide-react';
+import SectionHeader from '@/app/components/ui/SectionHeader';
 
 export default function Services() {
     const services = [
@@ -101,250 +102,212 @@ export default function Services() {
   }
       
     return (
-      <section className="bg-white w-full">
-        {/* Enhanced Background Image for Heading with Animations */}
+      <section className="bg-[#FFFDF9] w-full min-h-screen">
+        {/* Hero Section */}
         <motion.div
-          className="relative bg-cover bg-center py-12 sm:py-16 lg:py-20 overflow-hidden"
+          className="relative bg-cover bg-center py-16 sm:py-24 lg:py-32 overflow-hidden"
           style={{ backgroundImage: "url('/service.png')" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 1 }}
         >
-          <div className="absolute inset-0 bg-black/50"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
           
-          {/* Floating particles */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {Array.from({ length: 18 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-white/40 rounded-full"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                }}
-                animate={{
-                  y: [-10, -30, -10],
-                  opacity: [0.2, 1, 0.2],
-                }}
-                transition={{
-                  duration: 2 + Math.random() * 2,
-                  repeat: Infinity,
-                  delay: Math.random() * 2,
-                }}
+          <div className="section-container relative z-10 flex flex-col items-center">
+            <motion.h1 
+              className="text-center text-white text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight"
+              style={{ fontFamily: "'EB Garamond', serif" }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
+              Our Services
+            </motion.h1>
+            <motion.p
+              className="mt-6 text-white/80 text-lg sm:text-xl max-w-2xl text-center font-medium"
+              style={{ fontFamily: 'Poppins' }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
+              Guiding your life's path through cosmic wisdom and ancient astrological insights.
+            </motion.p>
+          </div>
+          
+          {/* Scroll nudge */}
+          <motion.div 
+            className="absolute bottom-8 left-1/2 -translate-x-1/2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+          >
+            <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1">
+              <motion.div 
+                className="w-1.5 h-2.5 bg-white/60 rounded-full"
+                animate={{ y: [0, 15, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+            </div>
+          </motion.div>
+        </motion.div>
+
+        <div className="section-container py-16 sm:py-20 lg:py-24">
+          {/* Featured Services */}
+          <SectionHeader 
+            tag="Direct Consultations"
+            title="Featured Offerings"
+            subtitle="Get instant access to our most popular tools and expert consultations."
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-20">
+            {/* Free Kundli Generator Card */}
+            <FeaturedCard 
+              icon="/Kundli Generator icon.svg"
+              title="Free Kundli Generator"
+              description="Generate your complete birth chart (Kundli) with planetary positions, doshas, remedies, and detailed analysis."
+              buttonText="Generate Kundli"
+              href="/free-kundli"
+              delay={0.1}
+            />
+
+            {/* Horoscope Card */}
+            <FeaturedCard 
+              icon="/daily-horoscope-.svg"
+              title="Daily Horoscope"
+              description="Get personalized daily, weekly, monthly, and yearly horoscopes based on your zodiac sign with cosmic guidance."
+              buttonText="Read Horoscope"
+              href="/services/horoscope"
+              delay={0.2}
+            />
+
+            {/* Gun Milan Card */}
+            <FeaturedCard 
+              icon="/Gun Milan (1).svg"
+              title="Gun Milan"
+              description="Traditional Vedic astrology compatibility analysis for marriage. Calculate 36-point Gun Milan score with detailed insights."
+              buttonText="Calculate Now"
+              href="/services/gun-milan"
+              delay={0.3}
+            />
+          </div>
+
+          {/* Explore More Services */}
+          <SectionHeader 
+            tag="Specialized Services"
+            title="Explore More Services"
+            subtitle="Discover our comprehensive range of astrology and spiritual services tailored for every life challenge."
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-20">
+            {services.map((service, index) => (
+              <ServiceCard 
+                key={index}
+                service={service}
+                delay={index * 0.05}
               />
             ))}
           </div>
-          
-          <motion.h2 
-            className="relative text-center text-white text-3xl sm:text-5xl lg:text-6xl font-bold px-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            Our Services
-          </motion.h2>
-        </motion.div>
-
-        <div className="w-full mx-auto px-4 sm:px-5">
-          {/* Featured Services Cards */}
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto mb-8 mt-8 sm:mt-12 lg:mt-16"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            {/* Free Kundli Generator Card */}
-            <motion.div
-              className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.1, delay: 0.7 }}
-            >
-              <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="/Kundli Generator icon.svg" alt="Free Kundli Generator" className="w-12 h-12" />
-              </div>
-              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
-                Free Kundli Generator
-              </h3>
-              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-                Generate your complete birth chart (Kundli) with planetary positions, doshas, remedies, and detailed analysis.
-              </p>
-              <button 
-                onClick={() => window.location.href = '/free-kundli'}
-                className="mt-4 w-full sm:w-auto bg-[#F7971D] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
-              >
-                Generate Kundli
-              </button>
-            </motion.div>
-
-            {/* Horoscope Card */}
-            <motion.div
-              className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.1, delay: 0.8 }}
-            >
-              <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="/daily-horoscope-.svg" alt="Daily Horoscope" className="w-12 h-12" />
-              </div>
-              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
-                Daily Horoscope
-              </h3>
-              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-                Get personalized daily, weekly, monthly, and yearly horoscopes based on your zodiac sign with cosmic guidance.
-              </p>
-              <button 
-                onClick={() => window.location.href = '/services/horoscope'}
-                className="mt-4 w-full sm:w-auto bg-[#F7971D] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
-              >
-                Read Horoscope
-              </button>
-            </motion.div>
-
-            {/* Gun Milan Card */}
-            <motion.div
-              className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-orange-50 transition-all duration-300 ease-out shadow-md hover:shadow-xl hover:border-orange-400 hover:-translate-y-2"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.1, delay: 0.9 }}
-            >
-              <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                <img src="/Gun Milan (1).svg" alt="Gun Milan" className="w-12 h-12" />
-              </div>
-              <h3 className="text-lg font-semibold mt-2 text-gray-800 group-hover:text-orange-600 transition-colors duration-300">
-                Gun Milan
-              </h3>
-              <p className="text-sm mt-1 text-gray-600 group-hover:text-gray-700 transition-colors duration-300">
-                Traditional Vedic astrology compatibility analysis for marriage. Calculate 36-point Gun Milan score with detailed insights.
-              </p>
-              <button 
-                onClick={() => window.location.href = '/services/gun-milan'}
-                className="mt-4 w-full sm:w-auto bg-[#F7971D] text-white px-6 py-2.5 rounded-lg font-medium hover:bg-orange-500 hover:text-white transition-all duration-300 transform hover:scale-105"
-              >
-                Calculate Now
-              </button>
-            </motion.div>
-          </motion.div>
-
-          {/* Section Divider Heading */}
-          <motion.div 
-            className="text-center mt-12 sm:mt-16 mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1.0 }}
-          >
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-              Explore More Services
-            </h3>
-            <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
-              Discover our comprehensive range of astrology and spiritual services
-            </p>
-          </motion.div>
-
-          {/* Enhanced Services Grid with Animations */}
-          <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-          >
-            {services.map((service, index) => (
-              <div
-                key={index}
-                onClick={() => window.location.href = service.link}
-                className="group p-4 sm:p-6 border-2 border-[#F7971D] rounded-lg flex flex-col items-center justify-center text-center cursor-pointer bg-white hover:bg-white transition-all duration-25 ease-out shadow-md hover:shadow-2xl hover:border-orange-500 hover:-translate-y-1"
-              >
-                <div className="relative w-[61px] h-[61px] flex items-center justify-center">
-                  {/* Use plain <img> with URL-encoded src because next/image can fail silently
-                      on some environments for filenames containing spaces or parentheses.
-                      Fallback to /default-image.png if the icon can't be loaded. */}
-                  <img
-                    src={encodeURI(service.image || "/default-image.png")}
-                    alt={service.name}
-                    width={service.name === "Palm Reading" ? 45 : 61}
-                    height={service.name === "Palm Reading" ? 45 : 61}
-                    loading="lazy"
-                    className="w-12 h-12 object-contain transition-opacity duration-200"
-                    onError={(e) => {
-                      const t = e.target as HTMLImageElement;
-                      if (!t.dataset.fallback) {
-                        t.dataset.fallback = "1";
-                        t.src = "/default-image.png";
-                      }
-                    }}
-                  />
-                </div>
-                <h3 className="text-lg font-semibold mt-2 text-gray-800 transition-colors">
-                  {service.name}
-                </h3>
-                <p className="text-sm mt-1 text-gray-600 transition-colors">
-                  {service.description}
-                </p>
-                <a href={service.link} className="text-[#F7971D] font-medium mt-2 block transition-colors">
-                  Explore
-                </a>
-              </div>
-            ))}
-          </motion.div>
   
-          {/* Enhanced Call to Action with Animation */}
+          {/* Enhanced Call to Action */}
           <motion.div 
-            className="bg-orange-50 py-12 sm:py-16 mt-10 sm:mt-12 mb-16 sm:mb-20 text-center px-4 sm:px-6 w-full rounded-2xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 2.0 }}
+            className="premium-surface py-12 sm:py-16 md:py-20 px-6 sm:px-12 text-center rounded-[2.5rem] relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
           >
-            <div className="max-w-4xl mx-auto">
-              <motion.p 
-                className="text-[#745802] text-base sm:text-lg font-light"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 2.1 }}
-              >
-                Get expert astrology guidance tailored to your needs! Whether it's Kundli analysis, love compatibility, career advice, or powerful remedies, our top astrologers are ready to help.
-              </motion.p>
-              <motion.p 
-                className="text-[#F7971D] font-semibold text-lg mt-3"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 2.2 }}
-              >
-                Book your consultation now via chat, call, or video and take the first step toward clarity and success!
-              </motion.p>
-              <motion.div
-                className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center"
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 2.3 }}
-              >
-                <Link href="/call-with-astrologer" prefetch className="w-full sm:w-auto">
+            <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none select-none">
+                <Image src="/sobhagya-logo.svg" alt="Watermark" fill className="object-contain p-20 animate-rotate-slow" />
+            </div>
+            
+            <div className="max-w-3xl mx-auto relative z-10">
+              <h2 className="section-heading mb-6 text-[#745802]">Ready to find clarity?</h2>
+              <p className="text-gray-600 text-lg sm:text-xl mb-10 leading-relaxed font-medium" style={{ fontFamily: 'Poppins' }}>
+                Get expert astrology guidance tailored to your needs. Whether it's Kundli analysis, love compatibility, or career advice, our top astrologers are ready to help.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Link href="/call-with-astrologer" className="w-full sm:w-auto group">
                   <motion.button
-                    type="button"
-                    aria-label="Book a consultation with an astrologer"
-                    className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-[#F7971D] to-orange-600 text-white py-3 sm:py-4 px-8 sm:px-16 rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transition-all duration-300 group"
+                    className="w-full inline-flex items-center justify-center gap-3 btn-primary py-4 px-10 rounded-2xl"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <PhoneIcon className="w-5 h-5" />
-                    Book Now
+                    <PhoneIcon className="w-5 h-5 group-hover:animate-pulse" />
+                    Talk to Astrologer
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </motion.button>
                 </Link>
-                <Link href="/astrologers" prefetch className="w-full sm:w-auto">
+                <Link href="/astrologers" className="w-full sm:w-auto">
                   <motion.button
-                    type="button"
-                    aria-label="Browse all astrologers"
-                    className="w-full inline-flex items-center justify-center gap-2 bg-white text-[#F7971D] border-2 border-[#F7971D] py-3 sm:py-4 px-6 sm:px-10 rounded-xl font-semibold text-base sm:text-lg hover:bg-orange-50 transition-all duration-300"
+                    className="w-full inline-flex items-center justify-center btn-secondary py-4 px-10 rounded-2xl"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Browse Astrologers
+                    Browse Experts
                   </motion.button>
                 </Link>
-              </motion.div>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
+    );
+}
+
+function FeaturedCard({ icon, title, description, buttonText, href, delay }: any) {
+    return (
+      <motion.div
+        className="group p-8 border border-orange-100/50 rounded-[2rem] flex flex-col items-center text-center premium-surface hover:shadow-premium transition-all duration-500 hover:-translate-y-2"
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, delay }}
+      >
+        <div className="w-20 h-20 bg-orange-100/40 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
+          <Image src={icon} alt={title} width={48} height={48} className="w-12 h-12 object-contain" />
+        </div>
+        <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-orange-600 transition-colors">
+          {title}
+        </h3>
+        <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-1" style={{ fontFamily: 'Poppins' }}>
+          {description}
+        </p>
+        <Link href={href} className="w-full">
+            <button className="w-full btn-ghost border-2 border-orange-200 py-3 rounded-xl hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all duration-300 font-bold">
+                {buttonText}
+            </button>
+        </Link>
+      </motion.div>
+    );
+}
+
+function ServiceCard({ service, delay }: any) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5, delay }}
+        className="group p-6 bg-white border border-gray-100 rounded-2xl hover:shadow-xl hover:shadow-orange-100/30 transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center"
+      >
+        <div className="w-16 h-16 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-6 transition-transform duration-500">
+          <img
+            src={encodeURI(service.image || "/default-image.png")}
+            alt={service.name}
+            className="w-10 h-10 object-contain"
+            loading="lazy"
+          />
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-600 transition-colors">
+          {service.name}
+        </h3>
+        <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-1">
+          {service.description}
+        </p>
+        <Link href={service.link} className="text-orange-600 font-bold text-sm hover:underline flex items-center gap-1">
+          Explore <ArrowRight className="w-3 h-3" />
+        </Link>
+      </motion.div>
     );
 }

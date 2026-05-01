@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import SectionHeader from "@/app/components/ui/SectionHeader";
 
 /* ──────────────── Data ──────────────── */
 const KEY_FEATURES = [
@@ -31,30 +33,6 @@ const STATS = [
   { value: "50K+", label: "Consultations" },
   { value: "4.8★", label: "App Rating" },
 ];
-
-/* ──────────────── Helpers ──────────────── */
-function SectionHeading({ tag, title, subtitle }: { tag?: string; title: string; subtitle?: string }) {
-  return (
-    <div className="text-center mb-10 sm:mb-14">
-      {tag && (
-        <span className="inline-block text-xs sm:text-sm font-semibold tracking-widest uppercase text-orange-500 mb-2">{tag}</span>
-      )}
-      <h2
-        className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.6rem] font-bold leading-tight"
-        style={{
-          fontFamily: "'EB Garamond', serif",
-          background: "linear-gradient(135deg, #745802 0%, #C7831A 60%, #F7941D 100%)",
-          WebkitBackgroundClip: "text",
-          WebkitTextFillColor: "transparent",
-        }}
-      >
-        {title}
-      </h2>
-      {subtitle && <p className="mt-3 text-gray-500 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">{subtitle}</p>}
-      <div className="mt-5 mx-auto w-20 h-[3px] rounded-full bg-gradient-to-r from-orange-400 via-amber-400 to-orange-400" />
-    </div>
-  );
-}
 
 /* ──────────────── Component ──────────────── */
 const AboutUs = () => {
@@ -154,8 +132,8 @@ const AboutUs = () => {
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-orange-50 opacity-60 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-amber-50 opacity-50 blur-3xl pointer-events-none" />
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <SectionHeading tag="Who We Are" title="Introduction" subtitle="Your Trusted Online Astrology Consulting App!" />
+        <div className="section-container relative z-10">
+          <SectionHeader tag="Who We Are" title="Introduction" subtitle="Your Trusted Online Astrology Consulting App!" />
 
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-center max-w-6xl mx-auto">
             {/* Text */}
@@ -216,8 +194,8 @@ const AboutUs = () => {
         viewport={{ once: true, margin: "-80px" }}
         transition={{ duration: 0.7 }}
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <SectionHeading tag="What We Offer" title="Key Features of Sobhagya" subtitle="A comprehensive suite of astrology services designed for every aspect of your life." />
+        <div className="section-container">
+          <SectionHeader tag="What We Offer" title="Key Features of Sobhagya" subtitle="A comprehensive suite of astrology services designed for every aspect of your life." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 max-w-6xl mx-auto">
             {KEY_FEATURES.map((feature, i) => (
               <motion.div
@@ -250,7 +228,7 @@ const AboutUs = () => {
         <div className="absolute inset-0 opacity-10" style={{
           backgroundImage: `radial-gradient(circle at 20% 50%, rgba(247,148,29,0.3) 0%, transparent 50%), radial-gradient(circle at 80% 50%, rgba(255,215,0,0.2) 0%, transparent 50%)`,
         }} />
-        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
+        <div className="relative z-10 section-container py-14 sm:py-20">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {STATS.map((stat, i) => (
               <motion.div
@@ -278,7 +256,7 @@ const AboutUs = () => {
 
       {/* ═══════════ BRIDGE QUOTE ═══════════ */}
       <section className="py-14 sm:py-20 bg-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="section-container">
           <motion.blockquote
             className="max-w-3xl mx-auto text-center"
             initial={{ opacity: 0, y: 20 }}
@@ -306,8 +284,8 @@ const AboutUs = () => {
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full border border-orange-100/30 pointer-events-none" />
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[400px] rounded-full border border-orange-100/20 pointer-events-none" />
 
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <SectionHeading tag="Our Promise" title="Why Choose Sobhagya?" subtitle="We're committed to delivering the most trustworthy and personalised astrological experience." />
+        <div className="section-container relative z-10">
+          <SectionHeader tag="Our Promise" title="Why Choose Sobhagya?" subtitle="We're committed to delivering the most trustworthy and personalised astrological experience." />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {WHY_CHOOSE.map((item, i) => (
               <motion.div
@@ -359,7 +337,7 @@ const AboutUs = () => {
           ))}
         </div>
 
-        <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative z-10 section-container text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -399,15 +377,15 @@ const AboutUs = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.7, delay: 0.4 }}
           >
-            <a href="/call-with-astrologer" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold px-8 py-3.5 rounded-full shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transition-all duration-300 text-sm sm:text-base">
+            <Link href="/call-with-astrologer" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold px-8 py-3.5 rounded-full shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 hover:scale-105 transition-all duration-300 text-sm sm:text-base">
               <span>Talk to an Astrologer</span>
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
-            </a>
-            <a href="/services" className="inline-flex items-center gap-2 border border-white/20 text-white/80 hover:text-white hover:border-white/40 font-medium px-8 py-3.5 rounded-full transition-all duration-300 text-sm sm:text-base hover:bg-white/5">
+            </Link>
+            <Link href="/services" className="inline-flex items-center gap-2 border border-white/20 text-white/80 hover:text-white hover:border-white/40 font-medium px-8 py-3.5 rounded-full transition-all duration-300 text-sm sm:text-base hover:bg-white/5">
               Explore Services
-            </a>
+            </Link>
           </motion.div>
         </div>
       </motion.section>

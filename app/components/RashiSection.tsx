@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import Lottie from "lottie-react";
 import { useState, useEffect } from "react";
+import SectionHeader from "./ui/SectionHeader";
 
 const rashiSigns: RashiSign[] = [
   { name: "Aries", hindiName: "मेष", image: "/aries.json" },
@@ -86,13 +87,12 @@ const RashiSection: React.FC = () => {
           <Image src="/sobhagya-logo.svg" alt="Astrology Icon" width={300} height={300} className="object-contain" />
         </div>
         <div className="section-container relative z-10">
-          <h2 className="section-heading text-center mb-3 sm:mb-4 text-[#373737]">
-            Astrology Insights for Your Rashi Today
-          </h2>
-          <div className="sacred-divider mx-auto max-w-[100px] sm:max-w-[120px] mb-4 sm:mb-6" />
-          <p className="text-center mb-8 sm:mb-10 md:mb-12 text-[#373737] text-sm sm:text-base md:text-lg font-medium px-2 sm:px-0" style={{ fontFamily: 'Poppins' }}>
-            Get accurate predictions, guidance, and remedies for love, career, health, and more
-          </p>
+          <SectionHeader
+            tag="Daily Insights"
+            title="Astrology Insights for Your Rashi Today"
+            subtitle="Get accurate predictions, guidance, and remedies for love, career, health, and more"
+            center
+          />
 
           <div className="grid grid-cols-3 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-6 gap-3 xs:gap-4 sm:gap-6 md:gap-8 max-w-6xl mx-auto">
             {rashiSigns.map((rashi) => (

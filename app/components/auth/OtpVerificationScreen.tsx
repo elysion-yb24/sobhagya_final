@@ -354,20 +354,28 @@ export default function OtpVerificationScreen({
             </label>
             <div className="flex justify-center gap-2 sm:gap-3">
               {otp.map((digit, index) => (
-                <motion.input
+                <input
                   key={index}
                   id={`otp-input-${index}`}
-                  type="text"
+                  type="tel"
                   inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
                   maxLength={1}
                   value={digit}
                   aria-label={`Digit ${index + 1}`}
                   onChange={(e) => handleChange(index, e.target.value.replace(/[^0-9]/g, ""))}
                   onKeyDown={(e) => handleKeyDown(index, e)}
-                  className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 appearance-none p-0 m-0 text-center text-xl sm:text-2xl md:text-3xl bg-white border-2 rounded-lg focus:outline-none font-bold text-gray-900 transition-all duration-200 hover:border-orange-200 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ${digit ? 'border-orange-400 shadow-md scale-105' : 'border-gray-200'}`}
-                  style={{fontFamily: 'Inter', letterSpacing: '0.1em'}}
-                  animate={digit ? { scale: 1.08 } : { scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  className={`w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 box-border p-0 m-0 text-center text-xl sm:text-2xl md:text-3xl bg-white border-2 rounded-lg focus:outline-none font-bold text-gray-900 transition-colors duration-200 hover:border-orange-200 focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ${digit ? 'border-orange-400 shadow-sm' : 'border-gray-200'}`}
+                  style={{
+                    fontFamily: 'Inter',
+                    letterSpacing: '0',
+                    fontSize: '20px',
+                    WebkitAppearance: 'none',
+                    appearance: 'none',
+                    WebkitTextSizeAdjust: '100%',
+                    WebkitBorderRadius: '0.5rem',
+                  }}
                   autoFocus={index === 0}
                 />
               ))}

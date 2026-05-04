@@ -2,10 +2,10 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { Search, X, Filter, MessageSquare } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import PresenceDot from './PresenceDot'
+import Avatar from './Avatar'
 
 interface PopulatedUser {
   _id: string
@@ -189,13 +189,11 @@ export default function Sidebar({
                       }`}
                     >
                       <div className="w-12 h-12 rounded-full overflow-hidden bg-white relative ring-2 ring-white">
-                        {peer?.avatar ? (
-                          <Image src={peer.avatar} alt={peer?.name || ''} fill className="object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-saffron-200 to-saffron-400 flex items-center justify-center text-white font-bold text-lg">
-                            {peer?.name?.charAt(0)}
-                          </div>
-                        )}
+                        <Avatar
+                          src={peer?.avatar}
+                          name={peer?.name}
+                          fallbackClassName="w-full h-full bg-gradient-to-br from-saffron-200 to-saffron-400 flex items-center justify-center text-white font-bold text-lg"
+                        />
                       </div>
                     </div>
                     <div className="absolute -bottom-0.5 -right-0.5">

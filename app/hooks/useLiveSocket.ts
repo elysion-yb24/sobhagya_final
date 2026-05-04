@@ -273,6 +273,17 @@ export function useLiveSocket() {
       if (!socketRef.current) { resolve(null); return; }
       const userDetails = getUserDetails();
       const userId = userDetails?.id || userDetails?._id || '';
+      let settled = false;
+      const finish = (resp: any) => {
+        if (settled) return;
+        settled = true;
+        resolve(resp);
+      };
+      // 10 s is generous — backend has to mint a LiveKit token. Anything
+      // longer is a bug we'd rather surface than hide behind a spinner.
+      const timer = setTimeout(() => {
+        finish({ error: true, message: 'JOIN_ROOM_TIMEOUT' });
+      }, 10000);
       socketRef.current.emit('joinRoomParticipant', {
         sessionId,
         userId,
@@ -281,7 +292,8 @@ export function useLiveSocket() {
         isVideoPrivate: true,
         isVideoOff: true,
       }, (resp: any) => {
-        resolve(resp);
+        clearTimeout(timer);
+        finish(resp);
       });
     });
   }, []);
@@ -289,8 +301,21 @@ export function useLiveSocket() {
   const acceptInvite = useCallback((sessionId: string, channelId: string): Promise<any> => {
     return new Promise((resolve) => {
       if (!socketRef.current) { resolve(null); return; }
-      socketRef.current.emit('accept_invite', { sessionId, channelId }, (resp: any) => {
+      let settled = false;
+      const finish = (resp: any) => {
+        if (settled) return;
+        settled = true;
         resolve(resp);
+      };
+      // Hard timeout — if the backend forgets to ack we don't want the UI
+      // pinned on "Joining..." indefinitely. 6 s is plenty for a Redis ack
+      // and well under the 60 s ring-timeout the server enforces.
+      const timer = setTimeout(() => {
+        finish({ error: true, message: 'ACCEPT_INVITE_TIMEOUT' });
+      }, 6000);
+      socketRef.current.emit('accept_invite', { sessionId, channelId }, (resp: any) => {
+        clearTimeout(timer);
+        finish(resp);
       });
     });
   }, []);

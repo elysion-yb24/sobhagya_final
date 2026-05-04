@@ -437,19 +437,6 @@ export default function LiveSessionViewPage() {
   // delayed `call_end` with reason `RING_TIMEOUT` that can still fire if we
   // had to bypass `accept_invite` (e.g. channelId was never surfaced to us).
   const inCallSinceRef = useRef<number>(0);
-  // Wallclock timestamp (ms) of the `call_started` broadcast for THIS call.
-  // Set when the server emits `call_started` to the session room — both the
-  // user and the astrologer receive it nearly simultaneously, so deriving the
-  // duration from this anchor keeps both sides' timers in sync instead of
-  // drifting from `setInterval` jitter or background-tab throttling.
-  const callStartedAtRef = useRef<number>(0);
-  // Most recent non-empty channelId we have seen for THIS user, latched from
-  // any inbound socket event that carries one (`call_started`, the various
-  // `invite_received` aliases, fresh `get_active_call` polls). Read at the
-  // moment the user clicks Accept so we never lose a channelId that already
-  // arrived — without this, the queue-disappearance modal path can rebuild
-  // `inviteCallData` with `channelId: null` and silently shadow it.
-  const latestChannelIdRef = useRef<string | null>(null);
 
   /* ════════════════════════════════════════════════════════════════════ */
   /*  Data fetchers                                                      */
@@ -560,12 +547,9 @@ export default function LiveSessionViewPage() {
       // Try hard to recover a real channelId. Order of preference:
       //   1. activeCall we saw in the most recent poll (most reliable)
       //   2. inviteCallData populated from send_invite socket event / poll
-      //   3. latestChannelIdRef — latched from any prior `call_started`,
-      //      `invite_received`, or activeCall poll. Survives modal-rebuild
-      //      paths (queue-disappearance) that would otherwise lose it.
-      //   4. One more fresh get_active_call (with extended retry budget) in
-      //      case the previous poll was stale — Redis may not have surfaced
-      //      the activeCall in the same instant the queue entry disappeared.
+      //   3. One more fresh get_active_call in case the previous poll was
+      //      stale (this typically closes the gap between queue-disappearance
+      //      detection and activeCall being written in Redis)
       const ac = Array.isArray(activeCall) ? activeCall : [activeCall].filter(Boolean);
       const myId = getMyId();
       const myCall = ac.find(c =>
@@ -576,86 +560,42 @@ export default function LiveSessionViewPage() {
         sameId(c?.receiverUserId, myId)
       ) || ac[0];
 
-      let channelId: string | null =
-        myCall?.channelId
-        || inviteCallData?.channelId
-        || latestChannelIdRef.current
-        || null;
+      let channelId: string | null = myCall?.channelId || inviteCallData?.channelId || null;
 
-      // Extended retry: 10 attempts × 400ms ≈ 4s total. Fits inside the 6s
-      // ack timeout in useLiveSocket and gives Redis a realistic window to
-      // surface the activeCall after `send_invite`. We *also* re-check the
-      // latched ref every iteration so a late-arriving socket event
-      // (`call_started` racing the poll) wins immediately.
+      // If we don't have a channelId yet, retry the fresh fetch a couple of
+      // times — Redis may not have surfaced the activeCall in the same instant
+      // the queue entry disappeared. We need a real channelId before emitting
+      // accept_invite, otherwise the backend can't cancel the ring timer or
+      // emit call_started.
       if (!channelId) {
-        for (let attempt = 0; attempt < 10 && !channelId; attempt++) {
-          // A socket event may have latched the channelId between iterations.
-          if (latestChannelIdRef.current) {
-            channelId = latestChannelIdRef.current;
-            dlog('accept: channelId surfaced via socket-latch ref, attempt', attempt);
-            break;
-          }
+        for (let attempt = 0; attempt < 4 && !channelId; attempt++) {
           try {
             const fresh = await getActiveCall(sessionId);
-            const freshCh = (fresh as any)?.channelId
-              || (Array.isArray(fresh) ? (fresh as any[]).find(c => c?.channelId)?.channelId : undefined);
-            if (freshCh) {
-              channelId = String(freshCh);
-              latestChannelIdRef.current = channelId;
+            if (fresh?.channelId) {
+              channelId = fresh.channelId;
               dlog('accept: fresh activeCall fetch ->', fresh, 'attempt', attempt);
               break;
             }
+            // small backoff before next attempt
+            await new Promise(r => setTimeout(r, 250));
           } catch (e) {
             console.warn('[LiveCall] fresh getActiveCall failed:', e);
+            await new Promise(r => setTimeout(r, 250));
           }
-          await new Promise(r => setTimeout(r, 400));
         }
       }
 
       dlog('accept: channelId=', channelId, 'callType=', callType, 'myCall=', myCall);
 
-      // Emit accept_invite when we have a real channelId. The backend uses
-      // this both to cancel the ring timer AND to broadcast `call_started`
-      // to the session room — the astrologer's Android app reads that
-      // broadcast to start its call-duration timer.
-      //
-      // If the channelId never surfaced (backend's `get_active_call` keeps
-      // returning the initial empty `"{}"` even during a ring), DO NOT block
-      // the user from joining: fall through to joinRoomParticipant so the
-      // user can still talk to the astrologer. The astrologer's timer will
-      // not start in that case, but blocking the call entirely is worse —
-      // both for UX and for the astrologer who is sitting idle on a ringing
-      // invite. The console error makes the situation discoverable in DevTools.
-      if (channelId) {
-        let ackAccept = await acceptInvite(sessionId, channelId);
-        dlog('accept_invite ack:', ackAccept);
-        const ackErr = String(ackAccept?.message || '').toUpperCase();
-        const isRetryable =
-          ackAccept?.error === true
-          && (ackErr.includes('MISSING_CHANNEL_ID') || ackErr.includes('ACCEPT_INVITE_FAILED'));
-        if (isRetryable) {
-          try {
-            const fresh = await getActiveCall(sessionId);
-            const freshCh = (fresh as any)?.channelId
-              || (Array.isArray(fresh) ? (fresh as any[]).find(c => c?.channelId)?.channelId : undefined);
-            if (freshCh && String(freshCh) !== channelId) {
-              channelId = String(freshCh);
-              latestChannelIdRef.current = channelId;
-              dlog('accept_invite retry with refreshed channelId:', channelId);
-              ackAccept = await acceptInvite(sessionId, channelId);
-              dlog('accept_invite retry ack:', ackAccept);
-            }
-          } catch (e) {
-            console.warn('[LiveCall] accept_invite retry refresh failed:', e);
-          }
-        }
-        if (ackAccept?.error === true) {
-          console.error('[LiveCall] accept_invite ack error — astrologer will not see call_started:', ackAccept);
-        } else {
-          console.info('[LiveCall] accept_invite emitted', { sessionId, channelId, ackAccept });
-        }
-      } else {
-        console.error('[LiveCall] accept_invite skipped — no channelId surfaced after retries; astrologer call_started broadcast will not fire.');
+      // Always emit accept_invite when the user accepts. Backend uses this to
+      // cancel the ring timer and broadcast `call_started` to the session
+      // room — without it, the call may RING_TIMEOUT mid-conversation.
+      // We send whatever channelId we have; the backend handler logs/no-ops
+      // if the value is missing rather than crashing.
+      const ackAccept = await acceptInvite(sessionId, channelId || '');
+      dlog('accept_invite ack:', ackAccept);
+      if (!channelId) {
+        console.warn('[LiveCall] accept_invite emitted without channelId — ring timer may not cancel.');
       }
 
       const isPrivateAudio = callType === 'private';
@@ -695,20 +635,14 @@ export default function LiveSessionViewPage() {
       setInQueue(false);
       setIsWaitlisted(false);
       myQueuePresenceRef.current = false;
-      // Prefer the `call_started` broadcast timestamp if it has already
-      // arrived — that keeps us aligned with the astrologer's timer. If the
-      // event hasn't landed yet (race), fall back to now and let the listener
-      // overwrite it when it fires.
-      if (!callStartedAtRef.current) callStartedAtRef.current = Date.now();
-      setCallTimer(Math.max(0, Math.floor((Date.now() - callStartedAtRef.current) / 1000)));
+      setCallTimer(0);
       setShowInviteModal(false);
       setInviteCallData(null);
       setIsMuted(false);
 
       if (callTimerRef.current) clearInterval(callTimerRef.current);
       callTimerRef.current = setInterval(() => {
-        const anchor = callStartedAtRef.current || Date.now();
-        setCallTimer(Math.max(0, Math.floor((Date.now() - anchor) / 1000)));
+        setCallTimer(prev => prev + 1);
       }, 1000);
     } catch (err) {
       console.error('Error accepting invite:', err);
@@ -794,8 +728,6 @@ export default function LiveSessionViewPage() {
     }
     setIsInCall(false);
     inCallSinceRef.current = 0;
-    callStartedAtRef.current = 0;
-    latestChannelIdRef.current = null;
     setCallToken(null);
     setCallWsUrl(null);
     setCallChannelId(null);
@@ -854,14 +786,6 @@ export default function LiveSessionViewPage() {
         setActiveCall(ac); // null when no call; object only when channelId present
         if (Array.isArray(q)) setQueue(q);
 
-        // Latch channelId from the poll result so the eventual Accept click
-        // can emit accept_invite with a real channelId — required for the
-        // backend to broadcast call_started (which the astrologer's Android
-        // app listens for to start its call-duration timer).
-        const polledCh = (ac as any)?.channelId
-          || (Array.isArray(ac) ? (ac as any[]).find(c => c?.channelId)?.channelId : undefined);
-        if (polledCh) latestChannelIdRef.current = String(polledCh);
-
         // === Queue-disappearance invite detection (backend-free fallback) ===
         if (Array.isArray(q) && !isInCall && !isJoiningCall) {
           const myId = getMyId();
@@ -871,8 +795,8 @@ export default function LiveSessionViewPage() {
 
           if (wasPresent && !isPresentNow) {
             // My entry disappeared → astrologer picked me. Trigger the invite
-            // UI even if `activeCall` is still empty; the latched channelId
-            // ref carries us through if the poll hasn't surfaced the call yet.
+            // UI even if `activeCall` is still empty; handleAcceptInvite has a
+            // fallback that joins via joinRoomParticipant without channelId.
             console.log('[LiveCall] Invite detected via queue-disappearance. activeCall=', ac);
             setShowInviteModal(prevShown => {
               if (prevShown) return prevShown; // already open from socket path
@@ -882,10 +806,7 @@ export default function LiveSessionViewPage() {
               const cType: 'private' | 'public' =
                 (detectedIsPrivate || queueType === 'private') ? 'private' : 'public';
               setInviteCallData({
-                // Prefer the freshly-polled channelId, then any previously-
-                // latched value. Never overwrite an already-known channelId
-                // with null — that's what was silently breaking accept_invite.
-                channelId: ac?.channelId || latestChannelIdRef.current || null,
+                channelId: ac?.channelId || null,
                 sessionId,
                 userId: myId,
                 isPrivate: detectedIsPrivate || queueType === 'private',
@@ -964,13 +885,9 @@ export default function LiveSessionViewPage() {
       setInviteCallType(isPrivate ? 'private' : 'public');
       setIsMuted(false);
       setIsInCall(true);
-      if (!callStartedAtRef.current) callStartedAtRef.current = Date.now();
-      setCallTimer(Math.max(0, Math.floor((Date.now() - callStartedAtRef.current) / 1000)));
+      setCallTimer(0);
       if (callTimerRef.current) clearInterval(callTimerRef.current);
-      callTimerRef.current = setInterval(() => {
-        const anchor = callStartedAtRef.current || Date.now();
-        setCallTimer(Math.max(0, Math.floor((Date.now() - anchor) / 1000)));
-      }, 1000);
+      callTimerRef.current = setInterval(() => setCallTimer(p => p + 1), 1000);
       console.log('[LiveCall] __testAudioJoin: isInCall=true, LiveKitRoom should remount and publish mic');
     };
     return () => {
@@ -1018,12 +935,7 @@ export default function LiveSessionViewPage() {
           const mine = queueData.find((q: QueueItem) => String(q.userId) === uid && q.status !== 'completed');
           if (mine) { setInQueue(true); setQueueType(mine.isPrivate ? 'private' : 'public'); }
         }
-        if (activeCallData) {
-          setActiveCall(activeCallData);
-          const initialCh = (activeCallData as any)?.channelId
-            || (Array.isArray(activeCallData) ? (activeCallData as any[]).find(c => c?.channelId)?.channelId : undefined);
-          if (initialCh) latestChannelIdRef.current = String(initialCh);
-        }
+        if (activeCallData) setActiveCall(activeCallData);
         if (likesData?.data) {
           setLikes(likesData.data.totalLikes || 0);
           setIsLiked(likesData.data.isLikedByUser || false);
@@ -1076,16 +988,6 @@ export default function LiveSessionViewPage() {
         const callData = d.sessionCall || d;
         dlog('onCallStarted:', callData);
         setActiveCall(callData);
-        // Anchor the call duration to the moment the server told us the call
-        // started. The astrologer side receives the same `call_started`
-        // broadcast in the same instant, so anchoring here keeps the two
-        // timers within socket-RTT of each other.
-        callStartedAtRef.current = Date.now();
-        // Latch the channelId so a later Accept click never has to fall back
-        // to an empty string (which the backend rejects with MISSING_CHANNEL_ID
-        // and silently suppresses the astrologer's call_started broadcast).
-        const incomingCh = callData?.channelId || d?.channelId;
-        if (incomingCh) latestChannelIdRef.current = String(incomingCh);
         const myId = getMyId();
 
         if (callData && (
@@ -1118,9 +1020,6 @@ export default function LiveSessionViewPage() {
           sameId(payload.receiverUserId, myId) ||
           sameId(payload.user?._id, myId);
         if (!targetedAtMe) return;
-        // Latch the channelId so the eventual Accept click can emit
-        // accept_invite even if the activeCall poll hasn't surfaced yet.
-        if (payload.channelId) latestChannelIdRef.current = String(payload.channelId);
         const isPrivate = typeof payload.isPrivate === 'string'
           ? payload.isPrivate === 'true'
           : !!payload.isPrivate;
@@ -1164,8 +1063,6 @@ export default function LiveSessionViewPage() {
           if (callTimerRef.current) { clearInterval(callTimerRef.current); callTimerRef.current = null; }
           setIsInCall(false);
           inCallSinceRef.current = 0;
-          callStartedAtRef.current = 0;
-          latestChannelIdRef.current = null;
           setCallToken(null);
           setCallWsUrl(null);
           setCallChannelId(null);

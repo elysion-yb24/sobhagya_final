@@ -36,9 +36,9 @@ function extractList(payload: unknown): CachedAstrologer[] {
 }
 
 /** Append a batch of astrologers loaded externally (e.g. from the list page). */
-export function appendAstrologers(batch: CachedAstrologer[]): void {
+export function appendAstrologers(batch: ReadonlyArray<{ _id: string; name?: string }>): void {
   for (const a of batch) {
-    if (a && a._id) astrologerById.set(String(a._id), a);
+    if (a && a._id) astrologerById.set(String(a._id), a as CachedAstrologer);
   }
 }
 

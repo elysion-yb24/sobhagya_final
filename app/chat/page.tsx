@@ -47,8 +47,11 @@ import MessageActionsSheet, {
   type MessageActionsTarget,
 } from '../components/chat/MessageActionsSheet';
 import SessionEndedCard from '../components/chat/SessionEndedCard';
+import AwayCountdownOverlay from '../components/chat/AwayCountdownOverlay';
 import RatingModal from '../components/ui/RatingModal';
 import DakshinaModal from '../components/calling/ui/DakshinaModal';
+
+const AWAY_GRACE_MS = 10_000;
 
 const DEFAULT_CHAT_RPM = 5;
 
@@ -198,6 +201,13 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const [showReconnectedToast, setShowReconnectedToast] = useState(false);
+
+  // Tab-away countdown: when the chat tab is hidden while a session is active
+  // we start a 10s deadline; if the user returns we clear it, otherwise we
+  // auto-end the session via confirmEndSession().
+  const [awayDeadline, setAwayDeadline] = useState<number | null>(null);
+  const [awayRemainingMs, setAwayRemainingMs] = useState<number>(AWAY_GRACE_MS);
+
   const wasConnectedRef = useRef(isConnected);
   useEffect(() => {
     if (!wasConnectedRef.current && isConnected) {
@@ -683,6 +693,66 @@ export default function ChatPage() {
       setEndingSession(false);
     }
   }, [threadIdParam, activeSessionId, endingSession, socket, isConnected]);
+
+  // -------- tab-away countdown (Issue 5) --------
+  // While the chat session is active and bound to a thread+session, watch
+  // document.visibilityState. Hiding the tab arms a 10s deadline; returning
+  // before it expires clears the deadline; expiring fires confirmEndSession().
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (sessionStatus !== 'active') return;
+    if (!threadIdParam || !activeSessionId) return;
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        setAwayDeadline((prev) => prev ?? Date.now() + AWAY_GRACE_MS);
+      } else {
+        setAwayDeadline(null);
+        setAwayRemainingMs(AWAY_GRACE_MS);
+      }
+    };
+
+    // If the page mounts while already hidden (rare), arm immediately.
+    if (document.visibilityState === 'hidden') onVisibility();
+
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [sessionStatus, threadIdParam, activeSessionId]);
+
+  // Reset away state if the session ends or unmounts.
+  useEffect(() => {
+    if (sessionStatus !== 'active') {
+      setAwayDeadline(null);
+      setAwayRemainingMs(AWAY_GRACE_MS);
+    }
+  }, [sessionStatus]);
+
+  // Tick the remaining-time display while the deadline is armed and end the
+  // session when it elapses.
+  useEffect(() => {
+    if (awayDeadline === null) return;
+    let raf = 0;
+    const tick = () => {
+      const remaining = awayDeadline - Date.now();
+      setAwayRemainingMs(remaining);
+      if (remaining <= 0) {
+        // Fire and forget — confirmEndSession is idempotent (guards on
+        // endingSession + threadId+sessionId presence).
+        setAwayDeadline(null);
+        setAwayRemainingMs(AWAY_GRACE_MS);
+        // Defer to next microtask so React state settles before the async work.
+        Promise.resolve().then(() => {
+          void confirmEndSession();
+        });
+        return;
+      }
+      raf = window.setTimeout(tick, 250) as unknown as number;
+    };
+    tick();
+    return () => {
+      if (raf) window.clearTimeout(raf);
+    };
+  }, [awayDeadline, confirmEndSession]);
 
   // -------- mark thread as read --------
   useEffect(() => {
@@ -1335,6 +1405,18 @@ export default function ChatPage() {
         onCopy={handleActionCopy}
         onDelete={handleActionDelete}
       />
+
+      {/* Tab-away countdown overlay (Issue 5) */}
+      {awayDeadline !== null && awayRemainingMs > 0 && (
+        <AwayCountdownOverlay
+          secondsRemaining={awayRemainingMs / 1000}
+          astrologerName={activeThread?.providerId.name || 'Astrologer'}
+          onStay={() => {
+            setAwayDeadline(null);
+            setAwayRemainingMs(AWAY_GRACE_MS);
+          }}
+        />
+      )}
 
       {/* Rating modal */}
       <RatingModal

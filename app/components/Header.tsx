@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 import { isAuthenticated, getUserDetails, fetchUserProfile, performLogout, clearAuthData } from '../utils/auth-utils';
 import { useWalletBalance } from './astrologers/WalletBalanceContext';
 import WhatsAppIcon from "./ui/WhatsAppIcon";
+import BackButton from "./ui/BackButton";
 
 // Inlined to avoid webpack import resolution issues
 function looksLikePhone(value: string | undefined | null): boolean {
@@ -244,14 +245,17 @@ const Header = () => {
 
   // Hide header on call pages, active live sessions, and partner dashboard
   if (
-    pathname?.startsWith('/video-call') || 
-    pathname?.startsWith('/audio-call') || 
+    pathname?.startsWith('/video-call') ||
+    pathname?.startsWith('/audio-call') ||
     (pathname?.startsWith('/live-sessions/') && pathname !== '/live-sessions') ||
     pathname === '/partner-info' ||
     pathname === '/login'
   ) {
     return null;
   }
+
+  // Show back arrow on every sub-page (anything except home).
+  const showBackButton = Boolean(pathname && pathname !== '/');
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[100] bg-white/75 supports-[backdrop-filter]:bg-white/60 backdrop-blur-2xl backdrop-saturate-150 border-b border-white/40 shadow-[0_8px_32px_-8px_rgba(247,148,29,0.12)] transition-all duration-300 animate-fadeIn font-sans">
@@ -260,7 +264,8 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="flex">
             {/* Left: Logo spanning both rows */}
-            <div className="flex items-center pr-10 border-r border-gray-200 py-3 self-stretch">
+            <div className="flex items-center gap-3 pr-10 border-r border-gray-200 py-3 self-stretch">
+              {showBackButton && <BackButton />}
               <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
                 <Image
                   src="/sobhagya-logo.svg"
@@ -440,20 +445,23 @@ const Header = () => {
       <div className="hidden md:block lg:hidden bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center h-16 justify-between">
-            {/* Left: Logo */}
-            <Link href="/" className="flex items-center gap-2">
-              <Image
-                src="/sobhagya-logo.svg"
-                alt="Sobhagya"
-                width={40}
-                height={40}
-                className="w-10 h-10 object-contain"
-                priority
-              />
-              <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
-                Sobhagya
-              </span>
-            </Link>
+            {/* Left: Back + Logo */}
+            <div className="flex items-center gap-2 min-w-0">
+              {showBackButton && <BackButton />}
+              <Link href="/" className="flex items-center gap-2 min-w-0">
+                <Image
+                  src="/sobhagya-logo.svg"
+                  alt="Sobhagya"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 object-contain flex-shrink-0"
+                  priority
+                />
+                <span className={`text-xl font-bold text-orange-500 truncate ${eagleLake.className}`}>
+                  Sobhagya
+                </span>
+              </Link>
+            </div>
 
             {/* Right: User Action */}
             <div className="flex items-center gap-3">
@@ -502,14 +510,19 @@ const Header = () => {
 
       {/* MOBILE HEADER — progressive disclosure, no clipping, refined motion */}
       <div className="md:hidden">
-        <div className="flex items-center justify-between gap-2 px-3 xs:px-4 py-1.5 xs:py-2 min-w-0">
-          {/* Mobile Logo — never shrinks, gradient shimmer text */}
+        <div className="flex items-center gap-2 px-3 xs:px-4 py-1.5 xs:py-2 min-w-0">
+          {/* Back arrow (sub-pages only) */}
+          {showBackButton && (
+            <BackButton className="flex-shrink-0" />
+          )}
+
+          {/* Mobile Logo — can shrink so the hamburger never gets pushed off */}
           <Link
             href="/"
-            className="group flex items-center gap-2 flex-shrink-0 min-w-0"
+            className="group flex items-center gap-2 min-w-0 flex-1"
             aria-label="Sobhagya — Home"
           >
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               <Image
                 src="/sobhagya-logo.svg"
                 alt="Sobhagya"
@@ -523,31 +536,16 @@ const Header = () => {
               <span className="pointer-events-none absolute inset-0 rounded-full bg-orange-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <span
-              className={`text-lg xs:text-xl font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-brand-shine whitespace-nowrap ${eagleLake.className}`}
+              className={`text-base xs:text-lg font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-brand-shine truncate ${eagleLake.className}`}
             >
               Sobhagya
             </span>
           </Link>
 
-          {/* Action cluster — tightly packed, progressive disclosure */}
-          <div className="flex items-center gap-1.5 xs:gap-2 flex-shrink-0">
-            {/* Call & WhatsApp — hidden on <375px to protect logo */}
-            <a
-              href="tel:+919211994461"
-              aria-label="Call +91 92119 94461"
-              className="hidden xs:flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md shadow-orange-500/25 hover:shadow-lg hover:shadow-orange-500/40 transition-all duration-300 active:scale-90 hover:scale-110 relative"
-            >
-              <span className="absolute inset-0 rounded-full bg-white/10 opacity-0 hover:opacity-100 transition-opacity" />
-              <Phone size={16} strokeWidth={2.5} className="relative" />
-            </a>
-            <a
-              href="https://wa.me/919211994461"
-              aria-label="WhatsApp +91 92119 94461"
-              className="hidden xs:flex items-center justify-center w-9 h-9 rounded-full bg-[#25D366] text-white shadow-md shadow-green-500/25 hover:shadow-lg hover:shadow-green-500/40 transition-all duration-300 active:scale-90 hover:scale-110"
-            >
-              <WhatsAppIcon size={16} />
-            </a>
-
+          {/* Action cluster — wallet + hamburger only on mobile.
+              Call/WhatsApp removed from header bar (still in hamburger menu)
+              to keep the hamburger reachable on 375px iPhones. */}
+          <div className="flex items-center gap-1.5 xs:gap-2 flex-shrink-0 ml-auto">
             {/* Wallet pill — compact, with subtle live glow */}
             {mounted && isAuthenticatedUser && (
               <Link

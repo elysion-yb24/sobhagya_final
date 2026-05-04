@@ -943,3 +943,45 @@ img { max-width: 100%; }
 
 /* Ring-offset fallback for focus rings on coloured backgrounds */
 .ring-offset-bg { --tw-ring-offset-color: #fff; }
+
+/* ============================================================
+ * Paragraph justification (Issue 2)
+ * Long-form copy reads better fully justified with hyphenation.
+ * Utility / aligned text (text-left, text-center, text-right,
+ * .no-justify) opts out. On narrow viewports we revert to
+ * left-align to avoid ugly word-spacing on phones.
+ * ============================================================ */
+@layer base {
+  p {
+    text-align: justify;
+    text-justify: inter-word;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+  }
+  p.no-justify,
+  .no-justify p,
+  nav p,
+  header p,
+  footer small p,
+  button p,
+  label p,
+  .text-left,
+  .text-center,
+  .text-right,
+  .text-left p,
+  .text-center p,
+  .text-right p {
+    text-align: revert;
+  }
+}
+
+@media (max-width: 480px) {
+  @layer base {
+    p {
+      text-align: left;
+      hyphens: manual;
+      -webkit-hyphens: manual;
+    }
+  }
+}

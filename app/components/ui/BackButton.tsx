@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-
-const ENTRY_KEY = 'sobhagya:entryFrom';
 
 type BackButtonProps = {
   className?: string;
@@ -14,12 +12,16 @@ type BackButtonProps = {
 };
 
 /**
- * Single-step back button.
+ * Back button with a safe home fallback.
  *
- * On first paint we record where the user came from (same-origin referrer or
- * "/"). When clicked we navigate there with router.replace and immediately
- * collapse the history stack so a second browser-back press cannot dive any
- * deeper than the home page.
+ * - If there is in-tab history we delegate to router.back() so the browser
+ *   just steps back one entry (preserves scroll, cache, etc.).
+ * - Otherwise (direct load, or a tab opened fresh on a deep link) we send the
+ *   user to the home page.
+ *
+ * We intentionally do NOT touch window.history.replaceState — mixing manual
+ * history mutations with Next.js's App Router history was preventing the
+ * navigation from actually applying on pages like /chat.
  */
 export default function BackButton({
   className = '',
@@ -28,46 +30,20 @@ export default function BackButton({
   ariaLabel = 'Go back',
 }: BackButtonProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const [entry, setEntry] = useState<string>('/');
-  const usedRef = useRef(false);
+  const hasHistoryRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    let stored = sessionStorage.getItem(ENTRY_KEY);
-    if (!stored) {
-      const ref = document.referrer;
-      try {
-        if (ref) {
-          const u = new URL(ref);
-          if (u.origin === window.location.origin && u.pathname !== pathname) {
-            stored = u.pathname + (u.search || '');
-          }
-        }
-      } catch {
-        // ignore
-      }
-      if (!stored) stored = '/';
-      sessionStorage.setItem(ENTRY_KEY, stored);
-    }
-    setEntry(stored);
-  }, [pathname]);
+    // window.history.length is >= 1 for any tab. Anything > 1 means there
+    // is an entry we can step back to within this tab.
+    hasHistoryRef.current = window.history.length > 1;
+  }, []);
 
   const handleClick = () => {
-    if (usedRef.current) {
-      router.replace('/');
-      return;
-    }
-    usedRef.current = true;
-    const target = entry || '/';
-    sessionStorage.removeItem(ENTRY_KEY);
-    router.replace(target);
-    if (typeof window !== 'undefined') {
-      try {
-        window.history.replaceState({}, '', target);
-      } catch {
-        // ignore
-      }
+    if (hasHistoryRef.current) {
+      router.back();
+    } else {
+      router.push('/');
     }
   };
 

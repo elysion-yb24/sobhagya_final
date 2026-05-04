@@ -8,6 +8,7 @@ import { Phone, Video, CheckCircle, Star, Languages, GraduationCap, MessageSquar
 import { getApiBaseUrl } from "../../config/api";
 import InsufficientBalanceModal from "../../components/ui/InsufficientBalanceModal";
 import ChatConnectingModal from "../../components/ui/ChatConnectingModal";
+import OfflineAstrologerModal from "./OfflineAstrologerModal";
 import { useWalletBalance } from "./WalletBalanceContext";
 import { useSessionManager } from "./SessionManager";
 import { initiateCall } from "../../utils/calling-utils";
@@ -85,6 +86,10 @@ const AstrologerCard = React.memo(function AstrologerCard({
 
   // Chat connecting modal state
   const [showChatConnectingModal, setShowChatConnectingModal] = useState(false);
+
+  // Offline-astrologer modal — shown when user tries to chat/call someone
+  // who isn't currently online (Issue 6).
+  const [showOfflineModal, setShowOfflineModal] = useState(false);
 
   // Chat error message (e.g. "Astrologer is busy") shown as a transient toast
   const [chatErrorMessage, setChatErrorMessage] = useState<string | null>(null);
@@ -233,10 +238,21 @@ const AstrologerCard = React.memo(function AstrologerCard({
     }
   };
 
+  // Treat anything that isn't explicitly online/busy as offline.
+  const isOffline = () => {
+    const s = (partner.status || '').toLowerCase();
+    return s !== 'online' && s !== 'busy' && s !== 'available';
+  };
+
   // ✅ Call handlers
   const handleAudioCallButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsCallMenuOpen(false);
+
+    if (isOffline()) {
+      setShowOfflineModal(true);
+      return;
+    }
 
     if (isAuthenticated()) {
       initiateDirectCall('audio');
@@ -252,6 +268,11 @@ const AstrologerCard = React.memo(function AstrologerCard({
     e.stopPropagation();
     setIsCallMenuOpen(false);
 
+    if (isOffline()) {
+      setShowOfflineModal(true);
+      return;
+    }
+
     if (isAuthenticated()) {
       initiateDirectCall('video');
     } else {
@@ -265,6 +286,10 @@ const AstrologerCard = React.memo(function AstrologerCard({
   // ✅ Modal-based call handlers (for call-with-astrologer source)
   const handleCallModalClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isOffline()) {
+      setShowOfflineModal(true);
+      return;
+    }
     if (onCallModalOpen) {
       onCallModalOpen(astrologer);
     }
@@ -344,6 +369,13 @@ const AstrologerCard = React.memo(function AstrologerCard({
   //   - same astrologer → navigate to that thread
   //   - different astrologer → end the old session via REST, then retry once
   const handleChatClick = async () => {
+    // Gate: if astrologer is offline, surface the suggestions modal
+    // instead of letting the backend reject with a generic error.
+    if (isOffline()) {
+      setShowOfflineModal(true);
+      return;
+    }
+
     if (!isAuthenticated()) {
       localStorage.setItem('selectedAstrologerId', _id);
       localStorage.setItem('chatIntent', '1');
@@ -560,6 +592,10 @@ const AstrologerCard = React.memo(function AstrologerCard({
                 ref={callButtonRef}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isOffline()) {
+                    setShowOfflineModal(true);
+                    return;
+                  }
                   if (source === 'callWithAstrologer') {
                     handleCallModalClick(e);
                   } else {
@@ -624,6 +660,13 @@ const AstrologerCard = React.memo(function AstrologerCard({
       <ChatConnectingModal
         isOpen={showChatConnectingModal}
         astrologerName={name}
+      />
+
+      {/* Offline astrologer modal — Issue 6 */}
+      <OfflineAstrologerModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+        offlineAstrologerName={name}
       />
 
       {/* Chat error toast (e.g. "Astrologer is busy") */}

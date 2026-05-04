@@ -53,18 +53,21 @@ const HeroSection: React.FC = () => {
     {
       id: "chat",
       title: "Chat with Astrologer",
+      subtitle: "Instant text consultation",
       icon: "/chat2.png",
       href: "/chat",
     },
     {
       id: "talk",
       title: "Talk to Astrologer",
+      subtitle: "Voice & video on demand",
       icon: "/contact2.png",
       href: "/call-with-astrologer",
     },
     {
       id: "shop",
       title: "Sobhagya Shop",
+      subtitle: "Authentic puja essentials",
       icon: "/astromall.png",
       href: "https://www.ramvarna.com",
       isExternal: true,
@@ -195,62 +198,124 @@ const HeroSection: React.FC = () => {
         </div>
       </motion.section>
 
-      {/* Navigation Cards */}
+      {/* Navigation Cards — premium 3D glass */}
       <div className="relative">
         <div className="relative z-20 -mt-8 xs:-mt-10 sm:-mt-24 md:-mt-16 lg:-mt-20 mb-8 sm:mb-12 md:mb-16">
           <div className="section-container">
-            {/* Mobile: 3-column grid that fits the viewport */}
-            <div className="grid grid-cols-3 gap-2 xs:gap-4 sm:hidden px-2">
+            {/* Mobile: 3-column compact grid (denser) */}
+            <div className="grid grid-cols-3 gap-2 xs:gap-3 sm:hidden px-1 max-w-full">
               {navigationCards.map((card, idx) => (
                 <Link
                   key={card.id}
                   href={card.href}
                   target={card.isExternal ? "_blank" : undefined}
-                  className="block w-full"
+                  className="block w-full min-w-0"
                 >
                   <motion.div
-                    className="premium-surface rounded-2xl px-2 py-4 min-h-[110px] flex flex-col items-center justify-center shadow-premium text-gray-800 hover:bg-orange-50 hover:text-orange-600 transition-all duration-300 astro-card border border-orange-100/50"
+                    className="group relative premium-surface rounded-2xl px-2 py-3.5 min-h-[108px] flex flex-col items-center justify-center text-gray-800 transition-all duration-300 astro-card overflow-hidden"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 20 }}
                     transition={{ delay: 0.8 + idx * 0.1 }}
+                    whileTap={{ scale: 0.97 }}
                   >
-                    <Image
-                      src={card.icon}
-                      alt={card.title}
-                      width={28}
-                      height={28}
-                      className="mb-1.5 block"
-                    />
+                    {/* Saffron radial glow behind icon */}
                     <span
-                      className="text-[10px] xs:text-xs font-semibold leading-tight text-center break-words hyphens-auto"
+                      className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full opacity-70"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(247,148,29,0.22) 0%, rgba(247,148,29,0.08) 40%, transparent 70%)",
+                      }}
+                    />
+                    {/* Floating icon disc */}
+                    <div className="relative z-10 mb-1.5 w-10 h-10 rounded-full bg-white shadow-[0_4px_12px_-2px_rgba(247,148,29,0.35)] ring-1 ring-orange-100 flex items-center justify-center">
+                      <Image
+                        src={card.icon}
+                        alt={card.title}
+                        width={24}
+                        height={24}
+                        className="object-contain"
+                      />
+                    </div>
+                    <span
+                      className="no-justify relative z-10 text-[10px] xs:text-[11px] font-semibold leading-tight text-center break-words hyphens-auto"
                       style={{ fontFamily: "Poppins" }}
                     >
                       {card.title}
                     </span>
+                    {/* Bottom shimmer bar */}
+                    <span className="pointer-events-none absolute inset-x-3 bottom-1.5 h-[2px] rounded-full bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500 opacity-70 bg-[length:200%_auto] animate-brand-shine" />
                   </motion.div>
                 </Link>
               ))}
             </div>
 
-            {/* Tablet & Desktop: Card layout */}
-            <div className="hidden sm:grid grid-cols-3 gap-3 sm:gap-4 md:gap-5 lg:gap-6 max-w-4xl xl:max-w-5xl mx-auto">
+            {/* Tablet & Desktop: 3D layered glass cards */}
+            <div className="hidden sm:grid grid-cols-3 gap-3 md:gap-4 max-w-3xl xl:max-w-4xl mx-auto">
               {navigationCards.map((card, idx) => (
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <motion.div
-                    className="rounded-xl p-5 sm:p-6 md:p-7 lg:p-8 flex flex-col items-center text-center shadow-xl bg-white text-gray-800 hover:bg-orange-50 hover:text-orange-600 hover:shadow-2xl transition-all duration-300 astro-card border border-gray-100"
+                    className="group relative premium-surface rounded-2xl p-4 md:p-5 flex flex-col items-center text-center text-gray-800 transition-all duration-500 astro-card overflow-hidden"
+                    style={{ transformStyle: "preserve-3d", perspective: 800 }}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 30 }}
                     transition={{ delay: 0.9 + idx * 0.15, duration: 0.5 }}
-                    whileHover={{ y: -4 }}
+                    whileHover={
+                      shouldReduceMotion
+                        ? undefined
+                        : { rotateX: 6, rotateY: -6, scale: 1.03 }
+                    }
+                    whileTap={{ scale: 0.98 }}
                   >
-                    <Image
-                      src={card.icon}
-                      alt={card.title}
-                      width={48}
-                      height={48}
-                      className="sm:w-[48px] sm:h-[48px] md:w-[52px] md:h-[52px] lg:w-[56px] lg:h-[56px] block"
+                    {/* Inner border highlight */}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 rounded-2xl"
+                      style={{
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(247,148,29,0.12)",
+                      }}
                     />
-                    <h3 className="font-medium mt-2 sm:mt-3 text-sm sm:text-base md:text-lg" style={{ fontFamily: "Inter" }}>{card.title}</h3>
+                    {/* Saffron radial glow behind icon */}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute -top-6 left-1/2 -translate-x-1/2 w-32 md:w-36 h-32 md:h-36 rounded-full opacity-80 transition-opacity duration-500 group-hover:opacity-100"
+                      style={{
+                        background:
+                          "radial-gradient(circle, rgba(247,148,29,0.28) 0%, rgba(247,148,29,0.12) 40%, transparent 70%)",
+                      }}
+                    />
+                    {/* Floating icon disc */}
+                    <div
+                      className="relative z-10 w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-white to-orange-50 ring-1 ring-orange-100 flex items-center justify-center transition-transform duration-500 group-hover:-translate-y-0.5"
+                      style={{
+                        boxShadow:
+                          "0 10px 24px -10px rgba(247,148,29,0.45), 0 2px 6px -1px rgba(247,148,29,0.18)",
+                        transform: "translateZ(20px)",
+                      }}
+                    >
+                      <Image
+                        src={card.icon}
+                        alt={card.title}
+                        width={36}
+                        height={36}
+                        className="md:w-10 md:h-10 object-contain"
+                      />
+                    </div>
+                    {/* Title + subtitle */}
+                    <h3
+                      className="relative z-10 mt-3 font-semibold text-sm md:text-base leading-tight"
+                      style={{ fontFamily: "Inter", transform: "translateZ(10px)" }}
+                    >
+                      {card.title}
+                    </h3>
+                    <p className="no-justify relative z-10 mt-0.5 text-[11px] md:text-xs text-gray-500 leading-snug">
+                      {card.subtitle}
+                    </p>
+                    {/* Bottom shimmer bar — saffron→amber→saffron */}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-x-4 bottom-2 h-[2px] rounded-full bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500 opacity-60 bg-[length:200%_auto] animate-brand-shine group-hover:opacity-100 transition-opacity"
+                    />
                   </motion.div>
                 </Link>
               ))}

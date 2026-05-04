@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, getUserDetails, isAuthenticated } from "../../../utils/auth-utils";
+import { findOrFetchAstrologer, appendAstrologers, getAllCachedAstrologers } from "../../../utils/astrologer-cache";
 import Header from "../../../components/Header";
 import Footer from "../../../components/Footer";
 import { initiateCall } from "../../../utils/calling-utils";
@@ -207,54 +208,11 @@ export default function CallAstrologerProfilePage() {
 
     const fetchAstrologerProfile = async () => {
         try {
-            console.log('Fetching astrologer profile for ID:', astrologerId);
-
-            // First try the specific user endpoint
-            let response = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-
-            let data = null;
-            if (response.ok) {
-                data = await response.json();
-                console.log('Response from specific user endpoint:', data);
-            }
-
-            // If specific endpoint doesn't work or doesn't return data, try the users-list endpoint
-            if (!data || !data.success || !data.data) {
-                console.log('Trying users-list endpoint...');
-                response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=10`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-
-                if (response.ok) {
-                    const listData = await response.json();
-                    console.log('Response from users-list endpoint:', listData);
-
-                    if (listData.success && listData.data?.list) {
-                        // Find the astrologer by ID in the list
-                        const foundAstrologer = listData.data.list.find((user: any) => user._id === astrologerId);
-                        if (foundAstrologer) {
-                            console.log('Found astrologer in list:', foundAstrologer);
-                            setAstrologer(foundAstrologer);
-                            return;
-                        }
-                    }
-                }
-            } else if (data.success && data.data) {
-                console.log('Setting astrologer from specific endpoint:', data.data);
-                setAstrologer(data.data);
+            const found = await findOrFetchAstrologer(astrologerId);
+            if (found) {
+                setAstrologer(found as unknown as Astrologer);
                 return;
             }
-
-            // If we reach here, astrologer was not found
-            console.log('Astrologer not found in any endpoint');
             setError("Astrologer not found");
         } catch (err) {
             console.error("Error fetching astrologer:", err);
@@ -266,45 +224,47 @@ export default function CallAstrologerProfilePage() {
 
     const fetchSimilarAstrologers = async () => {
         try {
-            const response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=10`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
+            // Prefer the shared cache — anything the list page (or this profile's
+            // own pagination walk) already loaded is reused without a network hit.
+            let pool = getAllCachedAstrologers() as unknown as Astrologer[];
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.data?.list) {
-                    // Get current astrologer's specializations
-                    const currentSpecializations = [
-                        ...(astrologer?.talksAbout || []),
-                        ...(astrologer?.specializations || [])
-                    ].map(spec => spec.toLowerCase());
-
-                    // Filter astrologers with matching specializations
-                    const filtered = data.data.list
-                        .filter((a: Astrologer) => {
-                            // Exclude current astrologer
-                            if (a._id === astrologerId) return false;
-                            
-                            // Get astrologer's specializations
-                            const astrologerSpecializations = [
-                                ...(a.talksAbout || []),
-                                ...(a.specializations || [])
-                            ].map(spec => spec.toLowerCase());
-                            
-                            // Check if any specialization matches
-                            return currentSpecializations.some(currentSpec => 
-                                astrologerSpecializations.some(astSpec => 
-                                    astSpec.includes(currentSpec) || currentSpec.includes(astSpec)
-                                )
-                            );
-                        })
-                        .slice(0, 5); // Take only 5 similar astrologers
-                    
-                    setSimilarAstrologers(filtered);
+            if (pool.length < 10) {
+                const response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=50`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    const list: Astrologer[] = data?.data?.list || data?.data || data?.users || [];
+                    appendAstrologers(list as unknown as { _id: string; name: string }[]);
+                    pool = getAllCachedAstrologers() as unknown as Astrologer[];
                 }
+            }
+
+            if (pool.length > 0) {
+                const currentSpecializations = [
+                    ...(astrologer?.talksAbout || []),
+                    ...(astrologer?.specializations || [])
+                ].map(spec => spec.toLowerCase());
+
+                const filtered = pool
+                    .filter((a: Astrologer) => {
+                        if (a._id === astrologerId) return false;
+                        const astrologerSpecializations = [
+                            ...(a.talksAbout || []),
+                            ...(a.specializations || [])
+                        ].map(spec => spec.toLowerCase());
+                        return currentSpecializations.some(currentSpec =>
+                            astrologerSpecializations.some(astSpec =>
+                                astSpec.includes(currentSpec) || currentSpec.includes(astSpec)
+                            )
+                        );
+                    })
+                    .slice(0, 5);
+
+                setSimilarAstrologers(filtered);
             }
         } catch (err) {
             console.error("Error fetching similar astrologers:", err);

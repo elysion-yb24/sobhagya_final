@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, ChevronLeft, ChevronRight, Phone, Video } from "lucide-react";
 import { getApiBaseUrl } from "../../../config/api";
 import { getAuthToken, isAuthenticated, getUserDetails, hasUserCalledBefore } from "../../../utils/auth-utils";
+import { findOrFetchAstrologer } from "../../../utils/astrologer-cache";
 import { motion } from "framer-motion";
 
 interface Astrologer {
@@ -89,54 +90,11 @@ export default function CallAstrologerProfilePage() {
 
     const fetchAstrologerProfile = async () => {
         try {
-            console.log('Fetching astrologer profile for ID:', astrologerId);
-
-            // First try the specific user endpoint
-            let response = await fetch(`${getApiBaseUrl()}/user/api/users/${astrologerId}`, {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            });
-
-            let data = null;
-            if (response.ok) {
-                data = await response.json();
-                console.log('Response from specific user endpoint:', data);
-            }
-
-            // If specific endpoint doesn't work or doesn't return data, try the users-list endpoint
-            if (!data || !data.success || !data.data) {
-                console.log('Trying users-list endpoint...');
-                response = await fetch(`${getApiBaseUrl()}/user/api/users-list?limit=10`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
-
-                if (response.ok) {
-                    const listData = await response.json();
-                    console.log('Response from users-list endpoint:', listData);
-
-                    if (listData.success && listData.data?.list) {
-                        // Find the astrologer by ID in the list
-                        const foundAstrologer = listData.data.list.find((user: any) => user._id === astrologerId);
-                        if (foundAstrologer) {
-                            console.log('Found astrologer in list:', foundAstrologer);
-                            setAstrologer(foundAstrologer);
-                            return;
-                        }
-                    }
-                }
-            } else if (data.success && data.data) {
-                console.log('Setting astrologer from specific endpoint:', data.data);
-                setAstrologer(data.data);
+            const found = await findOrFetchAstrologer(astrologerId);
+            if (found) {
+                setAstrologer(found as unknown as Astrologer);
                 return;
             }
-
-            // If we reach here, astrologer was not found
-            console.log('Astrologer not found in any endpoint');
             setError("Astrologer not found");
         } catch (err) {
             console.error("Error fetching astrologer:", err);

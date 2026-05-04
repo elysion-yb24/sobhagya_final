@@ -238,7 +238,7 @@ export default function Services() {
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </motion.button>
                 </Link>
-                <Link href="/astrologers" className="w-full sm:w-auto">
+                <Link href="/call-with-astrologer" className="w-full sm:w-auto">
                   <motion.button
                     className="w-full inline-flex items-center justify-center btn-secondary py-4 px-10 rounded-2xl"
                     whileHover={{ scale: 1.05 }}

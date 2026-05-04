@@ -9,6 +9,7 @@ import FilterBar from "../components/astrologers/FilterBar";
 import { WalletBalanceProvider } from "../components/astrologers/WalletBalanceContext";
 import { getApiBaseUrl } from "../config/api";
 import { isAuthenticated, getAuthToken, getUserDetails } from "../utils/auth-utils";
+import { appendAstrologers } from "../utils/astrologer-cache";
 import { Phone, Video, X, PhoneCall } from "lucide-react";
 
 interface Astrologer {
@@ -169,9 +170,13 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         }
 
         const data = await res.json();
-        let newAstrologers: Astrologer[] = data.data?.list || data.users || data.data || [];
+        const rawList: Astrologer[] = data.data?.list || data.users || data.data || [];
+        // Feed the shared cache before client-side filtering — so the profile page
+        // can find anyone we've already loaded, even if they were filtered out
+        // of the visible list by the current search query.
+        appendAstrologers(rawList);
 
-        // Filter by name client-side since users-list doesn't support search
+        let newAstrologers: Astrologer[] = rawList;
         if (safeQuery) {
           const q = safeQuery.toLowerCase();
           newAstrologers = newAstrologers.filter(a => a.name?.toLowerCase().includes(q));
@@ -282,8 +287,10 @@ const CallWithAstrologerClient: React.FC<CallWithAstrologerClientProps> = ({
         }
 
         const data = await res.json();
-        let freshList: Astrologer[] = data.data?.list || data.users || data.data || [];
+        const rawFresh: Astrologer[] = data.data?.list || data.users || data.data || [];
+        appendAstrologers(rawFresh);
 
+        let freshList: Astrologer[] = rawFresh;
         if (safeQuery) {
           const q = safeQuery.toLowerCase();
           freshList = freshList.filter(a => a.name?.toLowerCase().includes(q));

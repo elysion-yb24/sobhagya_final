@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Reply, AlertCircle } from 'lucide-react'
 import ReplyPreview from './ReplyPreview'
 import SessionEndedCard from './SessionEndedCard'
+import Avatar from './Avatar'
 
 export interface Message {
   id: string
@@ -126,7 +127,11 @@ const TypingIndicator = ({ avatar, name }: { avatar?: string; name?: string }) =
   >
     <div className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-white shadow-sm flex-shrink-0 relative bg-saffron-100">
       {avatar ? (
-        <Image src={avatar} alt={name || 'Astrologer'} fill className="object-cover" />
+        <Avatar
+          src={avatar}
+          name={name || 'Astrologer'}
+          fallbackClassName="w-full h-full flex items-center justify-center bg-saffron-100"
+        />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
           <Image src="/sobhagya-logo.svg" alt="" width={18} height={18} />
@@ -280,13 +285,11 @@ const MessageBubble = React.memo(function MessageBubble({
           <div className="flex-shrink-0 w-7 self-end mb-1">
             {showAvatar && (
               <div className="w-7 h-7 rounded-full overflow-hidden ring-2 ring-white shadow-sm relative bg-saffron-100">
-                {peerAvatar ? (
-                  <Image src={peerAvatar} alt={peerName || ''} fill className="object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-saffron-300 to-saffron-500 flex items-center justify-center text-white text-[11px] font-semibold">
-                    {(peerName || 'A').charAt(0)}
-                  </div>
-                )}
+                <Avatar
+                  src={peerAvatar}
+                  name={peerName}
+                  fallbackClassName="w-full h-full bg-gradient-to-br from-saffron-300 to-saffron-500 flex items-center justify-center text-white text-[11px] font-semibold"
+                />
               </div>
             )}
           </div>

@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, MoreVertical, X, Wallet, LogOut } from 'lucide-react'
-import Image from 'next/image'
 import PresenceDot from './PresenceDot'
+import Avatar from './Avatar'
 
 interface PopulatedUser {
   _id: string
@@ -94,13 +94,11 @@ export default function ChatHeader({
       >
         <div className="relative flex-shrink-0">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden ring-2 ring-saffron-100 shadow-sm relative">
-            {participant?.avatar ? (
-              <Image src={participant.avatar} alt={participant?.name || ''} fill className="object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-saffron-300 to-saffron-500 flex items-center justify-center text-white font-semibold">
-                {(participant?.name || 'A').charAt(0).toUpperCase()}
-              </div>
-            )}
+            <Avatar
+              src={participant?.avatar}
+              name={participant?.name}
+              fallbackClassName="w-full h-full bg-gradient-to-br from-saffron-300 to-saffron-500 flex items-center justify-center text-white font-semibold"
+            />
           </div>
           <span className="absolute bottom-0 right-0">
             <PresenceDot status={presence} size={11} />

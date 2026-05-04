@@ -561,27 +561,41 @@ export default function LiveSessionViewPage() {
       ) || ac[0];
 
       let channelId: string | null = myCall?.channelId || inviteCallData?.channelId || null;
+
+      // If we don't have a channelId yet, retry the fresh fetch a couple of
+      // times — Redis may not have surfaced the activeCall in the same instant
+      // the queue entry disappeared. We need a real channelId before emitting
+      // accept_invite, otherwise the backend can't cancel the ring timer or
+      // emit call_started.
       if (!channelId) {
-        try {
-          const fresh = await getActiveCall(sessionId);
-          if (fresh?.channelId) channelId = fresh.channelId;
-          dlog('accept: fresh activeCall fetch ->', fresh);
-        } catch (e) { console.warn('[LiveCall] fresh getActiveCall failed:', e); }
+        for (let attempt = 0; attempt < 4 && !channelId; attempt++) {
+          try {
+            const fresh = await getActiveCall(sessionId);
+            if (fresh?.channelId) {
+              channelId = fresh.channelId;
+              dlog('accept: fresh activeCall fetch ->', fresh, 'attempt', attempt);
+              break;
+            }
+            // small backoff before next attempt
+            await new Promise(r => setTimeout(r, 250));
+          } catch (e) {
+            console.warn('[LiveCall] fresh getActiveCall failed:', e);
+            await new Promise(r => setTimeout(r, 250));
+          }
+        }
       }
 
       dlog('accept: channelId=', channelId, 'callType=', callType, 'myCall=', myCall);
 
-      if (channelId) {
-        // Normal path: tell the backend we accepted so it cancels the ring timer.
-        const ackAccept = await acceptInvite(sessionId, channelId);
-        dlog('accept_invite ack:', ackAccept);
-      } else {
-        // Fallback path: astrologer's invite never surfaced a channelId to us
-        // (send_invite socket event missing AND session.activeCall empty).
-        // Skip accept_invite and rely on joinRoomParticipant alone. The ring
-        // timer will still fire, but we guard against RING_TIMEOUT kicking us
-        // by stamping inCallSinceRef + the onCallEnd handler check.
-        console.warn('[LiveCall] No channelId available — accepting via joinRoomParticipant only. Ring-timeout call_end will be ignored.');
+      // Always emit accept_invite when the user accepts. Backend uses this to
+      // cancel the ring timer and broadcast `call_started` to the session
+      // room — without it, the call may RING_TIMEOUT mid-conversation.
+      // We send whatever channelId we have; the backend handler logs/no-ops
+      // if the value is missing rather than crashing.
+      const ackAccept = await acceptInvite(sessionId, channelId || '');
+      dlog('accept_invite ack:', ackAccept);
+      if (!channelId) {
+        console.warn('[LiveCall] accept_invite emitted without channelId — ring timer may not cancel.');
       }
 
       const isPrivateAudio = callType === 'private';
@@ -593,9 +607,11 @@ export default function LiveSessionViewPage() {
       if (resp?.error) {
         const rawMsg = resp?.data?.message || resp?.message || '';
         const upper = String(rawMsg).toUpperCase();
-        const msg = upper.includes('LOW_BALANCE') || upper.includes('INSUFFICIENT')
-          ? `Insufficient balance for ${isPrivateAudio ? 'private' : 'public'} call (₹${rate}/min). Please recharge your wallet.`
-          : rawMsg || 'Failed to join call. Please try again.';
+        const msg = upper.includes('TIMEOUT')
+          ? 'The call server took too long to respond. Please check your connection and tap Accept again.'
+          : upper.includes('LOW_BALANCE') || upper.includes('INSUFFICIENT')
+            ? `Insufficient balance for ${isPrivateAudio ? 'private' : 'public'} call (₹${rate}/min). Please recharge your wallet.`
+            : rawMsg || 'Failed to join call. Please try again.';
         alert(msg);
         return;
       }

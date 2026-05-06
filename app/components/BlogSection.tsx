@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion, useSpring } from "framer-motion";
+import { motion, useReducedMotion, useSpring } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { BlogPost } from "@/types";
 import SectionHeader from "./ui/SectionHeader";
@@ -15,7 +15,6 @@ interface BlogCardProps {
 
 const BlogCard: React.FC<BlogCardProps> = ({ blog, index, onOpen }) => {
   const reduced = useReducedMotion();
-  const cardRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<HTMLSpanElement>(null);
 
   // Magnetic arrow — spring toward cursor when within 80px of card
@@ -46,7 +45,6 @@ const BlogCard: React.FC<BlogCardProps> = ({ blog, index, onOpen }) => {
 
   return (
     <motion.div
-      ref={cardRef}
       onClick={onOpen}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
@@ -139,8 +137,6 @@ const BlogCard: React.FC<BlogCardProps> = ({ blog, index, onOpen }) => {
 
 const BlogSection = () => {
   const router = useRouter();
-  const sectionRef = useRef<HTMLElement>(null);
-  const inView = useInView(sectionRef, { once: true, amount: 0.1 });
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -206,7 +202,6 @@ const BlogSection = () => {
 
   return (
     <section
-      ref={sectionRef}
       className="section-spacing bg-gradient-to-br from-orange-50 via-white to-white/80 relative overflow-hidden sacred-pattern"
     >
       <div className="section-container relative z-10">
@@ -227,8 +222,6 @@ const BlogSection = () => {
             />
           ))}
         </div>
-
-        {inView && null /* keep ref tracked */}
       </div>
     </section>
   );

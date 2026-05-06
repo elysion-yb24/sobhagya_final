@@ -1,53 +1,49 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { PhoneIcon } from '@heroicons/react/24/solid';
+import { useScrollParallax } from "@/app/hooks/useScrollParallax";
+import { useCountUp } from "@/app/hooks/useCountUp";
+
+interface Particle {
+  left: number;
+  top: number;
+  delay: number;
+  duration: number;
+  size: number;
+  z: number;
+}
 
 const HeroSection: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
-  const [displayCount, setDisplayCount] = useState(0);
+  const [particles, setParticles] = useState<Particle[]>([]);
+
   const targetCount = 10023;
-  const [particlePositions, setParticlePositions] = useState<{ left: number; top: number; delay: number; duration: number; size: number }[]>([]);
+  const displayCount = useCountUp(targetCount, { duration: 2, start: mounted });
+
+  // Astrologer image scroll parallax
+  const { ref: imageWrapRef, y: imageY } = useScrollParallax(0.3);
 
   useEffect(() => {
     setMounted(true);
-    setParticlePositions(
-      Array.from({ length: shouldReduceMotion ? 8 : 30 }).map(() => ({
+    if (typeof window === "undefined") return;
+    const isMobile = window.matchMedia("(max-width: 640px)").matches;
+    const count = shouldReduceMotion ? 0 : isMobile ? 12 : 30;
+    setParticles(
+      Array.from({ length: count }).map(() => ({
         left: Math.random() * 100,
         top: Math.random() * 100,
         delay: Math.random() * 3,
         duration: 3 + Math.random() * 3,
         size: 1 + Math.random() * 2,
+        z: Math.random() * 2 - 1, // -1 (far) → 1 (near)
       }))
     );
   }, [shouldReduceMotion]);
-
-  // Animated counter
-  useEffect(() => {
-    if (!mounted) return;
-    if (shouldReduceMotion) {
-      setDisplayCount(targetCount);
-      return;
-    }
-    let start = 0;
-    const duration = 2000;
-    const step = targetCount / (duration / 16);
-
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= targetCount) {
-        setDisplayCount(targetCount);
-        clearInterval(timer);
-      } else {
-        setDisplayCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
-  }, [mounted, shouldReduceMotion]);
 
   const navigationCards = [
     {
@@ -74,6 +70,12 @@ const HeroSection: React.FC = () => {
     }
   ];
 
+  // Word-by-word kinetic headline tokens
+  const headlineWords = useMemo(() => {
+    const formatted = displayCount.toLocaleString();
+    return [formatted, "Consultations", "Done"];
+  }, [displayCount]);
+
   return (
     <div className="flex flex-col w-full relative overflow-hidden">
       {/* Hero Section */}
@@ -91,32 +93,47 @@ const HeroSection: React.FC = () => {
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-transparent to-black/10 z-0" />
 
-        {/* Floating star particles */}
-        {!shouldReduceMotion && (
-          <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
-            {particlePositions.map((pos, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-white/40"
-                style={{
-                  left: `${pos.left}%`,
-                  top: `${pos.top}%`,
-                  width: `${pos.size}px`,
-                  height: `${pos.size}px`,
-                }}
-                animate={{
-                  y: [-10, -80, -10],
-                  opacity: [0, 0.8, 0],
-                  scale: [0.5, 1.2, 0.5],
-                }}
-                transition={{
-                  duration: pos.duration,
-                  repeat: Infinity,
-                  delay: pos.delay,
-                  ease: "easeInOut",
-                }}
-              />
-            ))}
+        {/* Depth-aware floating star particles */}
+        {!shouldReduceMotion && particles.length > 0 && (
+          <div
+            className="absolute inset-0 overflow-hidden pointer-events-none z-[1]"
+            style={{ perspective: "1000px" }}
+          >
+            {particles.map((pos, i) => {
+              const depthScale = 0.55 + (pos.z + 1) * 0.45; // far smaller, near larger
+              const blur = pos.z < -0.4 ? 1.6 : pos.z < 0 ? 0.8 : 0;
+              const opacityBase = 0.35 + (pos.z + 1) * 0.35;
+              const driftDuration = pos.duration / depthScale; // far drifts slower
+              return (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full"
+                  style={{
+                    left: `${pos.left}%`,
+                    top: `${pos.top}%`,
+                    width: `${pos.size * depthScale}px`,
+                    height: `${pos.size * depthScale}px`,
+                    background:
+                      pos.z > 0.4
+                        ? "rgba(253, 230, 175, 0.95)"
+                        : "rgba(255, 255, 255, 0.7)",
+                    boxShadow: pos.z > 0.4 ? "0 0 6px rgba(253,200,120,0.7)" : undefined,
+                    filter: blur ? `blur(${blur}px)` : undefined,
+                  }}
+                  animate={{
+                    y: [-10, -80, -10],
+                    opacity: [0, opacityBase, 0],
+                    scale: [0.5, 1.2, 0.5],
+                  }}
+                  transition={{
+                    duration: driftDuration,
+                    repeat: Infinity,
+                    delay: pos.delay,
+                    ease: "easeInOut",
+                  }}
+                />
+              );
+            })}
           </div>
         )}
 
@@ -129,15 +146,40 @@ const HeroSection: React.FC = () => {
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : -40 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
-            <h1 className="font-bold leading-tight mb-2 sm:mb-3 break-words" style={{
-              fontFamily: "EB Garamond",
-              fontSize: 'clamp(22px, 6.2vw, 55px)',
-              fontWeight: 700,
-              lineHeight: 1.15,
-            }}>
-              <span className="tabular-nums whitespace-nowrap">{displayCount.toLocaleString()}</span>
-              <span className="whitespace-nowrap"> Consultations</span>{" "}
-              <span className="whitespace-nowrap">Done</span>
+            <h1
+              className="font-bold leading-tight mb-2 sm:mb-3 break-words"
+              style={{
+                fontFamily: "EB Garamond",
+                fontSize: 'clamp(22px, 6.2vw, 55px)',
+                fontWeight: 700,
+                lineHeight: 1.15,
+                perspective: "1200px",
+              }}
+            >
+              {headlineWords.map((word, i) => (
+                <motion.span
+                  key={i}
+                  className={i === 0 ? "tabular-nums whitespace-nowrap inline-block" : "whitespace-nowrap inline-block"}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 24, rotateX: -45 }}
+                  animate={
+                    mounted
+                      ? { opacity: 1, y: 0, rotateX: 0 }
+                      : shouldReduceMotion
+                      ? { opacity: 1 }
+                      : { opacity: 0, y: 24, rotateX: -45 }
+                  }
+                  transition={{
+                    type: "spring",
+                    stiffness: 130,
+                    damping: 18,
+                    delay: 0.35 + i * 0.12,
+                  }}
+                  style={{ transformStyle: "preserve-3d" }}
+                >
+                  {word}
+                  {i < headlineWords.length - 1 ? " " : ""}
+                </motion.span>
+              ))}
             </h1>
             <p className="text-sm sm:text-base md:text-xl lg:text-2xl font-semibold mb-4 sm:mb-6 opacity-90 px-2 sm:px-0" style={{
               fontFamily: "EB Garamond"
@@ -158,14 +200,15 @@ const HeroSection: React.FC = () => {
             </Link>
           </motion.div>
 
-          {/* Right: Astrologer Image */}
+          {/* Right: Astrologer Image with parallax */}
           <motion.div
+            ref={imageWrapRef as React.RefObject<HTMLDivElement>}
             className="w-full md:w-1/2 lg:w-2/5 flex justify-center md:justify-end relative order-1 md:order-2 min-h-[240px] xs:min-h-[280px] sm:min-h-[360px] md:min-h-[400px] lg:min-h-[440px]"
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : 40 }}
             transition={{ duration: 0.8, delay: 0.5 }}
           >
-            <div className="relative">
+            <motion.div className="relative" style={{ y: imageY }}>
               {/* Zodiac background behind astrologer */}
               <div className="absolute inset-0 flex items-center justify-center opacity-25 z-0 -translate-y-10 sm:-translate-y-14 -left-8 sm:-left-16">
                 <Image
@@ -176,6 +219,21 @@ const HeroSection: React.FC = () => {
                   className="w-[160px] h-[200px] xs:w-[200px] xs:h-[240px] sm:w-[320px] sm:h-[320px] md:w-[360px] md:h-[360px] lg:w-[400px] lg:h-[400px] object-contain animate-mandala-spin"
                 />
               </div>
+
+              {/* Soft saffron halo */}
+              {!shouldReduceMotion && (
+                <motion.div
+                  aria-hidden
+                  className="absolute inset-0 -z-10 pointer-events-none"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, rgba(255,200,120,0.45), rgba(247,148,29,0.18) 55%, transparent 75%)",
+                    filter: "blur(20px)",
+                  }}
+                  animate={{ scale: [1, 1.08, 1], opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                />
+              )}
 
               <Image
                 src="/astrologer.svg"
@@ -193,7 +251,7 @@ const HeroSection: React.FC = () => {
               >
                 <Image src="/Group (1) 4.png" alt="Zodiac Accent" width={70} height={70} className="w-[50px] h-[50px] xs:w-[60px] xs:h-[60px] sm:w-[80px] sm:h-[80px] md:w-[90px] md:h-[90px]" />
               </motion.div>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </motion.section>
@@ -255,14 +313,14 @@ const HeroSection: React.FC = () => {
                 <Link key={card.id} href={card.href} target={card.isExternal ? "_blank" : undefined}>
                   <motion.div
                     className="group relative premium-surface rounded-2xl p-4 md:p-5 flex flex-col items-center text-center text-gray-800 transition-all duration-500 astro-card overflow-hidden"
-                    style={{ transformStyle: "preserve-3d", perspective: 800 }}
+                    style={{ transformStyle: "preserve-3d", perspective: 1000 }}
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : 30 }}
-                    transition={{ delay: 0.9 + idx * 0.15, duration: 0.5 }}
+                    transition={{ delay: 0.9 + idx * 0.15, duration: 0.5, type: "spring", stiffness: 110, damping: 18 }}
                     whileHover={
                       shouldReduceMotion
                         ? undefined
-                        : { rotateX: 6, rotateY: -6, scale: 1.03 }
+                        : { rotateX: 8, rotateY: -8, scale: 1.04, y: -4 }
                     }
                     whileTap={{ scale: 0.98 }}
                   >
@@ -273,6 +331,7 @@ const HeroSection: React.FC = () => {
                       style={{
                         boxShadow:
                           "inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(247,148,29,0.12)",
+                        transform: "translateZ(-10px)",
                       }}
                     />
                     {/* Saffron radial glow behind icon */}
@@ -282,6 +341,7 @@ const HeroSection: React.FC = () => {
                       style={{
                         background:
                           "radial-gradient(circle, rgba(247,148,29,0.28) 0%, rgba(247,148,29,0.12) 40%, transparent 70%)",
+                        transform: "translateZ(0px)",
                       }}
                     />
                     {/* Floating icon disc */}
@@ -290,7 +350,7 @@ const HeroSection: React.FC = () => {
                       style={{
                         boxShadow:
                           "0 10px 24px -10px rgba(247,148,29,0.45), 0 2px 6px -1px rgba(247,148,29,0.18)",
-                        transform: "translateZ(20px)",
+                        transform: "translateZ(40px)",
                       }}
                     >
                       <Image
@@ -304,11 +364,14 @@ const HeroSection: React.FC = () => {
                     {/* Title + subtitle */}
                     <h3
                       className="relative z-10 mt-3 font-semibold text-sm md:text-base leading-tight"
-                      style={{ fontFamily: "Inter", transform: "translateZ(10px)" }}
+                      style={{ fontFamily: "Inter", transform: "translateZ(20px)" }}
                     >
                       {card.title}
                     </h3>
-                    <p className="no-justify relative z-10 mt-0.5 text-[11px] md:text-xs text-gray-500 leading-snug">
+                    <p
+                      className="no-justify relative z-10 mt-0.5 text-[11px] md:text-xs text-gray-500 leading-snug"
+                      style={{ transform: "translateZ(10px)" }}
+                    >
                       {card.subtitle}
                     </p>
                     {/* Bottom shimmer bar — saffron→amber→saffron */}

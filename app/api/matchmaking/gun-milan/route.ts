@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Gun Milan calculation class with proper astronomical calculations
+// Helper to normalize any angle to [0, 360)
+function normalizeDegrees(deg: number): number {
+  const result = deg % 360;
+  return result < 0 ? result + 360 : result;
+}
+
+// Helper for non-negative modulo (JS % can be negative)
+function mod(n: number, m: number): number {
+  return ((n % m) + m) % m;
+}
+
 class GunMilanCalculator {
   // Nakshatra data with their lords
   private nakshatras = [
@@ -71,13 +82,12 @@ class GunMilanCalculator {
     // Calculate Moon's position (as per Vedic tradition, Moon determines Nakshatra)
     const moonLongitude = this.calculateMoonLongitude(jd);
     
-    // Use Moon's position for Nakshatra
-    let siderealLongitude = moonLongitude - ayanamsa;
-    if (siderealLongitude < 0) siderealLongitude += 360;
+    // Use Moon's position for Nakshatra - normalize to [0, 360)
+    const siderealLongitude = normalizeDegrees(moonLongitude - ayanamsa);
     
     // Calculate Nakshatra (27 nakshatras, each 13°20' = 13.3333°)
     const nakshatraIndex = Math.floor(siderealLongitude / 13.3333);
-    return this.nakshatras[nakshatraIndex % 27];
+    return this.nakshatras[mod(nakshatraIndex, 27)];
   }
 
   // Calculate Moon's longitude using VSOP87 theory
@@ -102,7 +112,7 @@ class GunMilanCalculator {
                         0.6583 * Math.sin((2 * F) * Math.PI / 180) +
                         0.2136 * Math.sin((2 * M) * Math.PI / 180);
     
-    return L0 + perturbation;
+    return normalizeDegrees(L0 + perturbation);
   }
 
   // Calculate Rashi (Zodiac sign) from birth details
@@ -127,13 +137,12 @@ class GunMilanCalculator {
     // Calculate Sun's position
     const sunLongitude = this.calculateSunLongitude(jd);
     
-    // Calculate sidereal longitude
-    let siderealLongitude = sunLongitude - ayanamsa;
-    if (siderealLongitude < 0) siderealLongitude += 360;
+    // Calculate sidereal longitude - normalize to [0, 360)
+    const siderealLongitude = normalizeDegrees(sunLongitude - ayanamsa);
     
     // Calculate Rashi (12 rashis, each 30°)
     const rashiIndex = Math.floor(siderealLongitude / 30);
-    return this.rashis[rashiIndex % 12];
+    return this.rashis[mod(rashiIndex, 12)];
   }
 
   // Calculate Sun's longitude using VSOP87 theory
@@ -151,7 +160,7 @@ class GunMilanCalculator {
               (0.019993 - 0.000101 * t) * Math.sin(2 * M * Math.PI / 180) +
               0.000290 * Math.sin(3 * M * Math.PI / 180);
     
-    return L0 + C;
+    return normalizeDegrees(L0 + C);
   }
 
   // Calculate Ascendant (Lagna) - simplified calculation
@@ -183,11 +192,11 @@ class GunMilanCalculator {
     const localSiderealTime = (siderealTime + (longitude / 15)) % 24;
     
     // Calculate ascendant (simplified)
-    const ascendantLongitude = (localSiderealTime * 15 + latitude) % 360;
+    const ascendantLongitude = normalizeDegrees(localSiderealTime * 15 + latitude);
     
     // Calculate Rashi for ascendant
     const rashiIndex = Math.floor(ascendantLongitude / 30);
-    return this.rashis[rashiIndex % 12];
+    return this.rashis[mod(rashiIndex, 12)];
   }
 
   // Calculate Gun Milan scores based on actual astronomical positions

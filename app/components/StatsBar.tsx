@@ -129,8 +129,11 @@ const StatsBar: React.FC = () => {
               >
                 {ringStars.map((i) => {
                   const angle = (i / ringStars.length) * Math.PI * 2;
-                  const x = Math.cos(angle) * ringRadius;
-                  const y = Math.sin(angle) * ringRadius;
+                  // Round to fixed precision so SSR (Node) and client (browser)
+                  // produce identical strings — otherwise Node may serialize
+                  // floats with fewer decimals and React flags a mismatch.
+                  const x = (Math.cos(angle) * ringRadius).toFixed(3);
+                  const y = (Math.sin(angle) * ringRadius).toFixed(3);
                   return (
                     <span
                       key={i}

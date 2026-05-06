@@ -1,313 +1,414 @@
-'use client';
+"use client";
 
-import Image from 'next/image'
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { PhoneIcon } from '@heroicons/react/24/solid';
-import { ArrowRight } from 'lucide-react';
-import SectionHeader from '@/app/components/ui/SectionHeader';
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { motion } from "framer-motion";
+import SectionHeader from "@/app/components/ui/SectionHeader";
+import FeaturedCard from "./_components/FeaturedCard";
+import ServiceCard from "./_components/ServiceCard";
+import MarbleCTA from "./_components/MarbleCTA";
+import { FiligreeDivider, OmRoundel, Mandala } from "./_components/Ornaments";
+
+// 3D portal — client only
+const CosmicHero3D = dynamic(() => import("./_components/CosmicHero3D"), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+    </div>
+  ),
+});
 
 export default function Services() {
-    const services = [
-        { 
-          name: "Birth Journal", 
-          image: "/Group 13384.png", 
-          description: "Your birth journal is a cosmic blueprint, revealing the celestial influences that shape your destiny.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Vastu Shastra", 
-          image: "/Group 13383.png", 
-          description: "Vastu harmonizes cosmic energies with your surroundings, creating a balanced environment.", 
-          link: "/call-with-astrologer"
-        },
-        {
-          name: "Face Reading",
-          image: "/Face Reading.svg",
-          description: "Your face is a mirror of destiny, revealing secrets about your personality and future.",
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Lal Kitab", 
-          image: "/Group 13388.png", 
-          description: "Powerful remedies and astrological solutions for harmony and prosperity.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Crystal Ball", 
-          image: "/Group 13385.png", 
-          description: "The crystal ball reveals hidden truths, offering glimpses into past, present, and future.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Kundli Dosh", 
-          image: "/Group 13386.png", 
-          description: "Identifying planetary imbalances in your birth chart and providing remedies.", 
-          link: "/call-with-astrologer"
-        },
-        {
-          name: "Matrimony",
-          image: "/Gun Milan.svg",
-          description: "Astrology insights for a destined union, ensuring harmony, compatibility, and lifelong happiness.",
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Palm Reading", 
-          image: "/Group 13387.png", 
-          description: "Decoding the life moments in your hands, guiding you towards true potential.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Name Analysis", 
-          image: "/Group 13396.png", 
-          description: "Your name carries hidden energies that influence your destiny.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Festivals", 
-          image: "/Group 13395.png", 
-          description: "Understanding celestial influences in festivals to align with cosmic energies.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Card Reading", 
-          image: "/Group 13394.png", 
-          description: "Unlocking the mysteries of fate through Card interpretations.", 
-          link: "/call-with-astrologer"
-        },
-        { 
-          name: "Year Analysis", 
-          image: "/Group 13393.png", 
-          description: "Astrological insights into major life themes and challenges for the year ahead.", 
-          link: "/call-with-astrologer"
-        }
-      ];
+  const services = [
+    {
+      name: "Birth Journal",
+      image: "/Group 13384.png",
+      description:
+        "Your birth journal is a cosmic blueprint, revealing the celestial influences that shape your destiny.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Vastu Shastra",
+      image: "/Group 13383.png",
+      description:
+        "Vastu harmonizes cosmic energies with your surroundings, creating a balanced environment.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Face Reading",
+      image: "/Face Reading.svg",
+      description:
+        "Your face is a mirror of destiny, revealing secrets about your personality and future.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Lal Kitab",
+      image: "/Group 13388.png",
+      description:
+        "Powerful remedies and astrological solutions for harmony and prosperity.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Crystal Ball",
+      image: "/Group 13385.png",
+      description:
+        "The crystal ball reveals hidden truths, offering glimpses into past, present, and future.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Kundli Dosh",
+      image: "/Group 13386.png",
+      description:
+        "Identifying planetary imbalances in your birth chart and providing remedies.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Matrimony",
+      image: "/Gun Milan.svg",
+      description:
+        "Astrology insights for a destined union, ensuring harmony, compatibility, and lifelong happiness.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Palm Reading",
+      image: "/Group 13387.png",
+      description:
+        "Decoding the life moments in your hands, guiding you towards true potential.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Name Analysis",
+      image: "/Group 13396.png",
+      description:
+        "Your name carries hidden energies that influence your destiny.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Festivals",
+      image: "/Group 13395.png",
+      description:
+        "Understanding celestial influences in festivals to align with cosmic energies.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Card Reading",
+      image: "/Group 13394.png",
+      description:
+        "Unlocking the mysteries of fate through Card interpretations.",
+      link: "/call-with-astrologer",
+    },
+    {
+      name: "Year Analysis",
+      image: "/Group 13393.png",
+      description:
+        "Astrological insights into major life themes and challenges for the year ahead.",
+      link: "/call-with-astrologer",
+    },
+  ];
 
-      const [isLoading, setIsLoading] = useState(true);
-
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 200);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setIsLoading(false), 200);
+    return () => clearTimeout(t);
   }, []);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
-      
-    return (
-      <section className="bg-[#FFFDF9] w-full min-h-screen">
-        {/* Hero Section */}
-        <motion.div
-          className="relative bg-cover bg-center py-16 sm:py-24 lg:py-32 overflow-hidden"
-          style={{ backgroundImage: "url('/service.png')" }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
-          
-          <div className="section-container relative z-10 flex flex-col items-center">
-            <motion.h1 
-              className="text-center text-white text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight"
-              style={{ fontFamily: "'EB Garamond', serif" }}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-            >
-              Our Services
-            </motion.h1>
-            <motion.p
-              className="mt-6 text-white/80 text-lg sm:text-xl max-w-2xl text-center font-medium"
-              style={{ fontFamily: 'Poppins' }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5 }}
-            >
-              Guiding your life's path through cosmic wisdom and ancient astrological insights.
-            </motion.p>
-          </div>
-          
-          {/* Scroll nudge */}
-          <motion.div 
-            className="absolute bottom-8 left-1/2 -translate-x-1/2"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-          >
-            <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1">
-              <motion.div 
-                className="w-1.5 h-2.5 bg-white/60 rounded-full"
-                animate={{ y: [0, 15, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
+
+  return (
+    <section className="bg-[#FFFDF9] w-full min-h-screen">
+      {/* ===================== HERO ===================== */}
+      <div className="relative w-full overflow-hidden">
+        {/* Deep night-sky backdrop */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 70% 50%, #2a1304 0%, #150802 60%, #080301 100%)",
+          }}
+        />
+
+        {/* Faint giant mandala behind everything */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <Mandala
+            className="text-amber-400 animate-rotate-slow"
+            size={900}
+            opacity={0.05}
+          />
+        </div>
+
+        {/* Top gold trim */}
+        <div
+          aria-hidden
+          className="absolute top-0 inset-x-0 h-[2px]"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, rgba(247,148,29,0.5), rgba(255,213,138,0.7), rgba(247,148,29,0.5), transparent)",
+          }}
+        />
+
+        <div className="relative z-10 section-container py-10 sm:py-12 lg:py-14">
+          <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 lg:gap-10 items-center">
+            {/* ----- LEFT: title block ----- */}
+            <div className="text-center lg:text-left order-2 lg:order-1">
+              <motion.span
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-[0.28em] uppercase mb-4"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(255,212,140,0.16), rgba(247,148,29,0.16))",
+                  border: "1px solid rgba(255,212,140,0.4)",
+                  color: "#FFE7B5",
+                  backdropFilter: "blur(6px)",
+                }}
+              >
+                <span className="text-amber-300">✦</span>
+                Astrology Help
+                <span className="text-amber-300">✦</span>
+              </motion.span>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.8,
+                  delay: 0.15,
+                  ease: [0.22, 1, 0.36, 1],
+                }}
+                className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] font-bold tracking-tight leading-[1.05]"
+                style={{
+                  fontFamily: "'EB Garamond', serif",
+                  backgroundImage:
+                    "linear-gradient(180deg, #FFFCEF 0%, #FFE7B5 45%, #F7B23A 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  textShadow: "0 0 60px rgba(247,148,29,0.25)",
+                }}
+              >
+                Our Services
+              </motion.h1>
+
+              {/* Om filigree divider */}
+              <motion.div
+                initial={{ opacity: 0, scaleX: 0.6 }}
+                animate={{ opacity: 1, scaleX: 1 }}
+                transition={{ duration: 0.8, delay: 0.45 }}
+                className="mt-5 mx-auto lg:mx-0 origin-left text-amber-300/80"
+              >
+                <FiligreeDivider width={240}>
+                  <OmRoundel size={32} />
+                </FiligreeDivider>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.6 }}
+                className="mt-5 max-w-lg mx-auto lg:mx-0 text-sm sm:text-base leading-relaxed"
+                style={{
+                  fontFamily: "Poppins",
+                  color: "rgba(255,240,210,0.82)",
+                }}
+              >
+                Get clear answers from trusted astrologers. Birth chart, marriage match, Vastu and more — to help you take the right step.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.8 }}
+                className="mt-6 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
+              >
+                <a
+                  href="/call-with-astrologer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white text-sm"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #F7941D 0%, #E8850B 100%)",
+                    boxShadow:
+                      "0 14px 28px -10px rgba(247,148,29,0.55), inset 0 1px 0 rgba(255,255,255,0.3)",
+                    fontFamily: "Poppins",
+                  }}
+                >
+                  Talk to an Astrologer
+                </a>
+                <a
+                  href="#offerings"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
+                  style={{
+                    color: "#FFE7B5",
+                    border: "1.5px solid rgba(255,213,138,0.55)",
+                    background: "rgba(255,213,138,0.06)",
+                    fontFamily: "Poppins",
+                    backdropFilter: "blur(4px)",
+                  }}
+                >
+                  See All Services
+                </a>
+              </motion.div>
             </div>
-          </motion.div>
-        </motion.div>
 
-        <div className="section-container py-16 sm:py-20 lg:py-24">
-          {/* Featured Services */}
-          <SectionHeader 
-            tag="Direct Consultations"
-            title="Featured Offerings"
-            subtitle="Get instant access to our most popular tools and expert consultations."
-          />
+            {/* ----- RIGHT: 3D portal ----- */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                duration: 1,
+                delay: 0.2,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className="order-1 lg:order-2 flex items-center justify-center"
+            >
+              <div className="relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] lg:w-[340px] lg:h-[340px]">
+                {/* outer glow */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-full blur-3xl"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(247,148,29,0.35), transparent 65%)",
+                  }}
+                />
+                {/* gold ring */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, #F7941D, #FFD58A, #B86A0B, #FFD58A, #F7941D)",
+                    padding: 2,
+                    WebkitMask:
+                      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+                    WebkitMaskComposite: "xor",
+                    maskComposite: "exclude",
+                  }}
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-3 rounded-full border border-amber-300/25"
+                />
+                <div
+                  aria-hidden
+                  className="absolute inset-6 rounded-full border-2 border-dashed border-amber-300/20 animate-rotate-slow"
+                />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto mb-20">
-            {/* Free Kundli Generator Card */}
-            <FeaturedCard 
-              icon="/Kundli Generator icon.svg"
-              title="Free Kundli Generator"
-              description="Generate your complete birth chart (Kundli) with planetary positions, doshas, remedies, and detailed analysis."
-              buttonText="Generate Kundli"
-              href="/free-kundli"
-              delay={0.1}
-            />
+                <div
+                  aria-hidden
+                  className="absolute inset-[14px] rounded-full"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(40,18,4,0.6) 0%, rgba(15,7,2,0.85) 70%)",
+                  }}
+                />
 
-            {/* Horoscope Card */}
-            <FeaturedCard 
-              icon="/daily-horoscope-.svg"
-              title="Daily Horoscope"
-              description="Get personalized daily, weekly, monthly, and yearly horoscopes based on your zodiac sign with cosmic guidance."
-              buttonText="Read Horoscope"
-              href="/services/horoscope"
-              delay={0.2}
-            />
+                <div className="absolute inset-[14px] rounded-full overflow-hidden">
+                  <CosmicHero3D />
+                </div>
 
-            {/* Gun Milan Card */}
-            <FeaturedCard 
-              icon="/Gun Milan (1).svg"
-              title="Gun Milan"
-              description="Traditional Vedic astrology compatibility analysis for marriage. Calculate 36-point Gun Milan score with detailed insights."
-              buttonText="Calculate Now"
-              href="/services/gun-milan"
-              delay={0.3}
-            />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <Mandala className="text-amber-300" size={320} opacity={0.08} />
+                </div>
+              </div>
+            </motion.div>
           </div>
+        </div>
 
-          {/* Explore More Services */}
-          <SectionHeader 
-            tag="Specialized Services"
-            title="Explore More Services"
-            subtitle="Discover our comprehensive range of astrology and spiritual services tailored for every life challenge."
+        {/* fade into page */}
+        <div
+          className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none"
+          style={{
+            background: "linear-gradient(to bottom, transparent, #FFFDF9 95%)",
+          }}
+        />
+      </div>
+
+      {/* ===================== FEATURED ===================== */}
+      <div
+        id="offerings"
+        className="relative section-container py-12 sm:py-14 lg:py-16"
+      >
+        {/* Cosmic backdrop continuing the hero vibe */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[80%]"
+          style={{
+            background:
+              "radial-gradient(60% 50% at 50% 0%, rgba(247,148,29,0.10), transparent 70%), radial-gradient(40% 40% at 20% 30%, rgba(255,213,138,0.08), transparent 70%)",
+          }}
+        />
+        <SectionHeader
+          tag="Direct Consultations"
+          title="Featured Offerings"
+          subtitle="Begin with our most-loved tools — instant clarity from time-tested traditions."
+          className="!mb-9 sm:!mb-11"
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-7 max-w-6xl mx-auto mb-14 sm:mb-16">
+          <FeaturedCard
+            icon="/Kundli Generator icon.svg"
+            title="Free Kundli Generator"
+            description="Generate your complete birth chart (Kundli) with planetary positions, doshas, remedies, and detailed analysis."
+            buttonText="Generate Kundli"
+            href="/free-kundli"
+            delay={0.05}
+            chapter={1}
           />
+          <FeaturedCard
+            icon="/daily-horoscope-.svg"
+            title="Daily Horoscope"
+            description="Get personalized daily, weekly, monthly and yearly horoscopes based on your zodiac sign with cosmic guidance."
+            buttonText="Read Horoscope"
+            href="/services/horoscope"
+            delay={0.15}
+            chapter={2}
+          />
+          <FeaturedCard
+            icon="/Gun Milan (1).svg"
+            title="Gun Milan"
+            description="Traditional Vedic astrology compatibility analysis for marriage. Calculate 36-point Gun Milan score with detailed insights."
+            buttonText="Calculate Now"
+            href="/services/gun-milan"
+            delay={0.25}
+            chapter={3}
+          />
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto mb-20">
-            {services.map((service, index) => (
-              <ServiceCard 
-                key={index}
-                service={service}
-                delay={index * 0.05}
-              />
+        {/* ===================== EXPLORE MORE ===================== */}
+        <SectionHeader
+          tag="Specialized Services"
+          title="Explore More Services"
+          subtitle="A complete spectrum of Vedic and spiritual services for every life question."
+          className="!mb-9 sm:!mb-11"
+        />
+
+        <div className="relative max-w-6xl mx-auto mb-14 sm:mb-16">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-0 opacity-40 blur-3xl"
+            style={{
+              background:
+                "radial-gradient(60% 40% at 30% 30%, rgba(255,210,140,0.30), transparent 70%), radial-gradient(50% 40% at 70% 70%, rgba(247,148,29,0.20), transparent 70%)",
+            }}
+          />
+          <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+            {services.map((service, i) => (
+              <ServiceCard key={i} service={service} delay={i * 0.04} index={i} />
             ))}
           </div>
-  
-          {/* Enhanced Call to Action */}
-          <motion.div 
-            className="premium-surface py-12 sm:py-16 md:py-20 px-6 sm:px-12 text-center rounded-[2.5rem] relative overflow-hidden"
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none select-none">
-                <Image src="/sobhagya-logo.svg" alt="Watermark" fill className="object-contain p-20 animate-rotate-slow" />
-            </div>
-            
-            <div className="max-w-3xl mx-auto relative z-10">
-              <h2 className="section-heading mb-6 text-[#745802]">Ready to find clarity?</h2>
-              <p className="text-gray-600 text-lg sm:text-xl mb-10 leading-relaxed font-medium" style={{ fontFamily: 'Poppins' }}>
-                Get expert astrology guidance tailored to your needs. Whether it's Kundli analysis, love compatibility, or career advice, our top astrologers are ready to help.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Link href="/call-with-astrologer" className="w-full sm:w-auto group">
-                  <motion.button
-                    className="w-full inline-flex items-center justify-center gap-3 btn-primary py-4 px-10 rounded-2xl"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <PhoneIcon className="w-5 h-5 group-hover:animate-pulse" />
-                    Talk to Astrologer
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </motion.button>
-                </Link>
-                <Link href="/call-with-astrologer" className="w-full sm:w-auto">
-                  <motion.button
-                    className="w-full inline-flex items-center justify-center btn-secondary py-4 px-10 rounded-2xl"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    Browse Experts
-                  </motion.button>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
         </div>
-      </section>
-    );
-}
 
-function FeaturedCard({ icon, title, description, buttonText, href, delay }: any) {
-    return (
-      <motion.div
-        className="group p-8 border border-orange-100/50 rounded-[2rem] flex flex-col items-center text-center premium-surface hover:shadow-premium transition-all duration-500 hover:-translate-y-2"
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay }}
-      >
-        <div className="w-20 h-20 bg-orange-100/40 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500">
-          <Image src={icon} alt={title} width={48} height={48} className="w-12 h-12 object-contain" />
-        </div>
-        <h3 className="text-xl font-bold text-gray-800 mb-3 group-hover:text-orange-600 transition-colors">
-          {title}
-        </h3>
-        <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-1" style={{ fontFamily: 'Poppins' }}>
-          {description}
-        </p>
-        <Link href={href} className="w-full">
-            <button className="w-full btn-ghost border-2 border-orange-200 py-3 rounded-xl hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all duration-300 font-bold">
-                {buttonText}
-            </button>
-        </Link>
-      </motion.div>
-    );
-}
-
-function ServiceCard({ service, delay }: any) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay }}
-        className="group p-6 bg-white border border-gray-100 rounded-2xl hover:shadow-xl hover:shadow-orange-100/30 transition-all duration-500 hover:-translate-y-1 flex flex-col items-center text-center"
-      >
-        <div className="w-16 h-16 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl flex items-center justify-center mb-5 group-hover:rotate-6 transition-transform duration-500">
-          <img
-            src={encodeURI(service.image || "/default-image.png")}
-            alt={service.name}
-            className="w-10 h-10 object-contain"
-            loading="lazy"
-          />
-        </div>
-        <h3 className="text-lg font-bold text-gray-800 mb-2 group-hover:text-orange-600 transition-colors">
-          {service.name}
-        </h3>
-        <p className="text-xs text-gray-500 leading-relaxed mb-4 flex-1">
-          {service.description}
-        </p>
-        <Link href={service.link} className="text-orange-600 font-bold text-sm hover:underline flex items-center gap-1">
-          Explore <ArrowRight className="w-3 h-3" />
-        </Link>
-      </motion.div>
-    );
+        {/* ===================== CTA ===================== */}
+        <MarbleCTA />
+      </div>
+    </section>
+  );
 }

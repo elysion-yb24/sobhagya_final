@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -155,22 +155,15 @@ const AstrologerCarousel = () => {
     fetchAstrologers();
   }, []);
 
-  const visibleCards = isMobile ? 1 : 4;
-
-  const maxIndex = useMemo(() => {
-    return Math.max(0, astrologers.length - visibleCards);
-  }, [astrologers.length, visibleCards]);
+  const total = astrologers.length;
+  const maxIndex = Math.max(0, total - 1);
 
   const nextSlide = () => {
-    setCurrentIndex((prev) =>
-      prev >= maxIndex ? 0 : prev + 1
-    );
+    setCurrentIndex((prev) => (total ? (prev + 1) % total : 0));
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prev) =>
-      prev === 0 ? maxIndex : prev - 1
-    );
+    setCurrentIndex((prev) => (total ? (prev - 1 + total) % total : 0));
   };
 
   useEffect(() => {
@@ -226,7 +219,7 @@ const AstrologerCarousel = () => {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-[460px] rounded-[28px] bg-white"
+              className="h-[360px] rounded-[20px] bg-white"
             />
           ))}
         </div>
@@ -301,148 +294,207 @@ const AstrologerCarousel = () => {
             <ChevronRight size={20} />
           </button>
 
-          <div className="overflow-hidden">
-            <motion.div
-              className="flex"
-              animate={{
-                x: `-${currentIndex * (100 / visibleCards)}%`,
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 100,
-                damping: 18,
-              }}
-            >
-              {astrologers.map((astro) => {
-                const tags = getSafeTags(
-                  astro.talksAbout || []
-                );
+          <div
+            className="relative h-[400px] flex items-center justify-center select-none"
+            style={{ perspective: '1800px' }}
+          >
+            {astrologers.map((astro, i) => {
+                const tags = getSafeTags(astro.talksAbout || []);
+                const isOnline = astro.status === 'online' || astro.status === 'available';
+                const rating = astro.rating?.avg || 4.8;
+                const exp = astro.age || astro.experience || 1;
+                const rpm = astro.rpm || 15;
+
+                // Wrap the offset so the carousel feels circular
+                let offset = i - currentIndex;
+                const len = total;
+                if (len > 0) {
+                  if (offset > len / 2) offset -= len;
+                  if (offset < -len / 2) offset += len;
+                }
+                const abs = Math.abs(offset);
+                const visibleSide = isMobile ? 1 : 2;
+                const isVisible = abs <= visibleSide;
+
+                const stepX = isMobile ? 150 : 240;
+                const translateX = offset * stepX;
+                const rotateY = offset * (isMobile ? -22 : -28);
+                const translateZ = abs === 0 ? 0 : -abs * 140;
+                const scale = abs === 0 ? 1 : Math.max(0.78, 1 - abs * 0.1);
+                const opacity = isVisible ? (abs === 0 ? 1 : 0.85 - abs * 0.18) : 0;
+                const zIndex = 30 - abs;
+                const isFocused = abs === 0;
 
                 return (
-                  <div
+                  <motion.div
                     key={astro._id}
-                    className="w-full md:w-1/4 shrink-0 p-3"
+                    className="absolute top-1/2 left-1/2 w-[260px] md:w-[290px]"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      transformOrigin: 'center center',
+                      pointerEvents: isVisible ? 'auto' : 'none',
+                      filter: isFocused ? 'none' : `blur(${Math.min(abs * 1.2, 3)}px)`,
+                    }}
+                    initial={false}
+                    animate={{
+                      x: `calc(-50% + ${translateX}px)`,
+                      y: '-50%',
+                      rotateY,
+                      z: translateZ,
+                      scale,
+                      opacity,
+                      zIndex,
+                    }}
+                    transition={{ type: 'spring', stiffness: 180, damping: 26, mass: 0.8 }}
+                    onClick={() => {
+                      if (!isFocused) setCurrentIndex(i);
+                      else handleProfile(astro._id);
+                    }}
                   >
-                    {/* FIXED CARD */}
+                    {/* COMPACT PREMIUM CARD */}
                     <motion.div
-                      whileHover={{
-                        y: -8,
-                        scale: 1.01,
-                      }}
-                      onClick={() =>
-                        handleProfile(astro._id)
-                      }
-                      className="bg-white rounded-[28px] p-5 border border-orange-100 shadow-premium hover:shadow-xl cursor-pointer h-[470px] flex flex-col hover:border-orange-200"
+                      whileHover={isFocused ? { y: -4 } : undefined}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      className={`group relative bg-white rounded-[20px] border border-[#F1E4CE] cursor-pointer h-[360px] flex flex-col overflow-hidden transition-shadow ${
+                        isFocused
+                          ? 'shadow-[0_30px_60px_-20px_rgba(247,154,24,0.45)] ring-1 ring-[#F79A18]/30'
+                          : 'shadow-[0_10px_24px_-12px_rgba(0,0,0,0.25)]'
+                      }`}
                     >
-
-                      {/* TOP AREA */}
-                      <div>
-
-                        {/* PERFECT CIRCLE IMAGE */}
-                        <div className="relative w-28 h-28 mx-auto rounded-full overflow-hidden border-4 border-[#f2e2c2]">
-                          <Image
-                            src={
-                              astro.avatar?.startsWith(
-                                'http'
-                              )
-                                ? astro.avatar
-                                : `https://ui-avatars.com/api/?name=${astro.name}`
-                            }
-                            alt={astro.name}
-                            fill
-                            className="object-cover"
-                          />
-
-                          
+                      {/* Top hero strip */}
+                      <div
+                        className="relative h-[92px] flex items-start justify-between px-3 pt-3"
+                        style={{
+                          background:
+                            'linear-gradient(135deg, #FFE7BD 0%, #FFF4DC 55%, #FFFBF3 100%)',
+                        }}
+                      >
+                        <div className="flex items-center gap-1 px-1.5 py-[3px] rounded-md bg-white/80 backdrop-blur border border-[#EDB000]/30">
+                          <ShieldCheck size={10} className="text-[#EDB000]" />
+                          <span className="text-[9px] font-bold tracking-wide text-[#3A3A3A] uppercase leading-none">Verified</span>
                         </div>
 
-                        {/* FIXED NAME HEIGHT */}
-                        <h3 className="text-[20px] font-bold text-center mt-5 leading-tight h-[56px] line-clamp-2 flex items-center justify-center">
+                        {isOnline ? (
+                          <div className="flex items-center gap-1 px-1.5 py-[3px] rounded-md bg-emerald-50 border border-emerald-200">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                            </span>
+                            <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wide leading-none">Online</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 px-1.5 py-[3px] rounded-md bg-gray-100 border border-gray-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide leading-none">Busy</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Avatar overlapping hero */}
+                      <div className="relative -mt-[44px] flex justify-center">
+                        <div
+                          className="relative w-[84px] h-[84px] rounded-full p-[2.5px]"
+                          style={{
+                            background:
+                              'conic-gradient(from 180deg, #F79A18, #EDB000, #F79A18)',
+                          }}
+                        >
+                          <div className="w-full h-full rounded-full bg-white p-[2px]">
+                            <div className="relative w-full h-full rounded-full overflow-hidden bg-[#F8F4EC]">
+                              <Image
+                                src={
+                                  astro.avatar?.startsWith('http')
+                                    ? astro.avatar
+                                    : `https://ui-avatars.com/api/?name=${astro.name}&background=F8F4EC&color=3A3A3A`
+                                }
+                                alt={astro.name}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          </div>
+                          {/* Rating chip */}
+                          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-white px-2 py-[3px] rounded-full shadow-md border border-[#F1E4CE]">
+                            <Star size={10} fill={COLORS.gold} color={COLORS.gold} />
+                            <span className="text-[10px] font-bold text-[#3A3A3A] leading-none">
+                              {rating}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Body */}
+                      <div className="px-4 pt-3 pb-4 flex flex-col">
+                        {/* Name */}
+                        <h3 className="text-[15px] font-bold text-center leading-tight text-[#1F1F1F] h-[36px] line-clamp-2 flex items-center justify-center px-1">
                           {astro.name}
                         </h3>
 
-                        {/* FIXED SUBTITLE HEIGHT */}
-                        <p className="text-center text-[#666] mt-1 h-[28px]">
-                          Hindi • {astro.age || astro.experience || 1} Years Exp.
-                        </p>
-
-                        {/* TAG SECTION FIXED */}
-                        <div className="mt-4 h-[92px] flex flex-wrap justify-center content-start gap-2 overflow-hidden">
-                          {tags.length > 0 ? (
-                            tags.map((tag, i) => (
-                              <span
-                                key={i}
-                                className="px-3 h-9 inline-flex items-center rounded-full text-sm whitespace-nowrap max-w-full truncate"
-                                style={{
-                                  background:
-                                    COLORS.soft,
-                                  color:
-                                    COLORS.dark,
-                                }}
-                              >
-                                {tag}
-                              </span>
-                            ))
-                          ) : (
-                            <span
-                              className="px-3 h-9 inline-flex items-center rounded-full text-sm"
-                              style={{
-                                background:
-                                  COLORS.soft,
-                                color:
-                                  COLORS.dark,
-                              }}
-                            >
-                              Vedic
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* BOTTOM PUSHED SAME LEVEL */}
-                      <div className="mt-auto">
-                        <div className="flex justify-between border-t pt-4 text-sm text-[#555]">
-                          <span className="flex items-center gap-1">
-                            <Star
-                              size={16}
-                              fill={COLORS.gold}
-                              color={COLORS.gold}
-                            />
-                            {astro.rating?.avg ||
-                              4.8}
-                          </span>
-
+                        {/* Meta row */}
+                        <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#777] mt-0.5">
+                          <span className="font-semibold text-[#3A3A3A]">Hindi</span>
+                          <span className="w-[3px] h-[3px] rounded-full bg-[#D9C7A6]" />
                           <span>
-                            {astro.calls || 0} Calls
+                            <span className="font-semibold text-[#3A3A3A]">{exp}</span> yrs
+                          </span>
+                          <span className="w-[3px] h-[3px] rounded-full bg-[#D9C7A6]" />
+                          <span>
+                            <span className="font-semibold text-[#3A3A3A]">{astro.calls || 0}</span> calls
                           </span>
                         </div>
 
+                        {/* Tags */}
+                        <div className="mt-2.5 h-[28px] flex flex-nowrap justify-center items-center gap-1 overflow-hidden">
+                          {(tags.length > 0 ? tags : ['Vedic']).map((tag, i) => (
+                            <span
+                              key={i}
+                              className="px-2 h-[22px] inline-flex items-center rounded-md text-[10px] font-semibold whitespace-nowrap border border-[#EDD9B0]/70 capitalize shrink-0"
+                              style={{ background: '#FBF3E2', color: '#7A5A1F' }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Price strip */}
+                        <div className="mt-3 flex items-center justify-between rounded-xl bg-[#FFFAF0] border border-[#F1E4CE] px-3 py-2">
+                          <div className="flex flex-col">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#9C7B3A] leading-none">
+                              {hasCompletedFreeCall ? 'Per minute' : 'First call'}
+                            </span>
+                            <span className="text-[14px] font-extrabold text-[#3A3A3A] leading-tight mt-0.5">
+                              {hasCompletedFreeCall ? `₹${rpm}` : 'FREE'}
+                              {hasCompletedFreeCall && (
+                                <span className="text-[10px] font-medium text-[#888] ml-0.5">/min</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-[#9C7B3A] leading-none block">Connects</span>
+                            <span className="text-[11px] font-bold text-emerald-600 leading-tight mt-0.5 block">~Instantly</span>
+                          </div>
+                        </div>
+
+                        {/* CTA */}
                         <button
-                          onClick={(e) =>
-                            handleCallClick(
-                              astro,
-                              e
-                            )
-                          }
-                          className="w-full h-12 rounded-2xl mt-4 font-semibold flex items-center justify-center gap-2"
+                          onClick={(e) => handleCallClick(astro, e)}
+                          className="relative w-full h-11 mt-3 rounded-xl font-bold flex items-center justify-center gap-1.5 text-white overflow-hidden group/btn shadow-[0_6px_16px_-6px_rgba(247,154,24,0.6)] hover:shadow-[0_10px_22px_-6px_rgba(247,154,24,0.75)] transition-shadow"
                           style={{
                             background:
-                              COLORS.primary,
-                            color:
-                              COLORS.white,
+                              'linear-gradient(135deg, #F79A18 0%, #EDB000 100%)',
                           }}
                         >
-                          <Phone size={16} />
-                          {hasCompletedFreeCall
-                            ? `Call • ₹${astro.rpm || 15}/min`
-                            : 'FREE 1st Call'}
+                          <span className="absolute inset-0 bg-white/20 translate-x-[-110%] group-hover/btn:translate-x-[110%] transition-transform duration-700 skew-x-12" />
+                          <Phone size={14} strokeWidth={2.75} />
+                          <span className="text-[13px] tracking-tight">
+                            {hasCompletedFreeCall ? 'Call Now' : 'Start Free Call'}
+                          </span>
                         </button>
                       </div>
                     </motion.div>
-                  </div>
+                  </motion.div>
                 );
               })}
-            </motion.div>
           </div>
 
           {/* Dots */}

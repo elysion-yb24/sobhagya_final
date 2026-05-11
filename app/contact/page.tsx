@@ -1,441 +1,719 @@
-'use client';
-import { useEffect, useState } from "react";
+"use client";
+
 import { motion } from "framer-motion";
+import { useState } from "react";
+import {
+  Phone,
+  Mail,
+  ArrowUpRight,
+  Send,
+  Clock,
+  MapPin,
+  ShieldCheck,
+  Headphones,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import WhatsAppIcon from "@/app/components/ui/WhatsAppIcon";
+import ContactCosmicHero from "./_components/ContactCosmicHero";
+import Tilt3DCard from "./_components/Tilt3DCard";
 
-const Contact = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: ''
-  });
+/* ----------------------------- contact methods ----------------------------- */
+
+type Method = {
+  label: string;
+  value: string;
+  href: string;
+  icon: React.ReactNode;
+  accent: string; // color used for halo / hover line
+  external?: boolean;
+};
+
+const METHODS: Method[] = [
+  {
+    label: "Call Us",
+    value: "+91 92119 94461",
+    href: "tel:+919211994461",
+    icon: <Phone className="w-6 h-6" strokeWidth={2} />,
+    accent: "#F7941D",
+  },
+  {
+    label: "WhatsApp",
+    value: "+91 92119 94461",
+    href: "https://wa.me/919211994461",
+    icon: <WhatsAppIcon size={26} />,
+    accent: "#25D366",
+    external: true,
+  },
+  {
+    label: "Email Us",
+    value: "info@sobhagya.in",
+    href: "mailto:info@sobhagya.in",
+    icon: <Mail className="w-6 h-6" strokeWidth={2} />,
+    accent: "#FFD700",
+  },
+];
+
+const QUICK_FACTS = [
+  { icon: Clock,        label: "Response in", value: "< 2 hours" },
+  { icon: ShieldCheck,  label: "Verified",    value: "Vedic Experts" },
+  { icon: Headphones,   label: "Support",     value: "24/7 Live" },
+];
+
+const SOCIALS = [
+  { name: "Instagram",   href: "https://www.instagram.com/sobhagya.bhaakti", img: "/instagram.svg" },
+  { name: "LinkedIn",    href: "https://linkedin.com/company/sobhagya",      img: "/linkedin.svg" },
+  { name: "Play Store",  href: "https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN", img: "/play-store-small.svg" },
+  { name: "App Store",   href: "https://apps.apple.com/in/app/sobhagya/id6755958411", img: "/app-store-small.svg" },
+];
+
+/* ----------------------------- main component ----------------------------- */
+
+export default function ContactPage() {
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [submitStatus, setSubmitStatus] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 200);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((p) => ({ ...p, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitMessage(null);
+    setSubmitStatus(null);
 
-    // Basic client-side validation
     const name = formData.name.trim();
     const contact = formData.email.trim();
     const message = formData.message.trim();
 
     if (!name || !contact || !message) {
-      setSubmitMessage('💫 Please fill in all fields.');
-      setTimeout(() => setSubmitMessage(null), 4000);
+      setSubmitStatus({ type: "error", text: "Please fill in all fields." });
+      setTimeout(() => setSubmitStatus(null), 4000);
       return;
     }
-
-    // Accept either an email or a phone number (7+ digits)
     const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
     const looksLikePhone = /^[+()\-\s\d]{7,}$/.test(contact);
     if (!looksLikeEmail && !looksLikePhone) {
-      setSubmitMessage('💫 Please enter a valid email or phone number.');
-      setTimeout(() => setSubmitMessage(null), 4000);
+      setSubmitStatus({
+        type: "error",
+        text: "Please enter a valid email or phone number.",
+      });
+      setTimeout(() => setSubmitStatus(null), 4000);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email: contact, message }),
       });
-
       const data = await response.json().catch(() => ({}));
-
       if (response.ok) {
-        setSubmitMessage('✨ Message sent successfully! We will get back to you soon.');
-        setFormData({ name: '', email: '', message: '' });
+        setSubmitStatus({
+          type: "success",
+          text: "Message sent! Our team will reach out within hours.",
+        });
+        setFormData({ name: "", email: "", message: "" });
       } else {
-        setSubmitMessage(`💫 ${data?.error || 'Failed to send message. Please try again.'}`);
+        setSubmitStatus({
+          type: "error",
+          text: data?.error || "Failed to send message. Please try again.",
+        });
       }
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setSubmitMessage('💫 Failed to send message. Please try again.');
+    } catch {
+      setSubmitStatus({
+        type: "error",
+        text: "Failed to send message. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setSubmitMessage(null), 5000);
+      setTimeout(() => setSubmitStatus(null), 6000);
     }
   };
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-  
+
   return (
-    <div className="bg-[#fff]">
-      {/* Enhanced Header Section with Animations */}
-      <motion.div
-        className="relative h-36 sm:h-44 md:h-52 bg-cover bg-center flex items-center justify-center overflow-hidden"
-        style={{ backgroundImage: "url('/hh.png')" }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-      >
-        {/* Floating particles */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-white/40 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [-10, -30, -10],
-                opacity: [0.2, 1, 0.2],
-              }}
-              transition={{
-                duration: 2 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-              }}
-            />
-          ))}
+    <main className="bg-[#FFFDF9] relative overflow-hidden">
+      {/* HERO */}
+      <ContactCosmicHero />
+
+      {/* QUICK FACTS strip */}
+      <section className="relative section-container -mt-8 sm:-mt-10 z-20">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto">
+          {QUICK_FACTS.map((q, i) => {
+            const Icon = q.icon;
+            return (
+              <motion.div
+                key={q.label}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.55, delay: i * 0.1 }}
+                whileHover={{ y: -3 }}
+                className="rounded-2xl p-[1.2px]"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(247,148,29,0.7), rgba(255,213,138,0.35) 50%, rgba(247,148,29,0.5))",
+                  boxShadow: "0 18px 40px -22px rgba(247,148,29,0.55)",
+                }}
+              >
+                <div
+                  className="rounded-[14px] px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3"
+                  style={{
+                    background:
+                      "linear-gradient(160deg, #FFFCEF 0%, #FFF3DC 100%)",
+                  }}
+                >
+                  <span
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #FFE7B5, #F7B23A)",
+                      color: "#5a3a07",
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+                    }}
+                  >
+                    <Icon className="w-5 h-5" strokeWidth={2} />
+                  </span>
+                  <div className="min-w-0">
+                    <div
+                      className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase font-semibold"
+                      style={{ color: "#9a6b18", fontFamily: "Poppins" }}
+                    >
+                      {q.label}
+                    </div>
+                    <div
+                      className="text-sm sm:text-base font-bold leading-tight truncate"
+                      style={{
+                        fontFamily: "'EB Garamond', serif",
+                        color: "#5a3a07",
+                      }}
+                    >
+                      {q.value}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
-        
-        <motion.h1
-          className="text-white text-3xl md:text-5xl font-bold drop-shadow-lg relative z-10"
-          style={{
-            fontFamily: "EB Garamond",
-            fontSize: "clamp(30px, 9vw, 72px)",
-            lineHeight: "1.2",
-          }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-        >
-          Contact Us
-        </motion.h1>
-      </motion.div>
+      </section>
 
-      {/* Enhanced Contact Section with Animations */}
-      <div className="max-w-7xl mx-auto py-8 sm:py-10 px-4 sm:px-6 lg:px-12 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10">
-        {/* Left Section - Get In Touch */}
-        <motion.div 
-          className="space-y-6"
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <motion.h2
-            className="text-[#745802]"
-            style={{
-              fontFamily: "EB Garamond",
-              fontSize: "clamp(30px, 8vw, 52px)",
-              fontWeight: "700",
-              lineHeight: "1.2",
-            }}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
-          >
-            Get In Touch
-          </motion.h2>
-          <motion.p 
-            className="text-[#373737] leading-relaxed text-base sm:text-lg md:w-[85%] mt-5 sm:mt-8"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
-          >
-            <span className="font-medium text-xl">
-              Have questions or need astrological guidance?
-            </span>
-            <br />
-            <span className="text-base mt-4 block">
-              Our experts are here to help! Reach out for consultations,
-              inquiries, or support, and let us assist you on your journey.
-            </span>
-          </motion.p>
-
-          {/* Enhanced Contact Details with Animations */}
-          <div className="space-y-4">
-            {/* Call */}
-            <motion.a
-              href="tel:+919211994461"
-              className="flex items-center space-x-4 mt-4 group"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.9 }}
-              whileHover={{ x: 5 }}
-              aria-label="Call us at +91 92119 94461"
-            >
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white shadow-sm group-hover:shadow-md transition-shadow">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
-                    <path d="M22 16.92V19.92C22 20.97 21.18 21.85 20.13 21.97C16.66 22.36 13.33 21.72 10.39 20.12C7.62 18.63 5.37 16.38 3.88 13.61C2.28 10.67 1.64 7.34 2.03 3.87C2.15 2.82 3.03 2 4.08 2H7.08C7.85 2 8.54 2.51 8.71 3.27C8.95 4.33 9.3 5.36 9.75 6.33C9.97 6.82 9.83 7.4 9.42 7.73L8.09 9.06C9.51 11.41 11.59 13.49 13.94 14.91L15.27 13.58C15.6 13.17 16.18 13.03 16.67 13.25C17.64 13.7 18.67 14.05 19.73 14.29C20.49 14.46 21 15.15 21 15.92V16.92" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <p className="text-gray-700 font-medium text-lg">Call</p>
-                <p className="text-gray-700 text-base group-hover:text-orange-600 transition-colors">+91 92119 94461</p>
-              </div>
-            </motion.a>
-
-            <motion.a
-              href="https://wa.me/919211994461"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center space-x-4 mt-4 group"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.95 }}
-              whileHover={{ x: 5 }}
-              aria-label="Message us on WhatsApp"
-            >
-              <div className="relative w-12 h-12 flex items-center justify-center">
-                <div className="w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center text-white shadow-sm group-hover:shadow-md transition-shadow">
-                  <WhatsAppIcon size={24} />
-                </div>
-              </div>
-              <div>
-                <p className="text-gray-700 font-medium text-lg">WhatsApp</p>
-                <p className="text-gray-700 text-base group-hover:text-[#25D366] transition-colors">+91 92119 94461</p>
-              </div>
-            </motion.a>
-
-            {/* Email */}
+      {/* MAIN — contact methods + form */}
+      <section className="section-container py-14 sm:py-16 lg:py-20">
+        <div className="grid lg:grid-cols-[1.05fr_1fr] gap-8 lg:gap-12 items-start">
+          {/* LEFT: contact methods + socials */}
+          <div>
             <motion.div
-              className="flex items-center space-x-4 mt-4"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 1.0 }}
-              whileHover={{ x: 5 }}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
             >
-              <div className="relative w-12 h-12 flex items-center justify-center">
+              <span
+                className="inline-block text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase"
+                style={{ color: "#F7941D" }}
+              >
+                ✦ Get In Touch ✦
+              </span>
+              <h2
+                className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight"
+                style={{
+                  fontFamily: "'EB Garamond', serif",
+                  color: "#5a3a07",
+                }}
+              >
+                Three ways to find us
+              </h2>
+              <p
+                className="mt-3 max-w-xl text-sm sm:text-base leading-relaxed"
+                style={{ color: "#6b5230", fontFamily: "Poppins" }}
+              >
+                Pick your favorite channel — phone, WhatsApp or email. We
+                read every message and respond personally.
+              </p>
+            </motion.div>
 
-                <img
-                  src="/gmail.svg"
-                  alt="Gmail"
-                  className="w-10 h-10 z-10"
-                />
+            {/* 3D-tilt contact cards */}
+            <div className="mt-7 grid sm:grid-cols-1 gap-4">
+              {METHODS.map((m, i) => (
+                <motion.div
+                  key={m.label}
+                  initial={{ opacity: 0, y: 22 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.6, delay: i * 0.1 }}
+                >
+                  <Tilt3DCard
+                    glow={`${m.accent}aa`}
+                    intensity={10}
+                    className="rounded-2xl"
+                  >
+                    <a
+                      href={m.href}
+                      target={m.external ? "_blank" : undefined}
+                      rel={m.external ? "noopener noreferrer" : undefined}
+                      className="group block rounded-2xl p-[1.2px] focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(247,148,29,0.7), rgba(255,213,138,0.35) 50%, rgba(247,148,29,0.6))",
+                      }}
+                    >
+                      <div
+                        className="rounded-[14px] p-5 sm:p-6 flex items-center gap-4 sm:gap-5 relative overflow-hidden"
+                        style={{
+                          background:
+                            "linear-gradient(160deg, #FFFCEF 0%, #FFF3DC 100%)",
+                          transformStyle: "preserve-3d",
+                        }}
+                      >
+                        {/* icon medallion */}
+                        <div
+                          className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center"
+                          style={{
+                            background: `linear-gradient(135deg, ${m.accent} 0%, #7a3c05 100%)`,
+                            boxShadow: `0 12px 22px -8px ${m.accent}90, inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.2)`,
+                            color: "#fff",
+                            transform: "translateZ(40px)",
+                          }}
+                        >
+                          {/* inner glow */}
+                          <span
+                            aria-hidden
+                            className="absolute inset-1 rounded-xl"
+                            style={{
+                              background:
+                                "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.45), transparent 60%)",
+                            }}
+                          />
+                          <span className="relative">{m.icon}</span>
+                        </div>
+
+                        <div
+                          className="flex-1 min-w-0"
+                          style={{ transform: "translateZ(20px)" }}
+                        >
+                          <div
+                            className="text-[10px] sm:text-[11px] tracking-[0.22em] uppercase font-semibold"
+                            style={{ color: "#9a6b18", fontFamily: "Poppins" }}
+                          >
+                            {m.label}
+                          </div>
+                          <div
+                            className="mt-1 text-base sm:text-lg font-semibold truncate"
+                            style={{
+                              color: "#5a3a07",
+                              fontFamily: "'EB Garamond', serif",
+                            }}
+                          >
+                            {m.value}
+                          </div>
+                          <div
+                            className="mt-2 inline-flex items-center gap-1 text-xs sm:text-sm font-semibold relative"
+                            style={{ color: m.accent, fontFamily: "Poppins" }}
+                          >
+                            <span className="relative">
+                              {m.label === "Email Us"
+                                ? "Send an email"
+                                : m.label === "WhatsApp"
+                                ? "Chat now"
+                                : "Tap to call"}
+                              <span
+                                className="absolute left-0 -bottom-0.5 h-[1.5px] w-0 group-hover:w-full transition-[width] duration-300"
+                                style={{
+                                  background: `linear-gradient(90deg, ${m.accent}, transparent)`,
+                                }}
+                              />
+                            </span>
+                            <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                          </div>
+                        </div>
+
+                        {/* corner sparkle */}
+                        <span
+                          aria-hidden
+                          className="absolute top-3 right-4 text-amber-400 opacity-60"
+                          style={{ transform: "translateZ(60px)" }}
+                        >
+                          ✦
+                        </span>
+                      </div>
+                    </a>
+                  </Tilt3DCard>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* socials row */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="mt-9"
+            >
+              <div
+                className="text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase mb-3"
+                style={{ color: "#9a6b18", fontFamily: "Poppins" }}
+              >
+                Follow our journey
               </div>
-              <div>
-                <p className="text-gray-700 font-medium text-lg">Email</p>
-                <p className="text-gray-700 text-base">info@sobhagya.in</p>
+              <div className="flex flex-wrap gap-3">
+                {SOCIALS.map((s) => (
+                  <motion.a
+                    key={s.name}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1, y: -3 }}
+                    whileTap={{ scale: 0.92 }}
+                    className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center"
+                    style={{
+                      background:
+                        "linear-gradient(160deg, #FFFCEF 0%, #FFE7B5 100%)",
+                      border: "1px solid rgba(247,148,29,0.45)",
+                      boxShadow:
+                        "0 10px 22px -10px rgba(247,148,29,0.45), inset 0 1px 0 rgba(255,255,255,0.7)",
+                    }}
+                    aria-label={s.name}
+                  >
+                    <img
+                      src={s.img}
+                      alt={s.name}
+                      className="w-7 h-7 sm:w-9 sm:h-9 object-contain"
+                    />
+                  </motion.a>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* small location card */}
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.45 }}
+              className="mt-8 flex items-start gap-3 p-4 rounded-2xl"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(247,148,29,0.06), rgba(255,213,138,0.10))",
+                border: "1px dashed rgba(247,148,29,0.4)",
+              }}
+            >
+              <span
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #FFE7B5, #F7B23A)",
+                  color: "#5a3a07",
+                }}
+              >
+                <MapPin className="w-5 h-5" strokeWidth={2} />
+              </span>
+              <div className="text-sm" style={{ color: "#5a3a07", fontFamily: "Poppins" }}>
+                <div className="font-semibold">Sobhagya HQ</div>
+                <div className="opacity-80 mt-0.5 leading-relaxed">
+                  Serving seekers across India and the diaspora — online &
+                  on-app, every day.
+                </div>
               </div>
             </motion.div>
           </div>
 
-          {/* Separator Line */}
-          <motion.div 
-            className="w-full h-px bg-orange-500 my-10"
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            transition={{ duration: 0.5, delay: 1.1 }}
-          />
-
-          {/* Enhanced Call to Action with Animation */}
-          <motion.p 
-            className="mt-8 text-gray-700 leading-relaxed text-lg font-medium"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.2 }}
+          {/* RIGHT: Glassmorphic premium form */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-50px" }}
+            transition={{ duration: 0.7, delay: 0.15 }}
+            className="relative"
           >
-            Connect with us today and discover the wisdom of astrology!
-          </motion.p>
+            {/* aura glow */}
+            <div
+              aria-hidden
+              className="absolute -inset-4 rounded-[28px] blur-2xl opacity-60 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(60% 50% at 50% 30%, rgba(247,148,29,0.30), transparent 70%)",
+              }}
+            />
 
-          {/* Enhanced Social Media Links with Animations */}
-          <motion.div 
-            className="flex flex-wrap gap-0 mt-0"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 1.3 }}
-          >
-
-            {/* Instagram */}
-            <motion.a
-              href="https://www.instagram.com/sobhagya.bhaakti"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center cursor-pointer"
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              aria-label="Follow us on Instagram"
+            <div
+              className="relative rounded-[24px] p-[1.4px]"
+              style={{
+                background:
+                  "linear-gradient(135deg, #F7941D 0%, #FFE7B5 30%, #B86A0B 60%, #FFE7B5 85%, #F7941D 100%)",
+                boxShadow:
+                  "0 30px 60px -22px rgba(247,148,29,0.45), 0 0 0 1px rgba(255,213,138,0.18)",
+              }}
             >
-              
-              <img 
-                src="/instagram.svg" 
-                alt="Instagram" 
-                className="w-8 h-8 sm:w-10 sm:h-10 z-10"
-              />
-            </motion.a>
+              {/* Card surface */}
+              <div
+                className="relative rounded-[22px] p-6 sm:p-8 lg:p-10 overflow-hidden"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #FFFCEF 0%, #FFF3DC 100%)",
+                }}
+              >
+                {/* corner ornaments */}
+                {[
+                  { c: "top-3 left-3", r: 0 },
+                  { c: "top-3 right-3", r: 90 },
+                  { c: "bottom-3 right-3", r: 180 },
+                  { c: "bottom-3 left-3", r: 270 },
+                ].map((o, i) => (
+                  <span
+                    key={i}
+                    aria-hidden
+                    className={`absolute ${o.c} text-amber-500/60`}
+                    style={{ transform: `rotate(${o.r}deg)` }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M2 2 L10 2 M2 2 L2 10 M2 2 Q8 4 10 10"
+                        stroke="currentColor"
+                        strokeWidth="1.2"
+                        fill="none"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                ))}
 
-            {/* LinkedIn */}
-            <motion.a
-              href="https://linkedin.com/company/sobhagya"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center cursor-pointer"
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              aria-label="Follow us on LinkedIn"
-            >
-              <img 
-                src="/linkedin.svg" 
-                alt="LinkedIn" 
-                className="w-8 h-8 sm:w-10 sm:h-10 z-10"
-              />
-            </motion.a>
+                {/* faint sunburst backdrop */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-[400px] h-[400px] opacity-[0.06]"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, #F7941D 0deg, transparent 4deg, #F7941D 12deg, transparent 16deg, #F7941D 24deg, transparent 28deg, #F7941D 36deg, transparent 40deg)",
+                    borderRadius: "50%",
+                  }}
+                />
 
-            {/* Play Store */}
-            <motion.a
-              href="https://play.google.com/store/apps/details?id=com.sobhagya.sobhagya&hl=en_IN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center cursor-pointer"
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              aria-label="Download Sobhagya app from Google Play Store"
-            >
-              <img 
-                src="/play-store-small.svg" 
-                alt="Google Play Store" 
-                className="w-8 h-8 sm:w-10 sm:h-10 z-10"
-              />
-            </motion.a>
+                <div className="text-center mb-7">
+                  <span
+                    className="inline-block text-[10px] sm:text-xs font-semibold tracking-[0.28em] uppercase"
+                    style={{ color: "#F7941D" }}
+                  >
+                    ✦ Send a Message ✦
+                  </span>
+                  <h3
+                    className="mt-2 text-2xl sm:text-3xl font-bold"
+                    style={{
+                      fontFamily: "'EB Garamond', serif",
+                      color: "#5a3a07",
+                    }}
+                  >
+                    Tell us what's on your mind
+                  </h3>
+                </div>
 
-            {/* App Store */}
-            <motion.a
-              href="https://apps.apple.com/in/app/sobhagya/id6755958411"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center cursor-pointer"
-              whileHover={{ scale: 1.1, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              aria-label="Download Sobhagya app from App Store"
-            >
-              <img 
-                src="/app-store-small.svg" 
-                alt="App Store" 
-                className="w-8 h-8 sm:w-10 sm:h-10 z-10"
-              />
-            </motion.a>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <FloatingField
+                    name="name"
+                    label="Full Name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FloatingField
+                    name="email"
+                    label="Phone or Email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    inputMode="text"
+                    autoComplete="email"
+                    required
+                  />
+                  <FloatingField
+                    name="message"
+                    label="Your Message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    textarea
+                    required
+                  />
+
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting}
+                    whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                    whileTap={{ scale: isSubmitting ? 1 : 0.97 }}
+                    className="relative w-full sm:w-auto sm:min-w-[220px] mx-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white text-sm overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, #F7941D 0%, #E8850B 100%)",
+                      boxShadow:
+                        "0 14px 28px -10px rgba(247,148,29,0.6), inset 0 1px 0 rgba(255,255,255,0.35)",
+                      fontFamily: "Poppins",
+                    }}
+                  >
+                    {/* shimmer on hover */}
+                    <motion.span
+                      aria-hidden
+                      className="absolute inset-0"
+                      initial={{ x: "-120%" }}
+                      animate={{ x: "120%" }}
+                      transition={{
+                        duration: 2.4,
+                        repeat: Infinity,
+                        repeatDelay: 1.6,
+                        ease: "easeInOut",
+                      }}
+                      style={{
+                        background:
+                          "linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%)",
+                        mixBlendMode: "overlay",
+                      }}
+                    />
+                    {isSubmitting ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Sending…
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        Submit Message
+                      </>
+                    )}
+                  </motion.button>
+
+                  {submitStatus && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      role="status"
+                      aria-live="polite"
+                      className="flex items-start gap-2 px-4 py-3 rounded-xl text-sm"
+                      style={{
+                        background:
+                          submitStatus.type === "success"
+                            ? "rgba(40,160,80,0.08)"
+                            : "rgba(220,80,40,0.08)",
+                        border:
+                          submitStatus.type === "success"
+                            ? "1px solid rgba(40,160,80,0.35)"
+                            : "1px solid rgba(220,80,40,0.35)",
+                        color:
+                          submitStatus.type === "success"
+                            ? "#1f7a44"
+                            : "#a23824",
+                        fontFamily: "Poppins",
+                      }}
+                    >
+                      {submitStatus.type === "success" ? (
+                        <CheckCircle2 className="w-5 h-5 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 shrink-0" />
+                      )}
+                      <span>{submitStatus.text}</span>
+                    </motion.div>
+                  )}
+                </form>
+              </div>
+            </div>
           </motion.div>
-        </motion.div>
-
-        {/* Right Section - Enhanced Contact Form with Animations */}
-        <motion.div 
-          className="bg-[#fcf4e9] p-5 sm:p-8 md:p-12 shadow-lg rounded-2xl"
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
-        >
-          <motion.h2
-            className="text-2xl sm:text-3xl font-bold text-[#745802] mb-4"
-            style={{ fontFamily: "EB Garamond" }}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.9 }}
-          >
-            Send a Message
-          </motion.h2>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.0 }}
-            >
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Full Name"
-                className="w-full px-4 py-3 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
-                required
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.1 }}
-            >
-              <input
-                type="text"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Phone No. / Email"
-                inputMode="text"
-                autoComplete="email"
-                className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
-                required
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.2 }}
-            >
-              <textarea
-                name="message"
-                value={formData.message}
-                onChange={handleInputChange}
-                placeholder="Message"
-                className="w-full px-4 py-3  rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#7a5815] h-28 sm:h-32 text-sm sm:text-base transition-all duration-300 hover:border-[#7a5815]"
-                required
-              />
-            </motion.div>
-            <motion.div 
-              className="flex justify-center"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 1.3 }}
-            >
-              <motion.button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full sm:w-[214px] bg-[#F7971D] text-white py-3 rounded-md font-semibold hover:bg-[#e09e3c] hover:text-white transition disabled:opacity-60 disabled:cursor-not-allowed"
-                whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
-                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
-              >
-                {isSubmitting ? 'Sending…' : 'Submit'}
-              </motion.button>
-            </motion.div>
-            {submitMessage && (
-              <motion.p 
-                className="mt-4 text-center text-sm text-gray-700 bg-orange-50 border border-orange-200 px-4 py-3 rounded-xl" 
-                aria-live="polite"
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {submitMessage}
-              </motion.p>
-            )}
-          </form>
-        </motion.div>
-      </div>
-    </div>
+        </div>
+      </section>
+    </main>
   );
-};
+}
 
-export default Contact;
+/* --------------------------- floating-label field --------------------------- */
+
+function FloatingField({
+  name,
+  label,
+  value,
+  onChange,
+  textarea = false,
+  inputMode,
+  autoComplete,
+  required = false,
+}: {
+  name: string;
+  label: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
+  textarea?: boolean;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  autoComplete?: string;
+  required?: boolean;
+}) {
+  const filled = value && value.length > 0;
+
+  const baseClass =
+    "peer w-full bg-transparent px-4 pt-5 pb-2 text-sm sm:text-base outline-none rounded-xl transition-colors";
+
+  return (
+    <label className="relative block">
+      <span
+        className={`pointer-events-none absolute left-4 transition-all duration-200 ${
+          filled
+            ? "top-1.5 text-[10px] tracking-[0.18em] uppercase font-semibold"
+            : "top-1/2 -translate-y-1/2 text-sm"
+        } peer-focus:top-1.5 peer-focus:translate-y-0 peer-focus:text-[10px] peer-focus:tracking-[0.18em] peer-focus:uppercase peer-focus:font-semibold`}
+        style={{
+          color: filled ? "#9a6b18" : "#a4845a",
+          fontFamily: "Poppins",
+        }}
+      >
+        {label}
+        {required && <span className="text-orange-500 ml-0.5">*</span>}
+      </span>
+      {textarea ? (
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          rows={4}
+          className={`${baseClass} pt-7 resize-none`}
+          style={{
+            background: "rgba(255,255,255,0.65)",
+            border: "1.5px solid rgba(247,148,29,0.30)",
+            color: "#3e2807",
+            boxShadow: "inset 0 2px 4px rgba(170,100,20,0.06)",
+          }}
+        />
+      ) : (
+        <input
+          type="text"
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          inputMode={inputMode}
+          autoComplete={autoComplete}
+          className={baseClass}
+          style={{
+            background: "rgba(255,255,255,0.65)",
+            border: "1.5px solid rgba(247,148,29,0.30)",
+            color: "#3e2807",
+            boxShadow: "inset 0 2px 4px rgba(170,100,20,0.06)",
+          }}
+        />
+      )}
+      {/* focus underline accent */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-2 right-2 bottom-[2px] h-[2px] rounded-full origin-center scale-x-0 peer-focus:scale-x-100 transition-transform duration-300"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent, #F7941D, #FFE7B5, #F7941D, transparent)",
+        }}
+      />
+    </label>
+  );
+}

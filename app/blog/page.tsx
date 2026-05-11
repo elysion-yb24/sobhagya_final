@@ -1,25 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import { Calendar, User, Clock, ChevronRight, ArrowLeft, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { BlogPost } from "@/types";
 
-const CATEGORIES = [
-  { id: null, name: "All" },
-  { id: 3, name: "Horoscope" },
-  { id: 10, name: "Gems" },
-  { id: 11, name: "Rudraksha" },
-  { id: 13, name: "Tarot Cards" },
-  { id: 12, name: "Angel Numbers" },
-];
-
-import SectionHeader from "@/app/components/ui/SectionHeader";
+import BlogHero3D from "./_components/BlogHero3D";
+import CategoryFilter from "./_components/CategoryFilter";
+import FeaturedBlog from "./_components/FeaturedBlog";
+import BlogCard3D from "./_components/BlogCard3D";
+import BlogPagination from "./_components/BlogPagination";
+import BlogSkeleton from "./_components/BlogSkeleton";
 
 export default function BlogPage() {
-  const router = useRouter();
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,159 +54,199 @@ export default function BlogPage() {
     setPage(1);
   };
 
+  // Featured blog only appears on page 1 with no category filter
+  const showFeatured = page === 1 && activeCategory === null && blogs.length > 0;
+  const featuredBlog = showFeatured ? blogs[0] : null;
+  const gridBlogs = showFeatured ? blogs.slice(1) : blogs;
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-[#1a0a2e] via-[#2d1654] to-[#1a0e2e] overflow-hidden pt-10 pb-20">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.06]">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-amber-300 rounded-full" style={{ animation: 'blog-spin 90s linear infinite' }}></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] border border-orange-400 rounded-full" style={{ animation: 'blog-spin 60s linear infinite reverse' }}></div>
-        </div>
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-48 bg-amber-500/10 rounded-full blur-[80px]"></div>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#FFFCF6] via-white to-[#FFF8EF]">
+      {/* Ambient background ornaments */}
+      <div
+        aria-hidden
+        className="absolute top-[20%] -left-40 w-[500px] h-[500px] rounded-full pointer-events-none opacity-50"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(247,148,29,0.18) 0%, transparent 70%)",
+          filter: "blur(80px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute top-[55%] -right-40 w-[600px] h-[600px] rounded-full pointer-events-none opacity-50"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(255,213,138,0.22) 0%, transparent 70%)",
+          filter: "blur(90px)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute bottom-[5%] left-[30%] w-[480px] h-[480px] rounded-full pointer-events-none opacity-40"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(184,106,11,0.15) 0%, transparent 70%)",
+          filter: "blur(85px)",
+        }}
+      />
 
-        <div className="relative z-10 section-container">
-          <SectionHeader
-            tag="Sobhagya Blog"
-            title="Astrology Insights & Guidance"
-            subtitle="Explore articles on horoscopes, gemstones, tarot, and cosmic wisdom to guide your spiritual journey."
-            center
-            light
-          />
-        </div>
-      </div>
+      {/* HERO */}
+      <BlogHero3D />
 
-      {/* Category Filter */}
-      <div className="section-container -mt-8 relative z-20">
-        <div className="bg-white rounded-2xl shadow-premium border border-gray-100 p-2 flex gap-2 overflow-x-auto no-scrollbar scroll-touch">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.name}
-              onClick={() => handleCategoryChange(cat.id)}
-              className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all active:scale-95 ${
-                activeCategory === cat.id
-                  ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md"
-                  : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-              }`}
+      {/* FILTER */}
+      <CategoryFilter
+        activeId={activeCategory}
+        onChange={handleCategoryChange}
+      />
+
+      {/* CONTENT */}
+      <div className="section-container relative z-10 pt-10 sm:pt-14 pb-16 sm:pb-20">
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Blog Grid */}
-      <div className="section-container py-16">
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse">
-                <div className="h-48 bg-gray-200"></div>
-                <div className="p-5">
-                  <div className="h-5 bg-gray-200 rounded mb-3 w-3/4"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-4 w-2/3"></div>
-                  <div className="flex justify-between">
-                    <div className="h-3 bg-gray-200 rounded w-20"></div>
-                    <div className="h-3 bg-gray-200 rounded w-16"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-16">
-            <p className="text-gray-500 mb-4">{error}</p>
-            <button
-              onClick={() => fetchBlogs(page, activeCategory)}
-              className="px-6 py-2.5 bg-orange-500 text-white rounded-xl font-medium hover:bg-orange-600 transition-colors"
+              <BlogSkeleton />
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              key="error"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-20"
             >
-              Try Again
-            </button>
-          </div>
-        ) : blogs.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-lg">No articles found in this category.</p>
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {blogs.map((blog) => (
-                <Link
-                  key={blog.id}
-                  href={`/blog/${blog.slug || blog.id}`}
-                  className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-                >
-                  <div className="relative h-48 overflow-hidden">
-                    <Image
-                      src={blog.image || "/default-image.png"}
-                      alt={blog.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                    {blog.tags && blog.tags.length > 0 && (
-                      <span className="absolute top-3 left-3 px-3 py-1 bg-orange-500/90 text-white text-xs font-semibold rounded-full backdrop-blur-sm">
-                        {blog.tags[0]}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-orange-600 transition-colors mb-2 line-clamp-2 leading-snug">
-                      {blog.title}
-                    </h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-4 line-clamp-2">
-                      {blog.excerpt}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>{blog.date}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{blog.readTime}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 mt-10">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page <= 1}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Previous
-                </button>
-                <span className="text-sm text-gray-500">
-                  Page {page} of {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page >= totalPages}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  Next
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+              <p className="text-gray-500 mb-5 text-base">{error}</p>
+              <button
+                onClick={() => fetchBlogs(page, activeCategory)}
+                className="px-6 py-3 rounded-xl font-semibold text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #F7941D 0%, #FFB347 50%, #F7941D 100%)",
+                  boxShadow: "0 10px 22px -8px rgba(247,148,29,0.55)",
+                  fontFamily: "Poppins",
+                }}
+              >
+                Try Again
+              </button>
+            </motion.div>
+          ) : blogs.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-24"
+            >
+              <div
+                className="inline-flex items-center justify-center w-20 h-20 rounded-full mb-5"
+                style={{
+                  background:
+                    "radial-gradient(circle at 30% 25%, #FFFCF1 0%, #FFEED0 50%, #F7B23A 100%)",
+                  boxShadow:
+                    "inset 0 2px 4px rgba(255,255,255,0.9), inset 0 -3px 8px rgba(170,100,20,0.25), 0 6px 16px -4px rgba(247,148,29,0.4)",
+                }}
+              >
+                <span className="text-3xl">✦</span>
               </div>
-            )}
-          </>
-        )}
+              <p
+                className="text-lg sm:text-xl font-semibold mb-2"
+                style={{ fontFamily: "'EB Garamond', serif", color: "#745802" }}
+              >
+                No articles in this category yet
+              </p>
+              <p className="text-sm text-gray-500" style={{ fontFamily: "Poppins" }}>
+                The cosmos is still aligning its wisdom — check back soon.
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key={`grid-${page}-${activeCategory}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {/* Featured blog */}
+              {featuredBlog && <FeaturedBlog blog={featuredBlog} />}
+
+              {/* Section label for grid */}
+              {gridBlogs.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="flex items-center gap-3 mb-6 sm:mb-8"
+                >
+                  <span
+                    className="inline-flex items-center text-xs sm:text-sm font-bold tracking-[0.28em] uppercase"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #C7831A, #F7941D, #FFD700)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    {showFeatured ? "Latest Articles" : "Articles"}
+                  </span>
+                  <span
+                    className="h-px flex-1"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, rgba(247,148,29,0.5), transparent)",
+                    }}
+                  />
+                </motion.div>
+              )}
+
+              {/* Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+                {gridBlogs.map((blog, idx) => (
+                  <BlogCard3D
+                    key={`${blog.id}-${page}`}
+                    blog={blog}
+                    index={idx}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <BlogPagination
+                page={page}
+                totalPages={totalPages}
+                onChange={(next) => {
+                  setPage(next);
+                  if (typeof window !== "undefined") {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <style jsx global>{`
         @keyframes blog-spin {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to { transform: translate(-50%, -50%) rotate(360deg); }
+          from {
+            transform: translate(-50%, -50%) rotate(0deg);
+          }
+          to {
+            transform: translate(-50%, -50%) rotate(360deg);
+          }
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
       `}</style>
     </div>
   );

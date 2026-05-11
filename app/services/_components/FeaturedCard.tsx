@@ -93,7 +93,7 @@ export default function FeaturedCard({
             style={{ border: "1px solid rgba(247,148,29,0.14)" }}
           />
 
-          <div className="relative px-7 pt-9 pb-7 flex-1 flex flex-col">
+          <div className="relative px-5 pt-7 pb-5 sm:px-7 sm:pt-9 sm:pb-7 flex-1 flex flex-col">
             {/* Glowing medallion */}
             <motion.div
               variants={item}

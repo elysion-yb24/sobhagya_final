@@ -1,23 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import SectionHeader from "@/app/components/ui/SectionHeader";
 import FeaturedCard from "./_components/FeaturedCard";
 import ServiceCard from "./_components/ServiceCard";
 import MarbleCTA from "./_components/MarbleCTA";
 import { FiligreeDivider, OmRoundel, Mandala } from "./_components/Ornaments";
-
-// 3D portal — client only
-const CosmicHero3D = dynamic(() => import("./_components/CosmicHero3D"), {
-  ssr: false,
-  loading: () => (
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
-    </div>
-  ),
-});
+import ServicesHero3D from "./_components/ServicesHero3D";
+import TrustStats from "./_components/TrustStats";
 
 export default function Services() {
   const services = [
@@ -107,20 +97,6 @@ export default function Services() {
     },
   ];
 
-  const [isLoading, setIsLoading] = useState(true);
-  useEffect(() => {
-    const t = setTimeout(() => setIsLoading(false), 200);
-    return () => clearTimeout(t);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <section className="bg-[#FFFDF9] w-full min-h-screen">
       {/* ===================== HERO ===================== */}
@@ -153,27 +129,29 @@ export default function Services() {
           }}
         />
 
-        <div className="relative z-10 section-container py-10 sm:py-12 lg:py-14">
-          <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 lg:gap-10 items-center">
+        <div className="relative z-10 section-container py-6 sm:py-10 md:py-12 lg:py-14">
+          <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6 md:gap-8 lg:gap-10 items-center">
             {/* ----- LEFT: title block ----- */}
             <div className="text-center lg:text-left order-2 lg:order-1">
-              <motion.span
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-[0.28em] uppercase mb-4"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(255,212,140,0.16), rgba(247,148,29,0.16))",
-                  border: "1px solid rgba(255,212,140,0.4)",
-                  color: "#FFE7B5",
-                  backdropFilter: "blur(6px)",
-                }}
-              >
-                <span className="text-amber-300">✦</span>
-                Astrology Help
-                <span className="text-amber-300">✦</span>
-              </motion.span>
+              <div className="flex justify-center lg:justify-start mb-4">
+                <motion.span
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold tracking-[0.28em] uppercase"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, rgba(255,212,140,0.16), rgba(247,148,29,0.16))",
+                    border: "1px solid rgba(255,212,140,0.4)",
+                    color: "#FFE7B5",
+                    backdropFilter: "blur(6px)",
+                  }}
+                >
+                  <span className="text-amber-300">✦</span>
+                  Astrology Help
+                  <span className="text-amber-300">✦</span>
+                </motion.span>
+              </div>
 
               <motion.h1
                 initial={{ opacity: 0, y: 24 }}
@@ -183,18 +161,38 @@ export default function Services() {
                   delay: 0.15,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] font-bold tracking-tight leading-[1.05]"
+                className="block text-3xl sm:text-4xl md:text-5xl lg:text-[56px] xl:text-[64px] font-bold tracking-tight leading-[1.05]"
                 style={{
                   fontFamily: "'EB Garamond', serif",
-                  backgroundImage:
-                    "linear-gradient(180deg, #FFFCEF 0%, #FFE7B5 45%, #F7B23A 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  textShadow: "0 0 60px rgba(247,148,29,0.25)",
                 }}
               >
-                Our Services
+                <span className="relative inline-block">
+                  <span
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(180deg, #FFFCEF 0%, #FFE7B5 45%, #F7B23A 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                      textShadow: "0 0 60px rgba(247,148,29,0.25)",
+                    }}
+                  >
+                    Our Services
+                  </span>
+                  {/* shimmer sweep */}
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    initial={{ x: "-120%" }}
+                    animate={{ x: "120%" }}
+                    transition={{ duration: 3.5, repeat: Infinity, repeatDelay: 2, ease: "easeInOut" }}
+                    style={{
+                      background:
+                        "linear-gradient(100deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%)",
+                      mixBlendMode: "overlay",
+                    }}
+                  />
+                </span>
               </motion.h1>
 
               {/* Om filigree divider */}
@@ -202,9 +200,9 @@ export default function Services() {
                 initial={{ opacity: 0, scaleX: 0.6 }}
                 animate={{ opacity: 1, scaleX: 1 }}
                 transition={{ duration: 0.8, delay: 0.45 }}
-                className="mt-5 mx-auto lg:mx-0 origin-left text-amber-300/80"
+                className="mt-5 mx-auto lg:mx-0 origin-center lg:origin-left text-amber-300/80 w-full max-w-[240px]"
               >
-                <FiligreeDivider width={240}>
+                <FiligreeDivider width="100%">
                   <OmRoundel size={32} />
                 </FiligreeDivider>
               </motion.div>
@@ -230,7 +228,7 @@ export default function Services() {
               >
                 <a
                   href="/call-with-astrologer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-white text-sm"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-white text-sm"
                   style={{
                     background:
                       "linear-gradient(135deg, #F7941D 0%, #E8850B 100%)",
@@ -243,7 +241,7 @@ export default function Services() {
                 </a>
                 <a
                   href="#offerings"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
+                  className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-sm"
                   style={{
                     color: "#FFE7B5",
                     border: "1.5px solid rgba(255,213,138,0.55)",
@@ -257,69 +255,19 @@ export default function Services() {
               </motion.div>
             </div>
 
-            {/* ----- RIGHT: 3D portal ----- */}
+            {/* ----- RIGHT: Premium 3D Astrolabe ----- */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
+              initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{
-                duration: 1,
-                delay: 0.2,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              className="order-1 lg:order-2 flex items-center justify-center"
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="order-1 lg:order-2 flex items-center justify-center w-full"
             >
-              <div className="relative w-[240px] h-[240px] sm:w-[280px] sm:h-[280px] lg:w-[340px] lg:h-[340px]">
-                {/* outer glow */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 rounded-full blur-3xl"
-                  style={{
-                    background:
-                      "radial-gradient(circle, rgba(247,148,29,0.35), transparent 65%)",
-                  }}
-                />
-                {/* gold ring */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 rounded-full"
-                  style={{
-                    background:
-                      "conic-gradient(from 0deg, #F7941D, #FFD58A, #B86A0B, #FFD58A, #F7941D)",
-                    padding: 2,
-                    WebkitMask:
-                      "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-                    WebkitMaskComposite: "xor",
-                    maskComposite: "exclude",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  className="absolute inset-3 rounded-full border border-amber-300/25"
-                />
-                <div
-                  aria-hidden
-                  className="absolute inset-6 rounded-full border-2 border-dashed border-amber-300/20 animate-rotate-slow"
-                />
-
-                <div
-                  aria-hidden
-                  className="absolute inset-[14px] rounded-full"
-                  style={{
-                    background:
-                      "radial-gradient(circle, rgba(40,18,4,0.6) 0%, rgba(15,7,2,0.85) 70%)",
-                  }}
-                />
-
-                <div className="absolute inset-[14px] rounded-full overflow-hidden">
-                  <CosmicHero3D />
-                </div>
-
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <Mandala className="text-amber-300" size={320} opacity={0.08} />
-                </div>
-              </div>
+              <ServicesHero3D />
             </motion.div>
           </div>
+
+          {/* Trust stats strip */}
+          <TrustStats />
         </div>
 
         {/* fade into page */}
@@ -352,7 +300,7 @@ export default function Services() {
           className="!mb-9 sm:!mb-11"
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-7 max-w-6xl mx-auto mb-14 sm:mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7 max-w-6xl mx-auto mb-10 sm:mb-12">
           <FeaturedCard
             icon="/Kundli Generator icon.svg"
             title="Free Kundli Generator"
@@ -390,7 +338,7 @@ export default function Services() {
           className="!mb-9 sm:!mb-11"
         />
 
-        <div className="relative max-w-6xl mx-auto mb-14 sm:mb-16">
+        <div className="relative max-w-6xl mx-auto mb-10 sm:mb-12">
           <div
             aria-hidden
             className="pointer-events-none absolute -inset-x-10 inset-y-0 -z-0 opacity-40 blur-3xl"
@@ -399,7 +347,7 @@ export default function Services() {
                 "radial-gradient(60% 40% at 30% 30%, rgba(255,210,140,0.30), transparent 70%), radial-gradient(50% 40% at 70% 70%, rgba(247,148,29,0.20), transparent 70%)",
             }}
           />
-          <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+          <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {services.map((service, i) => (
               <ServiceCard key={i} service={service} delay={i * 0.04} index={i} />
             ))}

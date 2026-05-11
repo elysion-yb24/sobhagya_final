@@ -84,7 +84,7 @@ export default function ServiceCard({ service, delay = 0, index = 0 }: Props) {
             style={{ border: "1px solid rgba(247,148,29,0.10)" }}
           />
 
-          <div className="relative px-5 pt-6 pb-5 flex-1 flex flex-col">
+          <div className="relative px-3.5 pt-5 pb-4 sm:px-5 sm:pt-6 sm:pb-5 flex-1 flex flex-col">
             {/* Glowing medallion (large + prominent) */}
             <motion.div
               variants={item}
@@ -114,7 +114,7 @@ export default function ServiceCard({ service, delay = 0, index = 0 }: Props) {
                 }}
               />
               <div
-                className="relative w-[68px] h-[68px] rounded-full flex items-center justify-center"
+                className="relative w-[56px] h-[56px] sm:w-[68px] sm:h-[68px] rounded-full flex items-center justify-center"
                 style={{
                   background:
                     "radial-gradient(circle at 30% 25%, #FFFCF1 0%, #FFEED0 60%, #FFE3A8 100%)",
@@ -126,7 +126,7 @@ export default function ServiceCard({ service, delay = 0, index = 0 }: Props) {
                 <img
                   src={encodeURI(service.image || "/default-image.png")}
                   alt=""
-                  className="w-9 h-9 object-contain"
+                  className="w-7 h-7 sm:w-9 sm:h-9 object-contain"
                   style={{
                     filter:
                       "drop-shadow(0 1px 1px rgba(120,60,0,0.25))",

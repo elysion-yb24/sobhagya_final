@@ -84,7 +84,7 @@ export default function ServiceCard({ service, delay = 0, index = 0 }: Props) {
             style={{ border: "1px solid rgba(247,148,29,0.10)" }}
           />
 
-          <div className="relative px-3.5 pt-5 pb-4 sm:px-5 sm:pt-6 sm:pb-5 flex-1 flex flex-col">
+          <div className="relative px-3 pt-5 pb-4 xs:px-3.5 sm:px-5 sm:pt-6 sm:pb-5 flex-1 flex flex-col">
             {/* Glowing medallion (large + prominent) */}
             <motion.div
               variants={item}

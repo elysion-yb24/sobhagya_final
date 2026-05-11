@@ -146,7 +146,7 @@ export default function ContactPage() {
 
       {/* QUICK FACTS strip */}
       <section className="relative section-container -mt-8 sm:-mt-10 z-20">
-        <div className="grid grid-cols-3 gap-3 sm:gap-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-3 gap-2 xs:gap-3 sm:gap-4 max-w-4xl mx-auto">
           {QUICK_FACTS.map((q, i) => {
             const Icon = q.icon;
             return (
@@ -165,14 +165,14 @@ export default function ContactPage() {
                 }}
               >
                 <div
-                  className="rounded-[14px] px-4 py-3 sm:px-5 sm:py-4 flex items-center gap-3"
+                  className="h-full rounded-[14px] px-2.5 py-3 xs:px-3 sm:px-5 sm:py-4 flex flex-col items-center text-center gap-2 sm:flex-row sm:items-center sm:text-left sm:gap-3"
                   style={{
                     background:
                       "linear-gradient(160deg, #FFFCEF 0%, #FFF3DC 100%)",
                   }}
                 >
                   <span
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
+                    className="inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl shrink-0"
                     style={{
                       background:
                         "linear-gradient(135deg, #FFE7B5, #F7B23A)",
@@ -180,17 +180,17 @@ export default function ContactPage() {
                       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
                     }}
                   >
-                    <Icon className="w-5 h-5" strokeWidth={2} />
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" strokeWidth={2} />
                   </span>
-                  <div className="min-w-0">
+                  <div className="min-w-0 w-full">
                     <div
-                      className="text-[10px] sm:text-[11px] tracking-[0.18em] uppercase font-semibold"
+                      className="text-[9px] xs:text-[10px] sm:text-[11px] tracking-[0.14em] sm:tracking-[0.18em] uppercase font-semibold leading-tight"
                       style={{ color: "#9a6b18", fontFamily: "Poppins" }}
                     >
                       {q.label}
                     </div>
                     <div
-                      className="text-sm sm:text-base font-bold leading-tight truncate"
+                      className="mt-0.5 sm:mt-0 text-[12px] xs:text-[13px] sm:text-base font-bold leading-tight break-words"
                       style={{
                         fontFamily: "'EB Garamond', serif",
                         color: "#5a3a07",
@@ -267,7 +267,7 @@ export default function ContactPage() {
                       }}
                     >
                       <div
-                        className="rounded-[14px] p-5 sm:p-6 flex items-center gap-4 sm:gap-5 relative overflow-hidden"
+                        className="rounded-[14px] p-4 xs:p-5 sm:p-6 flex items-center gap-3 xs:gap-4 sm:gap-5 relative overflow-hidden"
                         style={{
                           background:
                             "linear-gradient(160deg, #FFFCEF 0%, #FFF3DC 100%)",
@@ -276,7 +276,7 @@ export default function ContactPage() {
                       >
                         {/* icon medallion */}
                         <div
-                          className="relative shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center"
+                          className="relative shrink-0 w-12 h-12 xs:w-14 xs:h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center"
                           style={{
                             background: `linear-gradient(135deg, ${m.accent} 0%, #7a3c05 100%)`,
                             boxShadow: `0 12px 22px -8px ${m.accent}90, inset 0 1px 0 rgba(255,255,255,0.35), inset 0 -2px 4px rgba(0,0,0,0.2)`,
@@ -307,7 +307,7 @@ export default function ContactPage() {
                             {m.label}
                           </div>
                           <div
-                            className="mt-1 text-base sm:text-lg font-semibold truncate"
+                            className="mt-1 text-[15px] xs:text-base sm:text-lg font-semibold break-anywhere"
                             style={{
                               color: "#5a3a07",
                               fontFamily: "'EB Garamond', serif",

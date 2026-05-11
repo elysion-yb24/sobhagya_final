@@ -347,7 +347,7 @@ export default function Services() {
                 "radial-gradient(60% 40% at 30% 30%, rgba(255,210,140,0.30), transparent 70%), radial-gradient(50% 40% at 70% 70%, rgba(247,148,29,0.20), transparent 70%)",
             }}
           />
-          <div className="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+          <div className="relative grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 xs:gap-3 sm:gap-4 md:gap-5">
             {services.map((service, i) => (
               <ServiceCard key={i} service={service} delay={i * 0.04} index={i} />
             ))}

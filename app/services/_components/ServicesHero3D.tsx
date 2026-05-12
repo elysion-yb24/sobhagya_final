@@ -118,25 +118,77 @@ export default function ServicesHero3D() {
         ))}
       </div>
 
-      {/* shooting star */}
-      <motion.span
+      {/* delicate diagonal shooting stars (replaces the chunky horizontal streak) */}
+      <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[
+          { top: "12%", left: "-10%", angle: 18, len: 70, dur: 2.2, delay: 0,  gap: 9 },
+          { top: "62%", left: "-10%", angle: 14, len: 55, dur: 2.6, delay: 4,  gap: 11 },
+          { top: "30%", left: "110%", angle: 200, len: 60, dur: 2.4, delay: 6.5, gap: 10 },
+        ].map((s, i) => (
+          <motion.span
+            key={i}
+            className="absolute"
+            style={{
+              top: s.top,
+              left: s.left,
+              width: s.len,
+              height: 1,
+              transform: `rotate(${s.angle}deg)`,
+              transformOrigin: "left center",
+              background:
+                "linear-gradient(90deg, transparent 0%, rgba(255,235,190,0.0) 5%, rgba(255,235,190,0.85) 70%, rgba(255,255,255,1) 100%)",
+              filter: "drop-shadow(0 0 4px rgba(255,210,130,0.85))",
+              borderRadius: 1,
+            }}
+            animate={{
+              x: s.angle > 90 ? ["0%", "-260%"] : ["0%", "260%"],
+              y: s.angle > 90 ? ["0%", "-60%"] : ["0%", "60%"],
+              opacity: [0, 0.9, 0],
+            }}
+            transition={{
+              duration: s.dur,
+              repeat: Infinity,
+              repeatDelay: s.gap,
+              delay: s.delay,
+              ease: "easeOut",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* faint constellation accent — subtle connecting lines + bright nodes */}
+      <svg
         aria-hidden
-        className="absolute h-[2px] w-[90px] rounded-full"
-        style={{
-          top: "20%",
-          left: "-15%",
-          background:
-            "linear-gradient(90deg, transparent, rgba(255,235,190,1), transparent)",
-          filter: "drop-shadow(0 0 8px rgba(255,210,130,0.9))",
-        }}
-        animate={{ x: ["0%", "700%"], opacity: [0, 1, 0] }}
-        transition={{
-          duration: 1.8,
-          repeat: Infinity,
-          repeatDelay: 7,
-          ease: "easeOut",
-        }}
-      />
+        viewBox="0 0 400 400"
+        className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+      >
+        <g stroke="rgba(255,225,170,0.25)" strokeWidth="0.4" fill="none">
+          <line x1="40" y1="60" x2="95" y2="40" />
+          <line x1="95" y1="40" x2="135" y2="78" />
+          <line x1="320" y1="320" x2="360" y2="290" />
+          <line x1="360" y1="290" x2="345" y2="245" />
+        </g>
+        {[
+          [40, 60], [95, 40], [135, 78],
+          [320, 320], [360, 290], [345, 245],
+        ].map(([cx, cy], i) => (
+          <motion.circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={1.4}
+            fill="rgba(255,235,190,0.95)"
+            initial={{ opacity: 0.3 }}
+            animate={{ opacity: [0.3, 1, 0.3] }}
+            transition={{
+              duration: 3 + (i % 3),
+              repeat: Infinity,
+              delay: i * 0.4,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </svg>
 
       {/* 3D stage */}
       <motion.div

@@ -46,8 +46,6 @@ import ImageLightbox from '../components/chat/ImageLightbox';
 import MessageActionsSheet, {
   type MessageActionsTarget,
 } from '../components/chat/MessageActionsSheet';
-import SessionEndedCard from '../components/chat/SessionEndedCard';
-import AwayCountdownOverlay from '../components/chat/AwayCountdownOverlay';
 import RatingModal from '../components/ui/RatingModal';
 import DakshinaModal from '../components/calling/ui/DakshinaModal';
 import OfflineAstrologerModal from '../components/astrologers/OfflineAstrologerModal';
@@ -55,8 +53,6 @@ import {
   findOrFetchAstrologer,
   getCachedAstrologer,
 } from '../utils/astrologer-cache';
-
-const AWAY_GRACE_MS = 10_000;
 
 const DEFAULT_CHAT_RPM = 5;
 
@@ -213,17 +209,36 @@ export default function ChatPage() {
 
   const [showReconnectedToast, setShowReconnectedToast] = useState(false);
 
-  // Tab-away countdown: when the chat tab is hidden while a session is active
-  // we start a 10s deadline; if the user returns we clear it, otherwise we
-  // auto-end the session via confirmEndSession().
-  const [awayDeadline, setAwayDeadline] = useState<number | null>(null);
-  const [awayRemainingMs, setAwayRemainingMs] = useState<number>(AWAY_GRACE_MS);
+  // Track whether we've ever observed a disconnect so the "Reconnected" toast
+  // only fires after a real reconnection — not on the first successful socket
+  // handshake during page load.
+  const hasDisconnectedRef = useRef(false);
+  const typingWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (typingWatchdogRef.current) clearTimeout(typingWatchdogRef.current);
+    };
+  }, []);
+  // Belt-and-braces: clear typing indicator if the session ends.
+  useEffect(() => {
+    if (sessionStatus === 'ended') {
+      setTypingFromOther(false);
+      if (typingWatchdogRef.current) {
+        clearTimeout(typingWatchdogRef.current);
+        typingWatchdogRef.current = null;
+      }
+    }
+  }, [sessionStatus]);
 
   const wasConnectedRef = useRef(isConnected);
   useEffect(() => {
-    if (!wasConnectedRef.current && isConnected) {
+    if (!isConnected) {
+      hasDisconnectedRef.current = true;
+    }
+    if (!wasConnectedRef.current && isConnected && hasDisconnectedRef.current) {
       setShowReconnectedToast(true);
       const t = setTimeout(() => setShowReconnectedToast(false), 1500);
+      wasConnectedRef.current = isConnected;
       return () => clearTimeout(t);
     }
     wasConnectedRef.current = isConnected;
@@ -398,7 +413,17 @@ export default function ChatPage() {
     };
 
     const onTyping = (payload: { isTyping?: boolean } | undefined) => {
-      setTypingFromOther(Boolean(payload?.isTyping));
+      const next = Boolean(payload?.isTyping);
+      setTypingFromOther(next);
+      // Watchdog: peer's `typing:false` event can be lost (network drop, app
+      // killed mid-typing). Auto-clear after 4s if no further activity.
+      if (typingWatchdogRef.current) clearTimeout(typingWatchdogRef.current);
+      if (next) {
+        typingWatchdogRef.current = setTimeout(() => {
+          setTypingFromOther(false);
+          typingWatchdogRef.current = null;
+        }, 4000);
+      }
     };
 
     socket.on('receive_message', onReceive);
@@ -477,6 +502,20 @@ export default function ChatPage() {
       if (!socket || !isConnected) return;
       if (!threadIdParam || !activeSessionId) return;
       const cid = opts.clientMessageId;
+
+      // Ack-timeout watchdog. Without this, a missing server ack leaves the
+      // optimistic bubble stuck at "sent" forever with no way to retry.
+      let acked = false;
+      const timeoutId = setTimeout(() => {
+        if (acked) return;
+        console.warn('[chat] send_message ack timed out for', cid);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.clientMessageId === cid ? { ...m, deliveryStatus: 'failed' as const } : m
+          )
+        );
+      }, 10_000);
+
       socket.emit(
         'send_message',
         {
@@ -490,6 +529,8 @@ export default function ChatPage() {
           voiceMessageDuration: 0,
         },
         (response: { success?: boolean; message?: string; data?: BackendMessage }) => {
+          acked = true;
+          clearTimeout(timeoutId);
           if (!response?.success) {
             console.warn('[chat] send_message failed:', response?.message);
             setMessages((prev) =>
@@ -553,6 +594,12 @@ export default function ChatPage() {
     setPendingImages([]);
     isNearBottomRef.current = true;
     setShowJumpToBottom(false);
+    // Stop the peer's "typing…" indicator immediately — otherwise it lingers
+    // for up to the composer's 1.5s debounce after the message is in flight.
+    if (socket && isConnected && threadIdParam) {
+      socket.emit('typing', { threadId: threadIdParam, isTyping: false });
+      lastTypingRef.current = 0;
+    }
 
     try {
       // Image messages first — caption attaches to the first image only.
@@ -570,21 +617,30 @@ export default function ChatPage() {
             fileLink: img.previewUrl,
             replyMessage: i === 0 ? replyPayload : null,
             deliveryStatus: 'sent',
+            // Keep the File around so a failed upload can be retried without
+            // losing the photo.
+            pendingFile: img.file,
           };
           setMessages((prev) => [...prev, optimistic]);
 
           const result = await uploadChatFile(img.file);
           if (!result?.fileLink) {
+            // Don't revoke the blob URL on failure — the user can still see
+            // their photo in the bubble and retry the send.
             setMessages((prev) =>
               prev.map((m) => (m.clientMessageId === cid ? { ...m, deliveryStatus: 'failed' } : m))
             );
-            URL.revokeObjectURL(img.previewUrl);
             continue;
           }
 
-          // Patch optimistic with real fileLink so the bubble shows the persisted URL.
+          // Patch optimistic with real fileLink so the bubble shows the persisted URL,
+          // and drop the File ref now that the photo lives on the server.
           setMessages((prev) =>
-            prev.map((m) => (m.clientMessageId === cid ? { ...m, fileLink: result.fileLink } : m))
+            prev.map((m) =>
+              m.clientMessageId === cid
+                ? { ...m, fileLink: result.fileLink, pendingFile: undefined }
+                : m
+            )
           );
           URL.revokeObjectURL(img.previewUrl);
 
@@ -635,14 +691,46 @@ export default function ChatPage() {
   ]);
 
   const retryMessage = useCallback(
-    (clientId: string) => {
+    async (clientId: string) => {
       const target = messages.find((m) => m.clientMessageId === clientId);
       if (!target) return;
       if (!socket || !isConnected) return;
       if (sessionStatus === 'ended') return;
+
       setMessages((prev) =>
         prev.map((m) => (m.clientMessageId === clientId ? { ...m, deliveryStatus: 'sent' } : m))
       );
+
+      // Image message that never made it past the upload step → re-upload first.
+      if (target.messageType === 'image' && target.pendingFile) {
+        const result = await uploadChatFile(target.pendingFile);
+        if (!result?.fileLink) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.clientMessageId === clientId ? { ...m, deliveryStatus: 'failed' } : m
+            )
+          );
+          return;
+        }
+        const oldPreview = target.fileLink;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.clientMessageId === clientId
+              ? { ...m, fileLink: result.fileLink, pendingFile: undefined }
+              : m
+          )
+        );
+        if (oldPreview && oldPreview.startsWith('blob:')) URL.revokeObjectURL(oldPreview);
+        emitSend({
+          text: target.text,
+          messageType: 'image',
+          fileLink: result.fileLink,
+          replyMessage: (target.replyMessage as object | null) || null,
+          clientMessageId: clientId,
+        });
+        return;
+      }
+
       emitSend({
         text: target.text,
         messageType: target.messageType === 'image' ? 'image' : 'text',
@@ -704,66 +792,6 @@ export default function ChatPage() {
       setEndingSession(false);
     }
   }, [threadIdParam, activeSessionId, endingSession, socket, isConnected]);
-
-  // -------- tab-away countdown (Issue 5) --------
-  // While the chat session is active and bound to a thread+session, watch
-  // document.visibilityState. Hiding the tab arms a 10s deadline; returning
-  // before it expires clears the deadline; expiring fires confirmEndSession().
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    if (sessionStatus !== 'active') return;
-    if (!threadIdParam || !activeSessionId) return;
-
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') {
-        setAwayDeadline((prev) => prev ?? Date.now() + AWAY_GRACE_MS);
-      } else {
-        setAwayDeadline(null);
-        setAwayRemainingMs(AWAY_GRACE_MS);
-      }
-    };
-
-    // If the page mounts while already hidden (rare), arm immediately.
-    if (document.visibilityState === 'hidden') onVisibility();
-
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [sessionStatus, threadIdParam, activeSessionId]);
-
-  // Reset away state if the session ends or unmounts.
-  useEffect(() => {
-    if (sessionStatus !== 'active') {
-      setAwayDeadline(null);
-      setAwayRemainingMs(AWAY_GRACE_MS);
-    }
-  }, [sessionStatus]);
-
-  // Tick the remaining-time display while the deadline is armed and end the
-  // session when it elapses.
-  useEffect(() => {
-    if (awayDeadline === null) return;
-    let raf = 0;
-    const tick = () => {
-      const remaining = awayDeadline - Date.now();
-      setAwayRemainingMs(remaining);
-      if (remaining <= 0) {
-        // Fire and forget — confirmEndSession is idempotent (guards on
-        // endingSession + threadId+sessionId presence).
-        setAwayDeadline(null);
-        setAwayRemainingMs(AWAY_GRACE_MS);
-        // Defer to next microtask so React state settles before the async work.
-        Promise.resolve().then(() => {
-          void confirmEndSession();
-        });
-        return;
-      }
-      raf = window.setTimeout(tick, 250) as unknown as number;
-    };
-    tick();
-    return () => {
-      if (raf) window.clearTimeout(raf);
-    };
-  }, [awayDeadline, confirmEndSession]);
 
   // -------- mark thread as read --------
   useEffect(() => {
@@ -1453,18 +1481,6 @@ export default function ChatPage() {
         onCopy={handleActionCopy}
         onDelete={handleActionDelete}
       />
-
-      {/* Tab-away countdown overlay (Issue 5) */}
-      {awayDeadline !== null && awayRemainingMs > 0 && (
-        <AwayCountdownOverlay
-          secondsRemaining={awayRemainingMs / 1000}
-          astrologerName={activeThread?.providerId.name || 'Astrologer'}
-          onStay={() => {
-            setAwayDeadline(null);
-            setAwayRemainingMs(AWAY_GRACE_MS);
-          }}
-        />
-      )}
 
       {/* Rating modal */}
       <RatingModal

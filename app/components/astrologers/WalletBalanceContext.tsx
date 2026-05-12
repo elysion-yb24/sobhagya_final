@@ -53,8 +53,18 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       setAuthError(null);
       
     } catch (error: any) {
-      console.error('❌ Error fetching wallet balance:', error);
-      
+      const isAuthError =
+        error?.message?.includes('401') ||
+        error?.message?.includes('403') ||
+        error?.message?.includes('Unauthorized') ||
+        error?.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED');
+      // Auth errors are expected (token expired) — log quietly so we don't trip the dev overlay.
+      if (isAuthError) {
+        console.warn('Wallet balance: auth required');
+      } else {
+        console.error('❌ Error fetching wallet balance:', error);
+      }
+
       // Check if user is still authenticated after error
       if (!isAuthenticated()) {
        

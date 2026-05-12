@@ -20,7 +20,11 @@ export async function simpleApiRequest(url: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`API Error (${response.status}):`, errorText);
+    // 401/403 are expected when a token is expired — caller handles them.
+    // Logging here triggers Next.js's dev-overlay error popup unnecessarily.
+    if (response.status !== 401 && response.status !== 403) {
+      console.warn(`API ${response.status} ${url}:`, errorText);
+    }
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }
 

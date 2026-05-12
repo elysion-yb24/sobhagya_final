@@ -36,6 +36,9 @@ export interface Message {
   isAutomated?: boolean
   clientMessageId?: string
   deliveryStatus?: 'sent' | 'delivered' | 'read' | 'failed'
+  /** Original File kept on optimistic image messages so a failed upload can be
+   *  retried without losing the photo. Not transmitted; UI-only. */
+  pendingFile?: File
 }
 
 interface ChatMessagesProps {
@@ -96,11 +99,15 @@ const formatDateLabel = (iso?: string): string => {
 }
 
 const URL_RE = /(https?:\/\/[^\s]+)/g
+// Non-global twin used inside the .map() loop. Calling .test() on a /g regex
+// is stateful (it advances `lastIndex`) which used to make alternating links
+// fail to render as <a>. Use a stateless variant for per-part checks.
+const URL_TEST = /^https?:\/\//
 function renderTextWithLinks(text: string, isUser: boolean) {
   if (!text) return null
   const parts = text.split(URL_RE)
   return parts.map((part, i) => {
-    if (URL_RE.test(part)) {
+    if (URL_TEST.test(part)) {
       return (
         <a
           key={i}

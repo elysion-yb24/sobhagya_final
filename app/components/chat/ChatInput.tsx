@@ -32,6 +32,10 @@ interface ChatInputProps {
   onSelectImages?: (files: File[]) => void
   onRemovePending?: (id: string) => void
   maxAttachments?: number
+  /** Per-file size limit in bytes. Files above the limit are rejected with
+   *  an inline warning rather than being uploaded and silently failing on
+   *  the server. */
+  maxFileSizeBytes?: number
 
   isInsufficient?: boolean
   onRecharge?: () => void
@@ -51,14 +55,29 @@ export default function ChatInput({
   onSelectImages,
   onRemovePending,
   maxAttachments = 4,
+  maxFileSizeBytes = 10 * 1024 * 1024,
   isInsufficient = false,
   onRecharge,
   isSending = false,
 }: ChatInputProps) {
   const [isTyping, setIsTyping] = useState(false)
+  const [attachmentError, setAttachmentError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const errorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current)
+    }
+  }, [])
+
+  const flashError = (message: string) => {
+    setAttachmentError(message)
+    if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current)
+    errorTimeoutRef.current = setTimeout(() => setAttachmentError(null), 4000)
+  }
 
   useEffect(() => {
     return () => {
@@ -101,11 +120,36 @@ export default function ChatInput({
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'))
-    if (files.length === 0) return
+    const all = Array.from(e.target.files || [])
+    const images = all.filter((f) => f.type.startsWith('image/'))
+    const skippedNonImage = all.length - images.length
+
+    const tooLarge: File[] = []
+    const accepted: File[] = []
+    for (const f of images) {
+      if (f.size > maxFileSizeBytes) tooLarge.push(f)
+      else accepted.push(f)
+    }
+
     const remaining = Math.max(0, maxAttachments - pendingImages.length)
-    if (remaining === 0) return
-    onSelectImages?.(files.slice(0, remaining))
+    const toAdd = accepted.slice(0, remaining)
+    const skippedOverLimit = accepted.length - toAdd.length
+
+    if (toAdd.length > 0) onSelectImages?.(toAdd)
+
+    const limitMb = Math.round(maxFileSizeBytes / (1024 * 1024))
+    if (tooLarge.length > 0) {
+      flashError(
+        tooLarge.length === 1
+          ? `That photo is over ${limitMb}MB — please pick a smaller one.`
+          : `${tooLarge.length} photos were over ${limitMb}MB and skipped.`
+      )
+    } else if (skippedNonImage > 0) {
+      flashError('Only image files can be attached.')
+    } else if (skippedOverLimit > 0) {
+      flashError(`You can attach up to ${maxAttachments} photos at a time.`)
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -131,6 +175,14 @@ export default function ChatInput({
           <Wallet className="w-3.5 h-3.5" />
           Low balance — tap to recharge and keep chatting
         </button>
+      )}
+
+      {/* Attachment error (size / type / count) */}
+      {attachmentError && (
+        <div className="px-3 sm:px-4 pt-2 pb-0 text-[12px] text-red-600 bg-red-50 border-b border-red-100 flex items-center gap-1.5 py-1.5">
+          <X className="w-3.5 h-3.5" />
+          <span>{attachmentError}</span>
+        </div>
       )}
 
       {/* Reply preview */}

@@ -32,8 +32,8 @@ const poppins = Poppins({
 });
 
 export const metadata = {
-  title: "Sobhagya",
-  description: "Your trusted astrology consultation platform",
+  title: "Sobhagya Bhakti — Har Hindu Ka Bharosa",
+  description: "Sobhagya Bhakti — Har Hindu Ka Bharosa. Your trusted astrology consultation platform for accurate predictions and expert guidance.",
   icons: {
     icon: "/sobhagya-logo.svg",
   },

@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, MapPin, Sparkles } from "lucide-react";
 import BirthDetailsForm, { loadStoredBirth } from "../components/astrology/BirthDetailsForm";
 import ResultCard from "../components/astrology/ResultCard";
 import PageShell from "../components/astrology/PageShell";
-import SignInGate from "../components/astrology/SignInGate";
 import { useLanguage } from "../components/astrology/LanguagePicker";
-import type { BirthDetails } from "../lib/astrology/types";
+import type { BirthDetails, Language } from "../lib/astrology/types";
 import {
   generateKundli,
-  AuthRequiredError,
   type KundliResponse,
 } from "../lib/astrology/featureApi";
-import { getAuthToken } from "../utils/auth-utils";
+import { useDedupedAction } from "../lib/astrology/useDedupedAction";
 
 const SECTIONS: { key: keyof KundliResponse["result"]; title: string }[] = [
   { key: "birthDetails",   title: "Birth Details" },
@@ -28,16 +26,16 @@ const SECTIONS: { key: keyof KundliResponse["result"]; title: string }[] = [
 ];
 
 export default function FreeKundliPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
   const [birth, setBirth] = useState<BirthDetails | null>(null);
   const [birthOpen, setBirthOpen] = useState(true);
-  const [response, setResponse] = useState<KundliResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lang] = useLanguage();
 
+  const action = useDedupedAction<
+    BirthDetails & { language?: Language },
+    KundliResponse
+  >(generateKundli);
+
   useEffect(() => {
-    setAuthed(!!getAuthToken());
     const stored = loadStoredBirth();
     if (stored) {
       setBirth(stored);
@@ -45,37 +43,17 @@ export default function FreeKundliPage() {
     }
   }, []);
 
-  async function run(b: BirthDetails) {
+  const run = useCallback(async (b: BirthDetails) => {
     setBirth(b);
     setBirthOpen(false);
-    setLoading(true);
-    setError(null);
-    setResponse(null);
     try {
-      const data = await generateKundli({ ...b, language: lang });
-      setResponse(data);
-    } catch (e) {
-      if (e instanceof AuthRequiredError) {
-        setAuthed(false);
-        setError(e.message);
-      } else {
-        setError(e instanceof Error ? e.message : "Failed to generate Kundli.");
-      }
-    } finally {
-      setLoading(false);
+      await action.run({ ...b, language: lang });
+    } catch {
+      // useDedupedAction already surfaces the error via action.error
     }
-  }
+  }, [action, lang]);
 
-  if (authed === false) {
-    return (
-      <PageShell
-        title="Free Kundli Generator"
-        subtitle="Your complete Vedic birth chart with planets, doshas and remedies — generated on demand."
-      >
-        <SignInGate feature="Free Kundli Generator" />
-      </PageShell>
-    );
-  }
+  const { loading, data: response, error } = action;
 
   return (
     <PageShell
@@ -115,12 +93,21 @@ export default function FreeKundliPage() {
 
       {/* Step 2 — Results */}
       {loading && (
-        <div className="rounded-xl border border-[#E5C99F] bg-white p-6 text-center text-sm text-[#6b4a1f] animate-pulse">
-          <Sparkles className="inline mr-2" size={16} /> Generating your Kundli…
+        <div className="rounded-xl border border-[#E5C99F] bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-[#6b4a1f]">
+            <Sparkles size={16} className="text-[#F7941D]" />
+            <span>Generating your Kundli…</span>
+          </div>
+          <div className="mt-4 space-y-2" aria-hidden="true">
+            <div className="h-3 w-1/3 rounded bg-[#F7E2BD]/70 animate-pulse" />
+            <div className="h-3 w-full rounded bg-[#F7E2BD]/70 animate-pulse" />
+            <div className="h-3 w-5/6 rounded bg-[#F7E2BD]/70 animate-pulse" />
+            <div className="h-3 w-2/3 rounded bg-[#F7E2BD]/70 animate-pulse" />
+          </div>
         </div>
       )}
 
-      {error && (
+      {error && !loading && (
         <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
           {error}
         </div>

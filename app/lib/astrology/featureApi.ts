@@ -22,11 +22,11 @@ async function call<T>(
     "Content-Type": "application/json",
     ...((init.headers as Record<string, string> | undefined) ?? {}),
   };
-  if (requireAuth) {
-    const token = getAuthToken();
-    if (!token) throw new AuthRequiredError();
-    headers.Authorization = `Bearer ${token}`;
-  }
+  const token = getAuthToken();
+  if (requireAuth && !token) throw new AuthRequiredError();
+  // Attach the token opportunistically on public endpoints so the backend can
+  // tag the cache row with the user when one is logged in — but missing is OK.
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${backendUrl()}${path}`, { ...init, headers });
   let json: Envelope<T>;
   try {
@@ -86,11 +86,47 @@ export interface GunMilanResponse {
 export function generateKundli(
   body: BirthDetails & { language?: Language },
 ): Promise<KundliResponse> {
+  // Public endpoint — auth is opportunistic so a logged-in user's results can
+  // later be linked to their profile, but a guest can generate freely.
   return call<KundliResponse>(
     "/api/kundli/generate",
     { method: "POST", body: JSON.stringify(body) },
-    true,
+    false,
   );
+}
+
+export async function generateMobileKundli(
+  query: { userName?: string; userGender?: string; userDOB?: string; userTOB?: string; userGeo?: string; language?: Language }
+): Promise<KundliResponse> {
+  const qs = new URLSearchParams();
+  if (query.userName) qs.set("userName", query.userName);
+  if (query.userGender) qs.set("userGender", query.userGender);
+  if (query.userDOB) qs.set("userDOB", query.userDOB);
+  if (query.userTOB) qs.set("userTOB", query.userTOB);
+  if (query.userGeo) qs.set("userGeo", query.userGeo);
+  if (query.language) qs.set("language", query.language);
+
+  const res = await fetch(`${backendUrl()}/api/kundli/mobile?${qs.toString()}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" }
+  });
+  
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error(`Request failed (${res.status})`);
+  }
+  
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || `Request failed (${res.status})`);
+  }
+
+  return {
+    fromCache: !!json.cached,
+    cacheKey: json.meta?.cacheKey || "",
+    result: json.data as KundliResult,
+  };
 }
 
 export function getHoroscope(
@@ -122,7 +158,7 @@ export function computeGunMilan(
         ...(language ? { language } : {}),
       }),
     },
-    true,
+    false,
   );
 }
 

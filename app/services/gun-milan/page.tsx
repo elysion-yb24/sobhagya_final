@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Heart } from "lucide-react";
 import BirthDetailsForm from "../../components/astrology/BirthDetailsForm";
 import ResultCard from "../../components/astrology/ResultCard";
 import PageShell from "../../components/astrology/PageShell";
-import SignInGate from "../../components/astrology/SignInGate";
 import { useLanguage } from "../../components/astrology/LanguagePicker";
-import type { BirthDetails } from "../../lib/astrology/types";
+import type { BirthDetails, Language } from "../../lib/astrology/types";
 import {
   computeGunMilan,
-  AuthRequiredError,
   type GunMilanResponse,
 } from "../../lib/astrology/featureApi";
-import { getAuthToken } from "../../utils/auth-utils";
+import { useDedupedAction } from "../../lib/astrology/useDedupedAction";
 
 const SECTIONS: { key: keyof GunMilanResponse["result"]; title: string }[] = [
   { key: "ashtakoot",    title: "Ashtakoot Points (36-Point Guna Milan)" },
@@ -22,52 +20,31 @@ const SECTIONS: { key: keyof GunMilanResponse["result"]; title: string }[] = [
   { key: "report",       title: "Detailed Compatibility Report" },
 ];
 
+interface MatchInput {
+  male: BirthDetails;
+  female: BirthDetails;
+  language?: Language;
+}
+
 export default function GunMilanPage() {
-  const [authed, setAuthed] = useState<boolean | null>(null);
   const [male, setMale] = useState<BirthDetails | null>(null);
   const [female, setFemale] = useState<BirthDetails | null>(null);
-  const [response, setResponse] = useState<GunMilanResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [lang] = useLanguage();
 
-  useEffect(() => {
-    setAuthed(!!getAuthToken());
-  }, []);
+  const action = useDedupedAction<MatchInput, GunMilanResponse>(
+    (input) => computeGunMilan(input.male, input.female, input.language),
+  );
 
-  async function calculate() {
+  const calculate = useCallback(async () => {
     if (!male || !female) return;
-    setLoading(true);
-    setError(null);
-    setResponse(null);
     try {
-      const data = await computeGunMilan(male, female, lang);
-      setResponse(data);
-    } catch (e) {
-      if (e instanceof AuthRequiredError) {
-        setAuthed(false);
-        setError(e.message);
-      } else {
-        setError(e instanceof Error ? e.message : "Failed to compute match.");
-      }
-    } finally {
-      setLoading(false);
+      await action.run({ male, female, language: lang });
+    } catch {
+      /* surfaced via action.error */
     }
-  }
+  }, [action, male, female, lang]);
 
-  if (authed === false) {
-    return (
-      <PageShell
-        title="Gun Milan"
-        subtitle="Traditional 36-point Vedic compatibility analysis for marriage."
-      >
-        <SignInGate
-          feature="Gun Milan"
-          description="Sign in to calculate the 36-point Ashtakoot match and view the detailed compatibility report."
-        />
-      </PageShell>
-    );
-  }
+  const { loading, data: response, error } = action;
 
   return (
     <PageShell
@@ -100,7 +77,7 @@ export default function GunMilanPage() {
           <button
             onClick={calculate}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#F7941D] to-[#E08015] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:from-[#E08015] hover:to-[#C66C0D] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#F7941D] to-[#E08015] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:from-[#E08015] hover:to-[#C66C0D] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#F7941D]/40"
           >
             <Heart size={16} />
             {loading ? "Calculating compatibility…" : "Calculate Match"}
@@ -115,7 +92,18 @@ export default function GunMilanPage() {
         </p>
       )}
 
-      {error && (
+      {loading && (
+        <div className="rounded-xl border border-[#E5C99F] bg-white p-5 shadow-sm">
+          <div className="space-y-2" aria-busy="true">
+            <div className="h-3 w-1/3 rounded bg-[#F7E2BD]/70 animate-pulse" />
+            <div className="h-3 w-full rounded bg-[#F7E2BD]/70 animate-pulse" />
+            <div className="h-3 w-5/6 rounded bg-[#F7E2BD]/70 animate-pulse" />
+            <div className="h-3 w-2/3 rounded bg-[#F7E2BD]/70 animate-pulse" />
+          </div>
+        </div>
+      )}
+
+      {error && !loading && (
         <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-700">
           {error}
         </div>

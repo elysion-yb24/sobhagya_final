@@ -41,7 +41,7 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta 
           name="viewport" 
@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <meta name="theme-color" content="#F7941D" />
       </head>
-      <body className={`${inter.variable} ${ebGaramond.variable} ${poppins.variable}`}>
+      <body className={`${inter.variable} ${ebGaramond.variable} ${poppins.variable}`} suppressHydrationWarning>
         <Suspense fallback={<Loading />}>
           <WalletBalanceProvider>
             <SessionManagerProvider>  {/* 👈 wrap everything inside */}

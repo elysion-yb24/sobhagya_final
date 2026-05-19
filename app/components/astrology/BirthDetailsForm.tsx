@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BirthDetails } from "../../lib/astrology/types";
 import { type SelectedPlace } from "./CityAutocomplete";
 import LocationInput from "./LocationInput";
@@ -30,28 +30,71 @@ function daysInMonth(year: number, month1: number): number {
   return new Date(year, month1, 0).getDate();
 }
 
+// Deterministic defaults so the first render matches between server and client.
+// Anything time-or-storage-derived must be applied AFTER mount via useEffect.
+const DEFAULTS = {
+  name: "",
+  gender: "male" as const,
+  day: 1,
+  month: 1,
+  year: 2000,
+  hour: 12,
+  min: 0,
+  place: "",
+  lat: 19.076,
+  lon: 72.877,
+  tzone: 5.5,
+};
+
 export default function BirthDetailsForm({
   value, onSubmit, submitLabel = "Generate", persist = true, idPrefix = "b",
 }: Props) {
-  const stored = persist ? loadStoredBirth() : null;
-  const init = { ...(stored ?? {}), ...(value ?? {}) } as Partial<BirthDetails>;
-  const now = new Date();
-  const [name, setName] = useState(init.name ?? "");
-  const [gender, setGender] = useState<"male" | "female" | "other">(init.gender ?? "male");
-  const [day, setDay] = useState<number>(init.day ?? now.getDate());
-  const [month, setMonth] = useState<number>(init.month ?? now.getMonth() + 1);
-  const [year, setYear] = useState<number>(init.year ?? now.getFullYear() - 25);
-  const [hour, setHour] = useState<number>(init.hour ?? 12);
-  const [minute, setMinute] = useState<number>(init.min ?? 0);
-  const [place, setPlace] = useState(init.place ?? "");
-  const [lat, setLat] = useState<number>(init.lat ?? 19.076);
-  const [lon, setLon] = useState<number>(init.lon ?? 72.877);
-  const [tzone, setTzone] = useState<number>(init.tzone ?? 5.5);
+  const init = (value ?? {}) as Partial<BirthDetails>;
+  const [name, setName] = useState(init.name ?? DEFAULTS.name);
+  const [gender, setGender] = useState<"male" | "female" | "other">(init.gender ?? DEFAULTS.gender);
+  const [day, setDay] = useState<number>(init.day ?? DEFAULTS.day);
+  const [month, setMonth] = useState<number>(init.month ?? DEFAULTS.month);
+  const [year, setYear] = useState<number>(init.year ?? DEFAULTS.year);
+  const [hour, setHour] = useState<number>(init.hour ?? DEFAULTS.hour);
+  const [minute, setMinute] = useState<number>(init.min ?? DEFAULTS.min);
+  const [place, setPlace] = useState(init.place ?? DEFAULTS.place);
+  const [lat, setLat] = useState<number>(init.lat ?? DEFAULTS.lat);
+  const [lon, setLon] = useState<number>(init.lon ?? DEFAULTS.lon);
+  const [tzone, setTzone] = useState<number>(init.tzone ?? DEFAULTS.tzone);
   const [mode, setMode] = useState<"auto" | "manual">("auto");
   const [locationTouched, setLocationTouched] = useState<boolean>(
     !!(init.place || (init.lat && init.lon)),
   );
   const [error, setError] = useState<string | null>(null);
+
+  // Hydrate from localStorage (or "today" defaults) after mount so SSR markup
+  // matches the client's first paint. We skip this when the parent supplied
+  // an explicit `value` prop — that already overrides defaults.
+  useEffect(() => {
+    if (value) return;
+    const stored = persist ? loadStoredBirth() : null;
+    if (stored) {
+      setName(stored.name ?? "");
+      setGender(stored.gender ?? "male");
+      setDay(stored.day);
+      setMonth(stored.month);
+      setYear(stored.year);
+      setHour(stored.hour);
+      setMinute(stored.min);
+      if (stored.place) setPlace(stored.place);
+      setLat(stored.lat);
+      setLon(stored.lon);
+      setTzone(stored.tzone);
+      setLocationTouched(true);
+      return;
+    }
+    // No stored data — seed sensible "25 years ago today" defaults.
+    const now = new Date();
+    setDay(now.getDate());
+    setMonth(now.getMonth() + 1);
+    setYear(now.getFullYear() - 25);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onPlace(p: SelectedPlace) {
     setPlace(p.label);

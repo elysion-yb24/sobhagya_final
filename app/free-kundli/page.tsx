@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, MapPin, Sparkles } from "lucide-react";
 import BirthDetailsForm, { loadStoredBirth } from "../components/astrology/BirthDetailsForm";
-import ResultCard from "../components/astrology/ResultCard";
+import KundliTabs from "../components/astrology/KundliTabs";
 import PageShell from "../components/astrology/PageShell";
 import { useLanguage } from "../components/astrology/LanguagePicker";
 import type { BirthDetails, Language } from "../lib/astrology/types";
@@ -12,18 +12,6 @@ import {
   type KundliResponse,
 } from "../lib/astrology/featureApi";
 import { useDedupedAction } from "../lib/astrology/useDedupedAction";
-
-const SECTIONS: { key: keyof KundliResponse["result"]; title: string }[] = [
-  { key: "birthDetails",   title: "Birth Details" },
-  { key: "astroDetails",   title: "Astro Details" },
-  { key: "planets",        title: "Planetary Positions" },
-  { key: "d1Chart",        title: "D1 Rashi Chart" },
-  { key: "manglikDosha",   title: "Mangal Dosha" },
-  { key: "kalsarpaDosha",  title: "Kalsarpa Dosha" },
-  { key: "pitraDosha",     title: "Pitra Dosha" },
-  { key: "rudraksha",      title: "Recommended Rudraksha" },
-  { key: "gemstone",       title: "Gemstone Recommendation" },
-];
 
 export default function FreeKundliPage() {
   const [birth, setBirth] = useState<BirthDetails | null>(null);
@@ -113,7 +101,7 @@ export default function FreeKundliPage() {
         </div>
       )}
 
-      {response && (
+      {response && birth && (
         <section className="space-y-4">
           <div className="flex items-center gap-3">
             <span className="rounded-md bg-[#FFE9C7] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[#C66C0D] uppercase">Result</span>
@@ -121,19 +109,7 @@ export default function FreeKundliPage() {
               Your Kundli {response.fromCache && <span className="text-[#8A6A2A]">(served from cache)</span>}
             </h2>
           </div>
-          <div className="space-y-4">
-            {SECTIONS.map((s) => {
-              const data = response.result[s.key];
-              if (data == null) return null;
-              return (
-                <ResultCard
-                  key={s.key}
-                  title={s.title}
-                  result={{ kind: "json", data, endpoint: `kundli/${String(s.key)}` }}
-                />
-              );
-            })}
-          </div>
+          <KundliTabs birth={birth} response={response} />
         </section>
       )}
     </PageShell>

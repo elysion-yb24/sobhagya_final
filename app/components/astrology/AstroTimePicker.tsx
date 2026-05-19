@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { Clock } from "lucide-react";
 
 interface Props {
@@ -11,92 +10,48 @@ interface Props {
   idPrefix?: string;
 }
 
-function to12(h24: number): { h12: number; meridiem: "AM" | "PM" } {
-  const meridiem = h24 >= 12 ? "PM" : "AM";
-  const raw = h24 % 12;
-  return { h12: raw === 0 ? 12 : raw, meridiem };
-}
-
-function to24(h12: number, meridiem: "AM" | "PM"): number {
-  const normalised = ((h12 % 12) + 12) % 12;
-  return meridiem === "AM" ? normalised : normalised + 12;
+function pad2(n: number): string {
+  return String(Math.max(0, Math.min(99, n))).padStart(2, "0");
 }
 
 /**
- * 12-hour AM/PM time picker. Birth-details internals stay 24-hour to keep the
- * existing API contracts; only the UI shows AM/PM.
+ * Single native `<input type="time">` time picker.
+ *
+ * Why native: on mobile it opens the OS time wheel; on desktop it renders the
+ * browser's compact HH:MM stepper. Either way the user gets one focusable
+ * control instead of the three-input (hour + minute + AM/PM) design that
+ * proved confusing in user testing. Birth-details internals stay 24-hour.
  */
 export default function AstroTimePicker({ hour, minute, onChange, idPrefix = "tp" }: Props) {
-  const { h12, meridiem } = useMemo(() => to12(hour), [hour]);
+  const value = `${pad2(hour)}:${pad2(minute)}`;
 
-  function setH12(next12: number) {
-    const clamped = Math.max(1, Math.min(12, next12));
-    onChange({ hour: to24(clamped, meridiem), minute });
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value; // "HH:MM" or "" if user clears it
+    if (!v) {
+      onChange({ hour: 0, minute: 0 });
+      return;
+    }
+    const [hStr, mStr] = v.split(":");
+    const h = Number(hStr);
+    const m = Number(mStr);
+    onChange({
+      hour: Number.isFinite(h) ? Math.max(0, Math.min(23, h)) : 0,
+      minute: Number.isFinite(m) ? Math.max(0, Math.min(59, m)) : 0,
+    });
   }
-  function setMin(nextMin: number) {
-    const clamped = Math.max(0, Math.min(59, nextMin));
-    onChange({ hour, minute: clamped });
-  }
-  function setMeridiem(next: "AM" | "PM") {
-    onChange({ hour: to24(h12, next), minute });
-  }
-
-  const inputBase =
-    "w-full rounded-md border border-[#E5C99F] bg-white px-2 py-1.5 text-center text-sm tabular-nums text-[#2a1304] focus:border-[#F7941D] focus:ring-2 focus:ring-[#F7941D]/20 focus:outline-none";
 
   return (
-    <div className="flex items-center gap-2">
-      <span className="inline-flex items-center text-[#B98A3C]">
-        <Clock size={14} />
-      </span>
-      <div className="flex flex-1 items-center gap-1">
-        <input
-          id={`${idPrefix}-h`}
-          aria-label="Hour"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={12}
-          value={h12}
-          onChange={(e) => setH12(Number(e.target.value))}
-          className={inputBase + " w-14"}
-        />
-        <span className="text-[#6b4a1f]">:</span>
-        <input
-          id={`${idPrefix}-m`}
-          aria-label="Minute"
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={59}
-          step={1}
-          value={String(minute).padStart(2, "0")}
-          onChange={(e) => setMin(Number(e.target.value))}
-          className={inputBase + " w-14"}
-        />
-      </div>
-      <div role="radiogroup" aria-label="AM or PM" className="inline-flex overflow-hidden rounded-md border border-[#E5C99F] text-xs">
-        {(["AM", "PM"] as const).map((m) => {
-          const active = meridiem === m;
-          return (
-            <button
-              key={m}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setMeridiem(m)}
-              className={
-                "px-2.5 py-1 font-semibold transition-colors " +
-                (active
-                  ? "bg-gradient-to-br from-[#F7941D] to-[#E08015] text-white"
-                  : "bg-white text-[#6b4a1f] hover:bg-[#FFF6E8]")
-              }
-            >
-              {m}
-            </button>
-          );
-        })}
-      </div>
+    <div className="flex items-center gap-2 rounded-lg border border-[#E5C99F] bg-white px-3 py-2 focus-within:border-[#F7941D] focus-within:ring-2 focus-within:ring-[#F7941D]/20">
+      <Clock size={14} className="text-[#B98A3C]" />
+      <input
+        id={`${idPrefix}-time`}
+        aria-label="Time of birth"
+        type="time"
+        step={60}
+        value={value}
+        onChange={handleChange}
+        className="flex-1 bg-transparent text-sm tabular-nums text-[#2a1304] focus:outline-none"
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { backendUrl } from "./backendUrl";
-import { getAuthToken } from "../../utils/auth-utils";
-import type { BirthDetails, Language, ZodiacSign } from "./types";
+import { getAuthToken, clearAuthData } from "../../utils/auth-utils";
+import type { BirthDetails, ChartId, Language, ZodiacSign } from "./types";
 
 type Envelope<T> =
   | { success: true; message: string; data: T }
@@ -35,7 +35,13 @@ async function call<T>(
     throw new Error(`Request failed (${res.status})`);
   }
   if (!res.ok || !json.success) {
-    if (res.status === 401) throw new AuthRequiredError(json.message || "Session expired. Please sign in again.");
+    if (res.status === 401) {
+      clearAuthData();
+      if (typeof window !== "undefined") {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }
+      throw new AuthRequiredError(json.message || "Session expired. Please sign in again.");
+    }
     throw new Error(json.message || `Request failed (${res.status})`);
   }
   return json.data;
@@ -169,3 +175,112 @@ function stripUiFields(b: BirthDetails): Record<string, unknown> {
   void _gender;
   return rest;
 }
+
+export interface DivisionalChartResponse {
+  fromCache: boolean;
+  cacheKey: string;
+  chartId: ChartId;
+  /** Upstream returns `{ svg: "<svg ...>...</svg>" }`. */
+  result: { svg?: string } | unknown;
+}
+
+/**
+ * Lazy fetch for a single divisional chart (D2, D3, ..., chalit, moon, sun).
+ * Auth is required — the route is gated by `authMiddleware` on the backend.
+ */
+export function generateDivisionalChart(
+  birth: BirthDetails & { language?: Language },
+  chartId: ChartId,
+): Promise<DivisionalChartResponse> {
+  return call<DivisionalChartResponse>(
+    `/api/kundli/chart/${chartId}`,
+    { method: "POST", body: JSON.stringify(birth) },
+    true,
+  );
+}
+
+// ── Dasha ──────────────────────────────────────────────────────────────────
+
+export type DashaKind = "vimshottari" | "yogini";
+
+export interface DashaResponse {
+  fromCache: boolean;
+  cacheKey: string;
+  kind: DashaKind;
+  result: unknown;
+}
+
+export function getVimshottariDasha(
+  birth: BirthDetails & { language?: Language },
+): Promise<DashaResponse> {
+  return call<DashaResponse>(
+    "/api/kundli/dasha/vimshottari",
+    { method: "POST", body: JSON.stringify(birth) },
+    true,
+  );
+}
+
+export function getYoginiDasha(
+  birth: BirthDetails & { language?: Language },
+): Promise<DashaResponse> {
+  return call<DashaResponse>(
+    "/api/kundli/dasha/yogini",
+    { method: "POST", body: JSON.stringify(birth) },
+    true,
+  );
+}
+
+// ── Ashtakvarga ────────────────────────────────────────────────────────────
+
+export type AshtakPlanet = "sun" | "moon" | "mars" | "mercury" | "jupiter" | "venus" | "saturn";
+
+export interface AshtakvargaResponse {
+  fromCache: boolean;
+  cacheKey: string;
+  scope: string;
+  result: unknown;
+}
+
+export function getSarvashtak(
+  birth: BirthDetails & { language?: Language },
+): Promise<AshtakvargaResponse> {
+  return call<AshtakvargaResponse>(
+    "/api/kundli/ashtakvarga/sarva",
+    { method: "POST", body: JSON.stringify(birth) },
+    true,
+  );
+}
+
+export function getPlanetAshtak(
+  birth: BirthDetails & { language?: Language },
+  planet: AshtakPlanet,
+): Promise<AshtakvargaResponse> {
+  return call<AshtakvargaResponse>(
+    `/api/kundli/ashtakvarga/${planet}`,
+    { method: "POST", body: JSON.stringify(birth) },
+    true,
+  );
+}
+
+// ── KP (Krishnamurti Paddhati) ─────────────────────────────────────────────
+
+export type KpKind = "planets" | "cusps" | "chart" | "house-sigs" | "planet-sigs";
+
+export interface KpResponse {
+  fromCache: boolean;
+  cacheKey: string;
+  kind: KpKind;
+  result: unknown;
+}
+
+export function getKp(
+  birth: BirthDetails & { language?: Language },
+  kind: KpKind,
+): Promise<KpResponse> {
+  return call<KpResponse>(
+    `/api/kundli/kp/${kind}`,
+    { method: "POST", body: JSON.stringify(birth) },
+    true,
+  );
+}
+

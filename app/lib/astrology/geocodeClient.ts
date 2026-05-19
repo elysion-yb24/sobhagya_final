@@ -1,4 +1,5 @@
 import { backendUrl } from "./backendUrl";
+import { getAuthToken } from "../../utils/auth-utils";
 
 export interface GeocodeHit {
   name: string;
@@ -15,10 +16,16 @@ interface Envelope<T> {
   data?: T;
 }
 
+function authHeaders(): Record<string, string> {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function searchPlaces(query: string): Promise<GeocodeHit[]> {
   if (!query || query.trim().length < 2) return [];
   const res = await fetch(
     `${backendUrl()}/api/geocode?q=${encodeURIComponent(query.trim())}`,
+    { headers: authHeaders() },
   );
   if (!res.ok) return [];
   const json = (await res.json()) as Envelope<{ results?: GeocodeHit[] }>;
@@ -31,6 +38,7 @@ export async function getTimezone(
 ): Promise<number | null> {
   const res = await fetch(
     `${backendUrl()}/api/geocode?tz=${encodeURIComponent(timezone)}&date=${encodeURIComponent(date)}`,
+    { headers: authHeaders() },
   );
   if (!res.ok) return null;
   const json = (await res.json()) as Envelope<{ tzone?: number }>;

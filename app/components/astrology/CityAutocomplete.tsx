@@ -23,6 +23,9 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
   const [loading, setLoading] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  // When the query change comes from picking a suggestion (not typing), skip
+  // the next search so the dropdown doesn't immediately reopen.
+  const skipNextSearch = useRef(false);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -34,8 +37,13 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
 
   useEffect(() => {
     if (timer.current) clearTimeout(timer.current);
+    if (skipNextSearch.current) {
+      skipNextSearch.current = false;
+      return;
+    }
     if (query.trim().length < 2) {
       setHits([]);
+      setOpen(false);
       return;
     }
     timer.current = setTimeout(async () => {
@@ -43,7 +51,7 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
       try {
         const results = await searchPlaces(query.trim());
         setHits(results);
-        setOpen(true);
+        setOpen(results.length > 0);
       } finally {
         setLoading(false);
       }
@@ -53,7 +61,9 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
 
   function pick(h: GeocodeHit) {
     const label = [h.name, h.admin1, h.country].filter(Boolean).join(", ");
+    skipNextSearch.current = true;
     setQuery(label);
+    setHits([]);
     setOpen(false);
     onSelect({ label, lat: h.lat, lon: h.lon, timezone: h.timezone });
   }
@@ -65,7 +75,7 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => hits.length && setOpen(true)}
+          onFocus={() => hits.length > 0 && setOpen(true)}
           placeholder="City, country (e.g. Mumbai, India)"
           className="flex-1 bg-transparent text-sm text-[#333] placeholder-[#A78A5A] focus:outline-none"
         />
@@ -77,6 +87,7 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
             <button
               key={i}
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => pick(h)}
               className="block w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-[#FFF6E8]"
             >

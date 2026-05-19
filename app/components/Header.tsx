@@ -28,7 +28,7 @@ function maskPhone(phone: string | number | undefined | null): string {
 
 const eagleLake = Eagle_Lake({ subsets: ["latin"], weight: "400" });
 
-const texts = ["Sobhagya", "सौभाग्य"];
+const texts = ["Sobhagya Bhakti", "सौभाग्य भक्ति"];
 const delayBetween = 5000;
 
 type HeaderNavigationLink = {
@@ -269,15 +269,20 @@ const Header = () => {
               <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
                 <Image
                   src="/sobhagya-logo.svg"
-                  alt="Sobhagya"
+                  alt="Sobhagya Bhakti"
                   width={64}
                   height={64}
                   className="w-14 h-14 object-contain"
                   priority
                 />
-                <span className={`text-2xl font-medium text-orange-500 tracking-tight ${eagleLake.className}`}>
-                  Sobhagya
-                </span>
+                <div className="flex flex-col leading-tight">
+                  <span className={`text-2xl font-medium text-orange-500 tracking-tight ${eagleLake.className}`}>
+                    Sobhagya Bhakti
+                  </span>
+                  <span className="text-[11px] italic text-orange-600/80 font-medium tracking-wide">
+                    Har Hindu Ka Bharosa
+                  </span>
+                </div>
               </Link>
             </div>
 
@@ -451,15 +456,20 @@ const Header = () => {
               <Link href="/" className="flex items-center gap-2 min-w-0">
                 <Image
                   src="/sobhagya-logo.svg"
-                  alt="Sobhagya"
+                  alt="Sobhagya Bhakti"
                   width={40}
                   height={40}
                   className="w-10 h-10 object-contain flex-shrink-0"
                   priority
                 />
-                <span className={`text-xl font-bold text-orange-500 truncate ${eagleLake.className}`}>
-                  Sobhagya
-                </span>
+                <div className="flex flex-col leading-tight min-w-0">
+                  <span className={`text-lg font-bold text-orange-500 truncate ${eagleLake.className}`}>
+                    Sobhagya Bhakti
+                  </span>
+                  <span className="text-[10px] italic text-orange-600/80 font-medium truncate">
+                    Har Hindu Ka Bharosa
+                  </span>
+                </div>
               </Link>
             </div>
 
@@ -520,12 +530,12 @@ const Header = () => {
           <Link
             href="/"
             className="group flex items-center gap-2 min-w-0 flex-1"
-            aria-label="Sobhagya — Home"
+            aria-label="Sobhagya Bhakti — Home"
           >
             <div className="relative flex-shrink-0">
               <Image
                 src="/sobhagya-logo.svg"
-                alt="Sobhagya"
+                alt="Sobhagya Bhakti"
                 width={36}
                 height={36}
                 className="w-9 h-9 xs:w-10 xs:h-10 object-contain drop-shadow-sm transition-transform duration-500 group-hover:rotate-[8deg] group-active:scale-95"
@@ -535,11 +545,16 @@ const Header = () => {
               {/* Subtle saffron halo */}
               <span className="pointer-events-none absolute inset-0 rounded-full bg-orange-400/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
-            <span
-              className={`text-base xs:text-lg font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-brand-shine truncate ${eagleLake.className}`}
-            >
-              Sobhagya
-            </span>
+            <div className="flex flex-col leading-tight min-w-0">
+              <span
+                className={`text-sm xs:text-base font-bold bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 bg-clip-text text-transparent bg-[length:200%_auto] animate-brand-shine truncate ${eagleLake.className}`}
+              >
+                Sobhagya Bhakti
+              </span>
+              <span className="text-[9px] xs:text-[10px] italic text-orange-600/80 font-medium truncate">
+                Har Hindu Ka Bharosa
+              </span>
+            </div>
           </Link>
 
           {/* Action cluster — wallet + hamburger only on mobile.
@@ -623,10 +638,15 @@ const Header = () => {
               {/* Mobile Menu Header */}
               <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white sticky top-0 z-10">
                 <Link href="/" className={`flex items-center gap-2 ${isActiveLink('/') ? 'scale-105' : ''}`} onClick={() => setIsOpen(false)}>
-                  <Image src="/sobhagya-logo.svg" alt="Sobhagya" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
-                  <span className={`text-xl font-bold text-orange-500 ${eagleLake.className}`}>
-                    Sobhagya
-                  </span>
+                  <Image src="/sobhagya-logo.svg" alt="Sobhagya Bhakti" width={36} height={36} className="w-9 h-9 object-contain" priority quality={100} />
+                  <div className="flex flex-col leading-tight">
+                    <span className={`text-lg font-bold text-orange-500 ${eagleLake.className}`}>
+                      Sobhagya Bhakti
+                    </span>
+                    <span className="text-[10px] italic text-orange-600/80 font-medium">
+                      Har Hindu Ka Bharosa
+                    </span>
+                  </div>
                 </Link>
                 <button 
                   onClick={() => setIsOpen(false)} 

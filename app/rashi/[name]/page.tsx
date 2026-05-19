@@ -17,6 +17,8 @@ import {
   getHealthConcerns,
   getRulingInfo
 } from '@/types/rashiContent';
+import HoroscopeTabs from './HoroscopeTabs';
+import type { ZodiacSign } from '../../lib/astrology/types';
 
 
 const rashiSigns: RashiSign[] = [
@@ -117,7 +119,8 @@ export default async function RashiPage({ params, searchParams }: Props) {
 
       {/* Content */}
       <div className="section-container py-8 sm:py-10 md:py-12">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl sm:rounded-3xl shadow-lg shadow-orange-100/40 border border-orange-100/50 p-5 sm:p-7 md:p-10">
+        <div className="max-w-4xl mx-auto">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-lg shadow-orange-100/40 border border-orange-100/50 p-5 sm:p-7 md:p-10">
           {/* Quick Info Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
             <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-3 sm:p-4 rounded-xl text-center hover:shadow-md transition-shadow">
@@ -221,6 +224,9 @@ export default async function RashiPage({ params, searchParams }: Props) {
               </div>
             </div>
           </section>
+        </div>
+
+        <HoroscopeTabs sign={rashi.name.toLowerCase() as ZodiacSign} />
         </div>
       </div>
     </div>

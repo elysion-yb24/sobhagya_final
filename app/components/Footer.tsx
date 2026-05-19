@@ -35,6 +35,11 @@ const Footer: React.FC = () => {
       </div>
 
       <div className="section-container">
+        {/* Brand tagline */}
+        <p className={`text-center text-[#F7941D] text-base sm:text-lg md:text-xl italic font-semibold tracking-wide mb-2 sm:mb-3 ${eagleLake.className}`}>
+          Har Hindu Ka Bharosa
+        </p>
+
         {/* Title text */}
         <h2 className="text-[#F7941D] text-center text-sm sm:text-base md:text-lg lg:text-xl mb-6 sm:mb-8 lg:mb-10 underline decoration-[#F7941D] underline-offset-8 px-3 sm:px-4 font-medium tracking-tight">
           Your Trusted Astrology App for Accurate Predictions & Expert Guidance!
@@ -362,14 +367,19 @@ const Footer: React.FC = () => {
               <div className="relative w-12 h-12">
                 <Image
                   src="/sobhagya-logo.svg"
-                  alt="Sobhagya"
+                  alt="Sobhagya Bhakti"
                   fill
                   className="object-contain"
                 />
               </div>
-              <span className={`text-white text-lg font-bold ${eagleLake.className}`}>SOBHAGYA</span>
+              <div className="flex flex-col items-start leading-tight">
+                <span className={`text-white text-lg font-bold ${eagleLake.className}`}>SOBHAGYA BHAKTI</span>
+                <span className="text-[#F7941D] text-xs italic font-medium tracking-wide">
+                  Har Hindu Ka Bharosa
+                </span>
+              </div>
             </div>
-            
+
             <p className="text-white text-sm opacity-80 tracking-tighter">
               © OWNED BY ELYSION SOFTWARES PRIVATE LIMITED
             </p>

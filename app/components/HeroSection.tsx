@@ -146,6 +146,26 @@ const HeroSection: React.FC = () => {
             animate={{ opacity: mounted ? 1 : 0, x: mounted ? 0 : -40 }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
+            {/* Brand badge: Sobhagya Bhakti + tagline */}
+            <motion.div
+              className="inline-flex flex-col items-center md:items-start mb-3 sm:mb-4 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 shadow-sm"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: mounted ? 1 : 0, y: mounted ? 0 : -10 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <span
+                className="text-[11px] xs:text-xs sm:text-sm font-semibold tracking-[0.18em] uppercase text-amber-100"
+                style={{ fontFamily: "Poppins" }}
+              >
+                Sobhagya Bhakti
+              </span>
+              <span
+                className="text-[10px] xs:text-[11px] sm:text-xs italic text-white/90 -mt-0.5"
+                style={{ fontFamily: "EB Garamond" }}
+              >
+                Har Hindu Ka Bharosa
+              </span>
+            </motion.div>
             <h1
               className="font-bold leading-tight mb-2 sm:mb-3 break-words"
               style={{

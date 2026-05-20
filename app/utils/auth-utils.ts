@@ -782,11 +782,11 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
     credentials: 'include',
   });
 
-  // If we get a 401, the token might be expired
+  // A 401 USED to call clearAuthData() here, but that turned every transient
+  // backend hiccup into a forced logout + login loop. We now just log and let
+  // the caller decide. Genuine logouts go through performLogout() instead.
   if (response.status === 401) {
-    console.log('❌ 401 Unauthorized - token may be expired');
-    clearAuthData();
-    // Redirect to login would be handled by the calling component
+    console.warn('[authenticatedFetch] 401 from', typeof url === 'string' ? url : '(url)');
   }
 
   return response;

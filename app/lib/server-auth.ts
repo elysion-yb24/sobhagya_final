@@ -75,7 +75,12 @@ export interface ApiFetchResult<T = any> {
 export async function apiFetch<T = any>(path: string, options: ApiFetchOptions = {}): Promise<ApiFetchResult<T>> {
   const { accessToken, refreshToken } = await getAuthCookies();
 
-  if (!accessToken || !refreshToken) {
+  // Only the access token (Bearer) is mandatory — the upstream services
+  // authenticate via the Authorization header. The refresh cookie is forwarded
+  // when present for the chat middleware, but its absence must not 401 the
+  // request, otherwise verify-otp races that don't populate the refresh cookie
+  // would lock the user out immediately after login.
+  if (!accessToken) {
     return {
       status: 401,
       ok: false,
@@ -86,8 +91,18 @@ export async function apiFetch<T = any>(path: string, options: ApiFetchOptions =
   const headers = new Headers(options.headers as HeadersInit | undefined);
   headers.set('Content-Type', 'application/json');
   headers.set('Authorization', `Bearer ${accessToken}`);
-  headers.set('Cookie', `${REFRESH_COOKIE}=${refreshToken}`);
-  headers.set('cookies', refreshToken);
+
+  // user-service and payment-service auth middleware require BOTH the
+  // Authorization header AND a refresh-cookie value at the gate (see
+  // sobhagya-backend-new/user-service/src/middlewares/authMiddleware.js:11).
+  // The middleware only verifies the refresh value when the access token is
+  // expired; otherwise its mere presence is enough to pass the gate. So if
+  // the verify-otp Set-Cookie parse failed and we don't have a separate
+  // refresh cookie, fall back to the access token. That keeps a freshly
+  // authenticated user from getting 401-looped just because of a parser race.
+  const refreshOrAccess = refreshToken || accessToken;
+  headers.set('Cookie', `${REFRESH_COOKIE}=${refreshOrAccess}`);
+  headers.set('cookies', refreshOrAccess);
   headers.set('Origin', 'https://sobhagya.in');
 
   let url = `${getApiBaseUrl()}${path}`;
@@ -125,7 +140,16 @@ export async function apiFetch<T = any>(path: string, options: ApiFetchOptions =
   }
 
   if (res.status === 401) {
-    await clearAuthCookies();
+    // The 401 may be a false positive (missing cookie header, transient backend
+    // hiccup, etc.). Log so we can debug without forcing the user to log in.
+    // Only clear the server-side cookies on an *explicit* auth failure — a
+    // bare "Authentication required." means a header was missing on our side,
+    // which we should fix in apiFetch, not by logging the user out.
+    const msg = (data && typeof data.message === 'string') ? data.message : '';
+    console.warn(`[apiFetch] 401 from ${path}: "${msg}"`);
+    if (/authentication failed|please log in|invalid token|expired/i.test(msg)) {
+      await clearAuthCookies();
+    }
   }
 
   return { status: res.status, ok: res.ok, data: data as T };

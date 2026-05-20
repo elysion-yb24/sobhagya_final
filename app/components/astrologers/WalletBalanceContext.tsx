@@ -74,15 +74,16 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-
-        
-        // Check if it's the specific payment service auth error
+        // A 401 from the wallet endpoint usually means the server-side auth
+        // cookies aren't reaching payment-service (e.g. transient backend hiccup,
+        // proxy race after fresh login). DO NOT call clearAuthData() here —
+        // it wipes localStorage and dispatches user-logout, which then makes
+        // every other component think the user logged out and triggers a
+        // login-redirect loop. Just record the error; the user can retry.
         if (error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
           setAuthError('Payment service authentication issue. Please contact support.');
         } else {
-         
-          setAuthError('Authentication failed. Please login again.');
-          clearAuthData();
+          setAuthError('Could not load wallet balance. Please try again.');
         }
       } else if (error.message?.includes('PAYMENT_SERVICE_AUTH_REQUIRED')) {
         setAuthError('Payment service authentication issue. Please contact support.');

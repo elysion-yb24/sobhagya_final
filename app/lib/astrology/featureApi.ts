@@ -1,5 +1,4 @@
 import { backendUrl } from "./backendUrl";
-import { getAuthToken, clearAuthData } from "../../utils/auth-utils";
 import type { BirthDetails, ChartId, Language, ZodiacSign } from "./types";
 
 type Envelope<T> =
@@ -16,18 +15,24 @@ export class AuthRequiredError extends Error {
 async function call<T>(
   path: string,
   init: RequestInit,
-  requireAuth: boolean,
+  _requireAuth: boolean,
 ): Promise<T> {
+  // The Next.js proxy at /api/astrology/[...path] handles auth server-side via
+  // apiFetch — it reads the HttpOnly auth cookies and forwards both the Bearer
+  // token and the refresh cookie that user-service's authMiddleware expects.
+  // The browser doesn't need to attach anything beyond Content-Type, and there
+  // are no CORS or cross-origin cookie concerns because the call is same-origin.
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...((init.headers as Record<string, string> | undefined) ?? {}),
   };
-  const token = getAuthToken();
-  if (requireAuth && !token) throw new AuthRequiredError();
-  // Attach the token opportunistically on public endpoints so the backend can
-  // tag the cache row with the user when one is logged in — but missing is OK.
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const res = await fetch(`${backendUrl()}${path}`, { ...init, headers });
+
+  const res = await fetch(`${backendUrl()}${path}`, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
+
   let json: Envelope<T>;
   try {
     json = (await res.json()) as Envelope<T>;
@@ -36,11 +41,14 @@ async function call<T>(
   }
   if (!res.ok || !json.success) {
     if (res.status === 401) {
-      clearAuthData();
-      if (typeof window !== "undefined") {
-        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      }
-      throw new AuthRequiredError(json.message || "Session expired. Please sign in again.");
+      // Surface a clear error but DO NOT wipe localStorage or force a redirect.
+      // The previous behavior caused a feedback loop: a transient backend 401
+      // would clear the session, the next render would 401 again, and the
+      // user got bounced to /login indefinitely. Let the caller decide how
+      // to react — typically just show the error and let the user retry.
+      throw new AuthRequiredError(
+        json.message || "Session expired. Please sign in again.",
+      );
     }
     throw new Error(json.message || `Request failed (${res.status})`);
   }
@@ -114,7 +122,8 @@ export async function generateMobileKundli(
 
   const res = await fetch(`${backendUrl()}/api/kundli/mobile?${qs.toString()}`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
   });
   
   let json;

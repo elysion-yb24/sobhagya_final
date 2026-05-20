@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import HoroscopePage from "../page";
+import HoroscopeView from "../HoroscopeView";
 import { ZODIAC_SIGNS, type ZodiacSign } from "../../../lib/astrology/types";
 
 export default function ZodiacSignPage() {
@@ -10,5 +10,5 @@ export default function ZodiacSignPage() {
   const initialSign: ZodiacSign | undefined = ZODIAC_SIGNS.includes(raw as ZodiacSign)
     ? (raw as ZodiacSign)
     : undefined;
-  return <HoroscopePage initialSign={initialSign} />;
+  return <HoroscopeView initialSign={initialSign} />;
 }

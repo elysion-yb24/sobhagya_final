@@ -29,12 +29,12 @@ function MobileKundliContent() {
     setLoading(true);
     setError(null);
     try {
-      const userName = searchParams.get("userName") || undefined;
-      const userGender = searchParams.get("userGender") || undefined;
-      const userDOB = searchParams.get("userDOB") || undefined;
-      const userTOB = searchParams.get("userTOB") || undefined;
-      const userGeo = searchParams.get("userGeo") || undefined;
-      const language = searchParams.get("language") || "en";
+      const userName = searchParams?.get("userName") || undefined;
+      const userGender = searchParams?.get("userGender") || undefined;
+      const userDOB = searchParams?.get("userDOB") || undefined;
+      const userTOB = searchParams?.get("userTOB") || undefined;
+      const userGeo = searchParams?.get("userGeo") || undefined;
+      const language = searchParams?.get("language") || "en";
 
       if (!userDOB || !userTOB || !userGeo) {
         throw new Error("Missing required parameters: DOB, TOB, or Geo Location.");

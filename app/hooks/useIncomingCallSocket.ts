@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getApiBaseUrl } from '../config/api';
+import { getCallSocketUrl } from '../lib/socketUrl';
 import { getUserDetails, getAuthToken } from '../utils/auth-utils';
 
 export interface IncomingCall {
@@ -18,7 +19,7 @@ export interface IncomingCall {
   timestamp: string;
 }
 
-const CALL_SOCKET_URL = typeof window !== 'undefined' ? getApiBaseUrl() : 'https://micro.sobhagya.in';
+const CALL_SOCKET_URL = typeof window !== 'undefined' ? getCallSocketUrl() : 'https://micro.sobhagya.in';
 const CALL_SOCKET_PATH = '/call-socket/socket.io/';
 
 /**

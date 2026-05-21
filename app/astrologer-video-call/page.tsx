@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getUserDetails, getAuthToken } from '../utils/auth-utils';
 import { getApiBaseUrl } from '../config/api';
+import { getCallSocketUrl } from '../lib/socketUrl';
+import toast from 'react-hot-toast';
 import VideoCallRoom from '../components/video/VideoCallRoom';
 import AudioCallRoom from '../components/audio/AudioCallRoom';
 import InsufficientBalanceModal from '../components/ui/InsufficientBalanceModal';
@@ -53,8 +55,8 @@ export default function AstrologerCallPage() {
       // Dynamic import of socket.io-client
       const { io } = await import('socket.io-client');
       
-      // Connect to socket server as broadcaster
-      const socket = io('https://micro.sobhagya.in', {
+      // Connect to socket server as broadcaster (env-configurable URL).
+      const socket = io(getCallSocketUrl(), {
         path: '/call-socket/socket.io',
         query: {
           userId: astrologerId,
@@ -102,35 +104,35 @@ export default function AstrologerCallPage() {
       // Listen for partner disconnection events
       socket.on('partner_disconnect', (data: any) => {
         console.log('📞 Partner disconnected:', data);
-        alert('User has disconnected from the call.');
+        toast('User has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('partner_left', (data: any) => {
         console.log('📞 Partner left:', data);
-        alert('User has left the call.');
+        toast('User has left the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('call_terminated', (data: any) => {
         console.log('📞 Call terminated:', data);
-        alert('Call has been terminated.');
+        toast.error('Call has been terminated.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('user_disconnect', (data: any) => {
         console.log('📞 User disconnected:', data);
-        alert('User has disconnected from the call.');
+        toast('User has disconnected from the call.');
         cleanup();
         handleDisconnect();
       });
 
       socket.on('user_left', (data: any) => {
         console.log('📞 User left:', data);
-        alert('User has left the call.');
+        toast('User has left the call.');
         cleanup();
         handleDisconnect();
       });

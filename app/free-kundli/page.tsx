@@ -27,15 +27,14 @@ export default function FreeKundliPage() {
     const stored = loadStoredBirth();
     if (stored) {
       setBirth(stored);
-      setBirthOpen(false);
     }
   }, []);
 
   const run = useCallback(async (b: BirthDetails) => {
     setBirth(b);
-    setBirthOpen(false);
     try {
       await action.run({ ...b, language: lang });
+      setBirthOpen(false);
     } catch {
       // useDedupedAction already surfaces the error via action.error
     }
@@ -106,7 +105,7 @@ export default function FreeKundliPage() {
           <div className="flex items-center gap-3">
             <span className="rounded-md bg-[#FFE9C7] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[#C66C0D] uppercase">Result</span>
             <h2 className="text-sm font-semibold text-[#2a1304]">
-              Your Kundli {response.fromCache && <span className="text-[#8A6A2A]">(served from cache)</span>}
+              Your Kundli
             </h2>
           </div>
           <KundliTabs birth={birth} response={response} />

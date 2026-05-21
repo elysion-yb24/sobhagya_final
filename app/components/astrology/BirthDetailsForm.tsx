@@ -6,7 +6,7 @@ import { type SelectedPlace } from "./CityAutocomplete";
 import LocationInput from "./LocationInput";
 import AstroDatePicker from "./AstroDatePicker";
 import AstroTimePicker from "./AstroTimePicker";
-import { getTimezone } from "../../lib/astrology/geocodeClient";
+import { getTimezone, searchPlaces } from "../../lib/astrology/geocodeClient";
 
 const STORAGE_KEY = "astro:birth";
 
@@ -65,6 +65,10 @@ export default function BirthDetailsForm({
   const [locationTouched, setLocationTouched] = useState<boolean>(
     !!(init.place || (init.lat && init.lon)),
   );
+  // Tracks the displayed autocomplete text. When it diverges from `place`
+  // (the last successfully-resolved label), the location is "stale" — the
+  // user has typed but not picked a suggestion, so lat/lon are wrong.
+  const [placeQuery, setPlaceQuery] = useState<string>(init.place ?? DEFAULTS.place);
   const [error, setError] = useState<string | null>(null);
 
   // Hydrate from localStorage (or "today" defaults) after mount so SSR markup
@@ -81,7 +85,10 @@ export default function BirthDetailsForm({
       setYear(stored.year);
       setHour(stored.hour);
       setMinute(stored.min);
-      if (stored.place) setPlace(stored.place);
+      if (stored.place) {
+        setPlace(stored.place);
+        setPlaceQuery(stored.place);
+      }
       setLat(stored.lat);
       setLon(stored.lon);
       setTzone(stored.tzone);
@@ -98,9 +105,11 @@ export default function BirthDetailsForm({
 
   async function onPlace(p: SelectedPlace) {
     setPlace(p.label);
+    setPlaceQuery(p.label);
     setLat(p.lat);
     setLon(p.lon);
     setLocationTouched(true);
+    setError(null);
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
     try {
       const tz = await getTimezone(p.timezone, date);
@@ -108,7 +117,7 @@ export default function BirthDetailsForm({
     } catch { /* keep prior */ }
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (year < 1900 || year > 2100) { setError("Year out of range (1900-2100)"); return; }
@@ -120,19 +129,62 @@ export default function BirthDetailsForm({
     }
     if (hour < 0 || hour > 23) { setError("Invalid hour"); return; }
     if (minute < 0 || minute > 59) { setError("Invalid minute"); return; }
-    if (!Number.isFinite(lat) || Math.abs(lat) > 90) { setError("Latitude out of range"); return; }
-    if (!Number.isFinite(lon) || Math.abs(lon) > 180) { setError("Longitude out of range"); return; }
     if (!Number.isFinite(tzone) || Math.abs(tzone) > 14) { setError("Timezone out of range"); return; }
-    if (mode === "auto" && !locationTouched) {
-      setError("Please pick a place of birth (or switch to manual coordinates).");
-      return;
+    let finalLat = lat;
+    let finalLon = lon;
+    let finalTzone = tzone;
+    let finalPlace = (placeQuery || place || "").trim();
+
+    if (mode === "auto") {
+      if (!finalPlace) {
+        setError("Please enter a place of birth (or switch to manual coordinates).");
+        return;
+      }
+
+      // Whenever the typed text doesn't exactly match the last successfully
+      // picked place, resolve it again. We never trust raw typed text — the
+      // first geocode hit becomes the canonical place. If geocoding returns
+      // no hits, the input is treated as invalid.
+      if (finalPlace !== (place ?? "").trim()) {
+        let hits;
+        try {
+          hits = await searchPlaces(finalPlace);
+        } catch {
+          setError("Couldn't verify location — please try again.");
+          return;
+        }
+        if (!hits || hits.length === 0) {
+          setError("Incorrect location input — please enter a valid place of birth.");
+          return;
+        }
+        const h = hits[0];
+        finalLat = h.lat;
+        finalLon = h.lon;
+        finalPlace = h.displayName || [h.name, h.admin1, h.country].filter(Boolean).join(", ");
+        const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+        try {
+          const tz = await getTimezone(h.timezone, date);
+          if (tz !== null) finalTzone = tz;
+        } catch { /* keep prior tzone */ }
+        // Persist the canonical resolution into form state so the displayed
+        // summary and any subsequent submit see the verified place.
+        setPlace(finalPlace);
+        setPlaceQuery(finalPlace);
+        setLat(finalLat);
+        setLon(finalLon);
+        setTzone(finalTzone);
+      }
     }
+
+    if (!Number.isFinite(finalLat) || Math.abs(finalLat) > 90) { setError("Latitude out of range"); return; }
+    if (!Number.isFinite(finalLon) || Math.abs(finalLon) > 180) { setError("Longitude out of range"); return; }
 
     const details: BirthDetails = {
       name: name || undefined,
       gender,
       day, month, year, hour, min: minute,
-      lat, lon, tzone, place: place || undefined,
+      lat: finalLat, lon: finalLon, tzone: finalTzone,
+      place: finalPlace || undefined,
     };
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(details)); } catch { /* ignore */ }
@@ -206,7 +258,14 @@ export default function BirthDetailsForm({
           </button>
         </div>
         {mode === "auto" ? (
-          <LocationInput value={place} onSelect={onPlace} />
+          <LocationInput
+            value={place}
+            onSelect={onPlace}
+            onTextChange={(t) => {
+              setPlaceQuery(t);
+              if (error) setError(null);
+            }}
+          />
         ) : (
           <div className="grid grid-cols-3 gap-3">
             <div>

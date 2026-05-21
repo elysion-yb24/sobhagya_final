@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { getAuthToken, getUserDetails } from './auth-utils';
 import { getApiBaseUrl } from '../config/api';
+import { getCallSocketUrl } from '../lib/socketUrl';
 import Cookies from "universal-cookie";
 import { buildApiUrl } from '../config/api';
 
@@ -36,7 +37,7 @@ class SocketManager {
       this.channelId = channelId;
 
       // Connect to socket server with only userId and role in query
-      this.socket = io('https://micro.sobhagya.in', {
+      this.socket = io(getCallSocketUrl(), {
         path: '/call-socket/socket.io',
         query: {
           userId: this.userId,

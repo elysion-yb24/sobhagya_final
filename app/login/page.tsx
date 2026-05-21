@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { 
@@ -44,8 +44,18 @@ const countries: Country[] = [
   // Other countries can be uncommented as needed
 ];
 
+// Accept only same-origin paths so a crafted ?next=https://evil.com can't
+// be turned into an open redirect.
+function safeNextPath(value: string | null): string | null {
+  if (!value) return null;
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  return value;
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = safeNextPath(searchParams?.get('next') ?? null);
   const [phoneNumber, setPhoneNumber] = useState<string>('');
   const [selectedCountry, setSelectedCountry] = useState<Country>(countries.find(c => c.code === 'IN')!);
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
@@ -118,6 +128,8 @@ export default function LoginPage() {
         } else if (storedAstrologerId) {
           localStorage.removeItem('selectedAstrologerId');
           router.replace(`/astrologers/${storedAstrologerId}`);
+        } else if (nextPath) {
+          router.replace(nextPath);
         } else {
           router.replace('/call-with-astrologer');
         }
@@ -129,7 +141,7 @@ export default function LoginPage() {
     };
 
     checkAuthAndRedirect();
-  }, [router]);
+  }, [router, nextPath]);
 
   // Scroll to top when OTP screen becomes active
   useEffect(() => {
@@ -411,15 +423,16 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace('/call-with-astrologer');
+      // Honor the `?next=` hint set by middleware when no other intent applies.
+      router.replace(nextPath || '/call-with-astrologer');
     } catch (err) {
       console.error('Post-OTP routing failed:', err);
-      router.replace('/call-with-astrologer');
+      router.replace(nextPath || '/call-with-astrologer');
     }
     // Note: we intentionally leave isFinalizing=true so the overlay stays up
     // until the new route mounts. Resetting it would let the login UI paint
     // again during the navigation frame.
-  }, [router]);
+  }, [router, nextPath]);
 
   const handleResendOtp = async () => {
     setIsLoading(true);

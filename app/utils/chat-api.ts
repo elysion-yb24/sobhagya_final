@@ -93,6 +93,25 @@ async function parseJson(res: Response): Promise<any> {
   return res.json().catch(() => ({}));
 }
 
+// Centralized handler so 401s from chat-service surface as actionable UX
+// instead of silently returning empty arrays. We intentionally do NOT clear
+// auth data here — per the documented design, transient 401s must not log
+// the user out (it caused a redirect loop in 2026-05). We log distinctly and
+// dispatch a debounced event so a top-level listener can show a toast or
+// "session expired" banner if it chooses.
+let _lastAuthErrorAt = 0;
+function handleAuthError(where: string, status: number, msg?: string) {
+  console.warn(`[chat-api] ${where} returned ${status}${msg ? `: ${msg}` : ''}`);
+  if (status !== 401 && status !== 403) return;
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  if (now - _lastAuthErrorAt < 5000) return; // throttle
+  _lastAuthErrorAt = now;
+  window.dispatchEvent(new CustomEvent('chat-api-auth-error', {
+    detail: { where, status, message: msg },
+  }));
+}
+
 // -------------------- Adapters --------------------
 
 export function adaptThread(t: BackendThread, currentUserId?: string | null): ChatThreadView {
@@ -148,7 +167,8 @@ export async function fetchThreads(params: { lastTimeStamp?: string; limit?: num
   const url = `/api/chat/threads?${qs.toString()}`;
   const res = await fetch(url, { method: 'GET', headers: authHeaders(), credentials: 'include' });
   if (!res.ok) {
-    console.warn('[chat-api] fetchThreads failed', res.status);
+    const errJson = await parseJson(res);
+    handleAuthError('fetchThreads', res.status, errJson?.message);
     return { threads: [], hasMore: false };
   }
   const json = await parseJson(res);
@@ -170,7 +190,8 @@ export async function fetchMessages(
   const url = `/api/chat/messages/${encodeURIComponent(threadId)}${qs.toString() ? `?${qs}` : ''}`;
   const res = await fetch(url, { method: 'GET', headers: authHeaders(), credentials: 'include' });
   if (!res.ok) {
-    console.warn('[chat-api] fetchMessages failed', res.status);
+    const errJson = await parseJson(res);
+    handleAuthError('fetchMessages', res.status, errJson?.message);
     return [];
   }
   const json = await parseJson(res);
@@ -218,7 +239,7 @@ export async function createChatSession(
   const json = await parseJson(res);
   if (!res.ok || !json?.success || !json?.data?.thread || !json?.data?.session) {
     const message = json?.message || `HTTP ${res.status}`;
-    console.warn('[chat-api] createChatSession failed:', message);
+    handleAuthError('createChatSession', res.status, message);
     return { ok: false, error: { message, status: res.status } };
   }
   const thread = json.data.thread as BackendThread;

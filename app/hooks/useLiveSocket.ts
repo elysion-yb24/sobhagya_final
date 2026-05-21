@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getUserDetails, getAuthToken } from '../utils/auth-utils';
 import { getApiBaseUrl } from '../config/api';
+import { getCallSocketUrl } from '../lib/socketUrl';
 
-const LIVE_SOCKET_URL = typeof window !== 'undefined' ? getApiBaseUrl() : 'https://micro.sobhagya.in';
+const LIVE_SOCKET_URL = typeof window !== 'undefined' ? getCallSocketUrl() : 'https://micro.sobhagya.in';
 const LIVE_SOCKET_PATH = '/live-socket/socket.io/';
 
 export interface LiveSession {

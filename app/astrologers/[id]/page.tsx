@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 import { 
   ArrowLeft, 
   Star, 
@@ -689,12 +690,12 @@ export default function AstrologerProfilePage() {
   const handleSendGift = async (gift: Gift | null) => {
     try {
       if (!gift) {
-        alert('Please select a gift first.');
+        toast.error('Please select a gift first.');
         return;
       }
 
       if (walletBalance < gift.price) {
-        alert('Insufficient wallet balance. Please add funds to your wallet.');
+        toast.error('Insufficient wallet balance. Please add funds to your wallet.');
         return;
       }
 
@@ -751,7 +752,7 @@ export default function AstrologerProfilePage() {
 
     } catch (error) {
       console.error('Error sending gift:', error);
-      alert(error instanceof Error ? error.message : 'Failed to send gift');
+      toast.error(error instanceof Error ? error.message : 'Failed to send gift');
     } finally {
       setIsSendingGift(false);
     }
@@ -801,7 +802,7 @@ export default function AstrologerProfilePage() {
     } catch (error) {
       console.error('Call request error:', error);
       setIsCallRequested(false);
-      alert(error instanceof Error ? error.message : 'Failed to initiate call');
+      toast.error(error instanceof Error ? error.message : 'Failed to initiate call');
     }
   };
 

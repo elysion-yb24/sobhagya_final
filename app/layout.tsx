@@ -8,7 +8,8 @@ import ClientPathname from "./components/ClientPathname";
 import { WalletBalanceProvider } from "@/app/components/astrologers/WalletBalanceContext";
 import AuthErrorHandler from "@/app/components/AuthErrorHandler";
 import { SessionManagerProvider } from "@/app/components/astrologers/SessionManager";
-import ConditionalFooter from "./components/ConditionalFooter"; 
+import ConditionalFooter from "./components/ConditionalFooter";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WalletBalanceProvider>
             <SessionManagerProvider>  {/* 👈 wrap everything inside */}
               <AuthErrorHandler />
+              <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
               <ConditionalHeader />
                <ClientLayout>
                 {children}

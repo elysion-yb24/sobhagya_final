@@ -19,6 +19,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { getAuthToken, getUserDetails, isAuthenticated } from '../utils/auth-utils';
 import { fetchWalletBalance } from '../utils/production-api';
 import { getApiBaseUrl } from '../config/api';
@@ -793,6 +794,42 @@ export default function ChatPage() {
     }
   }, [threadIdParam, activeSessionId, endingSession, socket, isConnected]);
 
+  // -------- best-effort session cleanup when the user closes the tab --------
+  // Socket.IO emits during `beforeunload` aren't guaranteed to flush, so we
+  // also fire a same-origin sendBeacon to /api/chat/session/decline. Cookies
+  // are HttpOnly and same-origin, so the proxy still picks up auth.
+  useEffect(() => {
+    if (!threadIdParam || !activeSessionId) return;
+    if (sessionStatus === 'ended') return;
+    const handler = () => {
+      try {
+        if (socket && isConnected) {
+          socket.emit('end_session', {
+            threadId: threadIdParam,
+            sessionId: activeSessionId,
+            role: 'user',
+            reason: 'tab_closed',
+          });
+        }
+        if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function') {
+          const body = new Blob(
+            [JSON.stringify({ threadId: threadIdParam, sessionId: activeSessionId })],
+            { type: 'application/json' }
+          );
+          navigator.sendBeacon('/api/chat/session/decline', body);
+        }
+      } catch {
+        // best-effort — never block unload
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    window.addEventListener('pagehide', handler);
+    return () => {
+      window.removeEventListener('beforeunload', handler);
+      window.removeEventListener('pagehide', handler);
+    };
+  }, [socket, isConnected, threadIdParam, activeSessionId, sessionStatus]);
+
   // -------- mark thread as read --------
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -987,7 +1024,26 @@ export default function ChatPage() {
         return;
       }
 
-      // 2. Astrologer looks online (or status unknown) — try to create a session.
+      // 2. Wallet pre-check — abort before hitting the backend if the user
+      //    clearly can't sustain even a short session. Backend will also
+      //    enforce, but blocking client-side avoids creating a session record
+      //    that immediately ends from insufficient balance.
+      if (userRole !== 'friend') {
+        const latestBalance = await fetchWalletBalance().catch(() => null);
+        const balance = typeof latestBalance === 'number' ? latestBalance : walletBalance;
+        const rateGuess =
+          Number((cached as { rpm?: number; chatRate?: number } | null)?.rpm) ||
+          Number((cached as { chatRate?: number } | null)?.chatRate) ||
+          DEFAULT_CHAT_RPM;
+        const minNeeded = rateGuess * 2;
+        if (typeof balance === 'number' && balance < minNeeded) {
+          toast.error('Insufficient wallet balance. Please recharge to start a chat.');
+          router.push('/wallet');
+          return;
+        }
+      }
+
+      // 3. Astrologer looks online (or status unknown) — try to create a session.
       const result = await createChatSession(userId, providerId);
       if (result.ok) {
         const qs = new URLSearchParams({
@@ -1110,8 +1166,14 @@ export default function ChatPage() {
       throw new Error(data?.message || 'Failed to send Dakshina');
     }
 
-    setWalletBalance(prev => Math.max(0, (prev ?? 0) - price));
-    refreshBalance();
+    // Don't optimistically decrement — the brief flicker is worse than waiting
+    // for the authoritative value from refreshBalance(). If the backend ever
+    // returns a `newBalance` in the response, prefer that to skip the round trip.
+    if (typeof data?.data?.newBalance === 'number') {
+      setWalletBalance(data.data.newBalance);
+    } else {
+      refreshBalance();
+    }
     return true;
   }, [activeThread, walletBalance, router, fetchGifts, refreshBalance]);
 

@@ -120,21 +120,28 @@ export async function generateMobileKundli(
   if (query.userGeo) qs.set("userGeo", query.userGeo);
   if (query.language) qs.set("language", query.language);
 
+  // Note: this endpoint returns a different envelope shape from /kundli/generate
+  // — `cached` and `meta.cacheKey` sit at the envelope level, not inside `data`
+  // — so we can't reuse the generic `call<T>()` helper that returns `json.data`.
+  // We do mirror its 401 → AuthRequiredError handling so the UI stays consistent.
   const res = await fetch(`${backendUrl()}/api/kundli/mobile?${qs.toString()}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
   });
-  
-  let json;
+
+  let json: any;
   try {
     json = await res.json();
   } catch {
     throw new Error(`Request failed (${res.status})`);
   }
-  
-  if (!res.ok || !json.success) {
-    throw new Error(json.message || `Request failed (${res.status})`);
+
+  if (!res.ok || !json?.success) {
+    if (res.status === 401) {
+      throw new AuthRequiredError(json?.message || "Session expired. Please sign in again.");
+    }
+    throw new Error(json?.message || `Request failed (${res.status})`);
   }
 
   return {

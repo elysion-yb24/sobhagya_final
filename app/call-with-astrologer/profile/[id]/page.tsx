@@ -427,6 +427,16 @@ export default function CallAstrologerProfilePage() {
             return;
         }
         if (isStartingChat) return;
+        // Wallet pre-check — block locally if the user can't sustain ~2 minutes
+        // of chat at this astrologer's rate. Backend enforces too; this avoids
+        // creating a session that immediately ends from insufficient balance.
+        const chatRpm = Number((astrologer as any)?.rpm) || 15;
+        const minNeeded = chatRpm * 2;
+        if (walletBalance < minNeeded) {
+            alert(`Add at least ₹${minNeeded} to your wallet to start a chat.`);
+            router.push('/wallet');
+            return;
+        }
         setIsStartingChat(true);
         try {
             const result = await createOrJoinSession(astrologerId);

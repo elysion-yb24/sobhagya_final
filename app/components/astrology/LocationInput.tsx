@@ -8,6 +8,7 @@ import { reverseSearch } from "../../lib/astrology/geocodeClient";
 interface Props {
   value?: string;
   onSelect: (place: SelectedPlace) => void;
+  onTextChange?: (text: string) => void;
   /** Render the "use my location" button. Defaults to true. */
   geolocation?: boolean;
 }
@@ -18,7 +19,7 @@ type GeoState = "idle" | "loading" | "denied" | "unsupported" | "error";
  * City autocomplete + browser geolocation button. The button is silent on
  * permission-denied — we just disable it and fall back to manual search.
  */
-export default function LocationInput({ value, onSelect, geolocation = true }: Props) {
+export default function LocationInput({ value, onSelect, onTextChange, geolocation = true }: Props) {
   const [geoState, setGeoState] = useState<GeoState>("idle");
   const [seedValue, setSeedValue] = useState<string | undefined>(value);
 
@@ -33,7 +34,7 @@ export default function LocationInput({ value, onSelect, geolocation = true }: P
         try {
           const hit = await reverseSearch(pos.coords.latitude, pos.coords.longitude);
           if (!hit) { setGeoState("error"); return; }
-          const label = [hit.name, hit.admin1, hit.country].filter(Boolean).join(", ");
+          const label = hit.displayName || [hit.name, hit.admin1, hit.country].filter(Boolean).join(", ");
           setSeedValue(label);
           onSelect({ label, lat: hit.lat, lon: hit.lon, timezone: hit.timezone });
           setGeoState("idle");
@@ -52,7 +53,7 @@ export default function LocationInput({ value, onSelect, geolocation = true }: P
 
   return (
     <div className="space-y-2">
-      <CityAutocomplete value={seedValue} onSelect={onSelect} />
+      <CityAutocomplete value={seedValue} onSelect={onSelect} onTextChange={onTextChange} />
       {geolocation && (
         <div className="flex items-center justify-between gap-2">
           <button

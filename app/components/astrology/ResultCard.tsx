@@ -12,7 +12,6 @@ interface Props {
 }
 
 export default function ResultCard({ result, title, onClose }: Props) {
-  const [showRaw, setShowRaw] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function copyRaw() {
@@ -31,20 +30,8 @@ export default function ResultCard({ result, title, onClose }: Props) {
       <div className="flex items-center justify-between gap-2 border-b border-[#F0DAB2] bg-[#FFF6E8] px-4 py-2.5">
         <div className="flex items-center gap-2 min-w-0">
           <h3 className="text-sm font-semibold text-[#2a1304] truncate">{title ?? "Result"}</h3>
-          <span className="text-[10px] uppercase tracking-wider text-[#8A6A2A] hidden sm:inline">
-            {result.kind}
-          </span>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {(result.kind === "json" || result.kind === "text") && (
-            <button
-              type="button"
-              onClick={() => setShowRaw((s) => !s)}
-              className="rounded-md border border-[#E5C99F] bg-white px-2 py-1 text-[10px] text-[#6b4a1f] hover:text-[#F7941D] hover:border-[#F7941D]"
-            >
-              {showRaw ? "Pretty" : "Raw JSON"}
-            </button>
-          )}
           <button
             type="button"
             onClick={copyRaw}
@@ -73,15 +60,11 @@ export default function ResultCard({ result, title, onClose }: Props) {
           // eslint-disable-next-line @next/next/no-img-element
           <img alt="chart" src={`data:${result.mime};base64,${result.base64}`} className="max-w-full mx-auto rounded-lg bg-white p-2 border border-[#F0DAB2]" />
         ) : result.kind === "text" ? (
-          showRaw ? (
-            <pre className="whitespace-pre-wrap text-xs text-[#333] font-mono">{result.text}</pre>
-          ) : looksLikeSvg(result.text) ? (
+          looksLikeSvg(result.text) ? (
             <ChartSVG svg={result.text} />
           ) : (
             <pre className="whitespace-pre-wrap text-sm text-[#333]">{result.text}</pre>
           )
-        ) : showRaw ? (
-          <pre className="whitespace-pre-wrap text-xs text-[#333] font-mono">{JSON.stringify(result.data, null, 2)}</pre>
         ) : (
           <JsonView data={result.data} />
         )}

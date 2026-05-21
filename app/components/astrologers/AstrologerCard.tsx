@@ -409,6 +409,19 @@ const AstrologerCard = React.memo(function AstrologerCard({
         return;
       }
 
+      // 1b. Wallet pre-check. Block locally before hitting the backend if the
+      //     user can't sustain ~2 minutes at the astrologer's chat rate. The
+      //     backend enforces too, but blocking here avoids creating a session
+      //     record that immediately ends from insufficient balance.
+      const chatRpm = Number(rpm) || 15;
+      const minNeeded = chatRpm * 2;
+      if (typeof walletBalance === 'number' && walletBalance < minNeeded) {
+        setShowChatConnectingModal(false);
+        setChatErrorMessage(`Add at least ₹${minNeeded} to your wallet to start a chat.`);
+        setTimeout(() => setChatErrorMessage(null), 4000);
+        return;
+      }
+
       // 2. Attempt to create/resume a session.
       let result = await createOrJoinSession(_id);
 

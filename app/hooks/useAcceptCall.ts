@@ -1,10 +1,10 @@
 import { acceptCallViaApi, rejectCallViaApi } from '../utils/acceptCallService';
 import { io } from 'socket.io-client';
-import { getApiBaseUrl } from '../config/api';
+import { getCallSocketUrl } from '../lib/socketUrl';
 
 const TAG = '[useAcceptCall]';
 const SOCKET_TIMEOUT_MS = 10_000;
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || getApiBaseUrl() || 'https://micro.sobhagya.in';
+const SOCKET_URL = getCallSocketUrl();
 
 /** Accept via a one-shot socket emit with ack. */
 const acceptViaSocket = (channelId: string, userId: string, role: string): Promise<any> =>

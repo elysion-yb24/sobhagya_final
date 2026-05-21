@@ -114,8 +114,15 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Manual/external refresh trigger — any component can call
     // window.dispatchEvent(new Event('wallet-balance-refresh')) to force a refetch.
+    // We also bump a localStorage version key so other open tabs (which don't
+    // see this event) pick the change up via the `storage` handler below.
     const handleManualRefresh = () => {
       if (!isAuthenticated()) return;
+      try {
+        localStorage.setItem('wallet-balance-version', String(Date.now()));
+      } catch {
+        // localStorage may be disabled in private mode — ignore.
+      }
       fetchWalletBalance();
     };
 
@@ -128,6 +135,17 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
     // Listen for explicit wallet refresh requests (after calls, chat msgs, etc.)
     window.addEventListener('wallet-balance-refresh', handleManualRefresh);
 
+    // Cross-tab sync: a recharge or chat-spend in another tab bumps the
+    // `wallet-balance-version` key in localStorage; we react by re-fetching.
+    // Same-tab updates don't fire `storage`, which is exactly what we want
+    // (the originating tab already refreshes via the manual event above).
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'wallet-balance-version' && isAuthenticated()) {
+        fetchWalletBalance();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
     // Also check periodically if user is still authenticated
     const checkAuthInterval = setInterval(() => {
       if (!isAuthenticated()) {
@@ -139,6 +157,7 @@ export const WalletBalanceProvider: React.FC<{ children: React.ReactNode }> = ({
       window.removeEventListener('user-logout', handleLogout);
       window.removeEventListener('user-auth-changed', handleAuthChange);
       window.removeEventListener('wallet-balance-refresh', handleManualRefresh);
+      window.removeEventListener('storage', handleStorage);
       clearInterval(checkAuthInterval);
     };
   }, [fetchWalletBalance]);

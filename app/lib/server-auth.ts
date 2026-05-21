@@ -105,7 +105,18 @@ export async function apiFetch<T = any>(path: string, options: ApiFetchOptions =
   headers.set('cookies', refreshOrAccess);
   headers.set('Origin', 'https://sobhagya.in');
 
-  let url = `${getApiBaseUrl()}${path}`;
+  // Local-dev override: when USER_SERVICE_URL is set, `/user/*` requests skip
+  // the production gateway and hit the local user-service directly (which mounts
+  // its routes at `/api/*`, not `/user/api/*` — nginx normally strips the prefix).
+  // All other paths (`/auth/`, `/payment/`, `/chat/`, ...) keep going to the
+  // configured gateway so you can run user-service in isolation.
+  const userServiceLocal = process.env.USER_SERVICE_URL;
+  let url: string;
+  if (userServiceLocal && path.startsWith('/user/')) {
+    url = `${userServiceLocal.replace(/\/$/, '')}${path.slice('/user'.length)}`;
+  } else {
+    url = `${getApiBaseUrl()}${path}`;
+  }
   if (options.query) {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(options.query)) {

@@ -14,9 +14,12 @@ export interface SelectedPlace {
 interface Props {
   value?: string;
   onSelect: (place: SelectedPlace) => void;
+  /** Fires on every keystroke so the parent can detect free-typed text that
+   *  doesn't match a picked suggestion (stale-location guard). */
+  onTextChange?: (text: string) => void;
 }
 
-export default function CityAutocomplete({ value, onSelect }: Props) {
+export default function CityAutocomplete({ value, onSelect, onTextChange }: Props) {
   const [query, setQuery] = useState(value ?? "");
   const [hits, setHits] = useState<GeocodeHit[]>([]);
   const [open, setOpen] = useState(false);
@@ -55,12 +58,16 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, 600);
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [query]);
 
   function pick(h: GeocodeHit) {
-    const label = [h.name, h.admin1, h.country].filter(Boolean).join(", ");
+    // Prefer the raw Nominatim display_name so downstream consumers (the
+    // backend kundli call, persisted history, third-party astrology APIs we
+    // integrate with) receive the exact string OpenStreetMap returned —
+    // no lossy "City, State, Country" reformat.
+    const label = h.displayName || [h.name, h.admin1, h.country].filter(Boolean).join(", ");
     skipNextSearch.current = true;
     setQuery(label);
     setHits([]);
@@ -74,7 +81,11 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
         <Search size={14} className="text-[#B98A3C]" />
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setQuery(next);
+            onTextChange?.(next);
+          }}
           onFocus={() => hits.length > 0 && setOpen(true)}
           placeholder="City, country (e.g. Mumbai, India)"
           className="flex-1 bg-transparent text-sm text-[#333] placeholder-[#A78A5A] focus:outline-none"
@@ -91,12 +102,16 @@ export default function CityAutocomplete({ value, onSelect }: Props) {
               onClick={() => pick(h)}
               className="block w-full px-3 py-2 text-left text-sm text-[#333] hover:bg-[#FFF6E8]"
             >
-              <div className="font-medium">
-                {h.name}
-                {h.admin1 ? <span className="text-[#8A6A2A]">, {h.admin1}</span> : null}
-                <span className="text-[#8A6A2A]">, {h.country}</span>
+              <div className="font-medium text-[#333] break-words">
+                {h.displayName || (
+                  <>
+                    {h.name}
+                    {h.admin1 ? <span className="text-[#8A6A2A]">, {h.admin1}</span> : null}
+                    <span className="text-[#8A6A2A]">, {h.country}</span>
+                  </>
+                )}
               </div>
-              <div className="text-[10px] text-[#A78A5A]">
+              <div className="text-[10px] text-[#A78A5A] mt-0.5">
                 {h.lat.toFixed(4)}°, {h.lon.toFixed(4)}° · {h.timezone}
               </div>
             </button>

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { Heart } from "lucide-react";
 import BirthDetailsForm from "../../components/astrology/BirthDetailsForm";
-import ResultCard from "../../components/astrology/ResultCard";
+import GunMilanReport from "../../components/astrology/GunMilanReport";
 import PageShell from "../../components/astrology/PageShell";
 import LangToggle from "../../components/astrology/LangToggle";
 import { useLanguage } from "../../components/astrology/LanguagePicker";
@@ -14,13 +14,6 @@ import {
   type GunMilanResponse,
 } from "../../lib/astrology/featureApi";
 import { useDedupedAction } from "../../lib/astrology/useDedupedAction";
-
-const SECTIONS: { key: keyof GunMilanResponse["result"]; title: string }[] = [
-  { key: "ashtakoot",    title: "Ashtakoot Points (36-Point Guna Milan)" },
-  { key: "manglik",      title: "Manglik Comparison" },
-  { key: "obstructions", title: "Match Obstructions" },
-  { key: "report",       title: "Detailed Compatibility Report" },
-];
 
 interface MatchInput {
   male: BirthDetails;
@@ -73,6 +66,7 @@ export default function GunMilanPage() {
             submitLabel={male ? "Update male" : "Save male details"}
             persist={false}
             idPrefix="m"
+            lockedGender="male"
           />
         </div>
         <div className="rounded-xl border border-[#E5C99F] bg-white shadow-sm p-5">
@@ -82,6 +76,7 @@ export default function GunMilanPage() {
             submitLabel={female ? "Update female" : "Save female details"}
             persist={false}
             idPrefix="f"
+            lockedGender="female"
           />
         </div>
       </div>
@@ -104,9 +99,6 @@ export default function GunMilanPage() {
               ariaLabel="Gun Milan response language"
             />
           </div>
-          {response?.fromCache && (
-            <span className="text-[11px] text-[#8A6A2A]">Served from cache.</span>
-          )}
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-[#E5C99F] bg-white p-6 text-center text-sm text-[#8A6A2A]">
@@ -131,21 +123,7 @@ export default function GunMilanPage() {
         </div>
       )}
 
-      {response && (
-        <section className="space-y-4">
-          {SECTIONS.map((s) => {
-            const data = response.result[s.key];
-            if (data == null) return null;
-            return (
-              <ResultCard
-                key={s.key}
-                title={s.title}
-                result={{ kind: "json", data, endpoint: `gun-milan/${String(s.key)}` }}
-              />
-            );
-          })}
-        </section>
-      )}
+      {response && <GunMilanReport response={response} />}
     </PageShell>
   );
 }

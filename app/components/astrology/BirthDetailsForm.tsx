@@ -16,6 +16,12 @@ interface Props {
   submitLabel?: string;
   persist?: boolean;
   idPrefix?: string;
+  /**
+   * When set, the gender field is forced to this value and shown as a
+   * read-only field. Used in Gun Milan where the male partner card must
+   * always submit gender=male and vice versa.
+   */
+  lockedGender?: "male" | "female";
 }
 
 export function loadStoredBirth(): BirthDetails | null {
@@ -47,11 +53,13 @@ const DEFAULTS = {
 };
 
 export default function BirthDetailsForm({
-  value, onSubmit, submitLabel = "Generate", persist = true, idPrefix = "b",
+  value, onSubmit, submitLabel = "Generate", persist = true, idPrefix = "b", lockedGender,
 }: Props) {
   const init = (value ?? {}) as Partial<BirthDetails>;
   const [name, setName] = useState(init.name ?? DEFAULTS.name);
-  const [gender, setGender] = useState<"male" | "female" | "other">(init.gender ?? DEFAULTS.gender);
+  const [gender, setGender] = useState<"male" | "female" | "other">(
+    lockedGender ?? init.gender ?? DEFAULTS.gender,
+  );
   const [day, setDay] = useState<number>(init.day ?? DEFAULTS.day);
   const [month, setMonth] = useState<number>(init.month ?? DEFAULTS.month);
   const [year, setYear] = useState<number>(init.year ?? DEFAULTS.year);
@@ -79,7 +87,9 @@ export default function BirthDetailsForm({
     const stored = persist ? loadStoredBirth() : null;
     if (stored) {
       setName(stored.name ?? "");
-      setGender(stored.gender ?? "male");
+      // lockedGender always wins — Gun Milan must not inherit gender from
+      // a shared localStorage entry written by /free-kundli.
+      setGender(lockedGender ?? stored.gender ?? "male");
       setDay(stored.day);
       setMonth(stored.month);
       setYear(stored.year);
@@ -212,16 +222,26 @@ export default function BirthDetailsForm({
         </div>
         <div>
           <label htmlFor={`${idPrefix}-gender`} className={labelClass}>Gender</label>
-          <select
-            id={`${idPrefix}-gender`}
-            className={input}
-            value={gender}
-            onChange={(e) => setGender(e.target.value as "male" | "female" | "other")}
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
+          {lockedGender ? (
+            <div
+              id={`${idPrefix}-gender`}
+              aria-label="Gender (locked)"
+              className={input + " bg-[#FFFDF5] text-[#8A6A2A] cursor-not-allowed select-none flex items-center"}
+            >
+              {lockedGender === "male" ? "Male" : "Female"}
+            </div>
+          ) : (
+            <select
+              id={`${idPrefix}-gender`}
+              className={input}
+              value={gender}
+              onChange={(e) => setGender(e.target.value as "male" | "female" | "other")}
+            >
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          )}
         </div>
       </div>
 

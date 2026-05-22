@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 interface Props {
   data: unknown;
@@ -57,7 +57,6 @@ const HOUSE_LABEL_POS = [
 
 export default function AshtakvargaGrid({ data, scope, label }: Props) {
   const bindus = useMemo(() => extractBindus(data), [data]);
-  const [showDebug, setShowDebug] = useState(false);
 
   const total = bindus.reduce((a, b) => a + b, 0);
   const expectedTotal =
@@ -157,25 +156,9 @@ export default function AshtakvargaGrid({ data, scope, label }: Props) {
       </div>
 
       {allZero && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold">
-              No bindus extracted. The upstream response shape may differ.
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowDebug((s) => !s)}
-              className="rounded-md border border-amber-400 bg-white px-2 py-0.5 text-[10px] font-semibold text-amber-800 hover:bg-amber-100"
-            >
-              {showDebug ? "Hide raw JSON" : "Show raw JSON"}
-            </button>
-          </div>
-          {showDebug && (
-            <pre className="mt-2 max-h-72 overflow-auto rounded bg-amber-100 p-2 text-[10px] leading-snug">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          )}
-        </div>
+        <p className="rounded-md border border-[#F0DAB2] bg-[#FFFDF5] p-3 text-center text-xs text-[#8A6A2A]">
+          Bindu data is not available for this view right now.
+        </p>
       )}
     </div>
   );

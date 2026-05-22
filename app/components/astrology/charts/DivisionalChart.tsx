@@ -1,27 +1,40 @@
 "use client";
 
-import ChartSVG, { looksLikeSvg } from "../ChartSVG";
+import ChartSVG, { looksLikeSvg, looksLikeImageUrl } from "../ChartSVG";
 
 interface Props {
-  /** Raw SVG string returned by `horo_chart_image/<chartId>`, or an object containing one. */
+  /** Either `{ svgUrl }` (Azure Blob), `{ svg: "<svg>" }` (legacy inline), or a raw SVG string. */
   data: unknown;
 }
 
 /**
- * Renders one divisional chart. The AstrologyAPI image endpoints return either
- * a raw `<svg>...` string or a `{ svg: "<svg>..." }` wrapper depending on the
- * call site — accept both.
+ * Renders one divisional chart. Backend now persists charts to Azure Blob and
+ * returns `{ svgUrl, blobName }`; legacy cache entries may still arrive as
+ * `{ svg: "<svg>..." }` until they expire.
  */
 export default function DivisionalChart({ data }: Props) {
-  const svg = extractSvg(data);
-  if (!svg) {
+  const svgUrl = extractSvgUrl(data);
+  const svg = svgUrl ? null : extractSvg(data);
+  if (!svgUrl && !svg) {
     return (
       <div className="rounded-lg border border-dashed border-[#E5C99F] bg-[#FFFDF5] p-6 text-center text-xs text-[#8A6A2A]">
         Chart not available.
       </div>
     );
   }
-  return <ChartSVG svg={svg} />;
+  return <ChartSVG svgUrl={svgUrl ?? undefined} svg={svg ?? undefined} />;
+}
+
+function extractSvgUrl(data: unknown): string | null {
+  if (typeof data === "string" && looksLikeImageUrl(data)) return data;
+  if (data && typeof data === "object") {
+    const obj = data as Record<string, unknown>;
+    for (const key of ["svgUrl", "svg_url", "url", "imageUrl"]) {
+      const v = obj[key];
+      if (typeof v === "string" && /^https?:\/\//i.test(v)) return v;
+    }
+  }
+  return null;
 }
 
 function extractSvg(data: unknown): string | null {

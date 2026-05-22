@@ -6,7 +6,9 @@ import BirthDetailsForm, { loadStoredBirth } from "../components/astrology/Birth
 import KundliTabs from "../components/astrology/KundliTabs";
 import PageShell from "../components/astrology/PageShell";
 import { useLanguage } from "../components/astrology/LanguagePicker";
-import type { BirthDetails, Language } from "../lib/astrology/types";
+import LangToggle from "../components/astrology/LangToggle";
+import type { BirthDetails, Language, KundliLang } from "../lib/astrology/types";
+import { clampKundliLang } from "../lib/astrology/types";
 import {
   generateKundli,
   type KundliResponse,
@@ -16,7 +18,8 @@ import { useDedupedAction } from "../lib/astrology/useDedupedAction";
 export default function FreeKundliPage() {
   const [birth, setBirth] = useState<BirthDetails | null>(null);
   const [birthOpen, setBirthOpen] = useState(true);
-  const [lang] = useLanguage();
+  const [globalLang, setGlobalLang] = useLanguage();
+  const [lang, setLang] = useState<KundliLang>(clampKundliLang(globalLang));
 
   const action = useDedupedAction<
     BirthDetails & { language?: Language },
@@ -30,15 +33,31 @@ export default function FreeKundliPage() {
     }
   }, []);
 
-  const run = useCallback(async (b: BirthDetails) => {
+  const run = useCallback(async (b: BirthDetails, overrideLang?: KundliLang) => {
     setBirth(b);
+    const useLang: KundliLang = overrideLang ?? lang;
     try {
-      await action.run({ ...b, language: lang });
+      await action.run({ ...b, language: useLang });
       setBirthOpen(false);
     } catch {
       // useDedupedAction already surfaces the error via action.error
     }
   }, [action, lang]);
+
+  const onSubmit = useCallback((b: BirthDetails) => run(b), [run]);
+
+  const switchLang = useCallback(async (next: KundliLang) => {
+    if (next === lang) return;
+    setLang(next);
+    // Persist the choice into the global picker too so other pages remember it.
+    setGlobalLang(next);
+    // Refresh the kundli in the new language. Lazy tabs (Charts/Dasha/etc.)
+    // are remounted via `key={lang}` inside KundliTabs so their internal
+    // caches reset and re-fetch in the new language on next click.
+    if (birth) {
+      await run(birth, next);
+    }
+  }, [lang, setGlobalLang, birth, run]);
 
   const { loading, data: response, error } = action;
 
@@ -71,7 +90,7 @@ export default function FreeKundliPage() {
           <div className="border-t border-[#F0DAB2] p-5">
             <BirthDetailsForm
               value={birth ?? undefined}
-              onSubmit={run}
+              onSubmit={onSubmit}
               submitLabel={loading ? "Generating…" : "Generate Kundli"}
             />
           </div>
@@ -102,13 +121,14 @@ export default function FreeKundliPage() {
 
       {response && birth && (
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="rounded-md bg-[#FFE9C7] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[#C66C0D] uppercase">Result</span>
-            <h2 className="text-sm font-semibold text-[#2a1304]">
-              Your Kundli
-            </h2>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="rounded-md bg-[#FFE9C7] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-[#C66C0D] uppercase">Result</span>
+              <h2 className="text-sm font-semibold text-[#2a1304]">Your Kundli</h2>
+            </div>
+            <LangToggle lang={lang} onChange={switchLang} disabled={loading} ariaLabel="Kundli response language" />
           </div>
-          <KundliTabs birth={birth} response={response} />
+          <KundliTabs birth={birth} response={response} lang={lang} />
         </section>
       )}
     </PageShell>

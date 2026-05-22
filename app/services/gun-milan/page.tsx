@@ -5,8 +5,10 @@ import { Heart } from "lucide-react";
 import BirthDetailsForm from "../../components/astrology/BirthDetailsForm";
 import ResultCard from "../../components/astrology/ResultCard";
 import PageShell from "../../components/astrology/PageShell";
+import LangToggle from "../../components/astrology/LangToggle";
 import { useLanguage } from "../../components/astrology/LanguagePicker";
-import type { BirthDetails, Language } from "../../lib/astrology/types";
+import type { BirthDetails, KundliLang, Language } from "../../lib/astrology/types";
+import { clampKundliLang } from "../../lib/astrology/types";
 import {
   computeGunMilan,
   type GunMilanResponse,
@@ -29,20 +31,32 @@ interface MatchInput {
 export default function GunMilanPage() {
   const [male, setMale] = useState<BirthDetails | null>(null);
   const [female, setFemale] = useState<BirthDetails | null>(null);
-  const [lang] = useLanguage();
+  const [globalLang, setGlobalLang] = useLanguage();
+  const [lang, setLang] = useState<KundliLang>(clampKundliLang(globalLang));
 
   const action = useDedupedAction<MatchInput, GunMilanResponse>(
     (input) => computeGunMilan(input.male, input.female, input.language),
   );
 
-  const calculate = useCallback(async () => {
+  const calculate = useCallback(async (overrideLang?: KundliLang) => {
     if (!male || !female) return;
     try {
-      await action.run({ male, female, language: lang });
+      await action.run({ male, female, language: overrideLang ?? lang });
     } catch {
       /* surfaced via action.error */
     }
   }, [action, male, female, lang]);
+
+  const switchLang = useCallback(async (next: KundliLang) => {
+    if (next === lang) return;
+    setLang(next);
+    // Persist into the global picker so other pages remember the choice.
+    setGlobalLang(next);
+    // Refetch the match in the new language if we already have one.
+    if (male && female && action.data) {
+      await calculate(next);
+    }
+  }, [lang, setGlobalLang, male, female, action.data, calculate]);
 
   const { loading, data: response, error } = action;
 
@@ -74,14 +88,22 @@ export default function GunMilanPage() {
 
       {male && female ? (
         <div className="flex flex-col items-center gap-3">
-          <button
-            onClick={calculate}
-            disabled={loading}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#F7941D] to-[#E08015] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:from-[#E08015] hover:to-[#C66C0D] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#F7941D]/40"
-          >
-            <Heart size={16} />
-            {loading ? "Calculating compatibility…" : "Calculate Match"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => calculate()}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-[#F7941D] to-[#E08015] px-6 py-3 text-sm font-semibold text-white shadow-sm hover:from-[#E08015] hover:to-[#C66C0D] disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#F7941D]/40"
+            >
+              <Heart size={16} />
+              {loading ? "Calculating compatibility…" : "Calculate Match"}
+            </button>
+            <LangToggle
+              lang={lang}
+              onChange={switchLang}
+              disabled={loading}
+              ariaLabel="Gun Milan response language"
+            />
+          </div>
           {response?.fromCache && (
             <span className="text-[11px] text-[#8A6A2A]">Served from cache.</span>
           )}

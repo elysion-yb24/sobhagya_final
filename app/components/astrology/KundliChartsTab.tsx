@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { BirthDetails, ChartId } from "../../lib/astrology/types";
+import type { BirthDetails, ChartId, KundliLang } from "../../lib/astrology/types";
 import { CHART_ID_LABELS, VEDIC_CHART_IDS } from "../../lib/astrology/types";
 import { generateDivisionalChart, AuthRequiredError } from "../../lib/astrology/featureApi";
 import DivisionalChart from "./charts/DivisionalChart";
@@ -11,11 +11,14 @@ interface Props {
   birth: BirthDetails;
   /** D1 chart from the initial `/kundli/generate` response — pre-loaded, no fetch needed. */
   initialD1: unknown;
+  /** Response language for chart labels. Controlled by the page-level toggle. */
+  lang: KundliLang;
 }
 
-export default function KundliChartsTab({ birth, initialD1 }: Props) {
-  // Cache fetched charts client-side so re-clicking the same divisional chart
-  // doesn't refetch. D1 is pre-seeded from the initial generate response.
+export default function KundliChartsTab({ birth, initialD1, lang }: Props) {
+  // KundliTabs uses `key={lang}` to remount this component on language change,
+  // so internal state is implicitly scoped to the current language — no need
+  // to namespace cache keys by lang here.
   const [cache, setCache] = useState<Record<string, unknown>>({ D1: initialD1 });
   const [active, setActive] = useState<ChartId>("D1");
   const [loading, setLoading] = useState(false);
@@ -27,8 +30,8 @@ export default function KundliChartsTab({ birth, initialD1 }: Props) {
     if (cache[id] !== undefined) return;
     setLoading(true);
     try {
-      const res = await generateDivisionalChart(birth, id);
-      setCache((c) => ({ ...c, [id]: (res.result as { svg?: unknown })?.svg ?? res.result }));
+      const res = await generateDivisionalChart({ ...birth, language: lang }, id);
+      setCache((c) => ({ ...c, [id]: res.result }));
     } catch (err) {
       if (err instanceof AuthRequiredError) {
         setError(err.message);
@@ -87,7 +90,7 @@ export default function KundliChartsTab({ birth, initialD1 }: Props) {
         {loading && !activeData && (
           <div className="flex items-center gap-2 text-sm text-[#6b4a1f]">
             <Sparkles size={14} className="text-[#F7941D]" />
-            <span>Generating {active}…</span>
+            <span>Generating {active} ({lang === "en" ? "English" : "हिन्दी"})…</span>
           </div>
         )}
 

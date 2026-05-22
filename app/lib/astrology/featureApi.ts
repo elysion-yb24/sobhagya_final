@@ -196,8 +196,12 @@ export interface DivisionalChartResponse {
   fromCache: boolean;
   cacheKey: string;
   chartId: ChartId;
-  /** Upstream returns `{ svg: "<svg ...>...</svg>" }`. */
-  result: { svg?: string } | unknown;
+  /**
+   * Backend persists charts to Azure Blob and returns `{ svgUrl, blobName }`.
+   * Legacy cache rows may still return `{ svg: "<svg ...>...</svg>" }` until
+   * they expire — the renderer handles both shapes.
+   */
+  result: { svgUrl?: string; blobName?: string; svg?: string } | unknown;
 }
 
 /**

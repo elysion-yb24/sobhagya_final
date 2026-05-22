@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { BirthDetails } from "../../lib/astrology/types";
+import type { BirthDetails, KundliLang } from "../../lib/astrology/types";
 import type { KpKind } from "../../lib/astrology/featureApi";
 import { getKp, AuthRequiredError } from "../../lib/astrology/featureApi";
 import KpChart from "./charts/KpChart";
@@ -18,9 +18,10 @@ const BUTTONS: { id: KpKind; label: string }[] = [
 
 interface Props {
   birth: BirthDetails;
+  lang: KundliLang;
 }
 
-export default function KundliKpTab({ birth }: Props) {
+export default function KundliKpTab({ birth, lang }: Props) {
   const [cache, setCache] = useState<Record<string, unknown>>({});
   const [active, setActive] = useState<KpKind | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +33,7 @@ export default function KundliKpTab({ birth }: Props) {
     if (cache[id] !== undefined) return;
     setLoading(true);
     try {
-      const res = await getKp(birth, id);
+      const res = await getKp({ ...birth, language: lang }, id);
       setCache((c) => ({ ...c, [id]: res.result }));
     } catch (err) {
       if (err instanceof AuthRequiredError) {

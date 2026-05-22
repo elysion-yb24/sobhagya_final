@@ -1,6 +1,16 @@
 export type Language =
   | "en" | "hi" | "te" | "ta" | "ml" | "kn" | "mr" | "bn" | "gu" | "fr" | "es";
 
+// AstrologyAPI's textual/chart endpoints officially honour English and Hindi
+// for the Accept-Language header (per the public v1 docs). The Kundli result
+// UI exposes only these two via a toggle — anything else from the global
+// LanguagePicker is clamped to `en` when used against those endpoints.
+export type KundliLang = "en" | "hi";
+
+export function clampKundliLang(l: Language): KundliLang {
+  return l === "hi" ? "hi" : "en";
+}
+
 export const LANGUAGES: { code: Language; label: string }[] = [
   { code: "en", label: "English" },
   { code: "hi", label: "हिन्दी" },

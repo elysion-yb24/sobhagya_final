@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { BirthDetails } from "../../lib/astrology/types";
+import type { BirthDetails, KundliLang } from "../../lib/astrology/types";
 import type { KundliResponse } from "../../lib/astrology/featureApi";
 import KundliBasicsTab from "./KundliBasicsTab";
 import KundliChartsTab from "./KundliChartsTab";
@@ -22,9 +22,10 @@ const TABS: { id: TabId; label: string }[] = [
 interface Props {
   birth: BirthDetails;
   response: KundliResponse;
+  lang: KundliLang;
 }
 
-export default function KundliTabs({ birth, response }: Props) {
+export default function KundliTabs({ birth, response, lang }: Props) {
   const [active, setActive] = useState<TabId>("basics");
 
   return (
@@ -56,12 +57,26 @@ export default function KundliTabs({ birth, response }: Props) {
         })}
       </div>
 
+      {/*
+        Lazy tabs (charts/dasha/ashtakvarga/kp) are keyed by `lang` so that
+        switching the toggle remounts them — their internal client-side caches
+        reset and the next click on a button fetches in the new language.
+        Basics re-renders naturally because `response` is the freshly-fetched
+        payload from the parent's switchLang call.
+      */}
       <div>
         {active === "basics" && <KundliBasicsTab response={response} />}
-        {active === "charts" && <KundliChartsTab birth={birth} initialD1={response.result.d1Chart} />}
-        {active === "dasha" && <KundliDashaTab birth={birth} />}
-        {active === "ashtakvarga" && <KundliAshtakvargaTab birth={birth} />}
-        {active === "kp" && <KundliKpTab birth={birth} />}
+        {active === "charts" && (
+          <KundliChartsTab
+            key={lang}
+            birth={birth}
+            initialD1={response.result.d1Chart}
+            lang={lang}
+          />
+        )}
+        {active === "dasha" && <KundliDashaTab key={lang} birth={birth} lang={lang} />}
+        {active === "ashtakvarga" && <KundliAshtakvargaTab key={lang} birth={birth} lang={lang} />}
+        {active === "kp" && <KundliKpTab key={lang} birth={birth} lang={lang} />}
       </div>
     </section>
   );

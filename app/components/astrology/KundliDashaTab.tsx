@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { BirthDetails } from "../../lib/astrology/types";
+import type { BirthDetails, KundliLang } from "../../lib/astrology/types";
 import {
   getVimshottariDasha,
   getYoginiDasha,
@@ -20,9 +20,10 @@ const BUTTONS: { id: DashaVariant; label: string; desc: string }[] = [
 
 interface Props {
   birth: BirthDetails;
+  lang: KundliLang;
 }
 
-export default function KundliDashaTab({ birth }: Props) {
+export default function KundliDashaTab({ birth, lang }: Props) {
   const [cache, setCache] = useState<Record<string, unknown>>({});
   const [active, setActive] = useState<DashaVariant | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ export default function KundliDashaTab({ birth }: Props) {
     setLoading(true);
     try {
       const fetcher = id === "vimshottari" ? getVimshottariDasha : getYoginiDasha;
-      const res = await fetcher(birth);
+      const res = await fetcher({ ...birth, language: lang });
       setCache((c) => ({ ...c, [id]: res.result }));
     } catch (err) {
       if (err instanceof AuthRequiredError) {

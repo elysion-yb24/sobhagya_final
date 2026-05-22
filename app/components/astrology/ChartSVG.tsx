@@ -1,22 +1,39 @@
 "use client";
 
-interface Props { svg: string; className?: string; }
+interface Props {
+  svg?: string;
+  svgUrl?: string;
+  className?: string;
+}
 
-export default function ChartSVG({ svg, className }: Props) {
-  const cleaned = normaliseSvg(svg);
+export default function ChartSVG({ svg, svgUrl, className }: Props) {
+  const frameClass =
+    "relative aspect-square w-full max-w-[35rem] " +
+    "rounded-xl bg-white shadow-inner p-8 sm:p-10 " +
+    "flex items-center justify-center " +
+    "[&_svg]:block [&_svg]:w-full [&_svg]:h-full " +
+    "[&_svg]:max-w-full [&_svg]:max-h-full " +
+    "[&_svg]:overflow-visible";
+
+  if (svgUrl) {
+    return (
+      <div className={className ?? "w-full flex justify-center"}>
+        <div className={frameClass}>
+          <img
+            src={svgUrl}
+            alt="Astrology chart"
+            className="block w-full h-full max-w-full max-h-full object-contain"
+            loading="lazy"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const cleaned = normaliseSvg(svg ?? "");
   return (
     <div className={className ?? "w-full flex justify-center"}>
-      <div
-        className={
-          "relative aspect-square w-full max-w-[35rem] " +
-          "rounded-xl bg-white shadow-inner p-8 sm:p-10 " +
-          "flex items-center justify-center " +
-          "[&_svg]:block [&_svg]:w-full [&_svg]:h-full " +
-          "[&_svg]:max-w-full [&_svg]:max-h-full " +
-          "[&_svg]:overflow-visible"
-        }
-        dangerouslySetInnerHTML={{ __html: cleaned }}
-      />
+      <div className={frameClass} dangerouslySetInnerHTML={{ __html: cleaned }} />
     </div>
   );
 }

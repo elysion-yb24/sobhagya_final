@@ -104,8 +104,11 @@ function JsonView({ data }: { data: unknown }) {
     return <ChartSVG svg={data as string} />;
   }
   if (looksLikeImageUrl(data)) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={data as string} alt="chart" className="max-w-full mx-auto rounded-lg bg-white p-2 border border-[#F0DAB2]" />;
+    return <ChartSVG svgUrl={data as string} />;
+  }
+  const unwrappedUrl = extractSvgUrlFromObject(data);
+  if (unwrappedUrl) {
+    return <ChartSVG svgUrl={unwrappedUrl} />;
   }
   const unwrappedSvg = extractSvgFromObject(data);
   if (unwrappedSvg) {
@@ -237,6 +240,16 @@ function renderCell(v: unknown): React.ReactNode {
   if (typeof v === "object") return <JsonView data={v} />;
   if (typeof v === "number") return <span className="font-mono text-[#333]">{formatNumber(v)}</span>;
   return String(v);
+}
+
+function extractSvgUrlFromObject(data: unknown): string | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const obj = data as Record<string, unknown>;
+  for (const key of ["svgUrl", "svg_url", "url", "imageUrl"]) {
+    const v = obj[key];
+    if (typeof v === "string" && /^https?:\/\//i.test(v)) return v;
+  }
+  return null;
 }
 
 function extractSvgFromObject(data: unknown): string | null {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import type { BirthDetails } from "../../lib/astrology/types";
+import type { BirthDetails, KundliLang } from "../../lib/astrology/types";
 import type { AshtakPlanet } from "../../lib/astrology/featureApi";
 import {
   getSarvashtak,
@@ -26,9 +26,10 @@ const BUTTONS: { id: Scope; label: string }[] = [
 
 interface Props {
   birth: BirthDetails;
+  lang: KundliLang;
 }
 
-export default function KundliAshtakvargaTab({ birth }: Props) {
+export default function KundliAshtakvargaTab({ birth, lang }: Props) {
   const [cache, setCache] = useState<Record<string, unknown>>({});
   const [active, setActive] = useState<Scope | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,9 +41,10 @@ export default function KundliAshtakvargaTab({ birth }: Props) {
     if (cache[id] !== undefined) return;
     setLoading(true);
     try {
+      const localised = { ...birth, language: lang };
       const res = id === "sarva"
-        ? await getSarvashtak(birth)
-        : await getPlanetAshtak(birth, id);
+        ? await getSarvashtak(localised)
+        : await getPlanetAshtak(localised, id);
       setCache((c) => ({ ...c, [id]: res.result }));
     } catch (err) {
       if (err instanceof AuthRequiredError) {

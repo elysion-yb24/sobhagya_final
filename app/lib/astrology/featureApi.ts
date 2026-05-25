@@ -56,7 +56,7 @@ async function call<T>(
 }
 
 export type HoroscopePeriod =
-  | "today" | "tomorrow" | "yesterday" | "weekly" | "monthly" | "yearly";
+  | "today" | "tomorrow" | "weekly" | "monthly" | "yearly";
 
 export interface KundliResult {
   birthDetails: unknown;
@@ -76,12 +76,18 @@ export interface KundliResponse {
   result: KundliResult;
 }
 
+export interface HoroscopeData {
+  text: string;
+  url: string;
+  scrapedAt?: string;
+}
+
 export interface HoroscopeResponse {
   fromCache: boolean;
   sign: string;
   period: string;
   dateKey: string;
-  data: unknown;
+  data: HoroscopeData;
 }
 
 export interface GunMilanResult {
@@ -151,18 +157,31 @@ export async function generateMobileKundli(
   };
 }
 
-export function getHoroscope(
+export async function getHoroscope(
   sign: ZodiacSign,
   period: HoroscopePeriod,
-  language?: Language,
+  _language?: Language,
 ): Promise<HoroscopeResponse> {
+  void _language;
+  // Hits the same-origin Next.js route at app/api/horoscope/route.ts, which
+  // reads the scraped horoscope corpus directly from MongoDB. Unlike the other
+  // feature endpoints, this one does NOT need auth or the /api/astrology proxy.
   const qs = new URLSearchParams({ sign, period });
-  if (language) qs.set("language", language);
-  return call<HoroscopeResponse>(
-    `/api/horoscope?${qs.toString()}`,
-    { method: "GET" },
-    false,
-  );
+  const res = await fetch(`/api/horoscope?${qs.toString()}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  let json: Envelope<HoroscopeResponse>;
+  try {
+    json = (await res.json()) as Envelope<HoroscopeResponse>;
+  } catch {
+    throw new Error(`Request failed (${res.status})`);
+  }
+  if (!res.ok || !json.success) {
+    throw new Error(json.message || `Request failed (${res.status})`);
+  }
+  return json.data;
 }
 
 export function computeGunMilan(

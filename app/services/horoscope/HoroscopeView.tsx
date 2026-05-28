@@ -135,25 +135,27 @@ export default function HoroscopeView({ initialSign }: { initialSign?: ZodiacSig
       subtitle="Discover what the stars say for your zodiac. Pick a sign and a time period — no birth details needed."
     >
       {/* Period segmented control */}
-      <div className="flex items-center justify-center sm:justify-start">
-        <div className="inline-flex flex-wrap gap-1 rounded-full border border-[#E5C99F] bg-white p-1 shadow-sm">
-          {PERIODS.map((p) => {
-            const active = period === p.key;
-            return (
-              <button
-                key={p.key}
-                onClick={() => setPeriod(p.key)}
-                className={
-                  "rounded-full px-4 py-1.5 text-xs sm:text-sm font-medium transition-all " +
-                  (active
-                    ? "bg-gradient-to-r from-[#F7941D] to-[#E08015] text-white shadow-sm"
-                    : "text-[#6b4a1f] hover:bg-[#FFF6E8]")
-                }
-              >
-                {p.label}
-              </button>
-            );
-          })}
+      <div className="mt-2 sm:mt-0 -mx-4 sm:mx-0 px-4 sm:px-0 overflow-x-auto sm:overflow-visible no-scrollbar">
+        <div className="flex sm:justify-start justify-start">
+          <div className="inline-flex flex-nowrap sm:flex-wrap gap-1 rounded-full border border-[#E5C99F] bg-white p-1 shadow-sm w-max">
+            {PERIODS.map((p) => {
+              const active = period === p.key;
+              return (
+                <button
+                  key={p.key}
+                  onClick={() => setPeriod(p.key)}
+                  className={
+                    "whitespace-nowrap rounded-full px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-medium transition-all " +
+                    (active
+                      ? "bg-gradient-to-r from-[#F7941D] to-[#E08015] text-white shadow-sm"
+                      : "text-[#6b4a1f] hover:bg-[#FFF6E8]")
+                  }
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

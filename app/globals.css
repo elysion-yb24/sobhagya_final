@@ -941,6 +941,10 @@ img { max-width: 100%; }
 /* Smooth momentum scroll on iOS for horizontally scrolling chip rows */
 .scroll-touch { -webkit-overflow-scrolling: touch; }
 
+/* Hide scrollbar utility (for horizontally scrolling chip rows) */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 /* Ring-offset fallback for focus rings on coloured backgrounds */
 .ring-offset-bg { --tw-ring-offset-color: #fff; }
 

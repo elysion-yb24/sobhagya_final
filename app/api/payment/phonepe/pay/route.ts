@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+// Same-origin BFF route: echo the caller's origin instead of a wildcard.
+function buildCorsHeaders(req: NextRequest): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": req.headers.get("origin") || "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 export async function POST(request: NextRequest) {
+  const corsHeaders = buildCorsHeaders(request);
   try {
     const body = await request.json();
     const { transactionId, amount, userId, extra } = body;
@@ -54,9 +59,6 @@ export async function POST(request: NextRequest) {
       ? "https://api.phonepe.com/apis/hermes" 
       : "https://api-preprod.phonepe.com/apis/pg-sandbox";
 
-    console.log(`[PhonePe Pay] Environment: ${env}, Mode: REDIRECT`);
-    console.log(`[PhonePe Pay] Requesting for Txn ID: ${transactionId}, Amount: ${amount}`);
-
     const phonePeResponse = await fetch(`${phonePeBaseUrl}${endpoint}`, {
       method: "POST",
       headers: {
@@ -98,6 +100,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 200, headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, { status: 200, headers: buildCorsHeaders(request) });
 }

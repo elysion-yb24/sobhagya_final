@@ -159,14 +159,12 @@ export default function OtpVerificationScreen({
       let finalToken = headerToken || data.token;
       if (response.ok && finalToken) {
         setVerificationStatus('success');
-        
-        // Store token in localStorage for all future API calls
-        localStorage.setItem('authToken', finalToken);
-        localStorage.setItem('access_token', finalToken);
-          localStorage.setItem('tokenTimestamp', Date.now().toString());
-        // Also save token in cookies for SSR or server access
-        // document.cookie = `authToken=${finalToken}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
-        // document.cookie = `access_token=${finalToken}; path=/; max-age=${60*60*24*7}; SameSite=None; Secure`;
+
+        // Authoritative auth state lives in the HttpOnly cookies that
+        // /api/auth/verify-otp just set. We keep a single localStorage mirror
+        // (`authToken`) for realtime consumers (LiveKit/socket) that need a raw
+        // token string client-side. storeAuthToken writes `authToken` +
+        // `tokenTimestamp` — the one canonical client key.
         storeAuthToken(finalToken);
         
         

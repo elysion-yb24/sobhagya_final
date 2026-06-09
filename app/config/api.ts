@@ -67,6 +67,21 @@ export function getChatSocketUrl(): string {
   return 'http://localhost:9001';
 }
 
+/**
+ * Gets the user-service backend URL for the Pooja/Remedy module.
+ *
+ * - In production the gateway mounts user-service at `/user`, so we hit
+ *   `${API_BASE}/user` (e.g. https://micro.sobhagya.in/user).
+ * - For local dev you can point straight at the service by setting
+ *   `USER_SERVICE_URL=http://localhost:4001` (no `/user` prefix needed).
+ *
+ * Pooja BFF routes then call `${getUserServiceUrl()}/api/pooja/...`.
+ */
+export function getUserServiceUrl(): string {
+  if (process.env.USER_SERVICE_URL) return process.env.USER_SERVICE_URL;
+  return `${getApiBaseUrl()}/user`;
+}
+
 // Get API Base URL reliably
 export function getApiBaseUrl(): string {
   // 1️⃣ Use explicit env variable if set

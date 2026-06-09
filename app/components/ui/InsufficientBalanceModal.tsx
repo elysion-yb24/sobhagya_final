@@ -160,7 +160,8 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
     }
   };
 
-  // PhonePe Payment Integration
+  // PhonePe Payment Integration — all signing happens server-side in
+  // /api/payment/phonepe/pay. The client never sees the merchant salt key.
   const handlePhonePePayment = async (option: RechargeOption) => {
     setIsPaying(true);
     setPaymentStatus(null);
@@ -168,115 +169,71 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
     try {
       const token = getAuthToken();
       if (!token) throw new Error('Authentication required');
-      
-      // Step 1: Initiate payment and get transaction ID
-      const payload = {
-        amount: option.amount,
-        extra: option.additional || 0,
-        paymentFor: serviceType || 'recharge',
-        isWeb: false,
-        chatPlanName: '',
-      };
+
+      const idempotencyKey =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `recharge-${Date.now()}-${Math.random()}`;
+
+      // Step 1: create a transaction record on our backend.
       const response = await fetch('/api/payment/phonepe/initiate', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          amount: option.amount,
+          extra: option.additional || 0,
+          paymentFor: serviceType || 'recharge',
+          isWeb: false,
+          chatPlanName: '',
+          idempotencyKey,
+        }),
         credentials: 'include',
       });
       if (!response.ok) throw new Error('Failed to initiate payment');
       const data = await response.json();
-      console.log('PhonePe payment data:', data);
       if (!data.success || !data.data?.transactionId) {
         throw new Error(data.message || 'Payment initiation failed');
       }
 
-      
-      const jsonPayload = {
-        "merchantOrderId": data.data.transactionId,
-        "merchantTransactionId": data.data.transactionId,
-        // "merchantUserId": data.data.userId,
-        "amount": data.data.amount * 100, 
-        // "callbackUrl": process.env.NEXT_PUBLIC_PHONEPE_CALLBACK_URL,
-        "metaInfo": {
-          "udf1": serviceType ||  "recharge",
-          "udf2": option.label || "",
-          "udf3": `userId_${data.data.userId}`,
-          "udf4": `extra_${option.additional || 0}`,
-          "udf5": "web_payment"
-        },
-        "paymentFlow": {
-          "type": "PG_CHECKOUT",
-          "message": `Payment for ${serviceType || 'recharge'}`,
-          "merchantUrls": {
-            "redirectUrl": process.env.NEXT_PUBLIC_PHONEPE_CALLBACK_URL
-          }
-        },
-        "paymentInstrument": {
-          "type": "PAY_PAGE"
-        },
-        "deviceContext": {"deviceOS": "WEB"}
-      };
-      
-      const body = btoa(JSON.stringify(jsonPayload)); 
-      const checksumString = body + process.env.NEXT_PUBLIC_PHONEPE_API_END_POINT + process.env.NEXT_PUBLIC_PHONEPE_SALT_KEY;
-      
-      // Create SHA256 hash
-      const encoder = new TextEncoder();
-      const data2 = encoder.encode(checksumString);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data2);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      const checksum = hashHex + "###" + "1";
-      
-      console.log('PhonePe checksum:', checksum);
+      const { transactionId, amount: amountWithGst, userId } = data.data;
 
-      const produrl = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay"
-      const options = {
+      // Step 2: ask our secure server route to sign + call PhonePe and return
+      // the redirect URL. The salt key lives only on the server.
+      const payResp = await fetch('/api/payment/phonepe/pay', {
         method: 'POST',
-        url: produrl,
         headers: {
-          accept: 'application/json',
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
-          'X-VERIFY': checksum,
-          
-          
         },
-        data:{
-          request:  body, 
-        }
+        body: JSON.stringify({
+          transactionId,
+          amount: amountWithGst,
+          userId,
+          extra: option.additional || 0,
+        }),
+        credentials: 'include',
+      });
+      const payJson = await payResp.json();
+      if (!payJson.success || !payJson.redirectUrl) {
+        throw new Error(payJson.message || 'Failed to get payment URL from PhonePe');
       }
 
-      const phonePeResponse = await fetch(produrl, options);
-
-      console.log('PhonePe response:', phonePeResponse);
-
-      const phonePeData = await phonePeResponse.json();
-      console.log('PhonePe data:', phonePeData);
-
-      if (!phonePeData.success || !phonePeData.data?.redirectUrl) {
-        throw new Error(phonePeData.message || 'Failed to get payment URL from PhonePe');
-      }
-      
-      // Open PhonePe payment page
-      const paymentUrl = phonePeData.data.redirectUrl;
-      const paymentWindow = window.open(paymentUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+      // Step 3: open the PhonePe payment page.
+      const paymentUrl = payJson.redirectUrl;
+      const paymentWindow = window.open(
+        paymentUrl,
+        '_blank',
+        'width=800,height=600,scrollbars=yes,resizable=yes'
+      );
       if (!paymentWindow) {
         throw new Error('Popup blocked. Please allow popups and try again.');
       }
-      
-      console.log('PhonePe payment window opened:', paymentUrl);    
-      
-      
-      
 
- 
-      
-     
-      // Poll for payment status
-      await pollPhonePeStatus(data.data.transactionId);
+      // Step 4: poll for payment status.
+      await pollPhonePeStatus(transactionId);
     } catch (err) {
       if (err instanceof Error) {
         setPaymentError(err.message || 'Payment failed');

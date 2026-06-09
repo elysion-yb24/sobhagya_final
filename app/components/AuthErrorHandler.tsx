@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useWalletBalance } from './astrologers/WalletBalanceContext';
 import AuthErrorNotification from './ui/AuthErrorNotification';
+import SessionExpiredModal from './ui/SessionExpiredModal';
 
 const AuthErrorHandler: React.FC = () => {
   const { authError } = useWalletBalance();
@@ -19,14 +20,18 @@ const AuthErrorHandler: React.FC = () => {
   }, []);
 
   // Wallet errors take precedence (they're the more visible failure); fall back
-  // to chat-api errors so the user knows when chat is throwing 401s.
+  // to chat-api errors so the user knows when chat is throwing 401s. The
+  // SessionExpiredModal handles the hard-expiry case (refresh failed) globally.
   return (
-    <AuthErrorNotification
-      error={authError || chatAuthError}
-      onDismiss={() => setChatAuthError(null)}
-      autoHide={true}
-      autoHideDelay={8000}
-    />
+    <>
+      <AuthErrorNotification
+        error={authError || chatAuthError}
+        onDismiss={() => setChatAuthError(null)}
+        autoHide={true}
+        autoHideDelay={8000}
+      />
+      <SessionExpiredModal />
+    </>
   );
 };
 

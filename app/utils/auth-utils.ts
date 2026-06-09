@@ -25,16 +25,15 @@ export function maskPhone(phone: string | number | undefined | null): string {
 }
 
 /**
- * Gets the authentication token from xxlocalStorage and cookies
+ * Gets the access token from the single canonical localStorage key (`authToken`).
+ *
+ * Authoritative auth state lives in HttpOnly cookies (see app/lib/server-auth.ts);
+ * this mirror exists only for realtime consumers (LiveKit/socket) that need a raw
+ * token string client-side. Login writes exactly one key via storeAuthToken().
  */
 export function getAuthToken(): string | null {
   try {
-    // Only use localStorage
-    const authTokenLS = localStorage.getItem('authToken');
-    if (authTokenLS) return authTokenLS;
-    const tokenLS = localStorage.getItem('token');
-    if (tokenLS) return tokenLS;
-    return null;
+    return localStorage.getItem('authToken');
   } catch (e) {
     console.error("Error in getAuthToken:", e);
     return null;
@@ -757,11 +756,76 @@ function updateAccessToken(res:any) {
 }
 
 /**
- * Enhanced API wrapper that automatically updates token activity
+ * Single-flight access-token refresh.
+ *
+ * Calls the server-side /api/auth/refresh route, which mints a new access token
+ * from the HttpOnly refresh cookie, rotates the cookie, and returns the new
+ * token. We mirror it into localStorage for realtime consumers. Concurrent
+ * callers share one in-flight request so a burst of 401s triggers exactly one
+ * refresh. Returns the new token, or null if the session can't be refreshed.
+ */
+let refreshPromise: Promise<string | null> | null = null;
+
+export async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => null);
+      const token = data?.token || null;
+      if (token) {
+        storeAuthToken(token);
+        return token;
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      // Clear after the microtask so all awaiting callers read the same result.
+      setTimeout(() => { refreshPromise = null; }, 0);
+    }
+  })();
+
+  return refreshPromise;
+}
+
+/**
+ * Central "the session is genuinely dead" handler.
+ *
+ * Fired when a token refresh has already failed (the refresh cookie itself is
+ * invalid/expired) — NOT on a first transient 401, which the server/client
+ * interceptors now self-heal. Clears all auth state and raises a global
+ * `session-expired` event so SessionExpiredModal can prompt a clean re-login.
+ *
+ * De-duped within a short window so a burst of concurrent 401s (e.g. wallet
+ * poll + a pooja call) produces a single popup, while still allowing a fresh
+ * expiry to fire again after the user logs back in.
+ */
+let lastSessionExpiredAt = 0;
+export async function handleSessionExpired(): Promise<void> {
+  if (typeof window === 'undefined') return;
+  const now = Date.now();
+  if (now - lastSessionExpiredAt < 10000) return;
+  lastSessionExpiredAt = now;
+  try {
+    await performLogout();
+  } finally {
+    window.dispatchEvent(new CustomEvent('session-expired'));
+  }
+}
+
+/**
+ * Enhanced API wrapper that attaches the bearer token and transparently
+ * refreshes it once on a 401 before retrying.
  */
 export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
-  
+
   if (!token) {
     throw new Error('No authentication token available');
   }
@@ -769,24 +833,30 @@ export async function authenticatedFetch(url: string, options: RequestInit = {})
   // Update token activity before making the request
   updateTokenActivity();
 
-  // Add authorization header
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-    ...options.headers,
-  };
+  const doFetch = (bearer: string) =>
+    fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+        'Authorization': `Bearer ${bearer}`,
+      },
+      credentials: 'include',
+    });
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include',
-  });
+  let response = await doFetch(token);
 
-  // A 401 USED to call clearAuthData() here, but that turned every transient
-  // backend hiccup into a forced logout + login loop. We now just log and let
-  // the caller decide. Genuine logouts go through performLogout() instead.
+  // On a 401, try a single refresh + retry. Only a failed *refresh* (the
+  // refresh cookie itself is invalid/expired) is a genuine logout signal —
+  // this avoids the old "any 401 forces a logout loop" problem.
   if (response.status === 401) {
-    console.warn('[authenticatedFetch] 401 from', typeof url === 'string' ? url : '(url)');
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      response = await doFetch(newToken);
+    } else {
+      console.warn('[authenticatedFetch] refresh failed; session expired');
+      await handleSessionExpired();
+    }
   }
 
   return response;

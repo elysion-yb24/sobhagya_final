@@ -52,14 +52,6 @@ const formatDate = (date) =>
     minute: "2-digit",
   });
 
-async function sha256Hex(str) {
-  const data = new TextEncoder().encode(str);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 const getPaymentIcon = (paymentFor) => {
   switch (paymentFor) {
     case "recharge":
@@ -258,29 +250,17 @@ const WalletPage = () => {
       return;
     }
 
-    const saltKey = process.env.NEXT_PUBLIC_PHONEPE_SALT_KEY;
-    const saltIndex = process.env.NEXT_PUBLIC_PHONEPE_SALT_INDEX || "1";
-    const phonePeEndpoint =
-      process.env.NEXT_PUBLIC_PHONEPE_API_END_POINT || "/pg/v1/pay";
-    const phonePeBaseUrl =
-      process.env.NEXT_PUBLIC_PHONEPE_BASE_URL ||
-      "https://api-preprod.phonepe.com/apis/pg-sandbox";
-    const callbackUrl = process.env.NEXT_PUBLIC_PHONEPE_CALLBACK_URL;
-
-    if (!saltKey) {
-      showNotification(
-        "PhonePe is not configured (missing salt key).",
-        "error"
-      );
-      return;
-    }
+    // Idempotency key so an accidental double-submit (popup re-open, retry after
+    // a polling timeout) can't create two transactions for the same intent.
+    const idempotencyKey =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `recharge-${Date.now()}-${Math.random()}`;
 
     setIsLoading(true);
     setPaymentStatus(null);
 
     try {
-      console.log("[Recharge] initiate — amount:", baseAmount, "extra%:", bonusRate);
-
       // Step 1: create transaction record on our backend
       const initResp = await fetch("/api/payment/phonepe/initiate", {
         method: "POST",
@@ -294,11 +274,11 @@ const WalletPage = () => {
           paymentFor: "recharge",
           isWeb: false,
           chatPlanName: "",
+          idempotencyKey,
         }),
         credentials: "include",
       });
       const initJson = await initResp.json();
-      console.log("[Recharge] initiate response:", initResp.status, initJson);
 
       if (!initJson?.success || !initJson?.data?.transactionId) {
         showNotification(
@@ -311,23 +291,22 @@ const WalletPage = () => {
       const { transactionId, amount: amountWithGst, userId } = initJson.data;
 
       // Step 2: Call our secure server-side route that handles PhonePe hashing & API call
-      console.log("[Recharge] fetching payload from /pay...");
       const payResp = await fetch("/api/payment/phonepe/pay", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           transactionId: transactionId,
           amount: amountWithGst,
           userId: userId,
           extra: bonusRate
         }),
+        credentials: "include",
       });
-      
+
       const payJson = await payResp.json();
-      console.log("[Recharge] /pay response:", payResp.status, payJson);
 
       if (!payJson.success || !payJson.redirectUrl) {
         showNotification(payJson.message || "Failed to initiate PhonePe payment.", "error");

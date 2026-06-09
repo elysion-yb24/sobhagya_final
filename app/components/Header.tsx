@@ -79,6 +79,7 @@ const Header = () => {
     { label: "Live Sessions", href: "/live-sessions", icon: "🔴", bgColor: "bg-red-100", hideForPartner: true },
     { label: "Call with Astrologer", href: "/call-with-astrologer", icon: "📞", bgColor: "bg-orange-100", hideForPartner: true },
     { label: "Chat", href: "/chat", icon: "💬", bgColor: "bg-amber-100", hideForPartner: true },
+    { label: "Remedies", href: "/pooja", icon: "🪔", bgColor: "bg-orange-100", hideForPartner: true },
     { label: "Shop", href: "https://www.ramvarna.com", icon: "🛍️", bgColor: "bg-pink-100", external: true },
     { label: "Blog", href: "/blog", icon: "📝", bgColor: "bg-green-100" },
     { label: "Contact Us", href: "/contact", icon: "📧", bgColor: "bg-blue-100" },

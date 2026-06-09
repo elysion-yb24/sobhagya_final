@@ -39,6 +39,10 @@ export default {
       fontFamily: {
         poppins: ['var(--font-poppins)', 'Poppins', 'sans-serif'],
         garamond: ['var(--font-eb-garamond)', 'EB Garamond', 'serif'],
+        serif: ['var(--font-eb-garamond)', 'EB Garamond', 'serif'],
+      },
+      boxShadow: {
+        premium: '0 20px 45px -15px rgba(247, 148, 29, 0.2)',
       },
       keyframes: {
         loading: {

@@ -40,7 +40,7 @@ class UserService {
 
   private async fetchUserFromAPI(userId: string): Promise<UserData | null> {
     try {
-      const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       if (!token) {
         console.warn('No auth token available for user fetch');
         return null;

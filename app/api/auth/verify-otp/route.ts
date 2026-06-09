@@ -137,10 +137,6 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: REFRESH_MAX_AGE,
       });
-
-      console.log(
-        `[verify-otp] auth cookies set (access=${accessToken.slice(0, 10)}…, refresh=${(refreshToken || accessToken).slice(0, 10)}…)`,
-      );
     } else if (response.ok) {
       console.warn('[verify-otp] backend returned ok but no access token was extractable');
     }

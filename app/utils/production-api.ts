@@ -1,22 +1,38 @@
-import { getAuthToken } from './auth-utils';
+import { getAuthToken, refreshAccessToken, handleSessionExpired } from './auth-utils';
 
-export async function simpleApiRequest(url: string, options: RequestInit = {}) {
-  const token = getAuthToken();
-
+async function doRequest(url: string, options: RequestInit, bearer: string | null) {
   const headers = new Headers(options.headers as HeadersInit | undefined);
   if (!headers.has('Content-Type') && options.body) {
     headers.set('Content-Type', 'application/json');
   }
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`);
+  if (bearer) {
+    headers.set('Authorization', `Bearer ${bearer}`);
   }
 
-  const response = await fetch(url, {
+  return fetch(url, {
     ...options,
     method: options.method || 'GET',
     headers,
     credentials: 'include',
   });
+}
+
+export async function simpleApiRequest(url: string, options: RequestInit = {}) {
+  let response = await doRequest(url, options, getAuthToken());
+
+  // Transparently refresh the access token once on a 401 and retry. Cookie
+  // auth on the BFF means the retry succeeds purely from the rotated cookie;
+  // we also pass the new bearer for routes that still read it.
+  if (response.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      response = await doRequest(url, options, newToken);
+    } else {
+      // The refresh itself failed → the session is genuinely dead. Surface the
+      // global "session expired" popup and force a clean re-login.
+      await handleSessionExpired();
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -24,6 +40,11 @@ export async function simpleApiRequest(url: string, options: RequestInit = {}) {
     // Logging here triggers Next.js's dev-overlay error popup unnecessarily.
     if (response.status !== 401 && response.status !== 403) {
       console.warn(`API ${response.status} ${url}:`, errorText);
+    }
+    // A BFF that already exhausted its server-side refresh tags the body with
+    // SESSION_EXPIRED — react even if the client-side refresh appeared to work.
+    if (response.status === 401 && /SESSION_EXPIRED/.test(errorText)) {
+      await handleSessionExpired();
     }
     throw new Error(`HTTP ${response.status}: ${errorText}`);
   }

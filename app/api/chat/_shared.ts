@@ -23,8 +23,14 @@ export function buildChatBackendHeaders(
   req: NextRequest,
   extra: Record<string, string> = {}
 ): { headers: Record<string, string>; accessToken: string | null; refreshToken: string | null } {
+  // Access token is taken from the Authorization header if the client sent one,
+  // otherwise from the HttpOnly `auth-token` cookie. This makes the route
+  // cookie-authoritative (works with `credentials: 'include'` alone) while
+  // staying backward-compatible with callers that still attach a Bearer token.
   const authHeader = req.headers.get('authorization');
-  const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const accessCookie = req.cookies.get('auth-token')?.value || null;
+  const accessToken = bearerToken || accessCookie;
 
   // 1. Locate a refresh-token value for the legacy `cookies` custom header.
   const forwardedCookiesHeader = req.headers.get('cookies');
@@ -44,7 +50,7 @@ export function buildChatBackendHeaders(
     'Origin': 'https://sobhagya.in',
     ...extra,
   };
-  if (authHeader) headers['Authorization'] = authHeader;
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
   if (refreshToken) headers['cookies'] = refreshToken;
   if (incomingCookieHeader) {
     headers['Cookie'] = incomingCookieHeader;

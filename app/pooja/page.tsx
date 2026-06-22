@@ -147,7 +147,7 @@ export default function PoojaShopPage() {
             <div className="flex items-center gap-3">
               <select
                 value={sort}
-                onChange={(e) => setSort(e.target.value)}
+                onChange={(e) => setSort(e.target.value)} 
                 className="bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 rounded-2xl px-4 py-3.5 text-[15px] outline-none focus:border-orange-300 transition-colors cursor-pointer appearance-none pr-8 relative"
                 style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundPosition: 'right 12px center', backgroundRepeat: 'no-repeat' }}
               >

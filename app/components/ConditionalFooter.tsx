@@ -9,6 +9,7 @@ export default function ConditionalFooter() {
   // Hide footer on chat page, call pages, active live sessions, and partner dashboard
   if (
     pathname === '/chat' ||
+    pathname?.startsWith('/pooja/live') ||
     pathname?.startsWith('/video-call') ||
     pathname?.startsWith('/audio-call') ||
     pathname?.startsWith('/astrologer-video-call') ||

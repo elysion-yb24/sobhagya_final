@@ -13,6 +13,9 @@ export default function ConditionalHeader() {
 
   if (!pathname) return <Header />;
 
+  // Full-screen call surfaces render their own chrome — hide the site header.
+  if (pathname.startsWith('/pooja/live')) return null;
+
   // Partner-owned routes render their own dashboard chrome — hide the user header.
   const isPartnerRoute =
     PARTNER_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||

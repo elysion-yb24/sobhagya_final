@@ -92,6 +92,13 @@ function CheckoutContent() {
   const walletApplied = Math.min(walletBalance, grandTotal);
   const balanceAfter = Math.max(0, walletBalance - grandTotal);
 
+  // Wallet-first: whenever the wallet can cover the total (e.g. after a top-up),
+  // snap the selection back to wallet so PhonePe only ever appears as a fallback.
+  useEffect(() => {
+    if (walletCovers && method !== "wallet") setMethod("wallet");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletCovers]);
+
   const ensureOrder = async (): Promise<PoojaOrder> => {
     if (createdOrderRef.current) return createdOrderRef.current;
     const order = await createOrder(lineItems, idempotencyKey, appliedCoupon);
@@ -222,11 +229,11 @@ function CheckoutContent() {
               </div>
             </div>
 
-            {/* Payment method */}
+            {/* Payment method — wallet-first; PhonePe shows only as a fallback. */}
             <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-5">
               <p className="font-semibold text-gray-800 text-sm mb-3">Payment Method</p>
 
-              {/* Wallet option */}
+              {/* Wallet option (primary) */}
               <button
                 onClick={() => setMethod("wallet")}
                 className={`w-full text-left rounded-xl border p-4 transition-all ${
@@ -267,26 +274,32 @@ function CheckoutContent() {
                 )}
               </button>
 
-              {/* PhonePe option */}
-              <button
-                onClick={() => setMethod("phonepe")}
-                className={`w-full text-left rounded-xl border p-4 mt-3 transition-all ${
-                  method === "phonepe" ? "border-orange-400 bg-orange-50/60 ring-1 ring-orange-200" : "border-orange-100 hover:border-orange-200"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-sm font-bold text-purple-700">
-                      ₹
+              {/* PhonePe fallback — when the wallet can't cover the total, or a wallet
+                  payment errored and we switched the user over. */}
+              {(!walletCovers || method === "phonepe") && (
+                <>
+                  <p className="text-xs text-gray-400 mt-4 mb-2">Insufficient wallet balance? Pay the full amount directly:</p>
+                  <button
+                    onClick={() => setMethod("phonepe")}
+                    className={`w-full text-left rounded-xl border p-4 transition-all ${
+                      method === "phonepe" ? "border-orange-400 bg-orange-50/60 ring-1 ring-orange-200" : "border-orange-100 hover:border-orange-200"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center text-sm font-bold text-purple-700">
+                          ₹
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800 text-sm">Pay directly via PhonePe</p>
+                          <p className="text-xs text-gray-500">UPI · Card · Net Banking</p>
+                        </div>
+                      </div>
+                      {method === "phonepe" && <CheckCircle2 className="w-5 h-5 text-orange-500" />}
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-800 text-sm">Pay directly via PhonePe</p>
-                      <p className="text-xs text-gray-500">UPI · Card · Net Banking</p>
-                    </div>
-                  </div>
-                  {method === "phonepe" && <CheckCircle2 className="w-5 h-5 text-orange-500" />}
-                </div>
-              </button>
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="flex items-start gap-2 text-xs text-gray-400 px-1">

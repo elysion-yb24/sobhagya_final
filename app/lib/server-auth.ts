@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { getApiBaseUrl, buildApiUrl, API_CONFIG } from '../config/api';
+import { getApiBaseUrl } from '../config/api';
 
 export const ACCESS_COOKIE = 'auth-token';
 export const REFRESH_COOKIE = 'token';
@@ -8,7 +8,14 @@ export const INDICATOR_COOKIE = 'is_logged_in';
 /** Marker returned to the client when a session can no longer be refreshed. */
 export const SESSION_EXPIRED_CODE = 'SESSION_EXPIRED';
 
-const ACCESS_MAX_AGE = 60 * 60 * 24 * 7;
+// Both cookies live as long as the backend's server-side session (the refresh
+// token is stored in a Redis set with a 90-day TTL fixed at login). The access
+// cookie intentionally shares that lifetime even though the access JWT inside
+// it expires after 15 minutes: the backend auth middleware mints a new access
+// token (returned in the `auth-token` response header) whenever it receives an
+// EXPIRED-but-genuine bearer plus a valid refresh cookie, so the stale JWT is
+// exactly what we need to keep refreshing from.
+const ACCESS_MAX_AGE = 60 * 60 * 24 * 90;
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 90;
 
 function baseCookieOptions() {
@@ -65,13 +72,100 @@ export function parseRefreshTokenFromSetCookie(headers: Headers): string | null 
 }
 
 /**
+ * Cheap authMiddleware-protected backend GET used purely to harvest a freshly
+ * minted access token. There is no dedicated refresh endpoint on the backend;
+ * instead, every service's auth middleware re-mints the access token in the
+ * `auth-token` response header when the request carries an expired bearer plus
+ * a refresh cookie that is still in the Redis session set. `/user/api/data`
+ * (userController.fetch) is a single read-only query on the caller's own user.
+ */
+const REFRESH_PING_PATH = '/user/api/data';
+
+/**
+ * Resolves a gateway-prefixed path (`/user/...`, `/auth/...`) to an absolute
+ * upstream URL. Local-dev override: when USER_SERVICE_URL is set, `/user/*`
+ * requests skip the production gateway and hit the local user-service directly
+ * (which mounts its routes at `/api/*`, not `/user/api/*` — nginx normally
+ * strips the prefix).
+ */
+function resolveBackendUrl(path: string): string {
+  const userServiceLocal = process.env.USER_SERVICE_URL;
+  if (userServiceLocal && path.startsWith('/user/')) {
+    return `${userServiceLocal.replace(/\/$/, '')}${path.slice('/user'.length)}`;
+  }
+  return `${getApiBaseUrl()}${path}`;
+}
+
+/**
+ * Single-flight cache for the token-minting ping, keyed by the refresh token,
+ * so a burst of concurrent BFF requests that all 401 together shares one
+ * upstream call. Successful results linger briefly for stragglers; failures
+ * are dropped immediately so a transient error doesn't block retries.
+ */
+const inflightRefreshes = new Map<string, Promise<string | null>>();
+const REFRESH_RESULT_LINGER_MS = 5000;
+
+function mintAccessTokenViaPing(refreshToken: string, accessToken: string | null): Promise<string | null> {
+  const existing = inflightRefreshes.get(refreshToken);
+  if (existing) return existing;
+
+  const promise = (async (): Promise<string | null> => {
+    // Prefer the stored (typically expired) access JWT as the bearer — that is
+    // what triggers the middleware's mint path. With no access cookie at all
+    // the middleware would reject the request outright, so fall back to the
+    // refresh token, which is a genuine JWT signed with the same secret and is
+    // accepted as a (long-lived) bearer.
+    const bearer = accessToken || refreshToken;
+
+    let backendRes: Response;
+    try {
+      backendRes = await fetch(resolveBackendUrl(REFRESH_PING_PATH), {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${bearer}`,
+          // The middleware reads the refresh token from the standard Cookie
+          // header (`token=...`) and/or the legacy `cookies` header.
+          Cookie: `${REFRESH_COOKIE}=${refreshToken}`,
+          cookies: refreshToken,
+          Origin: 'https://sobhagya.in',
+        },
+        cache: 'no-store',
+      });
+    } catch (err) {
+      console.error('[refreshTokensServerSide] network error:', err);
+      return null;
+    }
+
+    const minted = backendRes.headers.get('auth-token');
+    if (minted && minted !== 'null') return minted;
+
+    // 2xx with no minted header means the bearer we sent is still valid
+    // (middleware only re-mints for *expired* bearers) — keep using it.
+    if (backendRes.ok) return bearer;
+
+    // 401/403: the refresh token is no longer in the Redis session set
+    // (logged out elsewhere / evicted / expired) — the session is dead.
+    return null;
+  })();
+
+  inflightRefreshes.set(refreshToken, promise);
+  promise.then(
+    (result) => {
+      setTimeout(() => inflightRefreshes.delete(refreshToken), result ? REFRESH_RESULT_LINGER_MS : 0);
+    },
+    () => inflightRefreshes.delete(refreshToken),
+  );
+  return promise;
+}
+
+/**
  * Mints a fresh access token from the HttpOnly refresh cookie, server-side.
  *
  * This is the single source of truth for "refresh from cookies" — used both by
  * the /api/auth/refresh route (the client 401 interceptor) and by apiFetch /
- * proxyPooja when an upstream call 401s. On success it rotates the auth-token +
+ * proxyPooja when an upstream call 401s. On success it re-sets the auth-token +
  * token cookies and returns the new access token. Returns null when the session
- * genuinely can't be refreshed (the refresh cookie is missing/invalid).
+ * genuinely can't be refreshed (the refresh cookie is missing/invalid/evicted).
  */
 export async function refreshTokensServerSide(): Promise<string | null> {
   const { accessToken, refreshToken } = await getAuthCookies();
@@ -81,51 +175,13 @@ export async function refreshTokensServerSide(): Promise<string | null> {
 
   const refreshOrAccess = refreshToken || accessToken!;
 
-  let backendRes: Response;
-  try {
-    backendRes = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.AUTH.REFRESH_TOKEN), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Backend auth middleware reads the refresh token from the standard
-        // Cookie header (`token=...`) and/or the legacy `cookies` header.
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        Cookie: `${REFRESH_COOKIE}=${refreshOrAccess}`,
-        cookies: refreshOrAccess,
-        Origin: 'https://sobhagya.in',
-      },
-      cache: 'no-store',
-    });
-  } catch (err) {
-    console.error('[refreshTokensServerSide] network error:', err);
-    return null;
-  }
+  const newAccess = await mintAccessTokenViaPing(refreshOrAccess, accessToken);
+  if (!newAccess) return null;
 
-  const text = await backendRes.text();
-  let parsed: any;
-  try {
-    parsed = text ? JSON.parse(text) : {};
-  } catch {
-    parsed = { success: false, message: text };
-  }
-
-  const headerAccess = backendRes.headers.get('auth-token');
-  const newAccess =
-    (headerAccess && headerAccess !== 'null' ? headerAccess : null) ||
-    parsed?.accessToken ||
-    parsed?.data?.access_token ||
-    parsed?.token ||
-    null;
-
-  if (!backendRes.ok || !newAccess) return null;
-
-  const newRefresh =
-    parseRefreshTokenFromSetCookie(backendRes.headers) ||
-    parsed?.refreshToken ||
-    parsed?.data?.refresh_token ||
-    refreshOrAccess;
-
-  await setAuthCookies({ accessToken: newAccess, refreshToken: newRefresh });
+  // The upstream ping is shared across concurrent requests, but each request
+  // must still write the cookies onto its own response. The refresh token is
+  // never rotated by the backend, so re-setting it just extends the cookie.
+  await setAuthCookies({ accessToken: newAccess, refreshToken: refreshOrAccess });
   return newAccess;
 }
 
@@ -158,16 +214,7 @@ export async function apiFetch<T = any>(path: string, options: ApiFetchOptions =
   }
 
   // Build the upstream URL once (independent of which token we send).
-  // Local-dev override: when USER_SERVICE_URL is set, `/user/*` requests skip
-  // the production gateway and hit the local user-service directly (which mounts
-  // its routes at `/api/*`, not `/user/api/*` — nginx normally strips the prefix).
-  const userServiceLocal = process.env.USER_SERVICE_URL;
-  let url: string;
-  if (userServiceLocal && path.startsWith('/user/')) {
-    url = `${userServiceLocal.replace(/\/$/, '')}${path.slice('/user'.length)}`;
-  } else {
-    url = `${getApiBaseUrl()}${path}`;
-  }
+  let url = resolveBackendUrl(path);
   if (options.query) {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(options.query)) {

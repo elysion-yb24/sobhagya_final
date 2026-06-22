@@ -78,7 +78,7 @@ const Header = () => {
     { label: "Services", href: "/services", icon: "🔮", bgColor: "bg-amber-100" },
     { label: "Live Sessions", href: "/live-sessions", icon: "🔴", bgColor: "bg-red-100", hideForPartner: true },
     { label: "Call with Astrologer", href: "/call-with-astrologer", icon: "📞", bgColor: "bg-orange-100", hideForPartner: true },
-    { label: "Chat", href: "/chat", icon: "💬", bgColor: "bg-amber-100", hideForPartner: true },
+    { label: "Chat", href: "/chat-app", icon: "💬", bgColor: "bg-amber-100", hideForPartner: true },
     { label: "Remedies", href: "/pooja", icon: "🪔", bgColor: "bg-orange-100", hideForPartner: true },
     { label: "Shop", href: "https://www.ramvarna.com", icon: "🛍️", bgColor: "bg-pink-100", external: true },
     { label: "Blog", href: "/blog", icon: "📝", bgColor: "bg-green-100" },
@@ -791,8 +791,8 @@ const Header = () => {
                             →
                           </div>
                         </Link>
-                        <Link
-                          href="/chat"
+                        <a
+                          href="/chat-app"
                           className="flex items-center gap-3 w-full py-4 px-4 text-gray-700 hover:text-orange-600 hover:bg-orange-50 rounded-2xl transition-all duration-300 group text-base font-medium border border-gray-100 hover:border-orange-200"
                           onClick={() => setIsOpen(false)}
                         >
@@ -803,7 +803,7 @@ const Header = () => {
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-orange-500">
                             →
                           </div>
-                        </Link>
+                        </a>
                       </div>
                     </div>
                   </div>

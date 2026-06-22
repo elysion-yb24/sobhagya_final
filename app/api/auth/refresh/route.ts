@@ -5,7 +5,7 @@ import { refreshTokensServerSide } from '../../../lib/server-auth';
  * Mint a fresh access token from the HttpOnly refresh cookie.
  *
  * Called by the client-side 401 interceptor (see production-api.ts /
- * auth-utils.ts). Delegates to refreshTokensServerSide(), which rotates the
+ * auth-utils.ts). Delegates to refreshTokensServerSide(), which re-sets the
  * auth-token + token cookies and returns the new token so the localStorage
  * mirror (used by realtime consumers) can update.
  */

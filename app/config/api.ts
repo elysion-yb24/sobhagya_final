@@ -7,8 +7,7 @@ export const API_CONFIG = {
   ENDPOINTS: {
     AUTH: {
       SEND_OTP: '/auth/api/signup-login/send-otp',
-      VERIFY_OTP: '/auth/api/signup-login/verify-otp',
-      REFRESH_TOKEN: '/auth/api/refresh-token'
+      VERIFY_OTP: '/auth/api/signup-login/verify-otp'
     },
     USER: {
       USERS: '/user/api/users',

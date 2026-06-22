@@ -34,7 +34,9 @@ import {
   type BackendMessage,
   type BackendThread,
   type ChatThreadView,
+  type PujaLive,
 } from '../utils/chat-api';
+import SchedulePujaLiveModal from '../components/pooja/SchedulePujaLiveModal';
 import { useSessionManager } from '../components/astrologers/SessionManager';
 import Sidebar from '../components/chat/Sidebar';
 import ChatHeader from '../components/chat/ChatHeader';
@@ -161,6 +163,11 @@ export default function ChatPage() {
 
   // -------- active thread / session --------
   const [activeThread, setActiveThread] = useState<ChatThreadView | null>(null);
+
+  // Phase 2 — puja live (scheduled private video).
+  const [pujaLive, setPujaLive] = useState<PujaLive | null>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [pujaTick, setPujaTick] = useState(0); // re-evaluates the "joinable" window over time
   const [activeSessionId, setActiveSessionId] = useState<string | null>(sessionIdParam);
   const [sessionStatus, setSessionStatus] = useState<'active' | 'ended' | 'pending'>('active');
   const [messages, setMessages] = useState<UIMessage[]>([]);
@@ -329,11 +336,13 @@ export default function ChatPage() {
         if (t.provider?.name) view.providerId.name = t.provider.name;
         setActiveThread(view);
         setSessionStatus(view.status);
+        setPujaLive(view.pujaLive || null);
         if (!sessionIdParam && view.lastSessionId) {
           setActiveSessionId(view.lastSessionId);
         }
       } else {
         setActiveThread(null);
+        setPujaLive(null);
       }
 
       const adapted = history.map((m) => adaptMessage(m, userId));
@@ -365,7 +374,11 @@ export default function ChatPage() {
     if (!threadIdParam || !activeSessionId) return;
     let cancelled = false;
     (async () => {
-      const ok = await joinSessionRoom(threadIdParam, activeSessionId, false);
+      // For a pooja booking, the astrologer (role 'friend') opening the thread
+      // joins as the provider — that's the "accept" that connects both. Billed
+      // chats keep their existing behavior (join as user) — no regression.
+      const acceptAsAstrologer = userRole === 'friend' && activeThread?.source === 'pooja';
+      const ok = await joinSessionRoom(threadIdParam, activeSessionId, acceptAsAstrologer);
       if (!cancelled && !ok) {
         console.warn('[chat] join_session failed (will keep retrying via socket reconnects)');
       }
@@ -373,7 +386,7 @@ export default function ChatPage() {
     return () => {
       cancelled = true;
     };
-  }, [socket, isConnected, threadIdParam, activeSessionId, joinSessionRoom]);
+  }, [socket, isConnected, threadIdParam, activeSessionId, joinSessionRoom, userRole, activeThread]);
 
   // Wire socket events.
   useEffect(() => {
@@ -427,18 +440,37 @@ export default function ChatPage() {
       }
     };
 
+    const onPujaScheduled = (payload: { pujaLive?: PujaLive } | undefined) => {
+      if (payload?.pujaLive) setPujaLive(payload.pujaLive);
+    };
+    const onPujaReminder = (payload: { pujaLive?: PujaLive } | undefined) => {
+      if (payload?.pujaLive) setPujaLive(payload.pujaLive);
+      toast('🪔 Your puja is starting in 5 minutes — tap Join.', { icon: '🔔' });
+    };
+
     socket.on('receive_message', onReceive);
     socket.on('astrologer_joined', onAstrologerJoined);
     socket.on('session_ended', onSessionEnded);
     socket.on('typing', onTyping);
+    socket.on('pooja_live_scheduled', onPujaScheduled);
+    socket.on('pooja_live_reminder', onPujaReminder);
 
     return () => {
       socket.off('receive_message', onReceive);
       socket.off('astrologer_joined', onAstrologerJoined);
       socket.off('session_ended', onSessionEnded);
       socket.off('typing', onTyping);
+      socket.off('pooja_live_scheduled', onPujaScheduled);
+      socket.off('pooja_live_reminder', onPujaReminder);
     };
   }, [socket, threadIdParam, userId]);
+
+  // Keep the "joinable" window fresh while a puja live is scheduled.
+  useEffect(() => {
+    if (!pujaLive?.scheduledAt || pujaLive.status === 'completed' || pujaLive.status === 'cancelled') return;
+    const id = window.setInterval(() => setPujaTick((n) => n + 1), 20000);
+    return () => window.clearInterval(id);
+  }, [pujaLive?.scheduledAt, pujaLive?.status]);
 
   // load older history.
   const loadOlderHistory = useCallback(async () => {
@@ -942,6 +974,57 @@ export default function ChatPage() {
 
   const handleRecharge = useCallback(() => router.push('/wallet'), [router]);
 
+  // -------- puja live (Phase 2) --------
+  const schedulePujaLive = useCallback(
+    (scheduledAt: Date) =>
+      new Promise<void>((resolve, reject) => {
+        if (!socket || !threadIdParam || !activeSessionId) {
+          reject(new Error('Not connected. Please wait a moment and retry.'));
+          return;
+        }
+        socket.emit(
+          'schedule_pooja_live',
+          { threadId: threadIdParam, sessionId: activeSessionId, scheduledAt: scheduledAt.toISOString() },
+          (resp: { success?: boolean; message?: string; data?: PujaLive }) => {
+            if (resp?.success) {
+              if (resp.data) setPujaLive(resp.data);
+              resolve();
+            } else {
+              reject(new Error(resp?.message || 'Failed to schedule.'));
+            }
+          }
+        );
+      }),
+    [socket, threadIdParam, activeSessionId]
+  );
+
+  const joinPujaLive = useCallback(async () => {
+    if (!activeSessionId) return;
+    try {
+      const res = await fetch('/api/calling/pooja-live-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
+        credentials: 'include',
+        body: JSON.stringify({ sessionId: activeSessionId }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!json?.data?.token) throw new Error(json?.message || 'Could not start the puja live.');
+      const { token, wsURL, roomName } = json.data;
+      const qs = new URLSearchParams({ room: roomName, token, ws: wsURL, thread: threadIdParam || '' });
+      router.push(`/pooja/live?${qs.toString()}`);
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not join the puja live.');
+    }
+  }, [activeSessionId, threadIdParam, router]);
+
+  // Whether the Join button should be live (from 5 min before the scheduled time).
+  const pujaJoinable = useMemo(() => {
+    void pujaTick; // re-evaluate on tick
+    if (!pujaLive?.scheduledAt) return false;
+    if (pujaLive.status === 'completed' || pujaLive.status === 'cancelled') return false;
+    return Date.now() >= new Date(pujaLive.scheduledAt).getTime() - 5 * 60 * 1000;
+  }, [pujaLive, pujaTick]);
+
   // -------- lightbox --------
   const galleryImages = useMemo(() => {
     return messages
@@ -1339,6 +1422,54 @@ export default function ChatPage() {
               peerTyping={typingFromOther}
             />
 
+            {/* Pooja booking: connecting / accept strip */}
+            {activeThread?.source === 'pooja' && sessionStatus !== 'active' && sessionStatus !== 'ended' && (
+              userRole === 'friend' ? (
+                <div className="flex items-center justify-between gap-2 bg-saffron-50 border-b border-saffron-100 px-3 py-2">
+                  <span className="text-xs sm:text-sm text-saffron-800">🪔 New puja booking — accept to connect with the devotee.</span>
+                  <button
+                    onClick={() => { if (threadIdParam && activeSessionId) joinSessionRoom(threadIdParam, activeSessionId, true); }}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-saffron-500 hover:bg-saffron-600 text-white text-xs font-semibold"
+                  >
+                    Accept booking
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-saffron-50 border-b border-saffron-100 px-3 py-2">
+                  <div className="w-3.5 h-3.5 border-2 border-saffron-500 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs sm:text-sm text-saffron-800">Connecting astrologer… you&apos;ll be connected once the pandit accepts.</span>
+                </div>
+              )
+            )}
+
+            {/* Pooja: schedule / scheduled / join the private video puja */}
+            {activeThread?.source === 'pooja' && sessionStatus === 'active' && (
+              <div className="flex items-center justify-between gap-2 bg-emerald-50 border-b border-emerald-100 px-3 py-2">
+                {pujaJoinable ? (
+                  <>
+                    <span className="text-xs sm:text-sm text-emerald-800 font-medium">🪔 Puja Live is ready to begin.</span>
+                    <button onClick={joinPujaLive} className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold animate-pulse">
+                      Join Puja Live
+                    </button>
+                  </>
+                ) : pujaLive?.scheduledAt ? (
+                  <>
+                    <span className="text-xs sm:text-sm text-emerald-800">📅 Puja Live: {new Date(pujaLive.scheduledAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                    <button onClick={() => setShowScheduleModal(true)} className="shrink-0 px-3 py-1.5 rounded-lg border border-emerald-300 text-emerald-700 text-xs font-semibold hover:bg-emerald-100">
+                      Reschedule
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs sm:text-sm text-emerald-800">Ready for the puja? Schedule a live video session.</span>
+                    <button onClick={() => setShowScheduleModal(true)} className="shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">
+                      Schedule Puja Live
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Connection / balance banners */}
             <AnimatePresence>
               {!isConnected && sessionStatus !== 'ended' && (
@@ -1566,6 +1697,13 @@ export default function ChatPage() {
             window.location.href = '/chat';
           }
         }}
+      />
+
+      {/* Schedule Puja Live modal */}
+      <SchedulePujaLiveModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onSchedule={schedulePujaLive}
       />
 
       {/* Offline / busy suggestion modal — shown when "Chat again" can't open

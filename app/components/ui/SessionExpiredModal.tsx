@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { LogIn, ShieldAlert } from "lucide-react";
 
 /**
@@ -13,11 +13,15 @@ import { LogIn, ShieldAlert } from "lucide-react";
  * failed). It blocks interaction and routes the user to a clean re-login,
  * preserving the current path via `?next=`. Auth state is already cleared by
  * the handler before this shows, so there is no "logged-in but broken" state.
+ *
+ * The modal auto-dismisses once the user lands on the /login page so it never
+ * stays stuck over the login form.
  */
-const REDIRECT_DELAY_MS = 4000;
+const REDIRECT_DELAY_MS = 3000;
 
 const SessionExpiredModal: React.FC = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -32,8 +36,11 @@ const SessionExpiredModal: React.FC = () => {
     router.push(`/login?next=${encodeURIComponent(safeNext)}`);
   };
 
+  // Listen for the session-expired event
   useEffect(() => {
     const onExpired = () => {
+      // Don't show the modal if we're already on the login page
+      if (window.location.pathname.startsWith("/login")) return;
       setOpen(true);
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(goToLogin, REDIRECT_DELAY_MS);
@@ -45,6 +52,14 @@ const SessionExpiredModal: React.FC = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-dismiss the modal once we've navigated to the login page
+  useEffect(() => {
+    if (open && pathname?.startsWith("/login")) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setOpen(false);
+    }
+  }, [open, pathname]);
 
   if (!open || typeof document === "undefined") return null;
 

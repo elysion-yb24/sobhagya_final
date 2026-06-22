@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle, RotateCcw, ScrollText } from "lucide-react";
 import { isAuthenticated } from "../../utils/auth-utils";
-import { fetchOrders, PoojaOrder, formatINR } from "../../utils/pooja-api";
+import { fetchOrders, fetchOrder, PoojaOrder, formatINR } from "../../utils/pooja-api";
 import BackButton from "../../components/ui/BackButton";
 import { Skeleton } from "../../components/ui/SkeletonLoader";
 
@@ -46,6 +46,33 @@ export default function PoojaOrdersPage() {
   const [orders, setOrders] = useState<PoojaOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
+
+  // Open the booking's chat (the in-app embed of Chatterbox). The chat session is
+  // created server-side on the PAID tail; if it wasn't (chat-service briefly
+  // unreachable), fetching the order self-heals it first.
+  const openChat = async (o: PoojaOrder) => {
+    setOpening(o._id);
+    setError(null);
+    try {
+      let threadId = o.chatThreadId;
+      let sessionId = o.chatSessionId;
+      if (!threadId) {
+        const fresh = await fetchOrder(o._id);
+        threadId = fresh.chatThreadId || null;
+        sessionId = fresh.chatSessionId || null;
+      }
+      if (!threadId) {
+        setError("Couldn't connect you to the pandit yet. Please try again in a moment.");
+        return;
+      }
+      router.push(`/pooja/chat/${threadId}${sessionId ? `?sessionId=${sessionId}` : ""}`);
+    } catch (e: any) {
+      setError(e?.message || "Couldn't open the chat.");
+    } finally {
+      setOpening(null);
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -102,12 +129,13 @@ export default function PoojaOrdersPage() {
                       <RotateCcw className="w-4 h-4" /> Book Again
                     </button>
                   )}
-                  {o.chatThreadId && (o.status === "PAID" || o.status === "IN_PROGRESS" || o.status === "COMPLETED") && (
+                  {(o.status === "PAID" || o.status === "IN_PROGRESS" || o.status === "COMPLETED") && (
                     <button
-                      onClick={() => router.push(`/pooja/chat/${o.chatThreadId}`)}
-                      className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-sm font-semibold py-2 rounded-lg flex items-center justify-center gap-1"
+                      onClick={() => openChat(o)}
+                      disabled={opening === o._id}
+                      className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-sm font-semibold py-2 rounded-lg flex items-center justify-center gap-1 disabled:opacity-60"
                     >
-                      <MessageCircle className="w-4 h-4" /> Chat with Pandit
+                      <MessageCircle className="w-4 h-4" /> {opening === o._id ? "Connecting…" : "Chat with Pandit"}
                     </button>
                   )}
                 </div>

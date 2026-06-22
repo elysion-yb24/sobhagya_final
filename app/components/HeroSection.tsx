@@ -51,7 +51,8 @@ const HeroSection: React.FC = () => {
       title: "Chat with Astrologer",
       subtitle: "Instant text consultation",
       icon: "/chat2.png",
-      href: "/chat",
+      href: "/chat-app",
+      isExternal: false,
     },
     {
       id: "talk",

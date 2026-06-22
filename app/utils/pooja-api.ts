@@ -2,6 +2,30 @@
 // All calls go through the Next.js BFF routes under /api/pooja/* which forward
 // auth to user-service.
 import { simpleApiRequest } from './production-api';
+import { getAuthToken, getUserDetails } from './auth-utils';
+import { getApiBaseUrl } from '../config/api';
+
+/**
+ * Hand the user off to the real chat (Chatterbox / chat.sobhagya.in) for a thread.
+ * Seeds `.sobhagya.in` cookies server-side and returns the chat URL to navigate to.
+ * Returns null if it couldn't (caller should fall back to My Orders).
+ */
+export async function handoffToChat(threadId?: string): Promise<string | null> {
+  try {
+    const token = getAuthToken();
+    const u = getUserDetails();
+    const res = await fetch('/api/chat/handoff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      credentials: 'include',
+      body: JSON.stringify({ threadId, userId: String(u?.id || u?._id || ''), role: u?.role || 'user' }),
+    });
+    const json = await res.json().catch(() => ({}));
+    return json?.ok && json?.chatUrl ? (json.chatUrl as string) : null;
+  } catch {
+    return null;
+  }
+}
 
 export interface PoojaCategory {
   _id: string;
@@ -85,6 +109,7 @@ export interface PoojaOrder {
   totalPayable: number;
   currency: string;
   chatThreadId?: string | null;
+  chatSessionId?: string | null;
   createdAt: string;
 }
 
@@ -148,6 +173,64 @@ export async function fetchProviders(productId: string, sort?: string, language?
   if (sort) qs.set('sort', sort);
   if (language) qs.set('language', language);
   return (await poojaApi(`/api/pooja/products/${productId}/providers?${qs.toString()}`)).data || [];
+}
+
+/** A real, bookable astrologer from the live "Call with Astrologer" roster. */
+export interface PoojaAstrologer {
+  _id: string;
+  name: string;
+  avatar?: string;
+  profileImage?: string;
+  languages?: string[];
+  specializations?: string[];
+  talksAbout?: string[];
+  experience?: string | number;
+  rating?: number | { avg: number; count: number };
+  calls?: number;
+  callsCount?: number;
+  status?: string;
+  videoRpm?: number;
+  rpm?: number;
+  isVideoCallAllowed?: boolean;
+}
+
+/**
+ * Live roster of currently-ONLINE astrologers — the SAME source the "Call with
+ * Astrologer" page uses (`/user/api/users-list`). The user picks one of these to
+ * perform the puja; the chosen astrologer's `_id` becomes the order's providerId.
+ * Poll this (e.g. every 12s) to keep real-time online status fresh.
+ */
+export async function fetchOnlineAstrologers(
+  params: { search?: string; language?: string; limit?: number } = {}
+): Promise<PoojaAstrologer[]> {
+  const token = getAuthToken();
+  const safeSearch = (params.search || '').replace(/[\\^$*+?.()|[\]{}]/g, '').trim();
+  const limit = safeSearch ? 200 : params.limit || 30;
+  const qs = new URLSearchParams();
+  qs.set('skip', '0');
+  qs.set('limit', String(limit));
+  qs.set('asc', '-1');
+  qs.set('online', 'true'); // server-side: only role 'friend' with status 'online'
+  if (params.language && params.language !== 'All') qs.set('language', params.language);
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${getApiBaseUrl()}/user/api/users-list?${qs.toString()}`, {
+    method: 'GET',
+    headers,
+    credentials: 'include',
+    cache: 'no-store',
+  });
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => ({} as any));
+  let list: PoojaAstrologer[] = data?.data?.list || data?.users || data?.data || [];
+  if (safeSearch) {
+    const q = safeSearch.toLowerCase();
+    list = list.filter((a) => a.name?.toLowerCase().includes(q));
+  }
+  // Safety net in case the server didn't filter — only online astrologers are bookable.
+  return list.filter((a) => (a.status ? a.status === 'online' : true));
 }
 
 // ---- orders (auth) ----
@@ -230,10 +313,14 @@ export async function fetchMessages(threadId: string, cursor?: string): Promise<
   return (await poojaApi(`/api/pooja/chats/${threadId}/messages${qs}`)).data;
 }
 
-export async function sendMessage(threadId: string, body: string): Promise<RemedyMessage> {
+export async function sendMessage(
+  threadId: string,
+  body: string,
+  attachments?: string[]
+): Promise<RemedyMessage> {
   const data = await poojaApi(`/api/pooja/chats/${threadId}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, attachments: attachments && attachments.length ? attachments : undefined }),
   });
   return data.data;
 }

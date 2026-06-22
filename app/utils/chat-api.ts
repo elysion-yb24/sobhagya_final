@@ -26,6 +26,15 @@ export interface ChatThreadView {
   status: 'active' | 'ended' | 'pending';
   userUnreadCount: number;
   providerUnreadCount: number;
+  source?: string;            // 'pooja' for remedy-booking threads, else 'chat'
+  pujaLive?: PujaLive | null; // scheduled private video puja (Phase 2)
+}
+
+export interface PujaLive {
+  scheduledAt: string | null;
+  roomName: string | null;
+  status: 'scheduled' | 'live' | 'completed' | 'cancelled' | null;
+  scheduledBy?: string | null;
 }
 
 export interface BackendThread {
@@ -41,6 +50,8 @@ export interface BackendThread {
   lastSessionId?: string | null;
   totalSessions?: number;
   isActiveSession?: boolean;
+  source?: string;
+  pujaLive?: PujaLive | null;
   providerProfileImage?: string | null;
   userProfileImage?: string | null;
   createdAt?: string;
@@ -150,6 +161,8 @@ export function adaptThread(t: BackendThread, currentUserId?: string | null): Ch
     status,
     userUnreadCount: t.userUnreadCount || 0,
     providerUnreadCount: t.providerUnreadCount || 0,
+    source: t.source || 'chat',
+    pujaLive: t.pujaLive || null,
   };
 }
 

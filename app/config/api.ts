@@ -77,8 +77,31 @@ export function getChatSocketUrl(): string {
  * Pooja BFF routes then call `${getUserServiceUrl()}/api/pooja/...`.
  */
 export function getUserServiceUrl(): string {
-  if (process.env.USER_SERVICE_URL) return process.env.USER_SERVICE_URL;
+  // Local-dev override only — never honor it in production (a leaked
+  // USER_SERVICE_URL in prod would point the gateway at an unreachable host).
+  if (process.env.NODE_ENV !== 'production' && process.env.USER_SERVICE_URL) {
+    return process.env.USER_SERVICE_URL;
+  }
   return `${getApiBaseUrl()}/user`;
+}
+
+/**
+ * Gets the payment-service backend URL. Pooja payment (PhonePe + wallet) is
+ * owned by payment-service.
+ *
+ * - In production the gateway mounts payment-service at `/payment`, so we hit
+ *   `${API_BASE}/payment` (e.g. https://micro.sobhagya.in/payment).
+ * - For local dev, set `PAYMENT_SERVICE_URL=http://localhost:6001` to hit the
+ *   service directly (no `/payment` prefix needed).
+ *
+ * Pooja payment BFF routes then call `${getPaymentServiceUrl()}/api/transaction/pooja/...`.
+ */
+export function getPaymentServiceUrl(): string {
+  // Local-dev override only — see getUserServiceUrl for the rationale.
+  if (process.env.NODE_ENV !== 'production' && process.env.PAYMENT_SERVICE_URL) {
+    return process.env.PAYMENT_SERVICE_URL;
+  }
+  return `${getApiBaseUrl()}/payment`;
 }
 
 // Get API Base URL reliably

@@ -14,8 +14,14 @@ import {
   type KundliResponse,
 } from "../lib/astrology/featureApi";
 import { useDedupedAction } from "../lib/astrology/useDedupedAction";
+import { useRequireAuth } from "../hooks/useRequireAuth";
 
 export default function FreeKundliPage() {
+  // Kundli requires login: a guest is bounced to /login and returned here
+  // after sign-in. The lazy Charts/Dasha/Ashtakvarga/KP tabs hit auth-required
+  // backend endpoints, so gating the whole page keeps the experience coherent.
+  const authed = useRequireAuth("/free-kundli");
+
   const [birth, setBirth] = useState<BirthDetails | null>(null);
   const [birthOpen, setBirthOpen] = useState(true);
   const [globalLang, setGlobalLang] = useLanguage();
@@ -60,6 +66,21 @@ export default function FreeKundliPage() {
   }, [lang, setGlobalLang, birth, run]);
 
   const { loading, data: response, error } = action;
+
+  // While the auth guard redirects an unauthenticated user, render a minimal
+  // placeholder instead of the form so guests never see (or submit) it.
+  if (!authed) {
+    return (
+      <PageShell title="Free Kundli Generator" subtitle="">
+        <div className="rounded-xl border border-[#E5C99F] bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-[#6b4a1f]">
+            <Sparkles size={16} className="text-[#F7941D]" />
+            <span>Checking your session…</span>
+          </div>
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell

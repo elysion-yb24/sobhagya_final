@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, ScrollText, Sparkles, ShieldCheck, MessageCircle, Star, Activity, Coins, Heart, Briefcase, Shield, Sun } from "lucide-react";
+import { Search, ScrollText, Sparkles, ShieldCheck, MessageCircle, Star, Activity, Coins, Heart, Briefcase, Shield, Sun, Flame, Wand2, HandHeart, RefreshCw, WifiOff } from "lucide-react";
 import {
   fetchCategories,
   fetchAllProducts,
@@ -11,6 +11,7 @@ import {
 } from "../utils/pooja-api";
 import PoojaCard from "../components/pooja/PoojaCard";
 import { Skeleton } from "../components/ui/SkeletonLoader";
+import { usePullToRefresh } from "../hooks/usePullToRefresh";
 
 const SORTS = [
   { value: "", label: "Recommended" },
@@ -28,6 +29,12 @@ const TRUST = [
 
 function CatIcon({ title, className }: { title: string, className?: string }) {
   const t = title.toLowerCase();
+  // Remedy-type categories (Poojas / Spells / Healings / Consultations).
+  if (t.includes("pooja") || t.includes("puja")) return <Flame className={className} />;
+  if (t.includes("spell")) return <Wand2 className={className} />;
+  if (t.includes("healing")) return <HandHeart className={className} />;
+  if (t.includes("consult")) return <ScrollText className={className} />;
+  // Themed fallbacks (legacy categories).
   if (t.includes("health") || t.includes("well")) return <Activity className={className} />;
   if (t.includes("wealth") || t.includes("prosper")) return <Coins className={className} />;
   if (t.includes("love") || t.includes("marri")) return <Heart className={className} />;
@@ -72,17 +79,26 @@ export default function PoojaShopPage() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // load products on filter change
-  useEffect(() => {
-    setLoading(true);
-    fetchAllProducts({ categoryId: activeCat || undefined, sort: sort || undefined, search: debounced || undefined, limit: 60 })
-      .then((r) => {
-        setProducts(r.items);
-        setError(null);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+  const loadProducts = useCallback(async (withSpinner = true) => {
+    if (withSpinner) setLoading(true);
+    try {
+      const r = await fetchAllProducts({ categoryId: activeCat || undefined, sort: sort || undefined, search: debounced || undefined, limit: 60 });
+      setProducts(r.items);
+      setError(null);
+    } catch (e: any) {
+      setError(e?.message || "Couldn't load remedies.");
+    } finally {
+      if (withSpinner) setLoading(false);
+    }
   }, [activeCat, sort, debounced]);
+
+  // load products on filter change
+  useEffect(() => { loadProducts(); }, [loadProducts]);
+
+  // Pull-to-refresh (mobile WebView): re-fetch categories + products.
+  const { pullDistance, refreshing } = usePullToRefresh(async () => {
+    await Promise.all([fetchCategories().then(setCategories).catch(() => {}), loadProducts(false)]);
+  });
 
   const chips = useMemo(() => [{ _id: "", title: "All" } as any, ...categories], [categories]);
   const activeTitle = useMemo(
@@ -91,11 +107,23 @@ export default function PoojaShopPage() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-90px)] bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+    <div className="min-h-[calc(100vh-90px)] bg-[#FFFAF0] font-sans text-[#4A3B32]">
+      {/* Pull-to-refresh indicator */}
+      {(pullDistance > 0 || refreshing) && (
+        <div
+          className="fixed top-0 inset-x-0 z-50 flex justify-center pointer-events-none"
+          style={{ transform: `translateY(${refreshing ? 16 : Math.min(pullDistance, 80)}px)` }}
+        >
+          <div className="bg-white rounded-full p-2 shadow-[0_4px_15px_rgba(255,106,0,0.25)] border border-orange-100">
+            <RefreshCw className={`w-5 h-5 text-[#FF8C00] ${refreshing ? "animate-spin" : ""}`} style={{ transform: refreshing ? undefined : `rotate(${pullDistance * 3}deg)` }} />
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
-      <div className="relative overflow-hidden bg-[#8b3a0e] text-white">
-        {/* Deep, rich temple-like gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#9a3e0f] via-[#85340a] to-[#612204]" />
+      <div className="relative overflow-hidden bg-[#F49C1C] text-white">
+        {/* Deep, premium vibrant mesh gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#FF6A00] via-[#FF8C00] to-[#FFD200]" />
         
         {/* elegant decorative patterns */}
         <div
@@ -107,14 +135,18 @@ export default function PoojaShopPage() {
         />
         
         {/* subtle inner shadow */}
-        <div className="absolute inset-0 shadow-[inset_0_-20px_40px_rgba(0,0,0,0.2)] pointer-events-none" />
+        <div className="absolute inset-0 shadow-[inset_0_-20px_40px_rgba(0,0,0,0.1)] pointer-events-none" />
+
+        {/* Abstract glowing orbs for a modern innovative feel */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white/20 rounded-full blur-[100px] pointer-events-none transform translate-x-1/3 -translate-y-1/3" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#FF6A00]/30 rounded-full blur-[80px] pointer-events-none transform -translate-x-1/4 translate-y-1/4" />
 
         <div className="relative max-w-6xl mx-auto px-4 pt-12 sm:pt-16 pb-24 sm:pb-32 flex flex-col items-center text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-amber-100 text-xs font-semibold uppercase tracking-[0.2em] px-4 py-1.5 rounded-full mb-6">
             <Sparkles className="w-3.5 h-3.5" /> Online Puja &amp; Remedies
           </div>
           
-          <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold max-w-3xl leading-[1.1] text-transparent bg-clip-text bg-gradient-to-b from-white to-amber-100">
+          <h1 className="font-bold text-4xl sm:text-6xl lg:text-7xl max-w-3xl leading-[1.1] text-white">
             Book a Puja performed by verified pandits
           </h1>
           <p className="text-amber-100/80 mt-5 max-w-xl text-sm sm:text-lg mx-auto font-medium">
@@ -133,9 +165,9 @@ export default function PoojaShopPage() {
 
       <div className="max-w-6xl mx-auto px-4">
         {/* Search card overlapping the hero */}
-        <div className="-mt-14 sm:-mt-16 relative z-20 bg-white/90 backdrop-blur-xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-white p-3 sm:p-5">
-          <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
-            <div className="flex-1 flex items-center gap-3 bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 rounded-2xl px-4 transition-colors">
+        <div className="-mt-14 sm:-mt-16 relative z-20 bg-white/80 backdrop-blur-2xl rounded-2xl shadow-[0_8px_30px_rgba(255,140,0,0.12)] border border-white/50 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <div className="flex-1 flex items-center gap-3 bg-white/90 border border-orange-100 rounded-xl px-4 shadow-inner transition-colors">
               <Search className="w-5 h-5 text-gray-400" />
               <input
                 value={search}
@@ -148,8 +180,8 @@ export default function PoojaShopPage() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)} 
-                className="bg-gray-50/80 hover:bg-gray-100/80 border border-gray-100 rounded-2xl px-4 py-3.5 text-[15px] outline-none focus:border-orange-300 transition-colors cursor-pointer appearance-none pr-8 relative"
-                style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundPosition: 'right 12px center', backgroundRepeat: 'no-repeat' }}
+                className="bg-white/90 border border-orange-100 rounded-xl px-4 py-3 text-[14px] text-[#4A3B32] outline-none focus:border-[#FF8C00] shadow-sm transition-colors cursor-pointer appearance-none pr-8 relative"
+                style={{ backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%234A3B32" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>')`, backgroundPosition: 'right 12px center', backgroundRepeat: 'no-repeat' }}
               >
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -157,7 +189,7 @@ export default function PoojaShopPage() {
               </select>
               <Link
                 href="/pooja/orders"
-                className="whitespace-nowrap text-[15px] font-semibold text-orange-600 bg-orange-50 hover:bg-orange-100 flex items-center gap-2 px-5 py-3.5 rounded-2xl border border-orange-100 transition-colors"
+                className="whitespace-nowrap text-[14px] font-bold text-[#FF8C00] bg-white hover:bg-orange-50 flex items-center gap-2 px-5 py-3 rounded-xl border border-orange-200 hover:border-[#FF8C00] shadow-sm transition-all"
               >
                 <ScrollText className="w-5 h-5" /> My Orders
               </Link>
@@ -168,7 +200,7 @@ export default function PoojaShopPage() {
 
       <div className="max-w-6xl mx-auto px-4 pb-16">
         {/* category chips — sticky below the fixed header */}
-        <div className="sticky top-[58px] md:top-16 lg:top-28 z-10 -mx-4 px-4 py-4 bg-gradient-to-b from-orange-50/95 to-orange-50/80 backdrop-blur supports-[backdrop-filter]:bg-orange-50/70 mt-2">
+        <div className="sticky top-[58px] md:top-16 lg:top-28 z-10 -mx-4 px-4 py-3 bg-[#FFFAF0]/80 backdrop-blur-xl mt-2 border-b border-orange-100/50 shadow-[0_4px_20px_rgba(255,140,0,0.03)]">
           <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
             {chips.map((c) => {
               const isActive = activeCat === c._id;
@@ -176,16 +208,16 @@ export default function PoojaShopPage() {
                 <button
                   key={c._id || "all"}
                   onClick={() => setActiveCat(c._id)}
-                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold border transition-all flex items-center gap-2 ${
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-[14px] font-medium border transition-all duration-300 flex items-center gap-2 ${
                     isActive
-                      ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white border-orange-600 shadow-md shadow-orange-500/20"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-orange-300 hover:text-orange-600 hover:bg-orange-50/50"
+                      ? "bg-gradient-to-r from-[#FF6A00] to-[#FF8C00] text-white border-transparent shadow-[0_4px_15px_rgba(255,106,0,0.3)] scale-105"
+                      : "bg-white text-[#4A3B32] border-orange-100 hover:border-[#FF8C00] hover:text-[#FF8C00] shadow-sm hover:shadow"
                   }`}
                 >
                   {c._id ? (
-                    <CatIcon title={c.title} className={`w-4 h-4 ${isActive ? 'text-white' : 'text-orange-500'}`} />
+                    <CatIcon title={c.title} className={`w-4 h-4 ${isActive ? 'text-white drop-shadow-md' : 'text-[#FF8C00]'}`} />
                   ) : (
-                    <Sparkles className={`w-4 h-4 ${isActive ? 'text-white' : 'text-orange-500'}`} />
+                    <Sparkles className={`w-4 h-4 ${isActive ? 'text-white drop-shadow-md' : 'text-[#FF8C00]'}`} />
                   )}
                   {c.title}
                 </button>
@@ -195,8 +227,8 @@ export default function PoojaShopPage() {
         </div>
 
         {/* section heading */}
-        <div className="flex items-end justify-between mt-4 mb-3">
-          <h2 className="font-serif text-xl sm:text-2xl font-bold text-gray-900">
+        <div className="flex items-end justify-between mt-5 mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#4A3B32]">
             {activeCat ? activeTitle : debounced ? "Search Results" : "Popular Pujas"}
           </h2>
           {!loading && !error && (
@@ -212,7 +244,19 @@ export default function PoojaShopPage() {
             ))}
           </div>
         ) : error ? (
-          <p className="text-center text-red-500 py-10">{error}</p>
+          <div className="text-center py-16 bg-white rounded-[2rem] border border-orange-50 shadow-[0_4px_20px_rgba(255,140,0,0.03)]">
+            <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-[#FFF3E0] to-[#FFE0B2] flex items-center justify-center mb-4">
+              <WifiOff className="w-7 h-7 text-[#FF8C00]" />
+            </div>
+            <p className="text-[#4A3B32] font-semibold">Couldn&apos;t reach our remedies</p>
+            <p className="text-gray-400 text-sm mt-1">Please check your connection and try again.</p>
+            <button
+              onClick={() => loadProducts()}
+              className="mt-5 inline-flex items-center gap-2 bg-gradient-to-r from-[#FF6A00] to-[#FFD200] hover:to-[#FF8C00] text-white font-bold px-6 py-2.5 rounded-2xl shadow-[0_4px_15px_rgba(255,106,0,0.3)] hover:-translate-y-0.5 transition-all"
+            >
+              <RefreshCw className="w-4 h-4" /> Retry
+            </button>
+          </div>
         ) : products.length === 0 ? (
           <div className="text-center py-16">
             <div className="text-4xl mb-3">🔍</div>

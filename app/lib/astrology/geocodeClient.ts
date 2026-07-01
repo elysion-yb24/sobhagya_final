@@ -28,12 +28,25 @@ function authHeaders(): Record<string, string> {
 
 export async function searchPlaces(query: string): Promise<GeocodeHit[]> {
   if (!query || query.trim().length < 2) return [];
-  const res = await fetch(
-    `${backendUrl()}/api/geocode?q=${encodeURIComponent(query.trim())}`,
-    { headers: authHeaders() },
-  );
-  if (!res.ok) return [];
+  let res: Response;
+  try {
+    res = await fetch(
+      `${backendUrl()}/api/geocode?q=${encodeURIComponent(query.trim())}`,
+      { headers: authHeaders() },
+    );
+  } catch {
+    // Transport failure (offline, DNS, CORS) — distinct from "no matches".
+    // Throw so callers can show a retryable error instead of a misleading
+    // "invalid location" / empty dropdown.
+    throw new Error("Location lookup failed. Please check your connection and try again.");
+  }
+  if (!res.ok) {
+    // Upstream error (e.g. geocode route missing/misconfigured in prod, or a
+    // 401). Surface it rather than silently returning no results.
+    throw new Error(`Location lookup failed (${res.status}). Please try again.`);
+  }
   const json = (await res.json()) as Envelope<{ results?: GeocodeHit[] }>;
+  // An OK response with no hits genuinely means "no such place".
   return json.data?.results ?? [];
 }
 

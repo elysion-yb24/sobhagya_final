@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserServiceUrl } from '../../config/api';
+import { getUserServiceUrl, getPaymentServiceUrl } from '../../config/api';
 import {
   REFRESH_COOKIE,
   SESSION_EXPIRED_CODE,
@@ -46,6 +46,30 @@ export async function proxyPooja(
   backendPath: string,
   opts: { body?: any; searchParams?: URLSearchParams; requireAuth?: boolean } = {}
 ): Promise<NextResponse> {
+  // user-service: catalog, orders, quote, internal lifecycle.
+  return proxyTo(`${getUserServiceUrl()}/api/pooja${backendPath}`, 'pooja', method, opts);
+}
+
+/**
+ * Proxy a pooja PAYMENT request to payment-service (which owns the wallet debit;
+ * pooja is wallet-only). Same cookie-authoritative auth + single refresh-retry as
+ * proxyPooja. Backend paths are relative to `/api/transaction` (e.g. '/pooja/wallet').
+ */
+export async function proxyPayment(
+  req: NextRequest,
+  method: 'GET' | 'POST',
+  backendPath: string,
+  opts: { body?: any; searchParams?: URLSearchParams; requireAuth?: boolean } = {}
+): Promise<NextResponse> {
+  return proxyTo(`${getPaymentServiceUrl()}/api/transaction${backendPath}`, 'payment', method, opts);
+}
+
+async function proxyTo(
+  baseUrl: string,
+  tag: string,
+  method: 'GET' | 'POST',
+  opts: { body?: any; searchParams?: URLSearchParams; requireAuth?: boolean } = {}
+): Promise<NextResponse> {
   try {
     let { accessToken, refreshToken } = await getAuthCookies();
 
@@ -62,7 +86,7 @@ export async function proxyPooja(
     }
 
     const qs = opts.searchParams?.toString();
-    const url = `${getUserServiceUrl()}/api/pooja${backendPath}${qs ? `?${qs}` : ''}`;
+    const url = `${baseUrl}${qs ? `?${qs}` : ''}`;
 
     const sendOnce = (access: string | null, refresh: string | null) =>
       fetch(url, {
@@ -88,7 +112,7 @@ export async function proxyPooja(
         const { refreshToken: newRefresh } = await getAuthCookies();
         res = await sendOnce(newAccess, newRefresh);
       } else {
-        console.warn(`[pooja-proxy] 401 from ${backendPath}; refresh failed → session expired`);
+        console.warn(`[${tag}-proxy] 401 from ${url}; refresh failed → session expired`);
         await clearAuthCookies();
         return NextResponse.json(
           { success: false, code: SESSION_EXPIRED_CODE, message: 'Authentication failed, Please log in.', data: null },
@@ -106,7 +130,7 @@ export async function proxyPooja(
     }
     return NextResponse.json(parsed, { status: res.status });
   } catch (err: any) {
-    console.error(`[pooja-proxy] ${method} ${backendPath} error:`, err);
+    console.error(`[${tag}-proxy] ${method} ${baseUrl} error:`, err);
     return NextResponse.json(
       { success: false, message: err?.message || 'Internal Error', data: null },
       { status: 500 }

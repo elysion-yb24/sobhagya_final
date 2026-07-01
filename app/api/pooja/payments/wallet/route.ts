@@ -1,10 +1,10 @@
 import { NextRequest } from 'next/server';
-import { proxyPooja } from '../../_shared';
+import { proxyPayment } from '../../_shared';
 
-// POST /api/pooja/payments/wallet (auth) — settle an order from the user's
-// Sobhagya wallet balance. Proxies to user-service which debits the wallet and
-// marks the order PAID.
+// POST /api/pooja/payments/wallet (auth) — settle a pooja order from the user's
+// Sobhagya wallet. Owned by payment-service; it debits the wallet and reports
+// the order PAID back to user-service.
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
-  return proxyPooja(req, 'POST', '/payments/wallet', { body, requireAuth: true });
+  return proxyPayment(req, 'POST', '/pooja/wallet', { body, requireAuth: true });
 }

@@ -24,6 +24,7 @@ export default function CityAutocomplete({ value, onSelect, onTextChange }: Prop
   const [hits, setHits] = useState<GeocodeHit[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   // When the query change comes from picking a suggestion (not typing), skip
@@ -46,6 +47,7 @@ export default function CityAutocomplete({ value, onSelect, onTextChange }: Prop
     }
     if (query.trim().length < 2) {
       setHits([]);
+      setLookupError(null);
       setOpen(false);
       return;
     }
@@ -54,7 +56,17 @@ export default function CityAutocomplete({ value, onSelect, onTextChange }: Prop
       try {
         const results = await searchPlaces(query.trim());
         setHits(results);
+        setLookupError(null);
         setOpen(results.length > 0);
+      } catch (err) {
+        // searchPlaces throws on a transport/upstream failure (vs an empty
+        // result for a genuine "no match"). Show it in the dropdown instead of
+        // a silent empty list so the user knows to retry.
+        setHits([]);
+        setLookupError(
+          err instanceof Error ? err.message : "Location lookup failed. Please try again.",
+        );
+        setOpen(true);
       } finally {
         setLoading(false);
       }
@@ -92,6 +104,11 @@ export default function CityAutocomplete({ value, onSelect, onTextChange }: Prop
         />
         {loading && <span className="text-[10px] text-[#A78A5A]">…</span>}
       </div>
+      {open && lookupError && hits.length === 0 && (
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 shadow-xl" role="alert">
+          {lookupError}
+        </div>
+      )}
       {open && hits.length > 0 && (
         <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-[#E5C99F] bg-white shadow-xl">
           {hits.map((h, i) => (

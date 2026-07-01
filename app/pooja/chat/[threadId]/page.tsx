@@ -35,9 +35,12 @@ function RedirectContent() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-90px)] gap-3 px-6 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-90px)] gap-3 px-6 text-center bg-[#FFFAF0] font-sans text-[#4A3B32]">
         <p className="text-red-500 text-sm">{error}</p>
-        <button onClick={() => router.push("/pooja/orders")} className="px-5 py-2.5 rounded-xl bg-orange-500 text-white font-semibold">
+        <button
+          onClick={() => router.push("/pooja/orders")}
+          className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#FF6A00] to-[#FFD200] hover:to-[#FF8C00] text-white font-bold shadow-[0_4px_15px_rgba(255,106,0,0.3)] hover:-translate-y-0.5 transition-all duration-300"
+        >
           My Orders
         </button>
       </div>
@@ -45,8 +48,8 @@ function RedirectContent() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-90px)] gap-3">
-      <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-90px)] gap-3 bg-[#FFFAF0] font-sans">
+      <Loader2 className="w-8 h-8 text-[#FF8C00] animate-spin" />
       <p className="text-sm text-gray-500">Opening your chat…</p>
     </div>
   );
@@ -56,8 +59,8 @@ export default function PoojaChatRedirectPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center min-h-[calc(100vh-90px)]">
-          <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+        <div className="flex items-center justify-center min-h-[calc(100vh-90px)] bg-[#FFFAF0]">
+          <Loader2 className="w-8 h-8 text-[#FF8C00] animate-spin" />
         </div>
       }
     >

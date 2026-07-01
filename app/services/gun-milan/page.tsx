@@ -14,6 +14,7 @@ import {
   type GunMilanResponse,
 } from "../../lib/astrology/featureApi";
 import { useDedupedAction } from "../../lib/astrology/useDedupedAction";
+import { useRequireAuth } from "../../hooks/useRequireAuth";
 
 interface MatchInput {
   male: BirthDetails;
@@ -22,6 +23,9 @@ interface MatchInput {
 }
 
 export default function GunMilanPage() {
+  // Gun Milan calls the auth-gated compatibility endpoint; require login first.
+  const authed = useRequireAuth("/services/gun-milan");
+
   const [male, setMale] = useState<BirthDetails | null>(null);
   const [female, setFemale] = useState<BirthDetails | null>(null);
   const [globalLang, setGlobalLang] = useLanguage();
@@ -52,6 +56,18 @@ export default function GunMilanPage() {
   }, [lang, setGlobalLang, male, female, action.data, calculate]);
 
   const { loading, data: response, error } = action;
+
+  // While the auth guard redirects an unauthenticated user, render a minimal
+  // placeholder instead of the partner forms.
+  if (!authed) {
+    return (
+      <PageShell title="Gun Milan" subtitle="">
+        <div className="rounded-xl border border-[#E5C99F] bg-white p-6 shadow-sm text-sm text-[#6b4a1f]">
+          Checking your session…
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell

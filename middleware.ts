@@ -32,6 +32,8 @@ const PROTECTED_PREFIXES = [
   '/audio-call',
   '/video-call',
   '/partner-info',
+  '/free-kundli',
+  '/services/gun-milan',
 ];
 
 function isProtected(pathname: string): boolean {
@@ -72,5 +74,7 @@ export const config = {
     '/audio-call/:path*',
     '/video-call/:path*',
     '/partner-info/:path*',
+    '/free-kundli/:path*',
+    '/services/gun-milan/:path*',
   ],
 };

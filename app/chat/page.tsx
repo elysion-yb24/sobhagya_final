@@ -21,6 +21,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { getAuthToken, getUserDetails, isAuthenticated } from '../utils/auth-utils';
+import { startPujaCall } from '../utils/startPujaCall';
 import { fetchWalletBalance } from '../utils/production-api';
 import { getApiBaseUrl } from '../config/api';
 import {
@@ -998,24 +999,22 @@ export default function ChatPage() {
     [socket, threadIdParam, activeSessionId]
   );
 
+  // The live puja video is owned by the mobile (iOS/Android) apps. We only call
+  // calling-service (HTTP) to ring the astrologer's device; the call then
+  // continues in the app. No web video is rendered.
   const joinPujaLive = useCallback(async () => {
     if (!activeSessionId) return;
     try {
-      const res = await fetch('/api/calling/pooja-live-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getAuthToken()}` },
-        credentials: 'include',
-        body: JSON.stringify({ sessionId: activeSessionId }),
-      });
-      const json = await res.json().catch(() => ({}));
-      if (!json?.data?.token) throw new Error(json?.message || 'Could not start the puja live.');
-      const { token, wsURL, roomName } = json.data;
-      const qs = new URLSearchParams({ room: roomName, token, ws: wsURL, thread: threadIdParam || '' });
-      router.push(`/pooja/live?${qs.toString()}`);
+      const resp = await startPujaCall({ sessionId: activeSessionId, threadId: threadIdParam || undefined });
+      if (resp?.success) {
+        toast.success('🪔 Starting your Live Puja — please continue on the Sobhagya app.');
+      } else {
+        throw new Error(resp?.message || 'Could not start the puja live.');
+      }
     } catch (e: any) {
       toast.error(e?.message || 'Could not join the puja live.');
     }
-  }, [activeSessionId, threadIdParam, router]);
+  }, [activeSessionId, threadIdParam]);
 
   // Whether the Join button should be live (from 5 min before the scheduled time).
   const pujaJoinable = useMemo(() => {

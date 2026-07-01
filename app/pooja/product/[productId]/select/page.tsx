@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Star, Search, Languages, CheckCircle2, Briefcase } from "lucide-react";
 import {
-  fetchOnlineAstrologers,
+  fetchRemedyAstrologers,
   fetchProduct,
   PoojaAstrologer,
   PoojaProduct,
@@ -17,7 +17,7 @@ import { Skeleton } from "../../../../components/ui/SkeletonLoader";
 
 function ProviderSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border border-orange-100 p-4 flex gap-3">
+    <div className="bg-white rounded-2xl border border-orange-50 shadow-[0_4px_20px_rgba(255,140,0,0.03)] p-4 flex gap-3">
       <Skeleton variant="circular" width={56} height={56} />
       <div className="flex-1 space-y-2">
         <Skeleton variant="text" height={16} width="50%" />
@@ -52,13 +52,14 @@ export default function PanditSelectionPage() {
   const pujaPrice = product?.startingPrice ?? 0;
   const pujaOriginal = product?.startingOriginalPrice ?? 0;
 
-  // Initial load: product (for price) + the live online astrologer roster.
+  // Initial load: product (for price) + the survey-driven per-remedy roster
+  // (only astrologers who actually perform THIS remedy — requirement #4/#5).
   useEffect(() => {
     if (!productId) return;
     setLoading(true);
     Promise.all([
       fetchProduct(productId).catch(() => null),
-      fetchOnlineAstrologers({ limit: 30 }),
+      fetchRemedyAstrologers(productId),
     ])
       .then(([p, list]) => {
         setProduct(p);
@@ -69,21 +70,22 @@ export default function PanditSelectionPage() {
       .finally(() => setLoading(false));
   }, [productId]);
 
-  // Real-time status sync — re-fetch the online roster every 12s (same cadence as
-  // the Call-with-Astrologer page) so the list reflects who is currently online.
+  // Refresh the roster every 12s so the online badge / online-first ordering stays
+  // current (online is a secondary signal — eligibility is the survey mapping).
   const searchRef = useRef(search);
   searchRef.current = search;
   useEffect(() => {
+    if (!productId) return;
     const id = setInterval(async () => {
       try {
-        const fresh = await fetchOnlineAstrologers({ search: searchRef.current || undefined, limit: 30 });
-        if (fresh.length) setAstrologers(fresh);
+        const fresh = await fetchRemedyAstrologers(productId);
+        setAstrologers(fresh);
       } catch {
         /* keep the current list on transient errors */
       }
     }, 12000);
     return () => clearInterval(id);
-  }, []);
+  }, [productId]);
 
   const filtered = astrologers.filter((a) => a.name?.toLowerCase().includes(search.toLowerCase()));
 
@@ -92,24 +94,24 @@ export default function PanditSelectionPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-90px)] bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+    <div className="min-h-[calc(100vh-90px)] bg-[#FFFAF0] font-sans text-[#4A3B32]">
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="mb-4">
           <BackButton />
         </div>
-        <h1 className="font-serif text-2xl font-bold text-gray-900 mb-1">Select an Astrologer</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#4A3B32] mb-1">Select an Astrologer</h1>
         <p className="text-sm text-gray-500 mb-4">
-          Choose from astrologers who are <span className="text-green-600 font-medium">online right now</span> to perform your puja.
+          Choose from verified astrologers who perform <span className="text-[#FF8C00] font-semibold">{product?.title || "this remedy"}</span>.
         </p>
 
-        <div className="flex gap-2 mb-4">
-          <div className="flex-1 flex items-center gap-2 bg-white border border-orange-100 rounded-xl px-3">
-            <Search className="w-4 h-4 text-orange-400" />
+        <div className="flex gap-2 mb-5">
+          <div className="flex-1 flex items-center gap-2 bg-white border border-orange-100 rounded-xl px-3 shadow-sm focus-within:border-[#FF8C00] transition-colors">
+            <Search className="w-4 h-4 text-[#FF8C00]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search astrologer"
-              className="flex-1 py-2.5 text-sm outline-none bg-transparent"
+              className="flex-1 py-3 text-sm outline-none bg-transparent placeholder:text-gray-400"
             />
           </div>
         </div>
@@ -128,7 +130,7 @@ export default function PanditSelectionPage() {
             filtered.map((a) => {
               const rating = ratingValue(a.rating);
               const hasRating = rating > 0;
-              const orders = typeof a.calls === "number" ? a.calls : typeof a.callsCount === "number" ? a.callsCount : 0;
+              const orders = typeof a.ordersCount === "number" ? a.ordersCount : typeof a.calls === "number" ? a.calls : typeof a.callsCount === "number" ? a.callsCount : 0;
               const ordersLabel = orders >= 1000 ? `${Math.floor(orders / 1000)}k+` : orders;
               const languages = a.languages || [];
               const exp = a.experience;
@@ -136,10 +138,10 @@ export default function PanditSelectionPage() {
               return (
                 <div
                   key={a._id}
-                  className="bg-white rounded-2xl shadow-sm hover:shadow-premium border border-orange-100 hover:border-orange-200 p-4 flex gap-3 transition-all"
+                  className="bg-white rounded-2xl border border-orange-50 shadow-[0_4px_20px_rgba(255,140,0,0.03)] hover:shadow-[0_8px_30px_rgba(255,140,0,0.12)] hover:border-[#FF8C00]/40 p-4 flex gap-3 transition-all duration-300"
                 >
                   <div className="relative flex-shrink-0">
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center overflow-hidden">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#FFF3E0] to-[#FFE0B2] ring-2 ring-orange-50 flex items-center justify-center overflow-hidden">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={poojaImg(a.avatar || a.profileImage)}
@@ -150,16 +152,18 @@ export default function PanditSelectionPage() {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    {/* Filtered to online astrologers only — always show the live dot. */}
-                    <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-green-500 border-2 border-white" title="Online now" />
+                    {/* Online is a secondary signal — show the live dot only when online. */}
+                    {a.isOnline && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white" title="Online now" />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-gray-800 truncate">{a.name}</h3>
+                      <h3 className="font-bold text-[#4A3B32] truncate">{a.name}</h3>
                       {hasRating ? (
-                        <div className="flex items-center gap-1 text-xs text-gray-600 flex-shrink-0">
-                          <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> {rating.toFixed(1)}
+                        <div className="flex items-center gap-1 text-xs font-semibold text-[#4A3B32] flex-shrink-0 bg-[#FFFAF0] border border-orange-50 px-2 py-0.5 rounded-full">
+                          <Star className="w-3.5 h-3.5 text-[#FFD700] fill-[#FFD700]" /> {rating.toFixed(1)}
                         </div>
                       ) : null}
                     </div>
@@ -167,7 +171,7 @@ export default function PanditSelectionPage() {
                     {(a.specializations || a.talksAbout || []).length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {(a.specializations || a.talksAbout || []).slice(0, 3).map((s, i) => (
-                          <span key={i} className="text-[10px] bg-orange-50 text-orange-700 border border-orange-100 px-2 py-0.5 rounded-full">
+                          <span key={i} className="text-[10px] bg-[#FFF3E0] text-[#FF8C00] border border-orange-100 px-2 py-0.5 rounded-full font-medium">
                             {s}
                           </span>
                         ))}
@@ -177,29 +181,29 @@ export default function PanditSelectionPage() {
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-gray-500">
                       {languages.length > 0 && (
                         <span className="flex items-center gap-1">
-                          <Languages className="w-3.5 h-3.5 text-gray-400" /> {languages.join(", ")}
+                          <Languages className="w-3.5 h-3.5 text-[#FF8C00]/70" /> {languages.join(", ")}
                         </span>
                       )}
                       {exp != null && exp !== "" && (
                         <span className="flex items-center gap-1">
-                          <Briefcase className="w-3.5 h-3.5 text-gray-400" /> {exp}{typeof exp === "number" ? " yrs" : ""}
+                          <Briefcase className="w-3.5 h-3.5 text-[#FF8C00]/70" /> {exp}{typeof exp === "number" ? " yrs" : ""}
                         </span>
                       )}
                       {orders > 0 && (
                         <span className="flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-gray-400" /> {ordersLabel} orders
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> {ordersLabel} orders
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center justify-between mt-3">
                       <div className="text-sm">
-                        <span className="text-orange-600 font-bold">{formatINR(pujaPrice)}</span>{" "}
+                        <span className="text-[#4A3B32] font-bold">{formatINR(pujaPrice)}</span>{" "}
                         {hasDiscount && <span className="text-gray-400 line-through text-xs">{formatINR(pujaOriginal)}</span>}
                       </div>
                       <button
                         onClick={() => onSelect(a)}
-                        className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white text-sm font-semibold px-6 py-2 rounded-lg transition-all shadow-sm"
+                        className="bg-gradient-to-r from-[#FF6A00] to-[#FFD200] hover:to-[#FF8C00] text-white text-sm font-bold px-7 py-2 rounded-xl transition-all duration-300 shadow-[0_4px_15px_rgba(255,106,0,0.3)] hover:-translate-y-0.5"
                       >
                         Select
                       </button>
@@ -211,9 +215,13 @@ export default function PanditSelectionPage() {
         </div>
 
         {!loading && !error && filtered.length === 0 && (
-          <p className="text-center text-gray-500 py-12">
-            No astrologers are online right now. Please check back in a little while.
-          </p>
+          <div className="text-center py-16 bg-white rounded-[2rem] border border-orange-50 shadow-[0_4px_20px_rgba(255,140,0,0.03)] mt-2">
+            <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-[#FFF3E0] to-[#FFE0B2] flex items-center justify-center mb-4">
+              <Search className="w-7 h-7 text-[#FF8C00]" />
+            </div>
+            <p className="text-[#4A3B32] font-semibold">No Astrologers found for this pooja.</p>
+            <p className="text-gray-400 text-sm mt-1 px-6">Our astrologers for this remedy will be available soon. Please check back shortly.</p>
+          </div>
         )}
       </div>
     </div>

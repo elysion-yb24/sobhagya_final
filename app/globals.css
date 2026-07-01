@@ -1084,3 +1084,20 @@ img { max-width: 100%; }
   transform: rotateY(180deg);
 }
 
+/* --- Pooja invoice print: print ONLY the invoice sheet, hide site chrome --- */
+@media print {
+  body * { visibility: hidden !important; }
+  .invoice-print, .invoice-print * { visibility: visible !important; }
+  .invoice-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+  }
+  .no-print { display: none !important; }
+  @page { margin: 16mm; }
+}
+

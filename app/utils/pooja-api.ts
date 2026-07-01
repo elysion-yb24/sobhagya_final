@@ -38,6 +38,8 @@ export interface PoojaCategory {
 export interface PoojaProduct {
   _id: string;
   categoryId: string;
+  productType?: 'pooja' | 'spell' | 'healing' | 'consultation';
+  externalId?: number | null;
   title: string;
   slug: string;
   subtitle?: string;
@@ -47,10 +49,16 @@ export interface PoojaProduct {
   faqs?: { heading: string; body: string }[];
   thumbnail?: string;
   heroImage?: string;
+  imageUrl?: string;
+  gallery?: string[];
   rating?: number;
   reviewCount?: number;
   startingPrice?: number;
   startingOriginalPrice?: number;
+  discountPct?: number;
+  gstPct?: number;
+  durationMin?: number;
+  newlyLaunched?: boolean;
   currency?: string;
 }
 
@@ -71,21 +79,6 @@ export function poojaImg(path?: string | null): string {
   return p.includes('?') ? p : `${p}?v=${POOJA_IMG_VERSION}`;
 }
 
-export interface PoojaProvider {
-  providerId: string;
-  name: string;
-  avatar?: string;
-  skills?: string[];
-  languages?: string[];
-  experienceYears?: number;
-  rating?: number;
-  orderCount?: number;
-  isAvailable?: boolean;
-  originalPrice: number;
-  discountedPrice: number;
-  currency?: string;
-}
-
 export interface PoojaQuote {
   lineItems: { productId: string; providerId: string; title: string; providerName: string; price: number }[];
   subtotal: number;
@@ -101,16 +94,49 @@ export interface PoojaQuote {
 
 export interface PoojaOrder {
   _id: string;
-  status: 'PENDING_PAYMENT' | 'PAID' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
-  lineItems: { productId: string; providerId: string; title: string; providerName: string; price: number }[];
+  status: 'PENDING_PAYMENT' | 'PAID' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'DECLINED' | 'PENDING_ACCEPTANCE';
+  lineItems: { productId: string; providerId: string; title: string; providerName: string; price: number; image?: string }[];
   subtotal: number;
+  gstRate?: number;
   gstAmount: number;
   discount: number;
+  walletDeduction?: number;
   totalPayable: number;
   currency: string;
+  couponCode?: string | null;
+  billingState?: string | null;
+  merchantOrderId?: string | null;
+  fulfilledAt?: string | null;
   chatThreadId?: string | null;
   chatSessionId?: string | null;
+  pujaLive?: PoojaSchedule | null;
+  feedback?: { rating: number; comment?: string; createdAt?: string } | null;
   createdAt: string;
+}
+
+export interface PoojaScheduleChangeRequest {
+  proposedAt?: string | null;
+  requestedBy?: string | null;
+  note?: string | null;
+  direction?: string | null;
+  status?: 'pending' | 'accepted' | 'declined' | '' | null;
+}
+
+export interface PoojaScheduleHistory {
+  by: string;
+  at?: string;
+  note?: string;
+  time?: string;
+}
+
+export interface PoojaSchedule {
+  scheduledAt?: string | null;
+  roomName?: string | null;
+  status?: 'none' | 'scheduled' | 'live' | 'completed' | 'cancelled' | null;
+  userJoined?: boolean;
+  astrologerJoined?: boolean;
+  changeRequest?: PoojaScheduleChangeRequest | null;
+  history?: PoojaScheduleHistory[];
 }
 
 /**
@@ -168,14 +194,25 @@ export async function fetchProduct(productId: string): Promise<PoojaProduct> {
   return (await poojaApi(`/api/pooja/products/${productId}`)).data;
 }
 
-export async function fetchProviders(productId: string, sort?: string, language?: string): Promise<PoojaProvider[]> {
-  const qs = new URLSearchParams();
-  if (sort) qs.set('sort', sort);
-  if (language) qs.set('language', language);
-  return (await poojaApi(`/api/pooja/products/${productId}/providers?${qs.toString()}`)).data || [];
+export interface PoojaReview {
+  rating: number;
+  comment: string;
+  name: string;
+  date: string;
+  verified: boolean;
 }
 
-/** A real, bookable astrologer from the live "Call with Astrologer" roster. */
+/** Public testimonials for a product (from real completed-order feedback). */
+export async function fetchProductReviews(
+  productId: string,
+  page = 1,
+  limit = 10
+): Promise<{ items: PoojaReview[]; total: number; avgRating: number; page: number; limit: number }> {
+  const data = await poojaApi(`/api/pooja/products/${productId}/reviews?page=${page}&limit=${limit}`);
+  return data.data || { items: [], total: 0, avgRating: 0, page, limit };
+}
+
+/** A bookable astrologer — for pooja, from the survey-driven per-remedy roster. */
 export interface PoojaAstrologer {
   _id: string;
   name: string;
@@ -184,14 +221,29 @@ export interface PoojaAstrologer {
   languages?: string[];
   specializations?: string[];
   talksAbout?: string[];
+  about?: string;
   experience?: string | number;
   rating?: number | { avg: number; count: number };
+  poojaRatingCount?: number;
+  ordersCount?: number;
   calls?: number;
   callsCount?: number;
   status?: string;
+  isOnline?: boolean;
   videoRpm?: number;
   rpm?: number;
   isVideoCallAllowed?: boolean;
+}
+
+/**
+ * Survey-driven roster of astrologers who actually PERFORM this remedy
+ * (requirement #4/#5). Returns only bookable astrologers; an empty array means
+ * the UI shows the "No Astrologers found for this pooja." placeholder. This
+ * REPLACES the old all-online roster for the pooja booking flow.
+ */
+export async function fetchRemedyAstrologers(productId: string): Promise<PoojaAstrologer[]> {
+  const data = await poojaApi(`/api/pooja/products/${productId}/astrologers`);
+  return (data.data as PoojaAstrologer[]) || [];
 }
 
 /**
@@ -256,30 +308,14 @@ export async function createOrder(
 }
 
 /**
- * Initiates the PhonePe payment on the backend (user-service, official
- * pg-sdk-node) and returns the hosted-checkout redirect URL. Confirmation is
- * server-authoritative — the /pooja/payment-status page polls the order, whose
- * reconcile verifies with PhonePe and marks it PAID.
- */
-export async function initiatePayment(orderId: string): Promise<{ redirectUrl: string }> {
-  const data = await poojaApi('/api/pooja/payments/initiate', {
-    method: 'POST',
-    body: JSON.stringify({ orderId }),
-  });
-  if (!data?.data?.redirectUrl) {
-    throw new Error(data?.message || 'Failed to start payment');
-  }
-  return { redirectUrl: data.data.redirectUrl };
-}
-
-/**
  * Settles a pooja order against the user's Sobhagya wallet balance (same wallet
- * used by calls/chat). On success the backend debits the wallet and marks the
- * order PAID, so /pooja/payment-status confirms it on the first poll.
+ * used by calls/chat). Pooja is WALLET-ONLY — there is no PhonePe/PSP path. On
+ * success the backend debits the wallet and marks the order PAID synchronously,
+ * so /pooja/payment-status confirms it on the first poll.
  *
- * NOTE: requires user-service to expose POST /api/pooja/payments/wallet. If the
- * backend doesn't support wallet settlement yet, this throws and the checkout
- * UI falls back to the PhonePe-direct path.
+ * Settlement is owned by payment-service (the BFF /api/pooja/payments/wallet
+ * proxies there). On failure this throws; the checkout UI surfaces the error
+ * (and prompts a recharge when the balance is insufficient).
  */
 export async function payFromWallet(orderId: string): Promise<PoojaOrder> {
   const data = await poojaApi('/api/pooja/payments/wallet', {
@@ -293,37 +329,42 @@ export async function fetchOrder(orderId: string): Promise<PoojaOrder> {
   return (await poojaApi(`/api/pooja/orders/${orderId}`)).data;
 }
 
+/** The order's current live-puja schedule read-model (synced from chat-service). */
+export async function fetchOrderSchedule(orderId: string): Promise<PoojaSchedule | null> {
+  const order = await fetchOrder(orderId);
+  return order.pujaLive || null;
+}
+
 export async function fetchOrders(status?: string): Promise<PoojaOrder[]> {
   const qs = status ? `?status=${status}` : '';
   return (await poojaApi(`/api/pooja/orders${qs}`)).data || [];
 }
 
-// ---- remedy chat (auth) ----
-export interface RemedyMessage {
-  _id: string;
-  threadId: string;
-  senderType: 'ADMIN' | 'USER' | 'PROVIDER';
-  body: string;
-  attachments?: string[];
-  createdAt: string;
+/**
+ * The user's existing LIVE order (PENDING_PAYMENT/PAID/IN_PROGRESS/COMPLETED) for
+ * this remedy + astrologer, or null. Checkout uses it to detect "already booked &
+ * paid" and to reuse a still-pending order instead of creating a duplicate.
+ */
+export async function fetchActiveOrder(productId: string, providerId: string): Promise<PoojaOrder | null> {
+  const qs = `?productId=${encodeURIComponent(productId)}&providerId=${encodeURIComponent(providerId)}`;
+  return (await poojaApi(`/api/pooja/orders/active${qs}`)).data || null;
 }
 
-export async function fetchMessages(threadId: string, cursor?: string): Promise<{ thread: any; messages: RemedyMessage[]; nextCursor: string | null }> {
-  const qs = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
-  return (await poojaApi(`/api/pooja/chats/${threadId}/messages${qs}`)).data;
-}
-
-export async function sendMessage(
-  threadId: string,
-  body: string,
-  attachments?: string[]
-): Promise<RemedyMessage> {
-  const data = await poojaApi(`/api/pooja/chats/${threadId}/messages`, {
+/**
+ * Submit in-app ★ + text feedback for a COMPLETED pooja. Idempotent (one per
+ * order — re-submitting edits it). Feeds the astrologer's pooja rating aggregate.
+ */
+export async function submitFeedback(orderId: string, rating: number, comment?: string): Promise<{ orderId: string; feedback: PoojaOrder['feedback'] }> {
+  const data = await poojaApi(`/api/pooja/orders/${orderId}/feedback`, {
     method: 'POST',
-    body: JSON.stringify({ body, attachments: attachments && attachments.length ? attachments : undefined }),
+    body: JSON.stringify({ rating, comment: comment || undefined }),
   });
   return data.data;
 }
+
+// NOTE: the post-booking chat is the real-time chat-service chat (the booking
+// hands off to the chat web app). The old REST "remedy chat" client + its BFF
+// were removed — there is no /api/pooja/chats anymore.
 
 export function formatINR(n: number | undefined): string {
   return `₹${Number(n || 0).toLocaleString('en-IN')}`;

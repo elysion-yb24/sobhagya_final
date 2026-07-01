@@ -89,8 +89,12 @@ const REFRESH_PING_PATH = '/user/api/data';
  * strips the prefix).
  */
 function resolveBackendUrl(path: string): string {
+  // USER_SERVICE_URL is a *local-dev* convenience that points `/user/*` straight
+  // at a localhost service. It must never take effect in production — if it ever
+  // leaks into the prod environment it would route every /user/* call (kundli,
+  // geocode, profile, …) to an unreachable localhost host. Ignore it in prod.
   const userServiceLocal = process.env.USER_SERVICE_URL;
-  if (userServiceLocal && path.startsWith('/user/')) {
+  if (userServiceLocal && process.env.NODE_ENV !== 'production' && path.startsWith('/user/')) {
     return `${userServiceLocal.replace(/\/$/, '')}${path.slice('/user'.length)}`;
   }
   return `${getApiBaseUrl()}${path}`;

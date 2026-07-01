@@ -5,15 +5,15 @@ import { Star, ArrowRight, ShieldCheck } from "lucide-react";
 import { PoojaProduct, formatINR, poojaImg, POOJA_PLACEHOLDER } from "../../utils/pooja-api";
 
 const BADGE_STYLES: Record<string, string> = {
-  "Most Popular": "bg-gradient-to-r from-orange-500 to-red-500",
-  "Best Seller": "bg-gradient-to-r from-rose-500 to-pink-500",
-  "Most Booked": "bg-gradient-to-r from-purple-500 to-indigo-500",
+  "Most Popular": "bg-gradient-to-r from-[#FF6A00] to-[#FF8C00]",
+  "Best Seller": "bg-gradient-to-r from-[#FF6A00] to-[#FFD200]",
+  "Most Booked": "bg-gradient-to-r from-[#FF6A00] to-[#FF8C00]",
   New: "bg-gradient-to-r from-emerald-500 to-teal-500",
 };
 
 export default function PoojaCard({ product }: { product: PoojaProduct }) {
   const router = useRouter();
-  const badgeClass = (product.badge && BADGE_STYLES[product.badge]) || "bg-gradient-to-r from-orange-500 to-orange-600";
+  const badgeClass = (product.badge && BADGE_STYLES[product.badge]) || "bg-gradient-to-r from-[#FF6A00] to-[#FF8C00]";
   const hasDiscount =
     !!product.startingOriginalPrice && product.startingOriginalPrice > (product.startingPrice || 0);
   const off = hasDiscount
@@ -26,13 +26,13 @@ export default function PoojaCard({ product }: { product: PoojaProduct }) {
   return (
     <div
       onClick={go}
-      className="group cursor-pointer bg-white rounded-[2rem] shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(234,88,12,0.12)] border border-gray-100 hover:border-orange-200 flex flex-col transition-all duration-500 hover:-translate-y-2 p-2.5"
+      className="group cursor-pointer bg-white rounded-2xl shadow-[0_4px_20px_rgba(255,140,0,0.05)] hover:shadow-[0_12px_30px_rgba(255,106,0,0.15)] border border-orange-50 hover:border-[#FF8C00] flex flex-col transition-all duration-300 hover:-translate-y-1 p-3"
     >
       {/* Image Container */}
-      <div className="relative aspect-[4/3] rounded-[1.5rem] bg-gradient-to-br from-orange-100 to-amber-50 overflow-hidden">
+      <div className="relative aspect-[4/3] rounded-xl bg-gray-50 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={poojaImg(product.thumbnail)}
+          src={poojaImg(product.imageUrl || product.thumbnail || product.heroImage)}
           alt={product.title}
           loading="lazy"
           onError={(e) => {
@@ -55,22 +55,22 @@ export default function PoojaCard({ product }: { product: PoojaProduct }) {
 
         {/* Top Right: Rating */}
         {hasRating && (
-          <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-white/95 backdrop-blur-md text-gray-900 text-[11px] font-extrabold px-2.5 py-1.5 rounded-full shadow-lg border border-white/50">
-            <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-white/90 backdrop-blur text-[#4A3B32] text-[12px] font-bold px-2.5 py-1 rounded-md shadow-sm border border-white/50">
+            <Star className="w-3.5 h-3.5 fill-[#FFD700] text-[#FFD700] drop-shadow-sm" />
             {(product.rating as number).toFixed(1)}
           </div>
         )}
 
         {/* Bottom Left: Trust Indicator */}
-        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-md border border-white/20 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
-          <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 bg-black/60 backdrop-blur-md text-white text-[10px] font-medium px-2 py-1 rounded">
+          <ShieldCheck className="w-3 h-3 text-[#FFD200]" />
           Verified Pandit
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="px-3 pt-5 pb-2 flex-1 flex flex-col relative">
-        <h3 className="font-extrabold text-gray-900 text-[17px] leading-snug line-clamp-2 group-hover:text-orange-600 transition-colors">
+      <div className="px-1 pt-4 pb-1 flex-1 flex flex-col relative">
+        <h3 className="font-bold text-[#4A3B32] text-[16px] leading-snug line-clamp-2 group-hover:text-[#FF8C00] transition-colors duration-300">
           {product.title}
         </h3>
         
@@ -82,7 +82,7 @@ export default function PoojaCard({ product }: { product: PoojaProduct }) {
           {/* Price Section */}
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-gray-900 font-black text-2xl tracking-tight">{formatINR(product.startingPrice)}</span>
+              <span className="text-[#4A3B32] font-bold text-xl">{formatINR(product.startingPrice)}</span>
             </div>
             {hasDiscount ? (
               <div className="flex items-center gap-1.5 mt-1">
@@ -102,10 +102,10 @@ export default function PoojaCard({ product }: { product: PoojaProduct }) {
               e.stopPropagation();
               go();
             }}
-            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-11 px-5 rounded-2xl font-bold transition-all duration-300 flex items-center gap-1.5 shadow-md shadow-orange-500/20 group-hover:shadow-lg group-hover:shadow-orange-500/40 group-hover:-translate-y-0.5"
+            className="bg-gradient-to-r from-[#FF6A00] to-[#FFD200] hover:to-[#FF8C00] text-white h-10 px-5 rounded-lg font-bold transition-all duration-300 flex items-center gap-1.5 shadow-[0_4px_15px_rgba(255,106,0,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,106,0,0.4)]"
           >
             Book
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 drop-shadow-sm" />
           </button>
         </div>
       </div>

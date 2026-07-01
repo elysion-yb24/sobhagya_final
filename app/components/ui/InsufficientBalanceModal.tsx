@@ -284,10 +284,10 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full p-0 overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999] p-4 font-sans">
+      <div className="bg-white rounded-[1.75rem] max-w-md w-full p-0 overflow-hidden shadow-[0_8px_40px_rgba(255,140,0,0.2)] text-[#4A3B32]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white relative">
+        <div className="bg-gradient-to-r from-[#FF6A00] to-[#FF8C00] p-6 text-white relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors"
@@ -328,7 +328,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
           </div>
 
           {/* Service Info */}
-          <div className="flex items-center gap-3 mb-6 p-3 bg-orange-50 rounded-lg">
+          <div className="flex items-center gap-3 mb-6 p-3 bg-[#FFFAF0] border border-orange-50 rounded-lg">
             <div className="text-2xl">{getServiceIcon()}</div>
             <div>
               <p className="font-medium text-gray-900 text-sm">
@@ -345,7 +345,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
             <p className="text-gray-700 font-medium text-sm mb-3">Quick Add Amounts:</p>
             {isLoadingData ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#FF8C00]" />
                 <span className="ml-2 text-gray-600">Loading recharge options...</span>
               </div>
             ) : (
@@ -354,7 +354,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
                   <div key={index} className="flex flex-col items-center gap-2">
                     <Link
                       href={`/wallet/recharge?amount=${option.amount}`}
-                      className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-3 rounded-lg text-center text-sm font-medium hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:scale-105 shadow-md w-full"
+                      className="bg-gradient-to-r from-[#FF6A00] to-[#FFD200] text-white p-3 rounded-xl text-center text-sm font-semibold hover:to-[#FF8C00] transition-all duration-300 hover:scale-105 shadow-[0_4px_15px_rgba(255,106,0,0.3)] w-full"
                     >
                       <div className="font-semibold">₹{option.amount}</div>
                       {/* Always show bonus as 'additional' from API if present */}
@@ -368,7 +368,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
                       )}
                     </Link>
                     <button
-                      className="w-full bg-blue-600 text-white rounded-lg py-2 px-2 text-xs font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                      className="w-full bg-[#4A3B32] text-white rounded-lg py-2 px-2 text-xs font-semibold hover:bg-[#5a4a3f] transition disabled:opacity-50"
                       onClick={() => handlePhonePePayment(option)}
                       disabled={isPaying}
                     >
@@ -406,7 +406,7 @@ const InsufficientBalanceModal = React.memo(function InsufficientBalanceModal({
           <div className="space-y-3">
             <Link
               href="/wallet"
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-xl font-semibold text-center flex items-center justify-center gap-2 hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:scale-105 shadow-lg"
+              className="w-full bg-gradient-to-r from-[#FF6A00] to-[#FFD200] text-white py-3 px-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2 hover:to-[#FF8C00] transition-all duration-300 hover:scale-105 shadow-[0_4px_15px_rgba(255,106,0,0.3)]"
             >
               <Plus className="w-5 h-5" />
               Add Money to Wallet

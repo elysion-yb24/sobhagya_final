@@ -37,9 +37,8 @@ exists, the UI falls back to `placeholder.svg`, so the layout always looks compl
 `banner-hero.jpg` (main shop hero), `banner-health.jpg`, `banner-wealth.jpg`,
 `banner-love.jpg`, `banner-career.jpg`, `banner-dosh.jpg`, `banner-shanti.jpg`
 
-## Pandit avatars (optional) — `/pooja_images/pandit-<name>.jpg`
-`pandit-shivokt.jpg`, `pandit-jaisudarshan.jpg`, `pandit-harkirat.jpg`,
-`pandit-kaustubha.jpg`, `pandit-shyam.jpg`
+> Astrologer avatars are not stored here — the pandit who performs a puja is picked
+> from the live online roster, which carries each astrologer's own profile photo.
 
 > If you rename any file, also update the matching path in
 > `backend/sobhagya-backend-new/user-service/scripts/seedPooja.js` and re-run

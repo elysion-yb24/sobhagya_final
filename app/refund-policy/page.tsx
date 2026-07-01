@@ -43,7 +43,9 @@ export default function RefundPolicy() {
                 <strong>Eligibility:</strong> Returns or exchanges are only accepted if your order is damaged during transit or if you received an incorrect product. Note - The Company acknowledges and agrees that, due to the nature of the products, the Company requires videographic proof to process any return or exchange request.
               </p>
               <p>
-                <strong>Timeframe:</strong> Requests for a refund or exchange must be made within seven (07) days of receiving your product. The item must be returned in its original condition with its original certification and packaging intact.
+                <strong>
+                  Timeframe: Requests for a refund or exchange must be made within seven (07) days of receiving your product. The item must be returned in its original condition, with its original certification and packaging intact. Refunds will be processed, or exchange products will be delivered, within (15) days after the returned item has been received and verified  
+                </strong>
               </p>
             </section>
 

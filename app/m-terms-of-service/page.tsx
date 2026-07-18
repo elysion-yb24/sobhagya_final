@@ -46,7 +46,7 @@ export default function MTermsOfService() {
               <div className="select-text">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4 select-text">1. TERMS AND CONDITIONS OF USAGE</h2>
                 <p className="select-text">
-                  These terms and conditions of Use (hereinafter referred as &quot;Terms of Usage&quot;) describe and govern the User&apos;s use of the content and services offered by Elysion Softwares Private Limited through www.sobhagya.in (hereinafter referred as &quot;We&quot; &quot;Sobhagya&quot; &quot;us&quot; &quot;our&quot; &quot;sobhagya application&quot; &quot;Website&quot;).
+                  These terms and conditions of Use (hereinafter referred as &quot;Terms of Usage&quot;) describe and govern the User&apos;s use of the content and services offered by SEED VENTURE UP PRIVATE LIMITED through www.sobhagya.in (hereinafter referred as &quot;We&quot; &quot;Sobhagya&quot; &quot;us&quot; &quot;our&quot; &quot;sobhagya application&quot; &quot;Website&quot;).
                 </p>
               </div>
 

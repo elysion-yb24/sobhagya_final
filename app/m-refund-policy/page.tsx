@@ -56,7 +56,7 @@ export default function MRefundPolicy() {
                 </h2>
 
                 <p className="mb-4">
-                  Sobhagya, operated by Elysion Softwares Private Limited,
+                  Sobhagya, operated by SEED VENTURE UP PRIVATE LIMITED,
                   provides digital astrological consultation services through
                   its website and mobile application.
                 </p>

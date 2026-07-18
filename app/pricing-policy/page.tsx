@@ -80,7 +80,7 @@ export default function PricingPolicy() {
                   We work hard to ensure the accuracy of pricing. Despite our efforts, pricing errors may still occur. If a service's price is higher than the price displayed, we will cancel your booking and notify you of the cancellation.
                 </p>
                 <p>
-                  Our service is offered for sale by Elysion Softwares Private Limited for your personal needs. Therefore, we reserve the right to refuse to sell to any person whom we believe may be misusing the service.
+                  Our service is offered for sale by SEED VENTURE UP PRIVATE LIMITED for your personal needs. Therefore, we reserve the right to refuse to sell to any person whom we believe may be misusing the service.
                 </p>
               </section>
 

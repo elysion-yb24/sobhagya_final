@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4 font-garamond">Introduction</h2>
               <p>
-                www.sobhagya.in ("we", "Elysion Softwares Services Private Limited", "Sobhagya" (web and application) hereinafter referred as "website") is committed to protect the privacy of the users of the website (including astrologers and buyers/customers whether registered or not registered). Please read this privacy policy carefully to understand how the website is going to use your information supplied by you to the Website.
+                www.sobhagya.in ("we", "SEED VENTURE UP PRIVATE LIMITED", "Sobhagya" (web and application) hereinafter referred as "website") is committed to protect the privacy of the users of the website (including astrologers and buyers/customers whether registered or not registered). Please read this privacy policy carefully to understand how the website is going to use your information supplied by you to the Website.
               </p>
               <p>
                 This Privacy Policy is published in accordance with Rule 3(1) of the Information Technology (Intermediaries Guidelines) Rules, 2011 and Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011 which requires publishing of the Privacy policy for collection, use, storage and transfer of sensitive personal data or information.

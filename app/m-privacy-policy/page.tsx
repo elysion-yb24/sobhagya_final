@@ -56,8 +56,8 @@ export default function MPrivacyPolicy() {
                 </h2>
 
                 <p className="mb-4">
-                  Sobhagya ("we", "our", "us"), operated by Elysion Softwares
-                  Private Limited, is committed to protecting the privacy of
+                  Sobhagya ("we", "our", "us"), operated by SEED VENTURE UP
+                  PRIVATE LIMITED, is committed to protecting the privacy of
                   everyone who uses our website and mobile applications
                   ("Services"). This Privacy Policy explains how we collect,
                   use, store, and protect your information when you use our

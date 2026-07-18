@@ -139,8 +139,8 @@ const Footer: React.FC = () => {
                 <div className="flex items-start gap-x-3 text-xs sm:text-sm lg:text-base">
                   <span className="inline-flex w-[14px] h-[14px] lg:w-[16px] lg:h-[16px] text-[#F7971E] text-[14px] lg:text-[16px] leading-none items-center justify-center flex-shrink-0 mt-1">◆</span>
                   <span className="flex flex-col leading-tight text-white/90">
-                    <span>Elysion Softwares Services</span>
-                    <span>Private Limited, Delhi, India</span>
+                    <span>SEED VENTURE UP</span>
+                    <span>PRIVATE LIMITED, Delhi, India</span>
                   </span>
                 </div>
 
@@ -250,8 +250,8 @@ const Footer: React.FC = () => {
               
               {/* Address */}
               <div className="text-center">
-                <p className="text-white text-xs">Elysion Softwares Services</p>
-                <p className="text-white text-xs">Private Limited, Delhi, India</p>
+                <p className="text-white text-xs">SEED VENTURE UP</p>
+                <p className="text-white text-xs">PRIVATE LIMITED, Delhi, India</p>
               </div>
               <div className="flex items-center justify-center gap-3 pt-2">
                 <Link href="https://www.instagram.com/sobhagya.bhaakti" target="_blank" rel="noopener noreferrer" className="text-white hover:text-[#F7971E] transition-colors duration-300 hover:scale-110">
@@ -381,7 +381,7 @@ const Footer: React.FC = () => {
             </div>
 
             <p className="text-white text-sm opacity-80 tracking-tighter">
-              © OWNED BY ELYSION SOFTWARES PRIVATE LIMITED
+              © OWNED BY SEED VENTURE UP PRIVATE LIMITED
             </p>
           </div>
         </div>

@@ -30,7 +30,7 @@ export default function TermsAndConditions() {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 mb-4 font-garamond">1. TERMS AND CONDITIONS OF USAGE</h2>
               <p>
-                These terms and conditions of Use (hereinafter referred as "Terms of Usage") describe and govern the User's use of the content and services offered by Elysion Softwares Private Limited through www.sobhagya.in (hereinafter referred as "We" "Sobhagya" "us" "our" "sobhagya application" "Website").
+                These terms and conditions of Use (hereinafter referred as "Terms of Usage") describe and govern the User's use of the content and services offered by SEED VENTURE UP PRIVATE LIMITED through www.sobhagya.in (hereinafter referred as "We" "Sobhagya" "us" "our" "sobhagya application" "Website").
               </p>
             </section>
 
